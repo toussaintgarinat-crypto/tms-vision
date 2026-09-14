@@ -10,7 +10,8 @@ CSV_FIELDS = [
     "frame_index", "timestamp_seconds", "detected",
     "neck_flexion_deg", "trunk_flexion_deg", "upper_arm_flexion_deg",
     "lower_arm_angle_deg", "wrist_flexion_deg",
-    "upper_arm", "lower_arm", "wrist", "neck", "trunk", "legs",
+    "upper_arm", "lower_arm", "wrist", "wrist_twist", "posture_score_a",
+    "neck", "trunk", "legs", "posture_score_b",
     "muscle_use_score", "force_load_score", "final_score", "action_level",
 ]
 
@@ -48,9 +49,12 @@ class ResultsExporter:
             row["upper_arm"] = record.score.upper_arm
             row["lower_arm"] = record.score.lower_arm
             row["wrist"] = record.score.wrist
+            row["wrist_twist"] = record.score.wrist_twist
+            row["posture_score_a"] = record.score.posture_score_a
             row["neck"] = record.score.neck
             row["trunk"] = record.score.trunk
             row["legs"] = record.score.legs
+            row["posture_score_b"] = record.score.posture_score_b
             row["muscle_use_score"] = record.score.muscle_use_score
             row["force_load_score"] = record.score.force_load_score
             row["final_score"] = record.score.final_score

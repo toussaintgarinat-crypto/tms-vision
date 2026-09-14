@@ -42,6 +42,10 @@ def test_export_writes_csv_row_per_frame_and_summary_json(tmp_path):
     assert rows[0]["final_score"] == "1"
     assert rows[2]["detected"] == "False"
     assert rows[2]["final_score"] == ""
+    assert rows[0]["posture_score_a"] == "1"
+    assert rows[0]["posture_score_b"] == "1"
+    assert rows[0]["wrist_twist"] == "1"
+    assert rows[2]["posture_score_a"] == ""
 
     with open(summary_path) as f:
         summary = json.load(f)
