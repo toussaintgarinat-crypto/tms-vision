@@ -31,6 +31,16 @@ def test_classify_upper_arm_supported_subtracts_one():
     assert classify_upper_arm(10.0, shoulder_raised=False, abducted=False, supported=True) == 1
 
 
+def test_classify_upper_arm_overhead_with_noisy_negative_sign_is_score_4_not_2():
+    # Un bras levé à la verticale au-dessus de la tête peut voir son signe
+    # devenir du bruit (upper_arm_forward dépend d'un produit de signes très
+    # sensible près de 180°) : -150.0 représente une telle mesure. Avant le
+    # Fix I1, la branche "extension" (angle_deg < -20.0) n'avait pas de borne
+    # basse et classait ça en base 2 (extension légère), sous-évaluant
+    # dangereusement une posture bras-au-dessus-de-la-tête qui doit valoir 4.
+    assert classify_upper_arm(-150.0, shoulder_raised=False, abducted=False, supported=False) == 4
+
+
 def test_classify_lower_arm_90_degrees_is_score_1():
     assert classify_lower_arm(90.0, across_midline=False) == 1
 

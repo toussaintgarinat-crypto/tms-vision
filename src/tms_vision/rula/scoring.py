@@ -14,7 +14,15 @@ def _clamp(value: int, low: int, high: int) -> int:
 
 
 def classify_upper_arm(angle_deg: float, shoulder_raised: bool, abducted: bool, supported: bool) -> int:
-    if angle_deg < -20.0:
+    if angle_deg < -90.0:
+        # Au-delà de -90°, le signe de upper_arm_flexion_deg n'est plus fiable
+        # (bruit de mesure sur un bras levé à la verticale, voir angles.py /
+        # upper_arm_forward) : la magnitude (~180°) indique un bras en
+        # extension/élévation extrême, à traiter avec la même sévérité RULA
+        # qu'une flexion avant > 90° (base 4), pas comme une extension légère
+        # (Fix I1, 2e revue finale).
+        base = 4
+    elif angle_deg < -20.0:
         base = 2
     elif angle_deg <= 20.0:
         base = 1
