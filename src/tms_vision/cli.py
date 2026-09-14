@@ -5,6 +5,7 @@ Conseil de prise de vue : pour des angles fiables (flexion/extension du cou,
 du tronc et du bras), filmer la personne DE PROFIL plutôt que de face.
 """
 import argparse
+import secrets
 import sys
 import time
 from pathlib import Path
@@ -26,6 +27,27 @@ def _non_negative_float(value: str) -> float:
     return parsed
 
 
+class _RunningMean:
+    """Moyenne mobile incrémentale simple (compteur + somme cumulée), utilisée
+    pour donner à compute_joint_angles() une référence stable de la hauteur
+    "au repos" de l'épaule (shoulder_baseline_y) plutôt que la position de la
+    seule frame courante."""
+
+    def __init__(self) -> None:
+        self._count = 0
+        self._total = 0.0
+
+    def update(self, value: float) -> None:
+        self._count += 1
+        self._total += value
+
+    @property
+    def value(self) -> float | None:
+        if self._count == 0:
+            return None
+        return self._total / self._count
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Analyse ergonomique RULA d'une vidéo de poste de travail."
@@ -41,24 +63,46 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(args: argparse.Namespace) -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    run_id = time.strftime("%Y%m%d-%H%M%S")
+    run_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
 
     wrist_twist = 1 if args.wrist_twist == "normal" else 2
 
     source = FrameSource(args.source)
     estimator = PoseEstimator()
 
-    frames = list(source)
-    source.release()
+    frames = []
+    try:
+        for frame in source:
+            frames.append(frame)
+    except KeyboardInterrupt:
+        print("\nCapture interrompue par l'utilisateur, traitement des frames déjà capturées...")
+    finally:
+        source.release()
+
+    if not frames:
+        print("Aucune frame capturée, rien à analyser.", file=sys.stderr)
+        estimator.close()
+        return
 
     per_frame_angles = []
     posture_load_history: list[tuple[float, float]] = []
+    shoulder_key = f"{args.side.upper()}_SHOULDER"
+    shoulder_y_baseline = _RunningMean()
 
     for frame in frames:
         pose_result = estimator.process(frame.image)
         angles = None
         if pose_result.landmarks is not None:
-            angles = compute_joint_angles(pose_result.landmarks, side=args.side)
+            # Baseline = moyenne des frames PRÉCÉDENTES uniquement (pas la
+            # frame courante) ; sur la toute première frame détectée, aucune
+            # donnée antérieure n'existe -> None (repli sur le comportement
+            # historique pour cette frame-là seulement, voir angles.py).
+            angles = compute_joint_angles(
+                pose_result.landmarks, side=args.side, shoulder_baseline_y=shoulder_y_baseline.value
+            )
+            current_shoulder = pose_result.landmarks.get(shoulder_key)
+            if current_shoulder is not None:
+                shoulder_y_baseline.update(current_shoulder.y)
         per_frame_angles.append((frame, pose_result, angles))
         if angles is not None:
             posture_load = angles.trunk_flexion_deg + angles.upper_arm_flexion_deg

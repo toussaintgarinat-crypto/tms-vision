@@ -1,5 +1,20 @@
 import pytest
-from tms_vision.cli import parse_args
+from tms_vision.cli import parse_args, _RunningMean
+
+
+def test_running_mean_starts_at_none():
+    mean = _RunningMean()
+    assert mean.value is None
+
+
+def test_running_mean_computes_average_incrementally():
+    mean = _RunningMean()
+    mean.update(2.0)
+    assert mean.value == 2.0
+    mean.update(4.0)
+    assert mean.value == 3.0
+    mean.update(9.0)
+    assert mean.value == 5.0
 
 
 def test_parse_args_defaults():
@@ -30,6 +45,39 @@ import numpy as np
 import cv2
 
 from tms_vision.cli import parse_args, run
+
+
+class _EmptyFrameSource:
+    """Simule une source vidéo qui s'ouvre correctement (contrairement à un
+    vrai fichier .mp4 vide, qui échoue déjà à isOpened()) mais ne produit
+    aucune frame -- le cas que le garde-fou de Fix 7c doit intercepter avant
+    toute tentative d'ouverture d'un cv2.VideoWriter en taille (0, 0)."""
+
+    def __init__(self, *_args, **_kwargs):
+        pass
+
+    def fps(self):
+        return 30.0
+
+    def __iter__(self):
+        return iter([])
+
+    def release(self):
+        pass
+
+
+def test_run_with_zero_frames_prints_message_and_returns_without_writing(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr("tms_vision.cli.FrameSource", _EmptyFrameSource)
+
+    output_dir = tmp_path / "outputs"
+    args = parse_args(["--source", "webcam", "--output-dir", str(output_dir)])
+    run(args)
+
+    captured = capsys.readouterr()
+    assert "Aucune frame capturée" in captured.err
+    assert list(output_dir.glob("*_annotated.mp4")) == []
+    assert list(output_dir.glob("*_frames.csv")) == []
+    assert list(output_dir.glob("*_summary.json")) == []
 
 
 def test_run_end_to_end_on_a_blank_synthetic_video(tmp_path):
