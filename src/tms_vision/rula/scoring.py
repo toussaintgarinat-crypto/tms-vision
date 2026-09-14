@@ -153,3 +153,58 @@ def compute_rula_score(
         final_score=final_score,
         action_level=action_level(final_score),
     )
+
+
+STATIC_DURATION_THRESHOLD_SECONDS = 60.0
+STATIC_VARIATION_THRESHOLD_DEG = 15.0
+REPETITION_THRESHOLD_PER_MINUTE = 4.0
+REPETITION_MIN_PROMINENCE_DEG = 10.0
+
+
+def _longest_static_span_seconds(history: list[tuple[float, float]]) -> float:
+    longest = 0.0
+    window_start = 0
+    for end in range(len(history)):
+        while True:
+            window_values = [angle for _, angle in history[window_start : end + 1]]
+            if max(window_values) - min(window_values) <= STATIC_VARIATION_THRESHOLD_DEG:
+                break
+            window_start += 1
+        span = history[end][0] - history[window_start][0]
+        longest = max(longest, span)
+    return longest
+
+
+def _count_direction_changes(history: list[tuple[float, float]]) -> int:
+    changes = 0
+    last_extremum = history[0][1]
+    direction = 0
+    for _, angle in history[1:]:
+        delta = angle - last_extremum
+        if abs(delta) < REPETITION_MIN_PROMINENCE_DEG:
+            continue
+        new_direction = 1 if delta > 0 else -1
+        if direction != 0 and new_direction != direction:
+            changes += 1
+        direction = new_direction
+        last_extremum = angle
+    return changes
+
+
+def detect_muscle_use(history: list[tuple[float, float]]) -> bool:
+    """history : liste de (timestamp_secondes, angle_charge_posturale) triée par temps.
+    Retourne True si la posture est majoritairement statique (>1 min sans
+    variation significative) ou si le mouvement se répète >= 4 fois/minute."""
+    if len(history) < 2:
+        return False
+
+    if _longest_static_span_seconds(history) >= STATIC_DURATION_THRESHOLD_SECONDS:
+        return True
+
+    duration_minutes = (history[-1][0] - history[0][0]) / 60.0
+    if duration_minutes <= 0:
+        return False
+
+    direction_changes = _count_direction_changes(history)
+    cycles = direction_changes / 2.0
+    return (cycles / duration_minutes) >= REPETITION_THRESHOLD_PER_MINUTE

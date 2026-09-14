@@ -133,3 +133,26 @@ def test_compute_rula_score_high_risk_posture():
         muscle_use_score=1,
     )
     assert score.final_score >= 6
+
+
+from tms_vision.rula.scoring import detect_muscle_use
+
+
+def test_detect_muscle_use_static_posture_over_one_minute():
+    history = [(float(t), 45.0) for t in range(0, 65, 1)]  # angle constant 65s
+    assert detect_muscle_use(history) is True
+
+
+def test_detect_muscle_use_short_clip_with_no_repetition_is_false():
+    history = [(float(t), 45.0 + t) for t in range(0, 20, 1)]  # < 1 min, monotonic
+    assert detect_muscle_use(history) is False
+
+
+def test_detect_muscle_use_repetitive_motion_over_4_cycles_per_minute():
+    # Oscillation triangulaire : 8 cycles complets sur 60 secondes -> 8/min >= 4/min
+    history = []
+    for t in range(0, 60):
+        phase = t % 7.5
+        angle = 20.0 + (20.0 if phase < 3.75 else -20.0)
+        history.append((float(t), angle))
+    assert detect_muscle_use(history) is True
