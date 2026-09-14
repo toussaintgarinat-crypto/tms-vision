@@ -112,7 +112,11 @@ def run(args: argparse.Namespace) -> None:
 
     muscle_use_score = 1 if detect_muscle_use(posture_load_history) else 0
 
-    height, width = frames[0].image.shape[:2] if frames else (0, 0)
+    # `frames` est garanti non vide ici : le garde-fou `if not frames: ...
+    # return` ci-dessus (Fix 7c) a déjà court-circuité la fonction sinon
+    # (Fix M2/M3e, 2e revue finale : la branche `else (0, 0)` était devenue
+    # du code mort).
+    height, width = frames[0].image.shape[:2]
     video_path = output_dir / f"{run_id}_annotated.mp4"
     writer = cv2.VideoWriter(
         str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), source.fps() or 30.0, (width, height)
@@ -153,6 +157,18 @@ def main() -> None:
         run(args)
     except (FileNotFoundError, RuntimeError) as error:
         print(f"Erreur : {error}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        # Un premier Ctrl+C pendant la capture est déjà intercepté à
+        # l'intérieur de run() (Fix 6) et traite les frames déjà capturées.
+        # Un second Ctrl+C pendant la boucle de traitement (pose/score/écriture
+        # vidéo) qui suit n'est en revanche pas couvert par ce garde-fou
+        # interne : on l'attrape ici pour éviter une traceback brute sans
+        # sortie utile (Fix I4, 2e revue finale). Ce n'est volontairement
+        # qu'un filet de sécurité "ne pas planter" : produire malgré tout les
+        # fichiers de sortie partiels à ce stade demanderait un mécanisme de
+        # checkpointing plus invasif, hors périmètre ici.
+        print("Traitement interrompu par l'utilisateur.", file=sys.stderr)
         sys.exit(1)
 
 

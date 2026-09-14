@@ -1,5 +1,9 @@
+import numpy as np
+import cv2
 import pytest
-from tms_vision.cli import parse_args, _RunningMean
+
+from tms_vision.cli import parse_args, run, main, _RunningMean
+from tms_vision.capture import Frame
 
 
 def test_running_mean_starts_at_none():
@@ -39,12 +43,6 @@ def test_parse_args_rejects_invalid_side():
 def test_parse_args_rejects_invalid_wrist_twist():
     with pytest.raises(SystemExit):
         parse_args(["--source", "webcam", "--wrist-twist", "sideways"])
-
-
-import numpy as np
-import cv2
-
-from tms_vision.cli import parse_args, run
 
 
 class _EmptyFrameSource:
@@ -92,6 +90,86 @@ def test_run_end_to_end_on_a_blank_synthetic_video(tmp_path):
     output_dir = tmp_path / "outputs"
     args = parse_args(["--source", str(video_path), "--output-dir", str(output_dir)])
     run(args)
+
+    csv_files = list(output_dir.glob("*_frames.csv"))
+    summary_files = list(output_dir.glob("*_summary.json"))
+    video_files = list(output_dir.glob("*_annotated.mp4"))
+    assert len(csv_files) == 1
+    assert len(summary_files) == 1
+    assert len(video_files) == 1
+
+
+def test_main_catches_keyboard_interrupt_during_processing_loop_and_exits_cleanly(
+    tmp_path, monkeypatch, capsys
+):
+    # Fix I4 (2e revue finale) : un second Ctrl+C survenant APRÈS la capture
+    # (donc pendant la boucle pose/score/écriture vidéo, hors du try/except
+    # du Fix 6) ne doit plus produire de traceback brute. On simule ce
+    # second Ctrl+C en interrompant draw_overlay, qui est appelé une fois
+    # par frame dans cette boucle de traitement -- un seam de test propre
+    # équivalent à FrameSource pour la boucle de capture.
+    video_path = tmp_path / "synthetic.mp4"
+    writer = cv2.VideoWriter(str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64))
+    for _ in range(3):
+        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
+    writer.release()
+
+    def _raise_keyboard_interrupt(*_args, **_kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("tms_vision.cli.draw_overlay", _raise_keyboard_interrupt)
+
+    output_dir = tmp_path / "outputs"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["tms-vision", "--source", str(video_path), "--output-dir", str(output_dir)],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Traitement interrompu par l'utilisateur." in captured.err
+
+
+class _InterruptingFrameSource:
+    """Simule une source vidéo qui produit quelques frames puis reçoit un
+    Ctrl+C (KeyboardInterrupt) pendant la boucle de capture -- le cas que le
+    Fix 6 (revue finale précédente) est censé intercepter en traitant les
+    frames déjà capturées au lieu de laisser planter tout le run (Fix I3,
+    2e revue finale : cette couverture de test manquait)."""
+
+    def __init__(self, *_args, **_kwargs):
+        self.released = False
+
+    def fps(self):
+        return 30.0
+
+    def __iter__(self):
+        for i in range(2):
+            yield Frame(
+                index=i,
+                timestamp_seconds=i / 30.0,
+                image=np.zeros((64, 64, 3), dtype=np.uint8),
+            )
+        raise KeyboardInterrupt
+
+    def release(self):
+        self.released = True
+
+
+def test_run_with_keyboard_interrupt_during_capture_still_writes_partial_outputs(
+    tmp_path, monkeypatch, capsys
+):
+    monkeypatch.setattr("tms_vision.cli.FrameSource", _InterruptingFrameSource)
+
+    output_dir = tmp_path / "outputs"
+    args = parse_args(["--source", "webcam", "--output-dir", str(output_dir)])
+    run(args)  # ne doit PAS lever : le KeyboardInterrupt est intercepté (Fix 6)
+
+    captured = capsys.readouterr()
+    assert "Capture interrompue" in captured.out
 
     csv_files = list(output_dir.glob("*_frames.csv"))
     summary_files = list(output_dir.glob("*_summary.json"))
