@@ -1,6 +1,7 @@
 """Wrapper autour de MediaPipe Pose : extraction des 33 keypoints par frame."""
 from dataclasses import dataclass
 
+import cv2
 import mediapipe as mp
 import numpy as np
 
@@ -31,7 +32,7 @@ class PoseEstimator:
         )
 
     def process(self, image_bgr: np.ndarray) -> PoseResult:
-        image_rgb = image_bgr[:, :, ::-1]
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         results = self._pose.process(image_rgb)
 
         if results.pose_landmarks is None:
