@@ -106,6 +106,18 @@ def compute_joint_angles(
 
     vertical = np.array([0.0, -1.0])
 
+    # Séparations latérales gauche/droite calculées en amont des sections
+    # Cou/Tronc/Bras ci-dessous, car chacune d'elles s'en sert pour décider
+    # si son test d'inclinaison/torsion est géométriquement fiable (voir
+    # Fix C1 de la 2e revue finale : ce garde-fou manquait sur
+    # trunk_side_bending et neck_side_bending, qui utilisaient l'angle replié
+    # sans vérifier d'abord que la paire de landmarks sous-jacente était
+    # assez séparée en x pour que arctan2(dy, dx) ne soit pas du bruit).
+    shoulder_width = float(
+        np.linalg.norm(_xy(landmarks["LEFT_SHOULDER"]) - _xy(landmarks["RIGHT_SHOULDER"]))
+    )
+    shoulders_laterally_separated = shoulder_width >= MIN_LATERAL_SEPARATION_RATIO * torso_length
+
     # --- Cou ---
     head_vec = ear - shoulder_mid
     neck_magnitude = _angle_between(head_vec, vertical)
@@ -114,6 +126,10 @@ def compute_joint_angles(
 
     left_ear = _xy(landmarks["LEFT_EAR"]) if "LEFT_EAR" in landmarks else ear
     right_ear = _xy(landmarks["RIGHT_EAR"]) if "RIGHT_EAR" in landmarks else ear
+    ear_mid_x = (left_ear[0] + right_ear[0]) / 2.0
+    ear_distance = abs(left_ear[0] - right_ear[0])
+    ears_laterally_separated = ear_distance >= MIN_LATERAL_SEPARATION_RATIO * torso_length
+
     # Repliement dans (-90, 90] : une ligne gauche->droite et sa réciproque
     # droite->gauche ne doivent pas être vues comme des inclinaisons opposées.
     ear_line_angle = _fold_to_half_range(_line_angle_from_horizontal(left_ear, right_ear))
@@ -122,11 +138,16 @@ def compute_joint_angles(
             _xy(landmarks["LEFT_SHOULDER"]), _xy(landmarks["RIGHT_SHOULDER"])
         )
     )
-    neck_side_bending = abs(ear_line_angle - shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
+    if ears_laterally_separated:
+        neck_side_bending = abs(ear_line_angle - shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
+    else:
+        # Vue quasi de profil : les deux oreilles se confondent en x,
+        # ear_line_angle devient un repliement de bruit sub-pixel ->
+        # arctan2(dy, dx) n'a plus de signal fiable. Pas d'inclinaison
+        # détectée (Fix C1, 2e revue finale).
+        neck_side_bending = False
 
-    ear_mid_x = (left_ear[0] + right_ear[0]) / 2.0
-    ear_distance = abs(left_ear[0] - right_ear[0])
-    if ear_distance >= MIN_LATERAL_SEPARATION_RATIO * torso_length:
+    if ears_laterally_separated:
         neck_twisted = abs(nose[0] - ear_mid_x) / ear_distance > 0.15
     else:
         # Vue quasi de profil : les deux oreilles se confondent en x, le
@@ -137,7 +158,14 @@ def compute_joint_angles(
     # --- Tronc ---
     torso_vec = shoulder_mid - hip_mid
     trunk_flexion_deg = _angle_between(torso_vec, vertical)
-    trunk_side_bending = abs(shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
+    if shoulders_laterally_separated:
+        trunk_side_bending = abs(shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
+    else:
+        # Vue quasi de profil : les deux épaules se confondent en x,
+        # shoulder_line_angle devient un repliement de bruit sub-pixel ->
+        # arctan2(dy, dx) n'a plus de signal fiable. Pas d'inclinaison
+        # détectée (Fix C1, 2e revue finale).
+        trunk_side_bending = False
 
     # --- Bras (épaule -> coude) ---
     # RULA : neutre (0°) = bras pendant le long du corps, càd upper_arm_vec
@@ -149,10 +177,6 @@ def compute_joint_angles(
     upper_arm_forward = (elbow[0] - side_shoulder[0]) * facing
     upper_arm_flexion_deg = upper_arm_magnitude if upper_arm_forward >= 0 else -upper_arm_magnitude
 
-    shoulder_width = float(
-        np.linalg.norm(_xy(landmarks["LEFT_SHOULDER"]) - _xy(landmarks["RIGHT_SHOULDER"]))
-    )
-    shoulders_laterally_separated = shoulder_width >= MIN_LATERAL_SEPARATION_RATIO * torso_length
     if shoulders_laterally_separated:
         upper_arm_abducted = abs(elbow[0] - hip_mid[0]) > ABDUCTION_WIDTH_RATIO * shoulder_width
     else:

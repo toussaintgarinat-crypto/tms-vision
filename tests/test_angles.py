@@ -1,4 +1,3 @@
-import math
 from tms_vision.pose_estimation import Landmark
 from tms_vision.angles import compute_joint_angles
 
@@ -94,6 +93,36 @@ def test_profile_view_degenerate_lateral_pairs_suppress_noisy_flags():
     assert result.neck_twisted is False
     assert result.upper_arm_abducted is False
     assert result.lower_arm_across_midline is False
+
+
+def _neutral_profile_landmarks_with_asymmetric_subpixel_jitter():
+    """Vue de profil neutre (voir _base_landmarks), mais avec un bruit
+    sub-pixel réaliste (±0.008 environ, cohérent avec l'ordre de grandeur
+    mesuré par le relecteur) injecté de façon ASYMÉTRIQUE sur les landmarks
+    du côté droit (RIGHT_SHOULDER, RIGHT_EAR) tandis que le côté gauche reste
+    à sa position de base. En vue de profil, LEFT_SHOULDER et RIGHT_SHOULDER
+    (resp. LEFT_EAR/RIGHT_EAR) sont quasiment coïncidents en x : le moindre
+    bruit sub-pixel asymétrique fait exploser arctan2(dy, dx) en un angle de
+    ligne arbitraire (ici ~76° pour les épaules, ~-69° pour les oreilles),
+    largement au-dessus de SIDE_BEND_THRESHOLD_DEG, alors que la posture
+    réelle est parfaitement droite. Sans le garde-fou de séparation latérale
+    (Fix C1, 2e revue finale), trunk_side_bending et neck_side_bending
+    valent tous deux True ici ; avec le garde-fou, la faible séparation
+    latérale (shoulder_width / ear_distance << 0.15 * torso_length) fait
+    retomber les deux à False."""
+    landmarks = _base_landmarks()
+    landmarks["RIGHT_SHOULDER"] = _lm(0.5010, 0.3040)
+    landmarks["RIGHT_EAR"] = _lm(0.5115, 0.2160)
+    return landmarks
+
+
+def test_neutral_profile_with_subpixel_jitter_suppresses_side_bending_flags():
+    landmarks = _neutral_profile_landmarks_with_asymmetric_subpixel_jitter()
+    result = compute_joint_angles(landmarks, side="left")
+
+    assert result is not None
+    assert result.trunk_side_bending is False
+    assert result.neck_side_bending is False
 
 
 def test_front_facing_upright_with_mirrored_shoulder_order_is_not_side_bending():
