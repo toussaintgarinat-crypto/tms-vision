@@ -133,3 +133,49 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - Déploiement d'un projet pilote dans une entreprise partenaire ou un atelier.
 - Ajustement des seuils de scoring ergonomiques avec l'ostéopathe.
 - Génération des premiers rapports d'audit pour la direction HSE/RH.
+
+## 9. Lancer le PoC (Phase 1)
+
+```bash
+python3 -m venv venv
+venv/bin/pip install -r requirements.txt
+venv/bin/pytest                                    # suite de tests
+
+PYTHONPATH=src venv/bin/python -m tms_vision.cli \
+  --source chemin/vers/video.mp4 \
+  --side right \
+  --load-kg 2.5 \
+  --wrist-twist normal \
+  --output-dir outputs
+```
+
+`--source` accepte aussi `webcam` pour filmer en direct depuis une caméra branchée sur la
+machine :
+
+```bash
+PYTHONPATH=src venv/bin/python -m tms_vision.cli --source webcam --side right --load-kg 0 --output-dir outputs
+```
+
+(interrompre avec Ctrl+C — la capture est actuellement lue en mémoire avant traitement, donc
+mieux vaut limiter la prise à quelques dizaines de secondes ou enregistrer un fichier au
+préalable si l'analyse doit couvrir un poste sur une durée plus longue).
+
+**Conseil de prise de vue** : filmer la personne de profil pour des angles de flexion/extension
+fiables (cou, tronc, bras).
+
+Résultats dans `outputs/` : une vidéo annotée (squelette + badge de score RULA coloré), un CSV
+détaillé par frame, et un résumé JSON (score max, score moyen, temps passé par niveau de risque).
+
+**Note de vérification (Task 10)** : la suite de tests (50 tests) a été rejouée intégralement
+avec succès. Le pipeline CLI complet a ensuite été exercé de bout en bout dans un environnement
+sandboxé sans accès webcam physique, à l'aide d'une vidéo synthétique générée par OpenCV (un
+cercle et un rectangle en mouvement sur fond uni, 40 frames à 10 fps) — cette vidéo ne contient
+aucune silhouette humaine, donc MediaPipe n'y détecte aucune pose, ce qui est le comportement
+attendu. Ce test a confirmé que les trois fichiers de sortie (vidéo annotée, CSV, JSON) sont
+bien créés et correctement formés, avec une ligne par frame (`detected=False` sur les 40 lignes,
+colonnes d'angles/scores vides) et un résumé JSON à `max_score: 0`, `average_score: 0`,
+`time_by_action_level: {}` — conforme à la convention "aucune frame détectée" de la Task 8.
+**Ce test ne remplace pas une vérification avec une vraie webcam ou une vidéo d'une personne
+réelle** : avant de s'appuyer sur ce PoC pour une évaluation ergonomique réelle, l'utilisateur du
+projet doit relancer la commande `--source webcam` (ou une vidéo filmant une personne) et
+vérifier visuellement le squelette superposé et la cohérence des scores RULA obtenus.
