@@ -114,8 +114,9 @@ def compute_joint_angles(
     # shoulder_width est la norme 2D (LEFT_SHOULDER, RIGHT_SHOULDER) : c'est
     # une échelle de largeur d'épaules légitime pour upper_arm_abducted
     # (ABDUCTION_WIDTH_RATIO * shoulder_width) et DOIT rester une norme pour
-    # cet usage — un écart purement vertical entre les deux épaules élargit
-    # quand même la carrure visible à l'image.
+    # cet usage — un écart purement vertical n'élargit pas réellement la
+    # carrure, mais c'est une échelle de repère à l'image, pas une mesure de
+    # fiabilité géométrique comme shoulder_x_separation ci-dessous.
     #
     # shoulder_x_separation / shoulders_laterally_separated, en revanche,
     # servent à décider si arctan2(dy, dx) sur CETTE paire de landmarks (via
@@ -216,7 +217,9 @@ def compute_joint_angles(
         upper_arm_abducted = False
 
     baseline_y = shoulder_baseline_y if shoulder_baseline_y is not None else side_shoulder[1]
-    upper_arm_shoulder_raised = (baseline_y - side_shoulder[1]) > SHOULDER_RAISE_RATIO * torso_length
+    upper_arm_shoulder_raised = bool(
+        (baseline_y - side_shoulder[1]) > SHOULDER_RAISE_RATIO * torso_length
+    )
 
     # --- Avant-bras (coude) ---
     # Convention "flexion depuis le bras tendu" (0°=tendu, 90°=coude à angle
