@@ -1,5 +1,6 @@
 """Moteur de scoring RULA complet : classification des angles en sous-scores
 1-N, puis application des Tables A/B/C officielles (voir rula/tables.py)."""
+from collections import deque
 from dataclasses import dataclass
 
 from tms_vision.angles import JointAngles
@@ -162,14 +163,36 @@ REPETITION_MIN_PROMINENCE_DEG = 10.0
 
 
 def _longest_static_span_seconds(history: list[tuple[float, float]]) -> float:
+    """Plus longue plage temporelle (en secondes) d'une fenêtre contiguë où
+    max(angle) - min(angle) <= STATIC_VARIATION_THRESHOLD_DEG.
+
+    Implémentation O(n) : fenêtre glissante avec deux deques monotones
+    (max_deque décroissante, min_deque croissante) maintenant en O(1) amorti
+    le max et le min courants de la fenêtre [window_start, end], au lieu de
+    reconstruire et scanner la fenêtre à chaque étape (O(n²))."""
     longest = 0.0
     window_start = 0
+    max_deque: deque[int] = deque()  # indices, valeurs décroissantes ; tête = max courant
+    min_deque: deque[int] = deque()  # indices, valeurs croissantes ; tête = min courant
+
     for end in range(len(history)):
-        while True:
-            window_values = [angle for _, angle in history[window_start : end + 1]]
-            if max(window_values) - min(window_values) <= STATIC_VARIATION_THRESHOLD_DEG:
-                break
+        angle = history[end][1]
+
+        while max_deque and history[max_deque[-1]][1] <= angle:
+            max_deque.pop()
+        max_deque.append(end)
+
+        while min_deque and history[min_deque[-1]][1] >= angle:
+            min_deque.pop()
+        min_deque.append(end)
+
+        while history[max_deque[0]][1] - history[min_deque[0]][1] > STATIC_VARIATION_THRESHOLD_DEG:
             window_start += 1
+            if max_deque[0] < window_start:
+                max_deque.popleft()
+            if min_deque[0] < window_start:
+                min_deque.popleft()
+
         span = history[end][0] - history[window_start][0]
         longest = max(longest, span)
     return longest

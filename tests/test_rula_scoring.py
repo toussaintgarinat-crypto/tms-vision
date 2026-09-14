@@ -135,7 +135,31 @@ def test_compute_rula_score_high_risk_posture():
     assert score.final_score >= 6
 
 
-from tms_vision.rula.scoring import detect_muscle_use
+from tms_vision.rula.scoring import detect_muscle_use, _longest_static_span_seconds
+
+
+def test_longest_static_span_ignores_volatile_prefix_and_tail():
+    # Préfixe volatile (indices 0-1), puis une plage statique de 7 échantillons
+    # (indices 2-8, valeurs toutes dans [10, 25], amplitude 15 <= seuil),
+    # puis une queue volatile (index 9). La plage la plus longue ne doit ni
+    # commencer à l'index 0 ni couvrir tout l'historique : elle doit
+    # correspondre exactement à la plage statique du milieu.
+    history = [
+        (0.0, 0.0),
+        (1.0, 90.0),
+        (2.0, 10.0),
+        (3.0, 25.0),
+        (4.0, 10.0),
+        (5.0, 25.0),
+        (6.0, 10.0),
+        (7.0, 25.0),
+        (8.0, 18.0),
+        (9.0, 200.0),
+    ]
+    # Calculé à la main : la fenêtre [2..8] a max=25, min=10 (amplitude 15,
+    # au seuil), pour une plage de 8.0 - 2.0 = 6.0 secondes. Toute fenêtre
+    # incluant l'index 1 (90.0) ou l'index 9 (200.0) dépasse le seuil.
+    assert _longest_static_span_seconds(history) == 6.0
 
 
 def test_detect_muscle_use_static_posture_over_one_minute():
