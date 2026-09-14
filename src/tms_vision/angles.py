@@ -109,14 +109,31 @@ def compute_joint_angles(
     # Séparations latérales gauche/droite calculées en amont des sections
     # Cou/Tronc/Bras ci-dessous, car chacune d'elles s'en sert pour décider
     # si son test d'inclinaison/torsion est géométriquement fiable (voir
-    # Fix C1 de la 2e revue finale : ce garde-fou manquait sur
-    # trunk_side_bending et neck_side_bending, qui utilisaient l'angle replié
-    # sans vérifier d'abord que la paire de landmarks sous-jacente était
-    # assez séparée en x pour que arctan2(dy, dx) ne soit pas du bruit).
+    # Fix C1 de la 2e revue finale, puis Fix générique de la 3e revue finale).
+    #
+    # shoulder_width est la norme 2D (LEFT_SHOULDER, RIGHT_SHOULDER) : c'est
+    # une échelle de largeur d'épaules légitime pour upper_arm_abducted
+    # (ABDUCTION_WIDTH_RATIO * shoulder_width) et DOIT rester une norme pour
+    # cet usage — un écart purement vertical entre les deux épaules élargit
+    # quand même la carrure visible à l'image.
+    #
+    # shoulder_x_separation / shoulders_laterally_separated, en revanche,
+    # servent à décider si arctan2(dy, dx) sur CETTE paire de landmarks (via
+    # shoulder_line_angle) est fiable. arctan2 dépend de dx, pas de la norme :
+    # un écart purement vertical entre les deux épaules (dx quasi nul, dy
+    # grand) fait passer la norme au-dessus du seuil alors que dx reste du
+    # bruit sub-pixel, ce qui laissait shoulder_line_angle proche de ±90° de
+    # bruit filer sans garde-fou (Fix 3e revue finale, item 2). Le garde-fou
+    # doit donc être calculé sur l'écart en x SEUL, pas sur la norme.
     shoulder_width = float(
         np.linalg.norm(_xy(landmarks["LEFT_SHOULDER"]) - _xy(landmarks["RIGHT_SHOULDER"]))
     )
-    shoulders_laterally_separated = shoulder_width >= MIN_LATERAL_SEPARATION_RATIO * torso_length
+    shoulder_x_separation = abs(
+        landmarks["LEFT_SHOULDER"].x - landmarks["RIGHT_SHOULDER"].x
+    )
+    shoulders_laterally_separated = (
+        shoulder_x_separation >= MIN_LATERAL_SEPARATION_RATIO * torso_length
+    )
 
     # --- Cou ---
     head_vec = ear - shoulder_mid
@@ -138,17 +155,26 @@ def compute_joint_angles(
             _xy(landmarks["LEFT_SHOULDER"]), _xy(landmarks["RIGHT_SHOULDER"])
         )
     )
-    if ears_laterally_separated:
-        neck_side_bending = abs(ear_line_angle - shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
+    # neck_side_bending compare DEUX angles de ligne indépendants
+    # (ear_line_angle ET shoulder_line_angle) : il n'est fiable que si LES
+    # DEUX paires de landmarks sous-jacentes sont assez séparées en x. Gater
+    # uniquement sur ears_laterally_separated (comme avant la 3e revue
+    # finale) laisse passer un shoulder_line_angle de bruit quand la tête est
+    # tournée vers la caméra (oreilles séparées) mais le corps reste de
+    # profil (épaules x-dégénérées) — le relecteur a mesuré 89.3% de faux
+    # positifs sur un cou droit dans exactement ce scénario.
+    if ears_laterally_separated and shoulders_laterally_separated:
+        neck_side_bending = bool(abs(ear_line_angle - shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG)
     else:
-        # Vue quasi de profil : les deux oreilles se confondent en x,
-        # ear_line_angle devient un repliement de bruit sub-pixel ->
-        # arctan2(dy, dx) n'a plus de signal fiable. Pas d'inclinaison
-        # détectée (Fix C1, 2e revue finale).
+        # L'une des deux paires (oreilles ou épaules) se confond en x : au
+        # moins un des deux angles de ligne comparés est un repliement de
+        # bruit sub-pixel -> arctan2(dy, dx) n'a plus de signal fiable pour
+        # au moins un des deux termes de la comparaison. Pas d'inclinaison
+        # détectée.
         neck_side_bending = False
 
     if ears_laterally_separated:
-        neck_twisted = abs(nose[0] - ear_mid_x) / ear_distance > 0.15
+        neck_twisted = bool(abs(nose[0] - ear_mid_x) / ear_distance > 0.15)
     else:
         # Vue quasi de profil : les deux oreilles se confondent en x, le
         # ratio (nose_x - ear_mid_x) / ear_distance explose et devient du
@@ -159,12 +185,14 @@ def compute_joint_angles(
     torso_vec = shoulder_mid - hip_mid
     trunk_flexion_deg = _angle_between(torso_vec, vertical)
     if shoulders_laterally_separated:
-        trunk_side_bending = abs(shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
+        trunk_side_bending = bool(abs(shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG)
     else:
-        # Vue quasi de profil : les deux épaules se confondent en x,
+        # shoulders_laterally_separated est maintenant un écart x SEUL (Fix
+        # 3e revue finale, item 2) : les deux épaules se confondent en x,
         # shoulder_line_angle devient un repliement de bruit sub-pixel ->
-        # arctan2(dy, dx) n'a plus de signal fiable. Pas d'inclinaison
-        # détectée (Fix C1, 2e revue finale).
+        # arctan2(dy, dx) n'a plus de signal fiable, MEME si un écart
+        # vertical (y) entre les deux épaules aurait fait paraître la norme
+        # shoulder_width suffisamment grande. Pas d'inclinaison détectée.
         trunk_side_bending = False
 
     # --- Bras (épaule -> coude) ---
@@ -178,10 +206,13 @@ def compute_joint_angles(
     upper_arm_flexion_deg = upper_arm_magnitude if upper_arm_forward >= 0 else -upper_arm_magnitude
 
     if shoulders_laterally_separated:
-        upper_arm_abducted = abs(elbow[0] - hip_mid[0]) > ABDUCTION_WIDTH_RATIO * shoulder_width
+        upper_arm_abducted = bool(abs(elbow[0] - hip_mid[0]) > ABDUCTION_WIDTH_RATIO * shoulder_width)
     else:
-        # Vue quasi de profil : les deux épaules se confondent en x,
-        # shoulder_width n'est plus une référence de largeur fiable.
+        # Vue quasi de profil (écart x des épaules sous le seuil) : la
+        # carrure réelle du sujet vue de face est trop réduite à l'image
+        # pour que shoulder_width (norme, gardée telle quelle pour cet
+        # usage — voir Fix 3e revue finale, item 1) serve de référence de
+        # largeur fiable pour juger une abduction.
         upper_arm_abducted = False
 
     baseline_y = shoulder_baseline_y if shoulder_baseline_y is not None else side_shoulder[1]
@@ -195,8 +226,9 @@ def compute_joint_angles(
     upper_arm_from_elbow = side_shoulder - elbow
     lower_arm_angle_deg = 180.0 - _angle_between(upper_arm_from_elbow, forearm_vec)
     if shoulders_laterally_separated:
-        lower_arm_across_midline = abs(wrist[0] - shoulder_mid[0]) > MIDLINE_MARGIN_RATIO * torso_length and (
-            (wrist[0] - shoulder_mid[0]) * (side_shoulder[0] - shoulder_mid[0]) < 0
+        lower_arm_across_midline = bool(
+            abs(wrist[0] - shoulder_mid[0]) > MIDLINE_MARGIN_RATIO * torso_length
+            and (wrist[0] - shoulder_mid[0]) * (side_shoulder[0] - shoulder_mid[0]) < 0
         )
     else:
         # side_shoulder.x et shoulder_mid.x se confondent en profil : le

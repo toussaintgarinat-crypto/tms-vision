@@ -125,6 +125,83 @@ def test_neutral_profile_with_subpixel_jitter_suppresses_side_bending_flags():
     assert result.neck_side_bending is False
 
 
+def _profile_body_head_turned_toward_camera_landmarks():
+    """Corps de profil (épaules x-dégénérées, ~0.0005 d'écart, avec un léger
+    bruit vertical réaliste sur RIGHT_SHOULDER) mais tête TOURNÉE vers la
+    caméra : les oreilles sont, elles, réellement séparées en x (0.535 vs
+    0.475, même y -> ligne des oreilles parfaitement horizontale, angle 0°).
+    Scénario exact du relecteur (3e revue finale, item 1) : neck_twisted
+    doit rester détectable (oreilles séparées, nez décentré), mais
+    neck_side_bending doit rester False car la moitié "épaule" de la
+    comparaison (shoulder_line_angle) n'a aucun signal fiable ici — avant
+    le fix, neck_side_bending n'était gardé que par ears_laterally_separated
+    et laissait passer le bruit d'angle des épaules (mesuré à 89.3% de faux
+    positifs par le relecteur sur un cou droit dans ce scénario)."""
+    return {
+        "LEFT_SHOULDER": _lm(0.5000, 0.30),
+        "RIGHT_SHOULDER": _lm(0.5005, 0.304),
+        "LEFT_HIP": _lm(0.50, 0.55),
+        "RIGHT_HIP": _lm(0.50, 0.55),
+        "NOSE": _lm(0.55, 0.20),
+        "LEFT_EAR": _lm(0.535, 0.22),
+        "RIGHT_EAR": _lm(0.475, 0.22),
+        "LEFT_ELBOW": _lm(0.50, 0.45),
+        "LEFT_WRIST": _lm(0.50, 0.60),
+        "LEFT_INDEX": _lm(0.50, 0.63),
+    }
+
+
+def test_profile_body_with_head_turned_toward_camera_does_not_false_positive_neck_side_bending():
+    landmarks = _profile_body_head_turned_toward_camera_landmarks()
+    result = compute_joint_angles(landmarks, side="left")
+
+    assert result is not None
+    # Les oreilles SONT séparées et le nez EST décentré -> la torsion du cou
+    # doit toujours être détectée correctement.
+    assert result.neck_twisted is True
+    # Mais les épaules ne sont PAS séparées de façon fiable en x -> la
+    # moitié "épaule" de la comparaison ear_line_angle/shoulder_line_angle
+    # est du bruit, donc pas d'inclinaison latérale du cou détectée, même
+    # si les oreilles seules auraient suffi à l'ancien garde-fou.
+    assert result.neck_side_bending is False
+
+
+def _profile_shoulders_with_pure_vertical_discrepancy_landmarks():
+    """Épaules x-dégénérées (~0.0005 d'écart, sous MIN_LATERAL_SEPARATION_RATIO
+    * torso_length) mais avec un écart VERTICAL (y) entre elles assez grand
+    (0.05) pour que l'ANCIEN garde-fou basé sur la norme 2D
+    (shoulder_width = ||LEFT_SHOULDER - RIGHT_SHOULDER||) les considère à
+    tort comme "séparées latéralement" (norme ~0.050, au-dessus du seuil
+    ~0.0338 pour ce fixture), alors que arctan2(dy, dx) sur cette paire est
+    quasiment ±90° de bruit (dx quasi nul) et non un vrai signal
+    d'inclinaison. C'est exactement le scénario "épaule lointaine occultée,
+    bruit d'estimation vertical" du relecteur (3e revue finale, item 2)."""
+    return {
+        "LEFT_SHOULDER": _lm(0.5000, 0.30),
+        "RIGHT_SHOULDER": _lm(0.5005, 0.35),
+        "LEFT_HIP": _lm(0.50, 0.55),
+        "RIGHT_HIP": _lm(0.50, 0.55),
+        "NOSE": _lm(0.52, 0.20),
+        "LEFT_EAR": _lm(0.51, 0.22),
+        "RIGHT_EAR": _lm(0.51, 0.22),
+        "LEFT_ELBOW": _lm(0.50, 0.45),
+        "LEFT_WRIST": _lm(0.50, 0.60),
+        "LEFT_INDEX": _lm(0.50, 0.63),
+    }
+
+
+def test_pure_vertical_shoulder_discrepancy_does_not_false_positive_trunk_side_bending():
+    landmarks = _profile_shoulders_with_pure_vertical_discrepancy_landmarks()
+    result = compute_joint_angles(landmarks, side="left")
+
+    assert result is not None
+    # L'écart x réel entre les deux épaules (~0.0005) est bien en dessous du
+    # seuil : le garde-fou x-only doit rejeter ce cas, même si la norme 2D
+    # (gonflée par le bruit vertical à 0.05) aurait franchi le seuil sous
+    # l'ancienne logique.
+    assert result.trunk_side_bending is False
+
+
 def test_front_facing_upright_with_mirrored_shoulder_order_is_not_side_bending():
     # Sujet debout de face, droit : LEFT_SHOULDER.x > RIGHT_SHOULDER.x (ordre
     # inversé par rapport aux fixtures de profil ci-dessus). Sans repliement
