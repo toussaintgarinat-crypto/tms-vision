@@ -500,7 +500,6 @@ import numpy as np
 from tms_vision.pose_estimation import Landmark
 
 SIDE_BEND_THRESHOLD_DEG = 10.0
-TWIST_THRESHOLD_DEG = 10.0
 ABDUCTION_WIDTH_RATIO = 1.3
 SHOULDER_RAISE_RATIO = 0.05
 MIDLINE_MARGIN_RATIO = 0.05
@@ -592,10 +591,6 @@ def compute_joint_angles(
     # --- Tronc ---
     torso_vec = shoulder_mid - hip_mid
     trunk_flexion_deg = _angle_between(torso_vec, vertical)
-    hip_line_angle = _line_angle_from_horizontal(
-        _xy(landmarks["LEFT_HIP"]), _xy(landmarks["RIGHT_HIP"])
-    )
-    trunk_twisted = abs(shoulder_line_angle - hip_line_angle) > TWIST_THRESHOLD_DEG
     trunk_side_bending = abs(shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
 
     # --- Bras (épaule -> coude) ---
@@ -629,7 +624,7 @@ def compute_joint_angles(
         neck_twisted=neck_twisted,
         neck_side_bending=neck_side_bending,
         trunk_flexion_deg=trunk_flexion_deg,
-        trunk_twisted=trunk_twisted,
+        trunk_twisted=False,  # rotation axiale du tronc = phénomène en profondeur (z), non fiable en capture 2D de profil (limite PoC)
         trunk_side_bending=trunk_side_bending,
         upper_arm_flexion_deg=upper_arm_flexion_deg,
         upper_arm_abducted=upper_arm_abducted,
