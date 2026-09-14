@@ -48,7 +48,7 @@ def classify_wrist(flexion_deg: float, bent_from_midline: bool) -> int:
 
 
 def classify_neck(flexion_deg: float, twisted: bool, side_bending: bool) -> int:
-    if flexion_deg < 0:
+    if flexion_deg < -5.0:
         base = 4
     elif flexion_deg <= 10.0:
         base = 1

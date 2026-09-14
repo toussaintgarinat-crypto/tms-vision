@@ -52,7 +52,15 @@ def test_classify_neck_0_to_10_is_score_1():
 
 
 def test_classify_neck_extension_is_score_4():
-    assert classify_neck(-5.0, twisted=False, side_bending=False) == 4
+    assert classify_neck(-10.0, twisted=False, side_bending=False) == 4
+
+
+def test_classify_neck_small_negative_value_stays_neutral_not_extension():
+    # -2.0° est dans la zone morte (-5.0° < flexion_deg) : le signe d'un
+    # angle quasi nul (cou/tête presque alignés) est du bruit de mesure, pas
+    # une vraie extension. Doit rester classé comme neutre (base 1), pas
+    # basculer en extension (base 4).
+    assert classify_neck(-2.0, twisted=False, side_bending=False) == 1
 
 
 def test_classify_trunk_upright_is_score_1():
