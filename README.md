@@ -116,23 +116,67 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 
 ## 8. Feuille de Route de Déploiement (Roadmap MVP)
 
-### Phase 1 : Prototypage & Validation PoC (Semaines 1 - 3)
+**Pour reprendre le projet plus tard**, les documents de référence sont :
+- Ce README (vue d'ensemble produit + usage du PoC, section 9).
+- `docs/superpowers/specs/2026-09-14-poc-pose-rula-design.md` — la spec technique détaillée du PoC.
+- `docs/superpowers/plans/2026-09-14-poc-pose-rula-plan.md` — le plan d'implémentation tâche par tâche (tenu à jour au fil des corrections).
+- `.superpowers/sdd/progress.md` — le journal des 10 tâches + 4 passes de revue finale, avec les décisions prises à chaque point d'arbitrage.
+- Le code lui-même dans `src/tms_vision/` (8 modules, 66 tests dans `tests/`).
 
-- Développer le script Python de Pose Estimation avec MediaPipe Pose.
-- Programmer les fonctions mathématiques de calcul d'angles (RULA simple).
-- Tester le traitement sur 5 vidéos d'exemples (bureau, manutention, sport).
+### ✅ Phase 1 : Prototypage & Validation PoC — TERMINÉE
+
+Pipeline complet et testé : capture (webcam ou fichier vidéo) → MediaPipe Pose → calcul d'angles
+articulaires → score RULA officiel (Tables A/B/C, méthode McAtamney & Corlett 1993) → vidéo
+annotée + export CSV/JSON. Voir section 9 ci-dessous pour l'utiliser.
+
+**Ce qui a été validé** : les tables RULA (272 valeurs vérifiées chiffre par chiffre contre le
+worksheet Cornell), la chaîne angles→score sur posture neutre et non-neutre (tests d'intégration
+dédiés), la robustesse aux vues de profil (garde-fous géométriques contre le bruit de mesure sur
+paires de landmarks quasi confondues), et la gestion d'erreurs (fichier manquant, webcam
+indisponible, interruption Ctrl+C).
+
+**Ce qui reste à valider avant tout usage réel** — c'est le point de reprise naturel si tu veux
+juste "finir" la Phase 1 avant de passer à la suite :
+1. **Vérification sur une vraie personne.** Le PoC n'a été exercé de bout en bout que sur une
+   vidéo synthétique sans silhouette humaine (contrainte de l'environnement de développement, pas
+   de webcam disponible). Filmer une personne réelle (de profil, comme recommandé section 9) et
+   vérifier visuellement que le squelette se superpose correctement et que le score RULA affiché
+   correspond à la posture observée.
+2. **Calibrage des seuils géométriques sur données réelles.** Les seuils actuels (angle de
+   flexion, ratio de séparation latérale pour les indicateurs de torsion/inclinaison, etc.) sont
+   dérivés de la méthode RULA officielle et de raisonnements géométriques, mais n'ont pas été
+   ajustés sur de vraies séquences MediaPipe (bruit de détection réel, occlusions partielles).
+3. **Jambes fixées à "soutenues" (score 1).** Limite assumée du PoC — pas de détection fiable du
+   support des jambes en monoculaire. À réévaluer si la Phase 2 ajoute une caméra ou un capteur
+   complémentaire.
 
 ### Phase 2 : Création des Contenus & Interface (Semaines 4 - 6)
 
-- Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe.
-- Création de l'interface d'import vidéo et d'affichage des scores/recommandations.
-- Module de floutage automatique des visages.
+- **Extraire `tms_vision` en librairie réutilisable** : `cli.py` orchestre aujourd'hui tout le
+  pipeline pour un usage en ligne de commande ; la Phase 2 doit exposer les mêmes étapes
+  (`capture` → `pose_estimation` → `angles` → `rula.scoring` → `export`) comme fonctions
+  appelables depuis un backend FastAPI, sans dupliquer la logique.
+- Backend FastAPI + base de données (SQLite pour commencer, migration PostgreSQL si besoin) pour
+  stocker les analyses (le CSV/JSON déjà produit par le PoC est le format de données de départ).
+- Interface web (React/Next.js) d'import vidéo et d'affichage des scores/recommandations,
+  consommant les exports CSV/JSON du pipeline.
+- Module de floutage automatique des visages (OpenCV, en amont de l'analyse posturale) — non
+  implémenté en Phase 1, c'est le principal manque de conformité RGPD à combler avant tout test
+  avec de vrais salariés (voir section 7).
+- Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
+- Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
+  l'export : `neck`, `trunk`, `upper_arm`, `lower_arm`, `wrist`) aux capsules d'étirement.
 
 ### Phase 3 : Tiers Test & Pilote Entreprise (Semaines 7 - 10)
 
 - Déploiement d'un projet pilote dans une entreprise partenaire ou un atelier.
-- Ajustement des seuils de scoring ergonomiques avec l'ostéopathe.
-- Génération des premiers rapports d'audit pour la direction HSE/RH.
+- Ajustement des seuils de scoring ergonomiques avec l'ostéopathe, sur la base des données
+  collectées en conditions réelles (les colonnes `posture_score_a`/`posture_score_b` du CSV,
+  ajoutées pendant la revue finale du PoC, permettent déjà ce diagnostic fin sans ré-implémenter
+  quoi que ce soit).
+- Génération des premiers rapports d'audit pour la direction HSE/RH, à partir du résumé JSON déjà
+  produit par frame (score max, score moyen, temps passé par niveau de risque) agrégé sur
+  plusieurs salariés/postes.
 
 ## 9. Lancer le PoC (Phase 1)
 
