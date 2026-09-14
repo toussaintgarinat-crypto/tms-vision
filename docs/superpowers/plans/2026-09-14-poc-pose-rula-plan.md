@@ -1605,15 +1605,23 @@ class ResultsExporter:
 
         scores = [r.score.final_score for r in detected]
         time_by_level: dict[str, float] = {}
-        for index, record in enumerate(detected):
-            next_timestamp = (
-                detected[index + 1].timestamp_seconds
-                if index + 1 < len(detected)
-                else record.timestamp_seconds
-            )
-            duration = max(next_timestamp - record.timestamp_seconds, 0.0) or (
-                1.0 if len(detected) == 1 else 0.0
-            )
+        for record in detected:
+            # Cherche le prochain frame (détecté ou non) dans self._records :
+            # regarder uniquement les frames détectées sous-estime la durée
+            # quand des frames non détectées s'intercalent entre deux détections.
+            next_timestamp = None
+            for r in self._records:
+                if r.frame_index > record.frame_index:
+                    next_timestamp = r.timestamp_seconds
+                    break
+
+            if next_timestamp is None:
+                duration = 1.0 if len(detected) == 1 else 0.0
+            else:
+                duration = max(next_timestamp - record.timestamp_seconds, 0.0) or (
+                    1.0 if len(detected) == 1 else 0.0
+                )
+
             time_by_level[record.score.action_level] = (
                 time_by_level.get(record.score.action_level, 0.0) + duration
             )
