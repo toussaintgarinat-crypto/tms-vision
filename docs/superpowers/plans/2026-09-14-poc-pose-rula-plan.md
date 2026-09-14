@@ -324,6 +324,7 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'tms_vision.pose_estim
 """Wrapper autour de MediaPipe Pose : extraction des 33 keypoints par frame."""
 from dataclasses import dataclass
 
+import cv2
 import mediapipe as mp
 import numpy as np
 
@@ -354,7 +355,7 @@ class PoseEstimator:
         )
 
     def process(self, image_bgr: np.ndarray) -> PoseResult:
-        image_rgb = image_bgr[:, :, ::-1]
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         results = self._pose.process(image_rgb)
 
         if results.pose_landmarks is None:
@@ -1780,8 +1781,8 @@ git commit -m "feat(tms-vision): add per-frame CSV export and analysis summary J
 - Consumes: `FrameSource` (Task 2), `PoseEstimator`/`PoseResult` (Task 3), `compute_joint_angles` (Task 4), `compute_rula_score`/`detect_muscle_use` (Task 6), `draw_overlay` (Task 7), `FrameRecord`/`ResultsExporter` (Task 8).
 - Produces:
   - `def parse_args(argv: list[str]) -> argparse.Namespace` — flags: `--source` (required, `"webcam"` or a file path), `--side` (`"left"`|`"right"`, default `"right"`), `--load-kg` (float, default `0.0`, must be `>= 0`), `--wrist-twist` (`"normal"`|`"extreme"`, default `"normal"`), `--output-dir` (default `"outputs"`).
-  - `def run(args: argparse.Namespace) -> None` — orchestrates the full pipeline: opens `FrameSource`, runs `PoseEstimator` per frame, computes angles, accumulates a `(timestamp, trunk_flexion+upper_arm_flexion)` history for `detect_muscle_use`, computes `RulaScore` per frame using the **clip-wide** muscle-use result (computed once after a first pass, since it needs the whole time series), writes an annotated video via `cv2.VideoWriter`, and calls `ResultsExporter.finalize()`.
-  - `def main() -> None` — entrypoint calling `parse_args(sys.argv[1:])` then `run(...)`, with `try/except` around `FileNotFoundError`/`RuntimeError` from `FrameSource` printing a clear French error message to stderr and exiting with code 1.
+  - `def run(args: argparse.Namespace) -> None` — orchestrates the full pipeline: opens `FrameSource`, captures all frames inside a `try/except KeyboardInterrupt` (a first Ctrl+C during capture is caught and processing continues with whatever frames were captured so far — see final-review Fix 6), returns early with a French stderr message if zero frames were captured (before any `cv2.VideoWriter` is opened at size `(0, 0)` — see final-review Fix 7c), runs `PoseEstimator` per frame, computes angles using a running mean of previous frames' shoulder height (`_RunningMean`, via `shoulder_baseline_y`) as a stable "at rest" reference instead of the current frame alone, accumulates a `(timestamp, trunk_flexion+upper_arm_flexion)` history for `detect_muscle_use`, computes `RulaScore` per frame using the **clip-wide** muscle-use result (computed once after a first pass, since it needs the whole time series), writes an annotated video via `cv2.VideoWriter`, and calls `ResultsExporter.finalize()`. The output run id embeds a random suffix via `secrets.token_hex(3)` (`{timestamp}-{token}`) so two runs started within the same second never collide.
+  - `def main() -> None` — entrypoint calling `parse_args(sys.argv[1:])` then `run(...)`, with `try/except` around `FileNotFoundError`/`RuntimeError` from `FrameSource` printing a clear French error message to stderr and exiting with code 1, plus a second `except KeyboardInterrupt` for a second Ctrl+C occurring after capture (during the pose/score/video-writing loop, not covered by `run()`'s internal capture-loop handling) printing "Traitement interrompu par l'utilisateur." to stderr and also exiting with code 1 — see final-review Fix I4.
 
 - [ ] **Step 1: Write the failing tests for argument parsing and validation**
 
@@ -1830,6 +1831,7 @@ Conseil de prise de vue : pour des angles fiables (flexion/extension du cou,
 du tronc et du bras), filmer la personne DE PROFIL plutôt que de face.
 """
 import argparse
+import secrets
 import sys
 import time
 from pathlib import Path
@@ -1851,6 +1853,27 @@ def _non_negative_float(value: str) -> float:
     return parsed
 
 
+class _RunningMean:
+    """Moyenne mobile incrémentale simple (compteur + somme cumulée), utilisée
+    pour donner à compute_joint_angles() une référence stable de la hauteur
+    "au repos" de l'épaule (shoulder_baseline_y) plutôt que la position de la
+    seule frame courante."""
+
+    def __init__(self) -> None:
+        self._count = 0
+        self._total = 0.0
+
+    def update(self, value: float) -> None:
+        self._count += 1
+        self._total += value
+
+    @property
+    def value(self) -> float | None:
+        if self._count == 0:
+            return None
+        return self._total / self._count
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Analyse ergonomique RULA d'une vidéo de poste de travail."
@@ -1866,24 +1889,46 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(args: argparse.Namespace) -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    run_id = time.strftime("%Y%m%d-%H%M%S")
+    run_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
 
     wrist_twist = 1 if args.wrist_twist == "normal" else 2
 
     source = FrameSource(args.source)
     estimator = PoseEstimator()
 
-    frames = list(source)
-    source.release()
+    frames = []
+    try:
+        for frame in source:
+            frames.append(frame)
+    except KeyboardInterrupt:
+        print("\nCapture interrompue par l'utilisateur, traitement des frames déjà capturées...")
+    finally:
+        source.release()
+
+    if not frames:
+        print("Aucune frame capturée, rien à analyser.", file=sys.stderr)
+        estimator.close()
+        return
 
     per_frame_angles = []
     posture_load_history: list[tuple[float, float]] = []
+    shoulder_key = f"{args.side.upper()}_SHOULDER"
+    shoulder_y_baseline = _RunningMean()
 
     for frame in frames:
         pose_result = estimator.process(frame.image)
         angles = None
         if pose_result.landmarks is not None:
-            angles = compute_joint_angles(pose_result.landmarks, side=args.side)
+            # Baseline = moyenne des frames PRÉCÉDENTES uniquement (pas la
+            # frame courante) ; sur la toute première frame détectée, aucune
+            # donnée antérieure n'existe -> None (repli sur le comportement
+            # historique pour cette frame-là seulement, voir angles.py).
+            angles = compute_joint_angles(
+                pose_result.landmarks, side=args.side, shoulder_baseline_y=shoulder_y_baseline.value
+            )
+            current_shoulder = pose_result.landmarks.get(shoulder_key)
+            if current_shoulder is not None:
+                shoulder_y_baseline.update(current_shoulder.y)
         per_frame_angles.append((frame, pose_result, angles))
         if angles is not None:
             posture_load = angles.trunk_flexion_deg + angles.upper_arm_flexion_deg
@@ -1893,7 +1938,9 @@ def run(args: argparse.Namespace) -> None:
 
     muscle_use_score = 1 if detect_muscle_use(posture_load_history) else 0
 
-    height, width = frames[0].image.shape[:2] if frames else (0, 0)
+    # `frames` est garanti non vide ici : le garde-fou `if not frames: ...
+    # return` ci-dessus a déjà court-circuité la fonction sinon.
+    height, width = frames[0].image.shape[:2]
     video_path = output_dir / f"{run_id}_annotated.mp4"
     writer = cv2.VideoWriter(
         str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), source.fps() or 30.0, (width, height)
@@ -1934,6 +1981,17 @@ def main() -> None:
         run(args)
     except (FileNotFoundError, RuntimeError) as error:
         print(f"Erreur : {error}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        # Un premier Ctrl+C pendant la capture est déjà intercepté à
+        # l'intérieur de run() ci-dessus et traite les frames déjà capturées.
+        # Un second Ctrl+C pendant la boucle de traitement (pose/score/écriture
+        # vidéo) qui suit n'est pas couvert par ce garde-fou interne : on
+        # l'attrape ici pour éviter une traceback brute sans sortie utile.
+        # Filet de sécurité "ne pas planter" uniquement : produire malgré
+        # tout des fichiers de sortie partiels à ce stade demanderait un
+        # mécanisme de checkpointing plus invasif, hors périmètre ici.
+        print("Traitement interrompu par l'utilisateur.", file=sys.stderr)
         sys.exit(1)
 
 
@@ -2003,12 +2061,12 @@ git commit -m "feat(tms-vision): add CLI orchestration for the full pose-to-RULA
 - [ ] **Step 1: Run the full test suite one final time**
 
 Run: `venv/bin/pytest -v`
-Expected: all tests from Tasks 2-9 pass (48 passed: 2 capture + 1 pose_estimation + 4 angles + 7 rula/tables + 23 rula/scoring + 4 overlay + 2 export + 5 cli).
+Expected: all tests pass (64 passed as of the 2nd final-review fix wave: 2 capture + 1 pose_estimation + 7 angles + 8 rula/tables + 26 rula/scoring + 4 overlay + 2 export + 10 cli + 4 integration angles-to-score regression — the last file was added post-Task-9 as end-to-end regression coverage and isn't part of the original Task 2-9 numbering).
 
 - [ ] **Step 2: Run the pipeline live against the webcam for a short clip**
 
 Run: `venv/bin/python -m tms_vision.cli --source webcam --side right --load-kg 0 --output-dir outputs`
-(Let it run for ~15-20 seconds, then stop it with Ctrl+C — note: Ctrl+C during the capture loop will not currently flush partial output, since `run()` reads all frames into memory before processing. For this manual check, prefer recording a short file first with e.g. QuickTime and passing `--source path/to/clip.mov`.)
+(Let it run for ~15-20 seconds, then stop it with Ctrl+C — note: as of the final-review Fix 6, Ctrl+C during the capture loop IS now caught and flushes the frames captured so far through the rest of the pipeline, so this is safe to do directly against the webcam. A second Ctrl+C during the subsequent pose/score/video-writing loop is also caught, per Fix I4, and exits cleanly with an error message rather than a raw traceback. Recording a short file first with e.g. QuickTime and passing `--source path/to/clip.mov` remains a fine alternative if you'd rather not interrupt a live capture.)
 
 Expected: `outputs/<run_id>_annotated.mp4`, `outputs/<run_id>_frames.csv`, `outputs/<run_id>_summary.json` are created; opening the annotated video shows the skeleton overlay and a colored RULA score badge; the CSV has one row per frame with non-empty angle/score columns while a person is visible.
 

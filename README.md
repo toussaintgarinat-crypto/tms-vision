@@ -166,7 +166,7 @@ fiables (cou, tronc, bras).
 Résultats dans `outputs/` : une vidéo annotée (squelette + badge de score RULA coloré), un CSV
 détaillé par frame, et un résumé JSON (score max, score moyen, temps passé par niveau de risque).
 
-**Note de vérification (Task 10)** : la suite de tests (50 tests) a été rejouée intégralement
+**Note de vérification (Task 10)** : la suite de tests (64 tests) a été rejouée intégralement
 avec succès. Le pipeline CLI complet a ensuite été exercé de bout en bout dans un environnement
 sandboxé sans accès webcam physique, à l'aide d'une vidéo synthétique générée par OpenCV (un
 cercle et un rectangle en mouvement sur fond uni, 40 frames à 10 fps) — cette vidéo ne contient
