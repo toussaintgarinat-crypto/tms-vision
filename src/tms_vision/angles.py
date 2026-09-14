@@ -16,6 +16,15 @@ SIDE_BEND_THRESHOLD_DEG = 10.0
 ABDUCTION_WIDTH_RATIO = 1.3
 SHOULDER_RAISE_RATIO = 0.05
 MIDLINE_MARGIN_RATIO = 0.05
+# Séparation latérale minimale (fraction de torso_length) en dessous de
+# laquelle une paire de landmarks gauche/droite est jugée trop proche de la
+# vue de profil pure pour que le test qui en dépend soit fiable (division
+# par une quasi-zéro, ou test de signe sur un écart bruité). 0.15 a été
+# choisi empiriquement : en vue de profil stricte, ear_distance/shoulder_width
+# tombent sous ~5-8% de torso_length, tandis qu'une vue à 3/4 franche reste
+# au-dessus de 20-25% ; 0.15 offre une marge de part et d'autre sans couper
+# les captures légèrement de profil qui restent exploitables.
+MIN_LATERAL_SEPARATION_RATIO = 0.15
 
 
 @dataclass
@@ -57,6 +66,19 @@ def _line_angle_from_horizontal(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.degrees(np.arctan2(delta[1], delta[0])))
 
 
+def _fold_to_half_range(angle_deg: float) -> float:
+    """Replie un angle de ligne (co-domaine (-180, 180] de arctan2) dans
+    (-90, 90]. Une ligne définie par deux points n'a pas de "sens" propre
+    (gauche->droite ou droite->gauche donnent des angles opposés à 180°
+    près) : ce repliement rend le test d'inclinaison insensible à l'ordre
+    des points passés à _line_angle_from_horizontal."""
+    if angle_deg > 90.0:
+        return angle_deg - 180.0
+    if angle_deg <= -90.0:
+        return angle_deg + 180.0
+    return angle_deg
+
+
 REQUIRED_COMMON = ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_HIP", "RIGHT_HIP", "NOSE"]
 REQUIRED_PER_SIDE = ["SHOULDER", "ELBOW", "WRIST", "EAR", "INDEX"]
 
@@ -92,14 +114,25 @@ def compute_joint_angles(
 
     left_ear = _xy(landmarks["LEFT_EAR"]) if "LEFT_EAR" in landmarks else ear
     right_ear = _xy(landmarks["RIGHT_EAR"]) if "RIGHT_EAR" in landmarks else ear
-    ear_line_angle = _line_angle_from_horizontal(left_ear, right_ear)
-    shoulder_line_angle = _line_angle_from_horizontal(
-        _xy(landmarks["LEFT_SHOULDER"]), _xy(landmarks["RIGHT_SHOULDER"])
+    # Repliement dans (-90, 90] : une ligne gauche->droite et sa réciproque
+    # droite->gauche ne doivent pas être vues comme des inclinaisons opposées.
+    ear_line_angle = _fold_to_half_range(_line_angle_from_horizontal(left_ear, right_ear))
+    shoulder_line_angle = _fold_to_half_range(
+        _line_angle_from_horizontal(
+            _xy(landmarks["LEFT_SHOULDER"]), _xy(landmarks["RIGHT_SHOULDER"])
+        )
     )
     neck_side_bending = abs(ear_line_angle - shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
+
     ear_mid_x = (left_ear[0] + right_ear[0]) / 2.0
-    ear_distance = abs(left_ear[0] - right_ear[0]) or 1e-6
-    neck_twisted = abs(nose[0] - ear_mid_x) / ear_distance > 0.15
+    ear_distance = abs(left_ear[0] - right_ear[0])
+    if ear_distance >= MIN_LATERAL_SEPARATION_RATIO * torso_length:
+        neck_twisted = abs(nose[0] - ear_mid_x) / ear_distance > 0.15
+    else:
+        # Vue quasi de profil : les deux oreilles se confondent en x, le
+        # ratio (nose_x - ear_mid_x) / ear_distance explose et devient du
+        # bruit. Pas de signal fiable -> pas de torsion détectée.
+        neck_twisted = False
 
     # --- Tronc ---
     torso_vec = shoulder_mid - hip_mid
@@ -107,30 +140,52 @@ def compute_joint_angles(
     trunk_side_bending = abs(shoulder_line_angle) > SIDE_BEND_THRESHOLD_DEG
 
     # --- Bras (épaule -> coude) ---
+    # RULA : neutre (0°) = bras pendant le long du corps, càd upper_arm_vec
+    # (épaule -> coude, qui pointe vers le BAS pour un bras pendant) aligné
+    # avec le bas de l'image, PAS avec le "haut" utilisé par cou/tronc.
+    downward = np.array([0.0, 1.0])
     upper_arm_vec = elbow - side_shoulder
-    upper_arm_magnitude = _angle_between(upper_arm_vec, vertical)
+    upper_arm_magnitude = _angle_between(upper_arm_vec, downward)
     upper_arm_forward = (elbow[0] - side_shoulder[0]) * facing
     upper_arm_flexion_deg = upper_arm_magnitude if upper_arm_forward >= 0 else -upper_arm_magnitude
 
     shoulder_width = float(
         np.linalg.norm(_xy(landmarks["LEFT_SHOULDER"]) - _xy(landmarks["RIGHT_SHOULDER"]))
-    ) or 1e-6
-    upper_arm_abducted = abs(elbow[0] - hip_mid[0]) > ABDUCTION_WIDTH_RATIO * shoulder_width
+    )
+    shoulders_laterally_separated = shoulder_width >= MIN_LATERAL_SEPARATION_RATIO * torso_length
+    if shoulders_laterally_separated:
+        upper_arm_abducted = abs(elbow[0] - hip_mid[0]) > ABDUCTION_WIDTH_RATIO * shoulder_width
+    else:
+        # Vue quasi de profil : les deux épaules se confondent en x,
+        # shoulder_width n'est plus une référence de largeur fiable.
+        upper_arm_abducted = False
 
     baseline_y = shoulder_baseline_y if shoulder_baseline_y is not None else side_shoulder[1]
     upper_arm_shoulder_raised = (baseline_y - side_shoulder[1]) > SHOULDER_RAISE_RATIO * torso_length
 
     # --- Avant-bras (coude) ---
+    # Convention "flexion depuis le bras tendu" (0°=tendu, 90°=coude à angle
+    # droit), cohérente avec les autres angles (0°=neutre). L'angle interne
+    # brut (180°=tendu) est converti via 180° - angle_interne.
     forearm_vec = wrist - elbow
     upper_arm_from_elbow = side_shoulder - elbow
-    lower_arm_angle_deg = _angle_between(upper_arm_from_elbow, forearm_vec)
-    lower_arm_across_midline = abs(wrist[0] - shoulder_mid[0]) > MIDLINE_MARGIN_RATIO * torso_length and (
-        (wrist[0] - shoulder_mid[0]) * (side_shoulder[0] - shoulder_mid[0]) < 0
-    )
+    lower_arm_angle_deg = 180.0 - _angle_between(upper_arm_from_elbow, forearm_vec)
+    if shoulders_laterally_separated:
+        lower_arm_across_midline = abs(wrist[0] - shoulder_mid[0]) > MIDLINE_MARGIN_RATIO * torso_length and (
+            (wrist[0] - shoulder_mid[0]) * (side_shoulder[0] - shoulder_mid[0]) < 0
+        )
+    else:
+        # side_shoulder.x et shoulder_mid.x se confondent en profil : le
+        # test de signe (wrist.x - shoulder_mid.x) * (side_shoulder.x -
+        # shoulder_mid.x) n'a plus de sens géométrique.
+        lower_arm_across_midline = False
 
     # --- Poignet ---
+    # forearm_vec (coude -> poignet) et hand_vec (poignet -> index) sont
+    # parallèles pour un poignet droit -> _angle_between renvoie déjà ~0°
+    # (neutre) sans transformation supplémentaire.
     hand_vec = index_finger - wrist
-    wrist_flexion_deg = 180.0 - _angle_between(forearm_vec, hand_vec)
+    wrist_flexion_deg = _angle_between(forearm_vec, hand_vec)
 
     return JointAngles(
         neck_flexion_deg=neck_flexion_deg,
