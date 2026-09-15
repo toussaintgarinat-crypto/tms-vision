@@ -4,3 +4,4 @@ __pycache__/
 samples/
 outputs/
 .pytest_cache/
+.DS_Store
