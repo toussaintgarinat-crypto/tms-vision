@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Literal
 
@@ -50,6 +51,24 @@ async def get_output_file(filename: str) -> FileResponse:
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Fichier introuvable.")
     return FileResponse(file_path, filename=file_path.name)
+
+
+@app.post("/uploads")
+async def start_upload(
+    filename: str = Form(...),
+    total_chunks: int = Form(..., ge=1),
+) -> dict:
+    """Démarre une session d'upload par chunks. L'état de la session vit
+    entièrement sur le système de fichiers (meta.json + fichiers chunk_NNNNNN
+    écrits par upload_chunk/complete_upload) : pas de dict en mémoire, pour
+    survivre à un redémarrage d'uvicorn --reload en cours d'upload."""
+    upload_id = uuid.uuid4().hex
+    session_dir = OUTPUT_DIR / ".uploads" / upload_id
+    session_dir.mkdir(parents=True, exist_ok=True)
+    (session_dir / "meta.json").write_text(
+        json.dumps({"filename": filename, "total_chunks": total_chunks})
+    )
+    return {"upload_id": upload_id}
 
 
 @app.post("/analyses")

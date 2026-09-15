@@ -1,3 +1,4 @@
+import json
 import tempfile
 from pathlib import Path
 
@@ -175,3 +176,31 @@ def test_get_output_returns_404_for_missing_file(tmp_path, monkeypatch):
     response = client.get("/outputs/does-not-exist.mp4")
 
     assert response.status_code == 404
+
+
+def test_start_upload_creates_session_with_metadata(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    response = client.post(
+        "/uploads",
+        data={"filename": "clip.mp4", "total_chunks": "3"},
+    )
+
+    assert response.status_code == 200
+    upload_id = response.json()["upload_id"]
+    meta_path = tmp_path / ".uploads" / upload_id / "meta.json"
+    assert meta_path.is_file()
+    assert json.loads(meta_path.read_text()) == {"filename": "clip.mp4", "total_chunks": 3}
+
+
+def test_start_upload_rejects_zero_total_chunks(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    response = client.post(
+        "/uploads",
+        data={"filename": "clip.mp4", "total_chunks": "0"},
+    )
+
+    assert response.status_code == 422
