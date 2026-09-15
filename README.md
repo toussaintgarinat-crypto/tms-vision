@@ -270,3 +270,37 @@ score RULA, lien CSV) s'affiche directement dans la page une fois l'analyse term
 
 `NEXT_PUBLIC_API_URL` (par défaut `http://localhost:8000`) permet de pointer le frontend vers une
 API à une autre adresse si besoin — pas de fichier `.env` requis pour l'usage local par défaut.
+
+### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
+
+Se contenter de rejoindre l'IP locale du Mac en WiFi ne suffit pas : `getUserMedia` (accès
+caméra) exige un contexte sécurisé (`https://` ou `localhost` exactement), et une IP locale
+(`192.168.x.x`) en `http://` ne l'est pas. La solution la plus simple est un tunnel HTTPS
+(`cloudflared`, déjà installé, aucun compte requis) :
+
+**Terminal 1 — tunnel vers l'API :**
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+Note l'URL affichée (ex. `https://xxxx-api.trycloudflare.com`) → **URL_API**
+
+**Terminal 2 — tunnel vers le frontend :**
+```bash
+cloudflared tunnel --url http://localhost:3000
+```
+Note l'URL affichée → **URL_WEB**
+
+**Terminal 3 — API, en autorisant l'origine du tunnel web :**
+```bash
+ALLOWED_ORIGINS=URL_WEB PYTHONPATH=src venv/bin/uvicorn tms_vision.api:app --port 8000
+```
+
+**Terminal 4 — frontend, en pointant vers le tunnel API :**
+```bash
+cd web && NEXT_PUBLIC_API_URL=URL_API npm run dev
+```
+
+Ouvrir **URL_WEB** depuis Safari sur l'iPhone (n'importe quel réseau, pas besoin d'être sur le
+même WiFi que le Mac puisque le tunnel est public). Les URL `trycloudflare.com` sont éphémères et
+changent à chaque lancement — relancer les 4 terminaux avec les nouvelles URL à chaque session de
+test.
