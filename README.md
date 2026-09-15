@@ -117,11 +117,13 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 ## 8. Feuille de Route de Déploiement (Roadmap MVP)
 
 **Pour reprendre le projet plus tard**, les documents de référence sont :
-- Ce README (vue d'ensemble produit + usage du PoC, section 9).
-- `docs/superpowers/specs/2026-09-14-poc-pose-rula-design.md` — la spec technique détaillée du PoC.
-- `docs/superpowers/plans/2026-09-14-poc-pose-rula-plan.md` — le plan d'implémentation tâche par tâche (tenu à jour au fil des corrections).
-- `.superpowers/sdd/progress.md` — le journal des 10 tâches + 4 passes de revue finale, avec les décisions prises à chaque point d'arbitrage.
-- Le code lui-même dans `src/tms_vision/` (8 modules, 66 tests dans `tests/`).
+- Ce README (vue d'ensemble produit + usage du PoC, section 9 ; capture web, section 10).
+- `docs/superpowers/specs/2026-09-14-poc-pose-rula-design.md` — la spec technique détaillée du PoC (Phase 1).
+- `docs/superpowers/plans/2026-09-14-poc-pose-rula-plan.md` — le plan d'implémentation tâche par tâche du PoC (tenu à jour au fil des corrections).
+- `docs/superpowers/specs/2026-09-14-web-capture-fastapi-design.md` — la spec de la 1ère tranche de la Phase 2 (capture web + API FastAPI).
+- `docs/superpowers/plans/2026-09-14-web-capture-fastapi-plan.md` — le plan d'implémentation de cette tranche.
+- `.superpowers/sdd/progress.md` — le journal complet des deux cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web), avec les décisions prises à chaque point d'arbitrage.
+- Le code lui-même : `src/tms_vision/` (backend Python, 9 modules dont `pipeline.py`/`api.py`, 76 tests dans `tests/`) et `web/` (frontend Next.js).
 
 ### ✅ Phase 1 : Prototypage & Validation PoC — TERMINÉE
 
@@ -141,7 +143,10 @@ juste "finir" la Phase 1 avant de passer à la suite :
    vidéo synthétique sans silhouette humaine (contrainte de l'environnement de développement, pas
    de webcam disponible). Filmer une personne réelle (de profil, comme recommandé section 9) et
    vérifier visuellement que le squelette se superpose correctement et que le score RULA affiché
-   correspond à la posture observée.
+   correspond à la posture observée. **Toujours en attente** — la 1ère tranche de la Phase 2
+   (section 10 ci-dessous) fournit maintenant un outil web pour faire cette vérification (caméra
+   navigateur → analyse → résultat affiché), mais personne ne l'a encore exécutée avec une vraie
+   webcam à ce stade.
 2. **Calibrage des seuils géométriques sur données réelles.** Les seuils actuels (angle de
    flexion, ratio de séparation latérale pour les indicateurs de torsion/inclinaison, etc.) sont
    dérivés de la méthode RULA officielle et de raisonnements géométriques, mais n'ont pas été
@@ -152,17 +157,35 @@ juste "finir" la Phase 1 avant de passer à la suite :
 
 ### Phase 2 : Création des Contenus & Interface (Semaines 4 - 6)
 
-- **Extraire `tms_vision` en librairie réutilisable** : `cli.py` orchestre aujourd'hui tout le
-  pipeline pour un usage en ligne de commande ; la Phase 2 doit exposer les mêmes étapes
-  (`capture` → `pose_estimation` → `angles` → `rula.scoring` → `export`) comme fonctions
-  appelables depuis un backend FastAPI, sans dupliquer la logique.
-- Backend FastAPI + base de données (SQLite pour commencer, migration PostgreSQL si besoin) pour
-  stocker les analyses (le CSV/JSON déjà produit par le PoC est le format de données de départ).
-- Interface web (React/Next.js) d'import vidéo et d'affichage des scores/recommandations,
-  consommant les exports CSV/JSON du pipeline.
+#### ✅ Tranche 1 : Capture web + API FastAPI — TERMINÉE
+
+- **`tms_vision` extrait en librairie réutilisable** : `src/tms_vision/pipeline.py` expose
+  `analyze_video()` (capture → pose → angles → score RULA → overlay → export) comme fonction
+  appelable, sans dupliquer la logique ; `cli.py` n'est plus qu'un fin wrapper autour d'elle.
+- **API FastAPI** (`src/tms_vision/api.py`) : `POST /analyses` reçoit un clip vidéo uploadé +
+  paramètres (côté, charge, torsion poignet), lance `analyze_video()` de façon synchrone (pas de
+  base de données ni de queue dans cette tranche — résultats sur le système de fichiers, comme en
+  Phase 1), renvoie le résumé JSON + les liens vers la vidéo annotée et le CSV, servis dynamiquement
+  via `GET /outputs/{filename}`.
+- **Interface web** (`web/`, Next.js/TypeScript) : une page enregistre un clip caméra dans le
+  navigateur (`getUserMedia`/`MediaRecorder`, plafonné à 640×480/30s pour rester compatible avec le
+  pipeline en mémoire), l'envoie à l'API, affiche la vidéo annotée et le score. Voir section 10 pour
+  l'utiliser.
+- Vidéo annotée encodée en H.264 (`avc1`) — lisible directement dans un `<video>` de navigateur (le
+  `mp4v` du PoC ne l'était pas ; corrigé et verrouillé par un test de non-régression pendant la
+  revue finale de cette tranche).
+- **Ce qui n'est pas dans cette tranche** (voir specs/plan pour le détail) : capture LiDAR/profondeur
+  (caméra 2D uniquement), base de données, authentification, déploiement, floutage RGPD des visages
+  (reste bloquant avant tout test avec de vrais salariés, voir section 7), calibrage des seuils sur
+  données réelles (point 2 ci-dessus, toujours en attente).
+
+#### Reste à faire pour la suite de la Phase 2
+
+- Base de données (SQLite pour commencer, migration PostgreSQL si besoin) pour stocker les analyses
+  dans le temps, au lieu du système de fichiers actuel.
 - Module de floutage automatique des visages (OpenCV, en amont de l'analyse posturale) — non
-  implémenté en Phase 1, c'est le principal manque de conformité RGPD à combler avant tout test
-  avec de vrais salariés (voir section 7).
+  implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
+  salariés (voir section 7).
 - Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
 - Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
   l'export : `neck`, `trunk`, `upper_arm`, `lower_arm`, `wrist`) aux capsules d'étirement.
@@ -223,3 +246,27 @@ colonnes d'angles/scores vides) et un résumé JSON à `max_score: 0`, `average_
 réelle** : avant de s'appuyer sur ce PoC pour une évaluation ergonomique réelle, l'utilisateur du
 projet doit relancer la commande `--source webcam` (ou une vidéo filmant une personne) et
 vérifier visuellement le squelette superposé et la cohérence des scores RULA obtenus.
+
+## 10. Lancer la capture web (Phase 2, tranche 1)
+
+Deux serveurs à démarrer en parallèle, dans deux terminaux séparés.
+
+**Terminal 1 — API FastAPI :**
+
+```bash
+PYTHONPATH=src venv/bin/uvicorn tms_vision.api:app --reload --port 8000
+```
+
+**Terminal 2 — frontend Next.js** (première fois : `cd web && npm install`) :
+
+```bash
+cd web && npm run dev
+```
+
+Ouvrir `http://localhost:3000`, autoriser l'accès caméra, se filmer **de profil** (même conseil
+qu'en section 9), enregistrer quelques secondes (30s max, plafond imposé côté navigateur), remplir
+le formulaire (côté, charge, torsion poignet) et cliquer « Analyser ». Le résultat (vidéo annotée,
+score RULA, lien CSV) s'affiche directement dans la page une fois l'analyse terminée.
+
+`NEXT_PUBLIC_API_URL` (par défaut `http://localhost:8000`) permet de pointer le frontend vers une
+API à une autre adresse si besoin — pas de fichier `.env` requis pour l'usage local par défaut.
