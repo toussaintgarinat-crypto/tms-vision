@@ -36,7 +36,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["*"],
 )
 
@@ -69,6 +69,26 @@ async def start_upload(
         json.dumps({"filename": filename, "total_chunks": total_chunks})
     )
     return {"upload_id": upload_id}
+
+
+@app.put("/uploads/{upload_id}/chunks/{index}")
+async def upload_chunk(upload_id: str, index: int, file: UploadFile = File(...)) -> dict:
+    """Reçoit un chunk d'un fichier en cours d'upload. Écrit le chunk dans
+    la session d'upload créée par start_upload."""
+    session_dir = OUTPUT_DIR / ".uploads" / upload_id
+    meta_path = session_dir / "meta.json"
+    if not meta_path.is_file():
+        raise HTTPException(status_code=404, detail="Session d'envoi introuvable.")
+
+    total_chunks = json.loads(meta_path.read_text())["total_chunks"]
+    if not 0 <= index < total_chunks:
+        raise HTTPException(status_code=400, detail="Index de morceau hors limites.")
+
+    chunk_path = session_dir / f"chunk_{index:06d}"
+    with open(chunk_path, "wb") as chunk_file:
+        shutil.copyfileobj(file.file, chunk_file)
+
+    return {"received": index}
 
 
 @app.post("/analyses")

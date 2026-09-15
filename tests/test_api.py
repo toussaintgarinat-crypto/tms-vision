@@ -204,3 +204,47 @@ def test_start_upload_rejects_zero_total_chunks(tmp_path, monkeypatch):
     )
 
     assert response.status_code == 422
+
+
+def test_upload_chunk_writes_chunk_file(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    start_response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "2"})
+    upload_id = start_response.json()["upload_id"]
+
+    response = client.put(
+        f"/uploads/{upload_id}/chunks/0",
+        files={"file": ("chunk-0", b"hello", "application/octet-stream")},
+    )
+
+    assert response.status_code == 200
+    chunk_path = tmp_path / ".uploads" / upload_id / "chunk_000000"
+    assert chunk_path.read_bytes() == b"hello"
+
+
+def test_upload_chunk_rejects_unknown_upload_id(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    response = client.put(
+        "/uploads/does-not-exist/chunks/0",
+        files={"file": ("chunk-0", b"hello", "application/octet-stream")},
+    )
+
+    assert response.status_code == 404
+
+
+def test_upload_chunk_rejects_out_of_range_index(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    start_response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "2"})
+    upload_id = start_response.json()["upload_id"]
+
+    response = client.put(
+        f"/uploads/{upload_id}/chunks/5",
+        files={"file": ("chunk-5", b"hello", "application/octet-stream")},
+    )
+
+    assert response.status_code == 400
