@@ -3,6 +3,7 @@ capture web. Reçoit un clip vidéo enregistré dans le navigateur, lance
 l'analyse RULA existante, renvoie le résumé et les liens vers les fichiers
 produits (voir docs/superpowers/specs/2026-09-14-web-capture-fastapi-design.md)."""
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -18,11 +19,22 @@ from tms_vision.pipeline import analyze_video
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Par défaut, seul le serveur de dev Next.js local est autorisé. Pour tester
+# depuis un autre appareil (ex. iPhone via un tunnel HTTPS), surcharger avec
+# ALLOWED_ORIGINS="https://mon-tunnel.trycloudflare.com" (une ou plusieurs
+# origines séparées par des virgules) avant de lancer uvicorn.
+_default_origins = "http://localhost:3000"
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",")
+    if origin.strip()
+]
+
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["POST"],
     allow_headers=["*"],
 )
