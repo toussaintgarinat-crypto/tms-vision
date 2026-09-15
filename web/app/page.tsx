@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -37,6 +37,12 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
 
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
   async function startCamera() {
     setError(null);
     try {
@@ -55,24 +61,30 @@ export default function Home() {
 
   function startRecording() {
     if (!streamRef.current) return;
-    const mimeType = MediaRecorder.isTypeSupported("video/mp4")
-      ? "video/mp4"
-      : "video/webm";
-    const recorder = new MediaRecorder(streamRef.current, { mimeType });
-    chunksRef.current = [];
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) chunksRef.current.push(event.data);
-    };
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: mimeType });
-      const extension = mimeType.includes("mp4") ? "mp4" : "webm";
-      setRecordedFile(new File([blob], `capture.${extension}`, { type: mimeType }));
-    };
-    recorder.start();
-    recorderRef.current = recorder;
-    setRecording(true);
-    setResult(null);
     setError(null);
+    try {
+      const mimeType = MediaRecorder.isTypeSupported("video/mp4")
+        ? "video/mp4"
+        : "video/webm";
+      const recorder = new MediaRecorder(streamRef.current, { mimeType });
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+        setRecordedFile(new File([blob], `capture.${extension}`, { type: mimeType }));
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+      setResult(null);
+    } catch {
+      setError(
+        "L'enregistrement vidéo n'est pas supporté par ce navigateur. Essayez avec un navigateur à jour (Chrome, Firefox, Edge)."
+      );
+    }
   }
 
   function stopRecording() {
