@@ -28,8 +28,10 @@ export default function Home() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [cameraReady, setCameraReady] = useState(false);
+  const [mode, setMode] = useState<"camera" | "upload" | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [side, setSide] = useState<Side>("right");
@@ -56,11 +58,21 @@ export default function Home() {
         videoPreviewRef.current.srcObject = stream;
       }
       setCameraReady(true);
+      setMode("camera");
     } catch {
       setError(
         "Impossible d'accéder à la caméra. Vérifiez les permissions du navigateur et que la page est servie en HTTPS ou localhost."
       );
     }
+  }
+
+  function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setResult(null);
+    setMode("upload");
+    setRecordedFile(file);
   }
 
   function startRecording() {
@@ -164,10 +176,25 @@ export default function Home() {
         className="w-full rounded-lg bg-black"
       />
 
-      {!cameraReady && (
-        <button onClick={startCamera} className="rounded bg-black px-4 py-2 text-white">
-          Démarrer la caméra
-        </button>
+      {mode === null && (
+        <div className="flex gap-2">
+          <button onClick={startCamera} className="rounded bg-black px-4 py-2 text-white">
+            Démarrer la caméra
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded border border-black px-4 py-2"
+          >
+            Importer une vidéo
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={handleFileSelected}
+          />
+        </div>
       )}
 
       {cameraReady && !recording && (
