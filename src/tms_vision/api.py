@@ -11,6 +11,7 @@ from typing import Literal
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.concurrency import run_in_threadpool
 
 from tms_vision.pipeline import analyze_video
 
@@ -36,14 +37,14 @@ async def get_output_file(filename: str) -> FileResponse:
     file_path = OUTPUT_DIR / filename
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Fichier introuvable.")
-    return FileResponse(file_path)
+    return FileResponse(file_path, filename=file_path.name)
 
 
 @app.post("/analyses")
 async def create_analysis(
     file: UploadFile = File(...),
     side: Literal["left", "right"] = Form(...),
-    load_kg: float = Form(...),
+    load_kg: float = Form(..., ge=0),
     wrist_twist: Literal["normal", "extreme"] = Form(...),
 ) -> dict:
     suffix = Path(file.filename or "").suffix or ".webm"
@@ -52,7 +53,8 @@ async def create_analysis(
         upload_path = Path(tmp.name)
 
     try:
-        result = analyze_video(
+        result = await run_in_threadpool(
+            analyze_video,
             source=str(upload_path),
             side=side,
             load_kg=load_kg,

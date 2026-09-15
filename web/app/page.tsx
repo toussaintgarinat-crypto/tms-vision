@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const MAX_RECORDING_MS = 30_000;
 
 type Side = "left" | "right";
 type WristTwist = "normal" | "extreme";
@@ -26,6 +27,7 @@ export default function Home() {
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [cameraReady, setCameraReady] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -46,7 +48,9 @@ export default function Home() {
   async function startCamera() {
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+      });
       streamRef.current = stream;
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
@@ -76,10 +80,22 @@ export default function Home() {
         const extension = mimeType.includes("mp4") ? "mp4" : "webm";
         setRecordedFile(new File([blob], `capture.${extension}`, { type: mimeType }));
       };
+      recorder.onerror = () => {
+        if (recordingTimeoutRef.current) {
+          clearTimeout(recordingTimeoutRef.current);
+          recordingTimeoutRef.current = null;
+        }
+        setRecording(false);
+        setError("Erreur pendant l'enregistrement, réessayez.");
+      };
       recorder.start();
       recorderRef.current = recorder;
       setRecording(true);
       setResult(null);
+      setRecordedFile(null);
+      recordingTimeoutRef.current = setTimeout(() => {
+        stopRecording();
+      }, MAX_RECORDING_MS);
     } catch {
       setError(
         "L'enregistrement vidéo n'est pas supporté par ce navigateur. Essayez avec un navigateur à jour (Chrome, Firefox, Edge)."
@@ -88,12 +104,20 @@ export default function Home() {
   }
 
   function stopRecording() {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
     recorderRef.current?.stop();
     setRecording(false);
   }
 
   async function analyze() {
     if (!recordedFile) return;
+    if (loadKg.trim() === "") {
+      setError("Renseignez une charge en kg (0 si aucune).");
+      return;
+    }
     setAnalyzing(true);
     setError(null);
     setResult(null);
@@ -111,7 +135,12 @@ export default function Home() {
 
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        throw new Error(body?.detail ?? `Erreur serveur (${response.status})`);
+        const detail = body?.detail;
+        const message =
+          typeof detail === "string"
+            ? detail
+            : `Erreur de validation (code ${response.status}).`;
+        throw new Error(message);
       }
 
       const data: AnalysisResponse = await response.json();
@@ -142,9 +171,14 @@ export default function Home() {
       )}
 
       {cameraReady && !recording && (
-        <button onClick={startRecording} className="rounded bg-red-600 px-4 py-2 text-white">
-          Démarrer l&apos;enregistrement
-        </button>
+        <div className="flex flex-col gap-1">
+          <button onClick={startRecording} className="rounded bg-red-600 px-4 py-2 text-white">
+            Démarrer l&apos;enregistrement
+          </button>
+          <span className="text-sm text-gray-500">
+            Enregistrement limité à 30 secondes.
+          </span>
+        </div>
       )}
 
       {recording && (
@@ -153,7 +187,7 @@ export default function Home() {
         </button>
       )}
 
-      {recordedFile && (
+      {recordedFile && !recording && (
         <section className="flex flex-col gap-4 rounded border p-4">
           <label className="flex flex-col gap-1">
             Côté filmé
