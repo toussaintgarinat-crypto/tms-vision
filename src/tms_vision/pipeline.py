@@ -109,9 +109,15 @@ def analyze_video(
     # `frames` est garanti non vide ici : le garde-fou `if not frames: ...
     # return` ci-dessus a déjà court-circuité la fonction sinon.
     height, width = frames[0].image.shape[:2]
+    # "mp4v" (MPEG-4 Part 2) n'est décodable par aucun navigateur (Chromium/
+    # Firefox renvoient MediaError code 4 sur le <video> de web/app/page.tsx).
+    # "avc1" (H.264/AVC) est vérifié disponible dans ce build d'OpenCV (FFMPEG
+    # avec fallback automatique vers le tag avc1, testé avec isOpened() +
+    # ffprobe + lecture réelle dans Chromium via Playwright) et reste dans un
+    # conteneur .mp4 classique.
     video_path = output_path / f"{run_id}_annotated.mp4"
     writer = cv2.VideoWriter(
-        str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), frame_source.fps() or 30.0, (width, height)
+        str(video_path), cv2.VideoWriter_fourcc(*"avc1"), frame_source.fps() or 30.0, (width, height)
     )
 
     csv_path = output_path / f"{run_id}_frames.csv"

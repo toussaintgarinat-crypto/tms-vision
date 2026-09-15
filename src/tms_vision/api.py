@@ -48,11 +48,12 @@ async def create_analysis(
     wrist_twist: Literal["normal", "extreme"] = Form(...),
 ) -> dict:
     suffix = Path(file.filename or "").suffix or ".webm"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        upload_path = Path(tmp.name)
-
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    upload_path = Path(tmp.name)
     try:
+        with tmp:
+            shutil.copyfileobj(file.file, tmp)
+
         result = await run_in_threadpool(
             analyze_video,
             source=str(upload_path),
