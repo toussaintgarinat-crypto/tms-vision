@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
-# Lance les 4 processus nécessaires pour tester la capture web TMS Vision
+# Lance les processus nécessaires pour tester la capture web TMS Vision
 # depuis un appareil externe (iPhone, etc.) via tunnel HTTPS cloudflared :
 # tunnel API, tunnel frontend, API FastAPI (ALLOWED_ORIGINS = URL du tunnel
-# frontend), frontend Next.js (NEXT_PUBLIC_API_URL = URL du tunnel API).
+# frontend), frontend Next.js **en mode production** (NEXT_PUBLIC_API_URL =
+# URL du tunnel API, injectée au build).
+#
+# Mode production, pas `npm run dev` : le mode dev dépend du websocket de
+# rechargement à chaud (HMR) pour terminer l'hydratation React côté client.
+# Ce websocket échoue systématiquement à travers un tunnel Cloudflare Quick
+# Tunnel -- résultat : la page s'affiche (HTML statique) mais reste inerte
+# indéfiniment, sans la moindre erreur visible (React n'a jamais fini de
+# démarrer). Vérifié en conditions réelles le 2026-09-15 : le bouton
+# "Démarrer la caméra" ne réagissait à aucun clic (ni réel, ni simulé via la
+# console), et `Object.keys(bouton).filter(k => k.includes('react'))`
+# renvoyait un tableau vide -- preuve que React n'avait jamais attaché ses
+# gestionnaires d'événements. Le mode production n'a aucune dépendance à ce
+# websocket et hydrate correctement (mêmes clés `__reactFiber`/`__reactProps`
+# bien présentes une fois testé).
 #
 # Usage : ./launch.sh   (depuis n'importe où dans le repo TMS vision)
-# Arrêt : Ctrl+C — tue les 4 processus.
+# Arrêt : Ctrl+C — tue tous les processus.
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -28,11 +42,11 @@ cleanup() {
   for pid in "${PIDS[@]:-}"; do
     kill "$pid" >/dev/null 2>&1 || true
   done
-  # `npm run dev` (next dev) lance un processus enfant (next-server) qui ne
-  # reçoit pas le signal envoyé au seul PID du sous-shell ci-dessus -- on le
-  # cible explicitement en plus, sinon il continue à tourner après Ctrl+C.
+  # `npm run start` (next start) lance un processus enfant (next-server) qui
+  # ne reçoit pas le signal envoyé au seul PID du sous-shell ci-dessus -- on
+  # le cible explicitement en plus, sinon il continue à tourner après Ctrl+C.
   pkill -f "next-server \(v" >/dev/null 2>&1 || true
-  pkill -f "node .*next dev" >/dev/null 2>&1 || true
+  pkill -f "npm run start" >/dev/null 2>&1 || true
   rm -rf "$LOG_DIR"
 }
 trap cleanup EXIT INT TERM
@@ -74,8 +88,14 @@ echo "Démarrage de l'API FastAPI (port 8000)..."
 ALLOWED_ORIGINS="$URL_WEB" PYTHONPATH=src venv/bin/uvicorn tms_vision.api:app --port 8000 &
 PIDS+=("$!")
 
-echo "Démarrage du frontend Next.js (port 3000)..."
-(cd web && NEXT_PUBLIC_API_URL="$URL_API" npm run dev) &
+# NEXT_PUBLIC_API_URL est injectée dans le bundle client AU BUILD, pas lue au
+# démarrage -- il faut donc (re)construire maintenant que l'URL du tunnel API
+# est connue, avant de démarrer le serveur de production.
+echo "Build du frontend Next.js avec NEXT_PUBLIC_API_URL=$URL_API (quelques secondes)..."
+(cd web && NEXT_PUBLIC_API_URL="$URL_API" npm run build)
+
+echo "Démarrage du frontend Next.js en mode production (port 3000)..."
+(cd web && npm run start) &
 PIDS+=("$!")
 
 echo ""
