@@ -91,6 +91,75 @@ async def upload_chunk(upload_id: str, index: int, file: UploadFile = File(...))
     return {"received": index}
 
 
+@app.post("/uploads/{upload_id}/complete")
+async def complete_upload(
+    upload_id: str,
+    side: Literal["left", "right"] = Form(...),
+    load_kg: float = Form(..., ge=0),
+    wrist_twist: Literal["normal", "extreme"] = Form(...),
+) -> dict:
+    session_dir = OUTPUT_DIR / ".uploads" / upload_id
+    meta_path = session_dir / "meta.json"
+    if not meta_path.is_file():
+        raise HTTPException(status_code=404, detail="Session d'envoi introuvable.")
+
+    meta = json.loads(meta_path.read_text())
+    total_chunks = meta["total_chunks"]
+    chunk_paths = [session_dir / f"chunk_{i:06d}" for i in range(total_chunks)]
+    missing = [i for i, path in enumerate(chunk_paths) if not path.is_file()]
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Morceau(x) manquant(s) : {missing}. Réessayez l'import du fichier.",
+        )
+
+    suffix = Path(meta["filename"]).suffix or ".webm"
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    upload_path = Path(tmp.name)
+    try:
+        with tmp:
+            for chunk_path in chunk_paths:
+                with open(chunk_path, "rb") as chunk_file:
+                    shutil.copyfileobj(chunk_file, tmp)
+        return await _analyze_and_build_response(upload_path, side, load_kg, wrist_twist)
+    finally:
+        upload_path.unlink(missing_ok=True)
+        shutil.rmtree(session_dir, ignore_errors=True)
+
+
+async def _analyze_and_build_response(
+    video_path: Path, side: str, load_kg: float, wrist_twist: str
+) -> dict:
+    """Appelle analyze_video sur un fichier déjà sur disque et construit la
+    réponse JSON standard. Partagé par create_analysis (upload direct) et
+    complete_upload (upload par chunks) : les deux finissent par produire un
+    seul fichier vidéo local, traité de façon identique à partir de ce point."""
+    try:
+        result = await run_in_threadpool(
+            analyze_video,
+            source=str(video_path),
+            side=side,
+            load_kg=load_kg,
+            wrist_twist=wrist_twist,
+            output_dir=str(OUTPUT_DIR),
+        )
+    except (FileNotFoundError, RuntimeError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    if result.empty:
+        raise HTTPException(
+            status_code=422,
+            detail="Vidéo illisible ou vide : aucune frame n'a pu être extraite.",
+        )
+
+    summary = json.loads(result.summary_json_path.read_text())
+    return {
+        "summary": summary,
+        "annotated_video_url": f"/outputs/{result.video_path.name}",
+        "csv_url": f"/outputs/{result.csv_path.name}",
+    }
+
+
 @app.post("/analyses")
 async def create_analysis(
     file: UploadFile = File(...),
@@ -104,30 +173,6 @@ async def create_analysis(
     try:
         with tmp:
             shutil.copyfileobj(file.file, tmp)
-
-        result = await run_in_threadpool(
-            analyze_video,
-            source=str(upload_path),
-            side=side,
-            load_kg=load_kg,
-            wrist_twist=wrist_twist,
-            output_dir=str(OUTPUT_DIR),
-        )
-    except (FileNotFoundError, RuntimeError) as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
+        return await _analyze_and_build_response(upload_path, side, load_kg, wrist_twist)
     finally:
         upload_path.unlink(missing_ok=True)
-
-    if result.empty:
-        raise HTTPException(
-            status_code=422,
-            detail="Vidéo illisible ou vide : aucune frame n'a pu être extraite.",
-        )
-
-    summary = json.loads(result.summary_json_path.read_text())
-
-    return {
-        "summary": summary,
-        "annotated_video_url": f"/outputs/{result.video_path.name}",
-        "csv_url": f"/outputs/{result.csv_path.name}",
-    }

@@ -248,3 +248,109 @@ def test_upload_chunk_rejects_out_of_range_index(tmp_path, monkeypatch):
     )
 
     assert response.status_code == 400
+
+
+def test_upload_chunks_then_complete_matches_direct_analysis(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+    video_bytes = video_path.read_bytes()
+    midpoint = len(video_bytes) // 2
+    chunks = [video_bytes[:midpoint], video_bytes[midpoint:]]
+
+    client = TestClient(app)
+    start_response = client.post(
+        "/uploads", data={"filename": "synthetic.mp4", "total_chunks": str(len(chunks))}
+    )
+    upload_id = start_response.json()["upload_id"]
+
+    for index, chunk in enumerate(chunks):
+        chunk_response = client.put(
+            f"/uploads/{upload_id}/chunks/{index}",
+            files={"file": (f"chunk-{index}", chunk, "application/octet-stream")},
+        )
+        assert chunk_response.status_code == 200
+
+    response = client.post(
+        f"/uploads/{upload_id}/complete",
+        data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["summary"]["detected_frame_count"] == 0
+    assert body["summary"]["max_score"] == 0
+    assert body["annotated_video_url"].startswith("/outputs/")
+    assert body["csv_url"].startswith("/outputs/")
+
+    # La session est nettoyée après complétion, réussie ou pas.
+    assert not (tmp_path / ".uploads" / upload_id).exists()
+
+
+def test_chunks_reassembled_by_index_regardless_of_arrival_order(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+    video_bytes = video_path.read_bytes()
+    midpoint = len(video_bytes) // 2
+    chunks = [video_bytes[:midpoint], video_bytes[midpoint:]]
+
+    client = TestClient(app)
+    start_response = client.post(
+        "/uploads", data={"filename": "synthetic.mp4", "total_chunks": "2"}
+    )
+    upload_id = start_response.json()["upload_id"]
+
+    # Chunk 1 envoyé avant chunk 0 : l'ordre d'arrivée est inversé par rapport
+    # à l'ordre d'index. La réassemblage doit suivre l'index, pas l'arrivée.
+    client.put(
+        f"/uploads/{upload_id}/chunks/1",
+        files={"file": ("chunk-1", chunks[1], "application/octet-stream")},
+    )
+    client.put(
+        f"/uploads/{upload_id}/chunks/0",
+        files={"file": ("chunk-0", chunks[0], "application/octet-stream")},
+    )
+
+    response = client.post(
+        f"/uploads/{upload_id}/complete",
+        data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["summary"]["frame_count"] == 3
+
+
+def test_complete_upload_fails_when_chunk_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    start_response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "2"})
+    upload_id = start_response.json()["upload_id"]
+
+    # Seul le chunk 0 est envoyé ; le chunk 1 manque.
+    client.put(
+        f"/uploads/{upload_id}/chunks/0",
+        files={"file": ("chunk-0", b"data", "application/octet-stream")},
+    )
+
+    response = client.post(
+        f"/uploads/{upload_id}/complete",
+        data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_complete_upload_rejects_unknown_upload_id(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    response = client.post(
+        "/uploads/does-not-exist/complete",
+        data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+    )
+
+    assert response.status_code == 404
