@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const MAX_RECORDING_MS = 30_000;
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5 Mo
+const MAX_CHUNK_RETRIES = 3;
 
 type Side = "left" | "right";
 type WristTwist = "normal" | "extreme";
@@ -40,6 +42,9 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
+    null
+  );
 
   useEffect(() => {
     return () => {
@@ -124,6 +129,99 @@ export default function Home() {
     setRecording(false);
   }
 
+  async function uploadChunkWithRetry(uploadId: string, index: number, chunk: Blob) {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= MAX_CHUNK_RETRIES; attempt++) {
+      try {
+        const formData = new FormData();
+        formData.append("file", chunk, `chunk-${index}`);
+        const response = await fetch(`${API_URL}/uploads/${uploadId}/chunks/${index}`, {
+          method: "PUT",
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`Échec de l'envoi du morceau ${index + 1} (code ${response.status}).`);
+        }
+        return;
+      } catch (err) {
+        lastError = err;
+        if (attempt < MAX_CHUNK_RETRIES) {
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        }
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("Échec de l'envoi du fichier.");
+  }
+
+  async function analyzeViaChunkedUpload(
+    file: File,
+    side: Side,
+    loadKg: string,
+    wristTwist: WristTwist
+  ): Promise<AnalysisResponse> {
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+    const startResponse = await fetch(`${API_URL}/uploads`, {
+      method: "POST",
+      body: new URLSearchParams({ filename: file.name, total_chunks: String(totalChunks) }),
+    });
+    if (!startResponse.ok) {
+      throw new Error("Impossible de démarrer l'envoi du fichier.");
+    }
+    const { upload_id: uploadId } = (await startResponse.json()) as { upload_id: string };
+
+    for (let index = 0; index < totalChunks; index++) {
+      const start = index * CHUNK_SIZE;
+      const chunk = file.slice(start, start + CHUNK_SIZE);
+      setUploadProgress({ current: index + 1, total: totalChunks });
+      await uploadChunkWithRetry(uploadId, index, chunk);
+    }
+    setUploadProgress(null);
+
+    const completeResponse = await fetch(`${API_URL}/uploads/${uploadId}/complete`, {
+      method: "POST",
+      body: new URLSearchParams({ side, load_kg: loadKg, wrist_twist: wristTwist }),
+    });
+    if (!completeResponse.ok) {
+      const body = await completeResponse.json().catch(() => null);
+      const detail = body?.detail;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : `Erreur de validation (code ${completeResponse.status}).`;
+      throw new Error(message);
+    }
+    return (await completeResponse.json()) as AnalysisResponse;
+  }
+
+  async function analyzeViaCameraCapture(
+    file: File,
+    side: Side,
+    loadKg: string,
+    wristTwist: WristTwist
+  ): Promise<AnalysisResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("side", side);
+    formData.append("load_kg", loadKg);
+    formData.append("wrist_twist", wristTwist);
+
+    const response = await fetch(`${API_URL}/analyses`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const detail = body?.detail;
+      const message =
+        typeof detail === "string" ? detail : `Erreur de validation (code ${response.status}).`;
+      throw new Error(message);
+    }
+
+    return (await response.json()) as AnalysisResponse;
+  }
+
   async function analyze() {
     if (!recordedFile) return;
     if (loadKg.trim() === "") {
@@ -134,33 +232,16 @@ export default function Home() {
     setError(null);
     setResult(null);
     try {
-      const formData = new FormData();
-      formData.append("file", recordedFile);
-      formData.append("side", side);
-      formData.append("load_kg", loadKg);
-      formData.append("wrist_twist", wristTwist);
-
-      const response = await fetch(`${API_URL}/analyses`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        const detail = body?.detail;
-        const message =
-          typeof detail === "string"
-            ? detail
-            : `Erreur de validation (code ${response.status}).`;
-        throw new Error(message);
-      }
-
-      const data: AnalysisResponse = await response.json();
+      const data =
+        mode === "upload"
+          ? await analyzeViaChunkedUpload(recordedFile, side, loadKg, wristTwist)
+          : await analyzeViaCameraCapture(recordedFile, side, loadKg, wristTwist);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue pendant l'analyse.");
     } finally {
       setAnalyzing(false);
+      setUploadProgress(null);
     }
   }
 
@@ -257,7 +338,11 @@ export default function Home() {
             disabled={analyzing}
             className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
           >
-            {analyzing ? "Analyse en cours..." : "Analyser"}
+            {uploadProgress
+              ? `Envoi du fichier : ${uploadProgress.current}/${uploadProgress.total}...`
+              : analyzing
+                ? "Analyse en cours..."
+                : "Analyser"}
           </button>
         </section>
       )}
