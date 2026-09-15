@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 import cv2
 import numpy as np
 from fastapi.testclient import TestClient
@@ -111,6 +114,58 @@ def test_output_files_are_actually_served_at_returned_urls(tmp_path, monkeypatch
     assert csv_response.status_code == 200
     assert len(csv_response.content) > 0
     assert "attachment" in csv_response.headers.get("content-disposition", "")
+
+
+def test_create_analysis_cleans_up_temp_file_when_upload_copy_fails(tmp_path, monkeypatch):
+    """Régression pour 9d6a9da : avant le fix, `upload_path = Path(tmp.name)`
+    n'était assigné qu'APRÈS `shutil.copyfileobj(...)`, et tout cela se
+    trouvait hors du try/finally qui appelle `upload_path.unlink(...)`. Si la
+    copie échouait, le fichier temporaire restait donc orphelin sur disque.
+    Ici on force l'échec de la copie (sans avoir besoin de vraiment remplir
+    le disque) et on vérifie que le fichier temporaire créé par
+    tempfile.NamedTemporaryFile ne survit pas à la requête, quel que soit le
+    point d'échec."""
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    created_paths = []
+    original_named_temporary_file = tempfile.NamedTemporaryFile
+
+    def _tracking_named_temporary_file(*args, **kwargs):
+        handle = original_named_temporary_file(*args, **kwargs)
+        created_paths.append(Path(handle.name))
+        return handle
+
+    monkeypatch.setattr(
+        "tms_vision.api.tempfile.NamedTemporaryFile", _tracking_named_temporary_file
+    )
+
+    def _raise_copyfileobj(*_args, **_kwargs):
+        raise OSError("disque plein simulé")
+
+    monkeypatch.setattr("tms_vision.api.shutil.copyfileobj", _raise_copyfileobj)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    # L'OSError levée n'est pas parmi (FileNotFoundError, RuntimeError) que
+    # l'endpoint intercepte lui-même : elle remonte donc telle quelle.
+    # raise_server_exceptions=False permet d'obtenir une vraie réponse HTTP
+    # (500) plutôt que de voir l'exception se propager dans le test.
+    client = TestClient(app, raise_server_exceptions=False)
+    with open(video_path, "rb") as video_file:
+        response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+
+    assert response.status_code == 500
+    assert len(created_paths) == 1
+    assert not created_paths[0].exists(), (
+        f"Le fichier temporaire {created_paths[0]} aurait dû être supprimé "
+        "par le `finally: upload_path.unlink(...)` de create_analysis même "
+        "quand la copie échoue."
+    )
 
 
 def test_get_output_returns_404_for_missing_file(tmp_path, monkeypatch):

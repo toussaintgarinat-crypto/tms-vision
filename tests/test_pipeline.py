@@ -79,6 +79,45 @@ def test_analyze_video_end_to_end_on_a_blank_synthetic_video(tmp_path):
     assert result.summary_json_path.exists()
 
 
+def test_analyze_video_writes_browser_playable_h264_not_mp4v(tmp_path):
+    """Régression pour 9d6a9da : le fourcc d'écriture doit être "avc1"
+    (H.264, lisible par les navigateurs), pas "mp4v" (MPEG-4 Part 2, que
+    Chromium/Firefox refusent de décoder). On vérifie via une relecture
+    cv2.VideoCapture plutôt que via ffprobe (binaire externe non déclaré
+    comme dépendance du projet). Sur ce build OpenCV/FFmpeg, CAP_PROP_FOURCC
+    relit "h264" pour un fichier écrit avec le tag "avc1", et "FMP4" pour un
+    fichier écrit avec "mp4v" -- vérifié empiriquement (y compris en
+    ré-exécutant analyze_video) avant d'écrire cette assertion, donc "h264"
+    est bien la valeur à verrouiller ici plutôt qu'un "avc1" deviné."""
+    video_path = tmp_path / "synthetic.mp4"
+    writer = cv2.VideoWriter(
+        str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64)
+    )
+    for _ in range(3):
+        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
+    writer.release()
+
+    output_dir = tmp_path / "outputs"
+    result = analyze_video(
+        source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal",
+        output_dir=str(output_dir),
+    )
+
+    assert result.empty is False
+    cap = cv2.VideoCapture(str(result.video_path))
+    try:
+        fourcc_int = int(cap.get(cv2.CAP_PROP_FOURCC))
+        fourcc = fourcc_int.to_bytes(4, byteorder="little").decode("ascii", errors="replace")
+    finally:
+        cap.release()
+
+    assert fourcc == "h264", (
+        f"Codec vidéo attendu 'h264' (lisible en navigateur), obtenu {fourcc!r} -- "
+        "vérifier que analyze_video encode toujours avec "
+        "cv2.VideoWriter_fourcc(*'avc1') et non 'mp4v'"
+    )
+
+
 class _InterruptingFrameSource:
     """Simule une source vidéo qui produit quelques frames puis reçoit un
     Ctrl+C (KeyboardInterrupt) pendant la boucle de capture."""
