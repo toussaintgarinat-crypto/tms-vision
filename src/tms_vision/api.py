@@ -10,7 +10,7 @@ from typing import Literal
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from tms_vision.pipeline import analyze_video
 
@@ -26,7 +26,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/outputs", StaticFiles(directory=str(OUTPUT_DIR)), name="outputs")
+
+@app.get("/outputs/{filename}")
+async def get_output_file(filename: str) -> FileResponse:
+    """Sert un fichier produit par le pipeline. Résout OUTPUT_DIR à chaque
+    requête (plutôt qu'un StaticFiles monté une fois à l'import) pour rester
+    cohérent avec la lecture d'OUTPUT_DIR faite par create_analysis, y
+    compris quand OUTPUT_DIR est patché en test."""
+    file_path = OUTPUT_DIR / filename
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Fichier introuvable.")
+    return FileResponse(file_path)
 
 
 @app.post("/analyses")
