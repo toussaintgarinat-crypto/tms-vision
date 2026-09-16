@@ -124,8 +124,10 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - `docs/superpowers/plans/2026-09-14-web-capture-fastapi-plan.md` — le plan d'implémentation de cette tranche.
 - `docs/superpowers/specs/2026-09-15-web-upload-chunked-design.md` — la spec de la tranche 2 de la Phase 2 (upload de fichier vidéo par chunks).
 - `docs/superpowers/plans/2026-09-15-web-upload-chunked-plan.md` — le plan d'implémentation de cette tranche.
-- `.superpowers/sdd/progress.md` — le journal complet des deux cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web), avec les décisions prises à chaque point d'arbitrage.
-- Le code lui-même : `src/tms_vision/` (backend Python, 9 modules dont `pipeline.py`/`api.py`, 76 tests dans `tests/`) et `web/` (frontend Next.js).
+- `docs/superpowers/specs/2026-09-16-3d-posture-avatar-design.md` — la spec de la tranche 1 de l'avatar 3D de posture (mannequin 3D piloté par la pose).
+- `docs/superpowers/plans/2026-09-16-3d-posture-avatar-plan.md` — le plan d'implémentation de cette tranche.
+- `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
+- Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
 ### ✅ Phase 1 : Prototypage & Validation PoC — TERMINÉE
 
@@ -201,6 +203,38 @@ juste "finir" la Phase 1 avant de passer à la suite :
   totale envoyée par le client — pistes notées pour une itération future, pas nécessaires pour
   cette tranche.
 
+#### ✅ Avatar 3D de posture, Tranche 1 (mannequin piloté par la pose) — TERMINÉE
+
+- **Contexte** : en regardant le rendu 2D existant (traits fins + badge de score), l'utilisateur du
+  projet a souhaité un rendu plus incarné, en référence à des outils comme Muscle & Motion et
+  Z-Anatomy. Ces deux références s'appuient sur des modèles 3D construits à la main, non pilotés
+  par une vraie vidéo — la demande a donc été découpée en tranches séquentielles (voir spec) : cette
+  tranche 1 livre un mannequin 3D simple (capsules, pas encore de vrais muscles), les tranches
+  futures ajouteront de vrais maillages musculaires (Z-Anatomy) puis leur activation par segment.
+- **Backend** (`src/tms_vision/pose_estimation.py`, `pose3d_export.py` nouveau, `pipeline.py`,
+  `api.py`) : `PoseEstimator` expose désormais aussi `world_landmarks` (estimation 3D à l'échelle
+  métrique déjà fournie par MediaPipe, sans coût de calcul supplémentaire). `analyze_video()` lisse
+  cette trajectoire sur toute la séquence (moyenne glissante centrée) et l'exporte dans un nouveau
+  fichier `{run_id}_pose3d.json`, aux côtés des exports existants, exposé via `pose3d_url` dans la
+  réponse de `/analyses` et `/uploads/{id}/complete`.
+- **Interface web** (`web/app/PostureAvatar3D.tsx`, nouveau) : un mannequin 3D (react-three-fiber —
+  10 capsules reprenant exactement les segments du squelette 2D, plus une tête) s'affiche à côté de
+  la vidéo annotée, animé en synchro avec `video.currentTime` (marche pendant la lecture, en pause,
+  et en déplaçant le curseur). Couleur unique par frame reflétant le niveau d'action RULA global
+  (la coloration par segment/muscle est prévue pour une tranche future). Caméra orientable à la
+  souris (OrbitControls) pour observer la posture sous un angle que la vidéo d'origine ne montrait
+  pas. Pose figée sur les frames sans détection plutôt que de disparaître.
+- **Vérifié manuellement (2026-09-16)** sur la vraie vidéo `moi coupe.mp4` (voir aussi la
+  vérification de la Phase 1 ci-dessus, même vidéo) via un scénario Playwright bout en bout : le
+  mannequin s'affiche dans une orientation correcte (ni à l'envers ni en miroir — aucun ajustement
+  d'axe n'a été nécessaire), sa couleur suit fidèlement le score RULA affiché sur la vidéo (jaune →
+  orange observé en déplaçant le curseur de lecture), sa posture change en synchro avec la vidéo y
+  compris hors lecture continue (scrubbing), le zoom et la rotation de la caméra répondent
+  correctement à la souris, et le message « Aucune posture détectée sur cette vidéo. » s'affiche
+  sans erreur console sur un clip sans personne (`samples/synthetic_smoke_test.mp4`).
+- **Ce qui n'est pas dans cette tranche** : vrais maillages musculaires, coloration par segment
+  anatomique, mode miroir en direct (caméra → avatar en temps réel) — voir spec pour le détail.
+
 #### Reste à faire pour la suite de la Phase 2
 
 - Base de données (SQLite pour commencer, migration PostgreSQL si besoin) pour stocker les analyses
@@ -209,6 +243,9 @@ juste "finir" la Phase 1 avant de passer à la suite :
   implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
   salariés (voir section 7).
 - Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
+- Avatar 3D de posture, tranches 2 et 3 (voir spec `2026-09-16-3d-posture-avatar-design.md`) : vrais
+  maillages musculaires (Z-Anatomy, CC BY-SA) riggés sur le mannequin de la tranche 1, puis
+  coloration/activation des muscles par segment à partir des sous-scores RULA déjà calculés.
 - Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
   l'export : `neck`, `trunk`, `upper_arm`, `lower_arm`, `wrist`) aux capsules d'étirement.
 
