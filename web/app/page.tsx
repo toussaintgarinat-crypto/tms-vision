@@ -73,7 +73,12 @@ export default function Home() {
 
   function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
+    if (file.size === 0) {
+      setError("Le fichier sélectionné est vide.");
+      return;
+    }
     setError(null);
     setResult(null);
     setMode("upload");
@@ -129,6 +134,14 @@ export default function Home() {
     setRecording(false);
   }
 
+  class ChunkUploadError extends Error {
+    retryable: boolean;
+    constructor(message: string, retryable: boolean) {
+      super(message);
+      this.retryable = retryable;
+    }
+  }
+
   async function uploadChunkWithRetry(uploadId: string, index: number, chunk: Blob) {
     let lastError: unknown;
     for (let attempt = 1; attempt <= MAX_CHUNK_RETRIES; attempt++) {
@@ -140,17 +153,32 @@ export default function Home() {
           body: formData,
         });
         if (!response.ok) {
-          throw new Error(`Échec de l'envoi du morceau ${index + 1} (code ${response.status}).`);
+          const retryable =
+            response.status >= 500 || response.status === 408 || response.status === 429;
+          throw new ChunkUploadError(
+            `Échec de l'envoi du morceau ${index + 1} (code ${response.status}).`,
+            retryable
+          );
         }
         return;
       } catch (err) {
         lastError = err;
+        if (err instanceof ChunkUploadError && !err.retryable) {
+          break;
+        }
         if (attempt < MAX_CHUNK_RETRIES) {
           await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
         }
       }
     }
-    throw lastError instanceof Error ? lastError : new Error("Échec de l'envoi du fichier.");
+    console.error(lastError);
+    throw new Error("Envoi interrompu, réessayez l'import du fichier.");
+  }
+
+  async function readErrorMessage(response: Response, fallback: string): Promise<string> {
+    const body = await response.json().catch(() => null);
+    const detail = (body as { detail?: unknown } | null)?.detail;
+    return typeof detail === "string" ? detail : fallback;
   }
 
   async function analyzeViaChunkedUpload(
@@ -166,7 +194,9 @@ export default function Home() {
       body: new URLSearchParams({ filename: file.name, total_chunks: String(totalChunks) }),
     });
     if (!startResponse.ok) {
-      throw new Error("Impossible de démarrer l'envoi du fichier.");
+      throw new Error(
+        await readErrorMessage(startResponse, "Impossible de démarrer l'envoi du fichier.")
+      );
     }
     const { upload_id: uploadId } = (await startResponse.json()) as { upload_id: string };
 
@@ -183,13 +213,9 @@ export default function Home() {
       body: new URLSearchParams({ side, load_kg: loadKg, wrist_twist: wristTwist }),
     });
     if (!completeResponse.ok) {
-      const body = await completeResponse.json().catch(() => null);
-      const detail = body?.detail;
-      const message =
-        typeof detail === "string"
-          ? detail
-          : `Erreur de validation (code ${completeResponse.status}).`;
-      throw new Error(message);
+      throw new Error(
+        await readErrorMessage(completeResponse, `Erreur de validation (code ${completeResponse.status}).`)
+      );
     }
     return (await completeResponse.json()) as AnalysisResponse;
   }
@@ -212,11 +238,7 @@ export default function Home() {
     });
 
     if (!response.ok) {
-      const body = await response.json().catch(() => null);
-      const detail = body?.detail;
-      const message =
-        typeof detail === "string" ? detail : `Erreur de validation (code ${response.status}).`;
-      throw new Error(message);
+      throw new Error(await readErrorMessage(response, `Erreur de validation (code ${response.status}).`));
     }
 
     return (await response.json()) as AnalysisResponse;
@@ -257,6 +279,14 @@ export default function Home() {
         className="w-full rounded-lg bg-black"
       />
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
       {mode === null && (
         <div className="flex gap-2">
           <button onClick={startCamera} className="rounded bg-black px-4 py-2 text-white">
@@ -268,13 +298,20 @@ export default function Home() {
           >
             Importer une vidéo
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={handleFileSelected}
-          />
+        </div>
+      )}
+
+      {mode === "upload" && !recording && (
+        <div className="flex flex-col gap-1">
+          {recordedFile && (
+            <p className="text-sm text-gray-600">Fichier sélectionné : {recordedFile.name}</p>
+          )}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="self-start text-sm text-blue-600 underline"
+          >
+            Changer de vidéo
+          </button>
         </div>
       )}
 

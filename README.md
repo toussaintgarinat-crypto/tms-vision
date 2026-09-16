@@ -122,6 +122,8 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - `docs/superpowers/plans/2026-09-14-poc-pose-rula-plan.md` — le plan d'implémentation tâche par tâche du PoC (tenu à jour au fil des corrections).
 - `docs/superpowers/specs/2026-09-14-web-capture-fastapi-design.md` — la spec de la 1ère tranche de la Phase 2 (capture web + API FastAPI).
 - `docs/superpowers/plans/2026-09-14-web-capture-fastapi-plan.md` — le plan d'implémentation de cette tranche.
+- `docs/superpowers/specs/2026-09-15-web-upload-chunked-design.md` — la spec de la tranche 2 de la Phase 2 (upload de fichier vidéo par chunks).
+- `docs/superpowers/plans/2026-09-15-web-upload-chunked-plan.md` — le plan d'implémentation de cette tranche.
 - `.superpowers/sdd/progress.md` — le journal complet des deux cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 9 modules dont `pipeline.py`/`api.py`, 76 tests dans `tests/`) et `web/` (frontend Next.js).
 
@@ -178,6 +180,29 @@ juste "finir" la Phase 1 avant de passer à la suite :
   (caméra 2D uniquement), base de données, authentification, déploiement, floutage RGPD des visages
   (reste bloquant avant tout test avec de vrais salariés, voir section 7), calibrage des seuils sur
   données réelles (point 2 ci-dessus, toujours en attente).
+
+#### ✅ Tranche 2 : Upload de fichier vidéo par chunks — TERMINÉE
+
+- **3 nouveaux endpoints** (`src/tms_vision/api.py`) : `POST /uploads` (démarre une session
+  d'envoi), `PUT /uploads/{id}/chunks/{index}` (reçoit un morceau) et `POST
+  /uploads/{id}/complete` (réassemble les morceaux et lance `analyze_video()`, exactement comme
+  `POST /analyses`). L'état de la session vit sur le système de fichiers (pas de dict en mémoire),
+  pour survivre à un redémarrage d'uvicorn `--reload` en cours d'upload.
+- **Interface web** : bouton « Importer une vidéo » en alternative à la caméra (voir section 10),
+  qui envoie le fichier choisi en morceaux de 5 Mo, séquentiellement, avec re-tentative
+  automatique par morceau en cas d'échec réseau.
+- **Garde-fou mémoire ajouté pendant la revue finale de cette tranche** : `analyze_video()` garde
+  toutes les frames décodées en mémoire, ce qui n'est pas un problème pour un clip caméra plafonné
+  à 640×480/30s (tranche 1), mais l'aurait été pour une vidéo importée sans cette limite (ex. un
+  export de téléphone en 1080p ou 4K, potentiellement plusieurs Go une fois décodée). Une
+  estimation rapide (frames × largeur × hauteur) faite avant l'analyse rejette maintenant avec un
+  422 explicite toute vidéo dont l'empreinte mémoire estimée dépasse ~2 Gio, sur les deux
+  endpoints d'analyse (`/analyses` et `/uploads/{id}/complete`), plutôt que de laisser le serveur
+  tenter l'analyse et risquer un OOM.
+- **Ce qui n'est pas dans cette tranche** (voir specs/plan pour le détail) : suppression manuelle
+  d'une session d'upload en cours (`DELETE /uploads/{id}`), vérification d'intégrité par taille
+  totale envoyée par le client — pistes notées pour une itération future, pas nécessaires pour
+  cette tranche.
 
 #### Reste à faire pour la suite de la Phase 2
 
@@ -247,7 +272,7 @@ réelle** : avant de s'appuyer sur ce PoC pour une évaluation ergonomique réel
 projet doit relancer la commande `--source webcam` (ou une vidéo filmant une personne) et
 vérifier visuellement le squelette superposé et la cohérence des scores RULA obtenus.
 
-## 10. Lancer la capture web (Phase 2, tranche 1)
+## 10. Lancer la capture web (Phase 2)
 
 Deux serveurs à démarrer en parallèle, dans deux terminaux séparés.
 
@@ -270,6 +295,20 @@ score RULA, lien CSV) s'affiche directement dans la page une fois l'analyse term
 
 `NEXT_PUBLIC_API_URL` (par défaut `http://localhost:8000`) permet de pointer le frontend vers une
 API à une autre adresse si besoin — pas de fichier `.env` requis pour l'usage local par défaut.
+
+### Importer une vidéo (au lieu de la caméra)
+
+Bouton « Importer une vidéo » : sélectionner un fichier vidéo déjà enregistré (ex. un export de
+téléphone) plutôt que de filmer en direct. Contrairement à la capture caméra, ce flux n'a **pas**
+la limite 640×480/30s imposée côté navigateur — c'est justement pour ça qu'il existe. Le fichier
+est envoyé à l'API en morceaux de 5 Mo, séquentiellement, avec re-tentative automatique par
+morceau en cas d'échec réseau. « Changer de vidéo » permet de choisir un autre fichier sans
+recharger la page.
+
+Pour compenser l'absence du plafond côté navigateur, la même limite mémoire côté serveur que
+celle décrite section 8 (tranche 2) s'applique : une vidéo dont la résolution et/ou la durée
+dépassent l'estimation de ~2 Gio est rejetée avec un message d'erreur clair plutôt que d'être
+acceptée et de risquer de saturer la mémoire du serveur.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 

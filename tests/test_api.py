@@ -279,13 +279,22 @@ def test_upload_chunks_then_complete_matches_direct_analysis(tmp_path, monkeypat
 
     assert response.status_code == 200
     body = response.json()
-    assert body["summary"]["detected_frame_count"] == 0
-    assert body["summary"]["max_score"] == 0
     assert body["annotated_video_url"].startswith("/outputs/")
     assert body["csv_url"].startswith("/outputs/")
 
     # La session est nettoyée après complétion, réussie ou pas.
     assert not (tmp_path / ".uploads" / upload_id).exists()
+
+    # Le chemin chunké doit produire exactement le même résumé que l'upload
+    # direct sur la même vidéo (run_id/noms de fichiers diffèrent, hors résumé).
+    with open(video_path, "rb") as video_file:
+        direct_response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+    assert direct_response.status_code == 200
+    assert body["summary"] == direct_response.json()["summary"]
 
 
 def test_chunks_reassembled_by_index_regardless_of_arrival_order(tmp_path, monkeypatch):
@@ -351,6 +360,86 @@ def test_complete_upload_rejects_unknown_upload_id(tmp_path, monkeypatch):
     response = client.post(
         "/uploads/does-not-exist/complete",
         data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_create_analysis_rejects_video_estimated_too_large(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr("tms_vision.api.MAX_ESTIMATED_MEMORY_BYTES", 1)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+    with open(video_path, "rb") as video_file:
+        response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+
+    assert response.status_code == 422
+
+
+def test_complete_upload_cleans_up_session_on_analysis_failure(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    start_response = client.post("/uploads", data={"filename": "garbage.mp4", "total_chunks": "1"})
+    upload_id = start_response.json()["upload_id"]
+
+    client.put(
+        f"/uploads/{upload_id}/chunks/0",
+        files={"file": ("chunk-0", b"this is not a real video file", "application/octet-stream")},
+    )
+
+    response = client.post(
+        f"/uploads/{upload_id}/complete",
+        data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+    )
+
+    assert response.status_code == 422
+    assert not (tmp_path / ".uploads" / upload_id).exists()
+
+
+def test_upload_chunk_overwrite_keeps_last_write(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    start_response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "1"})
+    upload_id = start_response.json()["upload_id"]
+
+    client.put(
+        f"/uploads/{upload_id}/chunks/0",
+        files={"file": ("chunk-0", b"first-attempt", "application/octet-stream")},
+    )
+    client.put(
+        f"/uploads/{upload_id}/chunks/0",
+        files={"file": ("chunk-0", b"second-attempt-wins", "application/octet-stream")},
+    )
+
+    chunk_path = tmp_path / ".uploads" / upload_id / "chunk_000000"
+    assert chunk_path.read_bytes() == b"second-attempt-wins"
+
+
+def test_start_upload_rejects_excessive_total_chunks(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "100000"})
+
+    assert response.status_code == 422
+
+
+def test_upload_chunk_rejects_malformed_upload_id(tmp_path, monkeypatch):
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    client = TestClient(app)
+    response = client.put(
+        "/uploads/not-a-uuid/chunks/0",
+        files={"file": ("chunk-0", b"data", "application/octet-stream")},
     )
 
     assert response.status_code == 404
