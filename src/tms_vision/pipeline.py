@@ -19,6 +19,7 @@ from tms_vision.angles import compute_joint_angles
 from tms_vision.rula.scoring import compute_rula_score, detect_muscle_use
 from tms_vision.overlay import draw_overlay
 from tms_vision.export import FrameRecord, ResultsExporter
+from tms_vision.pose3d_export import Pose3DFrameRecord, smooth_world_landmarks, write_pose3d_json
 
 WRIST_TWIST_CODES = {"normal": 1, "extreme": 2}
 
@@ -50,6 +51,7 @@ class AnalysisResult:
     video_path: Path | None = None
     csv_path: Path | None = None
     summary_json_path: Path | None = None
+    pose3d_path: Path | None = None
 
 
 def analyze_video(
@@ -122,9 +124,14 @@ def analyze_video(
 
     csv_path = output_path / f"{run_id}_frames.csv"
     summary_json_path = output_path / f"{run_id}_summary.json"
+    pose3d_path = output_path / f"{run_id}_pose3d.json"
     exporter = ResultsExporter(str(csv_path), str(summary_json_path))
 
-    for frame, pose_result, angles in per_frame_angles:
+    raw_world_landmarks = [pose_result.world_landmarks for _, pose_result, _ in per_frame_angles]
+    smoothed_world_landmarks = smooth_world_landmarks(raw_world_landmarks)
+    pose3d_records: list[Pose3DFrameRecord] = []
+
+    for (frame, pose_result, angles), world_landmarks in zip(per_frame_angles, smoothed_world_landmarks):
         score = None
         if angles is not None:
             score = compute_rula_score(
@@ -141,10 +148,21 @@ def analyze_video(
                 score=score,
             )
         )
+        pose3d_records.append(
+            Pose3DFrameRecord(
+                frame_index=frame.index,
+                timestamp_seconds=frame.timestamp_seconds,
+                detected=angles is not None,
+                landmarks=world_landmarks,
+                action_level=score.action_level if score is not None else None,
+            )
+        )
 
     writer.release()
     exporter.finalize()
+    write_pose3d_json(str(pose3d_path), pose3d_records)
 
     return AnalysisResult(
-        empty=False, video_path=video_path, csv_path=csv_path, summary_json_path=summary_json_path
+        empty=False, video_path=video_path, csv_path=csv_path, summary_json_path=summary_json_path,
+        pose3d_path=pose3d_path,
     )

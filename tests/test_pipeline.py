@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import cv2
 import pytest
@@ -157,6 +159,31 @@ def test_analyze_video_with_keyboard_interrupt_during_capture_still_writes_parti
     assert result.video_path.exists()
     assert result.csv_path.exists()
     assert result.summary_json_path.exists()
+
+
+def test_analyze_video_produces_pose3d_json(tmp_path):
+    video_path = tmp_path / "synthetic.mp4"
+    writer = cv2.VideoWriter(
+        str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64)
+    )
+    for _ in range(3):
+        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
+    writer.release()
+
+    output_dir = tmp_path / "outputs"
+    result = analyze_video(
+        source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal",
+        output_dir=str(output_dir),
+    )
+
+    assert result.pose3d_path is not None
+    assert result.pose3d_path.exists()
+    data = json.loads(result.pose3d_path.read_text())
+    assert len(data) == 3
+    for entry in data:
+        assert entry["detected"] is False
+        assert entry["landmarks"] is None
+        assert entry["action_level"] is None
 
 
 def test_analyze_video_raises_on_missing_file():
