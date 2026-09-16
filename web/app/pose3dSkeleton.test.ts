@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BONE_ORDER, buildSkeleton } from "./pose3dSkeleton";
+import * as THREE from "three";
+import { applyFrameToSkeleton, BONE_ORDER, buildSkeleton, Pose3DLandmarks } from "./pose3dSkeleton";
 
 describe("buildSkeleton", () => {
   it("crée 9 os (racine + 8) avec la hiérarchie attendue", () => {
@@ -17,5 +18,45 @@ describe("buildSkeleton", () => {
     expect(bones.R_forearm.parent).toBe(bones.R_upper_arm);
     expect(bones.L_thigh.parent).toBe(bones.root);
     expect(bones.R_thigh.parent).toBe(bones.root);
+  });
+});
+
+function worldDirection(bone: THREE.Bone): THREE.Vector3 {
+  bone.updateWorldMatrix(true, false);
+  const worldQuat = new THREE.Quaternion();
+  bone.getWorldQuaternion(worldQuat);
+  return new THREE.Vector3(0, 1, 0).applyQuaternion(worldQuat).normalize();
+}
+
+describe("applyFrameToSkeleton", () => {
+  it("aligne le tronc à la verticale et le bras gauche à l'horizontale pour une pose de référence", () => {
+    const { bones } = buildSkeleton();
+
+    // Landmarks bruts MediaPipe (x droite, y vers le bas, échelle métrique).
+    // Hanches et épaules alignées verticalement (tronc droit), coude gauche
+    // à la même hauteur que l'épaule mais très écarté (bras à l'horizontale).
+    const landmarks: Pose3DLandmarks = {
+      LEFT_HIP: [-0.1, 0, 0],
+      RIGHT_HIP: [0.1, 0, 0],
+      LEFT_SHOULDER: [-0.1, -0.5, 0],
+      RIGHT_SHOULDER: [0.1, -0.5, 0],
+      LEFT_ELBOW: [-0.6, -0.5, 0],
+    };
+
+    applyFrameToSkeleton(bones, landmarks, {});
+
+    const spineDir = worldDirection(bones.spine);
+    expect(spineDir.x).toBeCloseTo(0, 5);
+    expect(spineDir.y).toBeCloseTo(1, 5);
+    expect(spineDir.z).toBeCloseTo(0, 5);
+
+    const upperArmDir = worldDirection(bones.L_upper_arm);
+    expect(upperArmDir.x).toBeCloseTo(-1, 5);
+    expect(upperArmDir.y).toBeCloseTo(0, 5);
+    expect(upperArmDir.z).toBeCloseTo(0, 5);
+
+    expect(bones.root.position.x).toBeCloseTo(0, 5);
+    expect(bones.root.position.y).toBeCloseTo(0, 5);
+    expect(bones.root.position.z).toBeCloseTo(0, 5);
   });
 });

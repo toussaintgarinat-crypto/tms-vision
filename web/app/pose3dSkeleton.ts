@@ -59,3 +59,70 @@ export function buildSkeleton(): SkeletonRig {
   const skeleton = new THREE.Skeleton(BONE_ORDER.map((key) => bones[key]));
   return { skeleton, bones };
 }
+
+const UP = new THREE.Vector3(0, 1, 0);
+
+function toThreeVector(coords: readonly [number, number, number]): THREE.Vector3 {
+  // MediaPipe pose_world_landmarks : x droite, y vers le bas, origine au
+  // centre des hanches. Three.js est y-vers-le-haut : on inverse y. Même
+  // convention que la Tranche 1 (vérifiée visuellement sur une vraie vidéo).
+  const [x, y, z] = coords;
+  return new THREE.Vector3(x, -y, z);
+}
+
+function averageLandmark(
+  landmarks: Pose3DLandmarks,
+  names: readonly string[]
+): THREE.Vector3 | null {
+  const vectors: THREE.Vector3[] = [];
+  for (const name of names) {
+    const coords = landmarks[name];
+    if (!coords) return null;
+    vectors.push(toThreeVector(coords));
+  }
+  const sum = vectors.reduce((acc, vector) => acc.add(vector), new THREE.Vector3());
+  return sum.multiplyScalar(1 / vectors.length);
+}
+
+export function applyFrameToSkeleton(
+  bones: Record<BoneKey, THREE.Bone>,
+  landmarks: Pose3DLandmarks,
+  lastKnownLandmarks: Partial<Pose3DLandmarks>
+): void {
+  for (const name of Object.keys(landmarks)) {
+    lastKnownLandmarks[name] = landmarks[name];
+  }
+  const merged = lastKnownLandmarks as Pose3DLandmarks;
+
+  const rootPosition = averageLandmark(merged, ROOT_LANDMARKS);
+  if (rootPosition) {
+    bones.root.position.copy(rootPosition);
+  }
+
+  const worldQuatByBone: Partial<Record<BoneKey, THREE.Quaternion>> = {
+    root: new THREE.Quaternion(),
+  };
+
+  for (const key of BONE_ORDER) {
+    if (key === "root") continue;
+    const spec = BONE_SPECS[key];
+    const bone = bones[key];
+    const parentWorldQuat = worldQuatByBone[spec.parent]!;
+
+    const from = averageLandmark(merged, spec.from);
+    const to = averageLandmark(merged, spec.to);
+    const direction = from && to ? new THREE.Vector3().subVectors(to, from) : null;
+
+    if (direction && direction.lengthSq() > 1e-8) {
+      direction.normalize();
+      const desiredWorldQuat = new THREE.Quaternion().setFromUnitVectors(UP, direction);
+      bone.quaternion.copy(parentWorldQuat.clone().invert().multiply(desiredWorldQuat));
+      worldQuatByBone[key] = desiredWorldQuat;
+    } else {
+      // Landmarks manquants ou os de longueur quasi nulle cette frame : on
+      // conserve la rotation locale actuelle plutôt que de la remettre à
+      // zéro ou de produire une direction indéfinie.
+      worldQuatByBone[key] = parentWorldQuat.clone().multiply(bone.quaternion);
+    }
+  }
+}
