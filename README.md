@@ -126,6 +126,10 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - `docs/superpowers/plans/2026-09-15-web-upload-chunked-plan.md` — le plan d'implémentation de cette tranche.
 - `docs/superpowers/specs/2026-09-16-3d-posture-avatar-design.md` — la spec de la tranche 1 de l'avatar 3D de posture (mannequin 3D piloté par la pose).
 - `docs/superpowers/plans/2026-09-16-3d-posture-avatar-plan.md` — le plan d'implémentation de cette tranche.
+- `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md` — la spec de la tranche 2 de
+  l'avatar 3D de posture (squelette articulé + preuve de skinning).
+- `docs/superpowers/plans/2026-09-16-3d-posture-skeleton-rig-plan.md` — le plan d'implémentation de
+  cette tranche.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -234,6 +238,31 @@ juste "finir" la Phase 1 avant de passer à la suite :
   sans erreur console sur un clip sans personne (`samples/synthetic_smoke_test.mp4`).
 - **Ce qui n'est pas dans cette tranche** : vrais maillages musculaires, coloration par segment
   anatomique, mode miroir en direct (caméra → avatar en temps réel) — voir spec pour le détail.
+
+#### ✅ Avatar 3D de posture, Tranche 2 (squelette articulé + preuve de skinning) — TERMINÉE
+
+- **Contexte** : la Tranche 1 positionnait chaque capsule indépendamment (pas de hiérarchie), ce qui
+  ne permet aucun skinning. Un vrai skinning de muscles (tranche future) exige un squelette
+  articulé — c'est l'unique objet de cette tranche, sans changement visuel majeur attendu (silhouette
+  générale similaire à la Tranche 1).
+- **`web/app/pose3dSkeleton.ts`** (nouveau, module pur) : construit une hiérarchie de 8 os + racine
+  (`THREE.Bone`/`THREE.Skeleton`) à partir des mêmes landmarks 3D que la Tranche 1, et calcule à
+  chaque frame la rotation locale de chaque os par rapport à son parent. Roll/torsion de chaque os
+  non calculé (limite connue des données MediaPipe, qui ne donnent que des positions).
+- **`web/app/testSkinnedGeometry.ts`** (nouveau, module pur) : construit un maillage de test non
+  anatomique (cylindres + une sphère pour la tête, poids de peau 100% par os) pour valider le
+  mécanisme de skinning avant d'intégrer les vrais muscles.
+- **`web/app/PostureAvatar3D.tsx`** : rend désormais un unique `THREE.SkinnedMesh` lié au squelette,
+  à la place des 10 capsules indépendantes de la Tranche 1.
+- **Première suite de tests automatisée dans `web/`** (Vitest, 6 tests) : hiérarchie du squelette,
+  calcul des rotations sur une pose de référence, comportement sur landmarks manquants/os dégénéré,
+  attributs du maillage de test.
+- **Vérifié manuellement (2026-09-16)** sur `moi coupe.mp4` : le maillage suit la posture en synchro,
+  pas de distorsion aberrante aux jointures, pas de mannequin fantôme avant la première détection,
+  fallback "aucune posture détectée" toujours correct sur `synthetic_smoke_test.mp4`.
+- **Ce qui n'est pas dans cette tranche** : vrais maillages musculaires Z-Anatomy, recherche sur leur
+  riggabilité réelle — Tranche 3 (voir spec
+  `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`).
 
 #### Reste à faire pour la suite de la Phase 2
 
