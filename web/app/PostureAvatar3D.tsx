@@ -96,9 +96,14 @@ function Rig({
     const frame = frames[index];
     if (frame.landmarks) {
       lastKnownLandmarksRef.current = frame.landmarks;
-      lastKnownColorRef.current = frame.action_level
-        ? ACTION_LEVEL_COLORS[frame.action_level] ?? DEFAULT_COLOR
-        : DEFAULT_COLOR;
+      // `action_level` peut être null même quand une pose est détectée (les
+      // angles RULA n'ont pas pu être calculés cette frame-là) : dans ce cas
+      // on conserve la dernière couleur connue plutôt que de retomber sur le
+      // gris par défaut (même principe "dernière valeur connue" que pour
+      // lastKnownLandmarksRef ci-dessus).
+      if (frame.action_level) {
+        lastKnownColorRef.current = ACTION_LEVEL_COLORS[frame.action_level] ?? DEFAULT_COLOR;
+      }
     }
     const landmarks = lastKnownLandmarksRef.current;
     if (!landmarks) return;
@@ -107,9 +112,19 @@ function Rig({
     SKELETON_CONNECTIONS.forEach(([startName, endName], i) => {
       const mesh = capsuleRefs.current[i];
       const material = capsuleMaterialRefs.current[i];
+      if (!mesh || !material) return;
+
       const startCoords = landmarks[startName];
       const endCoords = landmarks[endName];
-      if (!mesh || !material || !startCoords || !endCoords) return;
+      if (!startCoords || !endCoords) {
+        // Articulation occultée cette frame (ex. bras opposé à la caméra en
+        // vue de profil) : on masque la capsule plutôt que de la laisser à
+        // sa position de montage par défaut (origine, échelle 1), ce qui
+        // produirait une barre grise fantôme au centre de l'avatar.
+        mesh.visible = false;
+        return;
+      }
+      mesh.visible = true;
 
       const start = toThreeVector(startCoords);
       const end = toThreeVector(endCoords);
@@ -129,9 +144,14 @@ function Rig({
     });
 
     const headCoords = landmarks[HEAD_LANDMARK];
-    if (headRef.current && headMaterialRef.current && headCoords) {
-      headRef.current.position.copy(toThreeVector(headCoords));
-      headMaterialRef.current.color.set(color);
+    if (headRef.current && headMaterialRef.current) {
+      if (headCoords) {
+        headRef.current.visible = true;
+        headRef.current.position.copy(toThreeVector(headCoords));
+        headMaterialRef.current.color.set(color);
+      } else {
+        headRef.current.visible = false;
+      }
     }
   });
 
@@ -196,7 +216,11 @@ export function PostureAvatar3D({
   if (!frames) {
     return <p className="text-sm text-gray-500">Chargement de l&apos;avatar 3D...</p>;
   }
-  if (!frames.some((frame) => frame.detected)) {
+  if (!frames.some((frame) => frame.landmarks !== null)) {
+    // `detected` signifie "angles RULA calculables", pas "pose détectée" :
+    // une vidéo où MediaPipe trouve une pose sur chaque frame mais où le
+    // calcul d'angles échoue systématiquement (ex. landmarks du côté suivi
+    // sous le seuil de visibilité) a quand même un track 3D exploitable.
     return <p className="text-sm text-gray-500">Aucune posture détectée sur cette vidéo.</p>;
   }
 
