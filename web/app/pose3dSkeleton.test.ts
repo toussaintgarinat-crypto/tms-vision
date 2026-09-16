@@ -60,3 +60,76 @@ describe("applyFrameToSkeleton", () => {
     expect(bones.root.position.z).toBeCloseTo(0, 5);
   });
 });
+
+describe("applyFrameToSkeleton — landmarks manquants ou os dégénéré", () => {
+  it("garde la direction précédente d'un os quand son landmark disparaît une frame", () => {
+    const { bones } = buildSkeleton();
+    const cache: Partial<Pose3DLandmarks> = {};
+
+    applyFrameToSkeleton(
+      bones,
+      {
+        LEFT_HIP: [-0.1, 0, 0],
+        RIGHT_HIP: [0.1, 0, 0],
+        LEFT_SHOULDER: [-0.1, -0.5, 0],
+        RIGHT_SHOULDER: [0.1, -0.5, 0],
+        LEFT_ELBOW: [-0.6, -0.5, 0],
+      },
+      cache
+    );
+    const firstDirection = worldDirection(bones.L_upper_arm).clone();
+
+    applyFrameToSkeleton(
+      bones,
+      {
+        LEFT_HIP: [-0.1, 0, 0],
+        RIGHT_HIP: [0.1, 0, 0],
+        LEFT_SHOULDER: [-0.1, -0.5, 0],
+        RIGHT_SHOULDER: [0.1, -0.5, 0],
+        // LEFT_ELBOW manquant cette frame (occlusion) : réutilise la valeur en cache.
+      },
+      cache
+    );
+    const secondDirection = worldDirection(bones.L_upper_arm);
+
+    expect(secondDirection.x).toBeCloseTo(firstDirection.x, 5);
+    expect(secondDirection.y).toBeCloseTo(firstDirection.y, 5);
+    expect(secondDirection.z).toBeCloseTo(firstDirection.z, 5);
+  });
+
+  it("garde la rotation locale précédente d'un os si ses deux landmarks sont confondus", () => {
+    const { bones } = buildSkeleton();
+    const cache: Partial<Pose3DLandmarks> = {};
+
+    applyFrameToSkeleton(
+      bones,
+      {
+        LEFT_HIP: [-0.1, 0, 0],
+        RIGHT_HIP: [0.1, 0, 0],
+        LEFT_SHOULDER: [-0.1, -0.5, 0],
+        RIGHT_SHOULDER: [0.1, -0.5, 0],
+        LEFT_ELBOW: [-0.6, -0.5, 0],
+      },
+      cache
+    );
+    const before = bones.L_upper_arm.quaternion.clone();
+
+    applyFrameToSkeleton(
+      bones,
+      {
+        LEFT_HIP: [-0.1, 0, 0],
+        RIGHT_HIP: [0.1, 0, 0],
+        LEFT_SHOULDER: [-0.2, -0.3, 0],
+        RIGHT_SHOULDER: [0.1, -0.5, 0],
+        LEFT_ELBOW: [-0.2, -0.3, 0], // confondu avec l'épaule cette frame
+      },
+      cache
+    );
+    const after = bones.L_upper_arm.quaternion;
+
+    expect(after.x).toBeCloseTo(before.x, 5);
+    expect(after.y).toBeCloseTo(before.y, 5);
+    expect(after.z).toBeCloseTo(before.z, 5);
+    expect(after.w).toBeCloseTo(before.w, 5);
+  });
+});
