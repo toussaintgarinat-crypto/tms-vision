@@ -36,6 +36,7 @@ def test_create_analysis_with_no_detectable_person_returns_empty_summary(tmp_pat
     assert body["summary"]["max_score"] == 0
     assert body["annotated_video_url"].startswith("/outputs/")
     assert body["csv_url"].startswith("/outputs/")
+    assert body["pose3d_url"].startswith("/outputs/")
 
 
 def test_create_analysis_rejects_negative_load_kg(tmp_path, monkeypatch):
@@ -115,6 +116,10 @@ def test_output_files_are_actually_served_at_returned_urls(tmp_path, monkeypatch
     assert csv_response.status_code == 200
     assert len(csv_response.content) > 0
     assert "attachment" in csv_response.headers.get("content-disposition", "")
+
+    pose3d_response = client.get(body["pose3d_url"])
+    assert pose3d_response.status_code == 200
+    assert len(pose3d_response.content) > 0
 
 
 def test_create_analysis_cleans_up_temp_file_when_upload_copy_fails(tmp_path, monkeypatch):

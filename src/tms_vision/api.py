@@ -122,6 +122,7 @@ async def _analyze_and_build_response(
         "summary": summary,
         "annotated_video_url": f"/outputs/{result.video_path.name}",
         "csv_url": f"/outputs/{result.csv_path.name}",
+        "pose3d_url": f"/outputs/{result.pose3d_path.name}",
     }
 
 
