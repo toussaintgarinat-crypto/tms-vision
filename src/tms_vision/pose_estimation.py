@@ -17,6 +17,7 @@ class Landmark:
 @dataclass
 class PoseResult:
     landmarks: dict[str, Landmark] | None
+    world_landmarks: dict[str, Landmark] | None = None
 
 
 class PoseEstimator:
@@ -36,9 +37,10 @@ class PoseEstimator:
         results = self._pose.process(image_rgb)
 
         if results.pose_landmarks is None:
-            return PoseResult(landmarks=None)
+            return PoseResult(landmarks=None, world_landmarks=None)
 
         landmarks: dict[str, Landmark] = {}
+        world_landmarks: dict[str, Landmark] = {}
         pose_landmark_enum = mp.solutions.pose.PoseLandmark
         for landmark_id, raw in enumerate(results.pose_landmarks.landmark):
             if raw.visibility < self._min_visibility:
@@ -47,8 +49,16 @@ class PoseEstimator:
             landmarks[name] = Landmark(
                 x=raw.x, y=raw.y, z=raw.z, visibility=raw.visibility
             )
+            if results.pose_world_landmarks is not None:
+                raw_world = results.pose_world_landmarks.landmark[landmark_id]
+                world_landmarks[name] = Landmark(
+                    x=raw_world.x, y=raw_world.y, z=raw_world.z, visibility=raw_world.visibility
+                )
 
-        return PoseResult(landmarks=landmarks or None)
+        return PoseResult(
+            landmarks=landmarks or None,
+            world_landmarks=world_landmarks or None,
+        )
 
     def close(self) -> None:
         self._pose.close()

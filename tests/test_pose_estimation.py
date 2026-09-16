@@ -9,3 +9,12 @@ def test_blank_frame_returns_no_landmarks():
     estimator.close()
 
     assert result.landmarks is None
+
+
+def test_blank_frame_returns_no_world_landmarks():
+    estimator = PoseEstimator()
+    blank = np.zeros((480, 640, 3), dtype=np.uint8)
+    result = estimator.process(blank)
+    estimator.close()
+
+    assert result.world_landmarks is None
