@@ -6,3 +6,4 @@ outputs/
 .pytest_cache/
 .DS_Store
 .playwright-mcp/
+.superpowers/

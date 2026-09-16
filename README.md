@@ -141,14 +141,11 @@ indisponible, interruption Ctrl+C).
 
 **Ce qui reste à valider avant tout usage réel** — c'est le point de reprise naturel si tu veux
 juste "finir" la Phase 1 avant de passer à la suite :
-1. **Vérification sur une vraie personne.** Le PoC n'a été exercé de bout en bout que sur une
-   vidéo synthétique sans silhouette humaine (contrainte de l'environnement de développement, pas
-   de webcam disponible). Filmer une personne réelle (de profil, comme recommandé section 9) et
-   vérifier visuellement que le squelette se superpose correctement et que le score RULA affiché
-   correspond à la posture observée. **Toujours en attente** — la 1ère tranche de la Phase 2
-   (section 10 ci-dessous) fournit maintenant un outil web pour faire cette vérification (caméra
-   navigateur → analyse → résultat affiché), mais personne ne l'a encore exécutée avec une vraie
-   webcam à ce stade.
+1. ✅ **Vérification sur une vraie personne — FAITE (2026-09-16).** Analyse CLI (`--source`) d'une
+   vidéo réelle (`moi coupe.mp4`, filmée de profil) : 746/798 frames avec pose détectée par
+   MediaPipe (contre 0/40 sur la vidéo synthétique du test précédent). Score RULA max 7, moyenne
+   4.6. Vérification visuelle par l'utilisateur du projet : le squelette se superpose correctement
+   à la posture filmée.
 2. **Calibrage des seuils géométriques sur données réelles.** Les seuils actuels (angle de
    flexion, ratio de séparation latérale pour les indicateurs de torsion/inclinaison, etc.) sont
    dérivés de la méthode RULA officielle et de raisonnements géométriques, mais n'ont pas été
