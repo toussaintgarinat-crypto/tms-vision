@@ -1,28 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Capsule, OrbitControls, Sphere } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
+import { applyFrameToSkeleton, BoneKey, buildSkeleton, Pose3DLandmarks } from "./pose3dSkeleton";
+import { buildTestSkinnedGeometry } from "./testSkinnedGeometry";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-// Mêmes segments que src/tms_vision/overlay.py::_SKELETON_CONNECTIONS.
-const SKELETON_CONNECTIONS: [string, string][] = [
-  ["LEFT_SHOULDER", "RIGHT_SHOULDER"],
-  ["LEFT_SHOULDER", "LEFT_ELBOW"],
-  ["LEFT_ELBOW", "LEFT_WRIST"],
-  ["RIGHT_SHOULDER", "RIGHT_ELBOW"],
-  ["RIGHT_ELBOW", "RIGHT_WRIST"],
-  ["LEFT_SHOULDER", "LEFT_HIP"],
-  ["RIGHT_SHOULDER", "RIGHT_HIP"],
-  ["LEFT_HIP", "RIGHT_HIP"],
-  ["LEFT_HIP", "LEFT_KNEE"],
-  ["RIGHT_HIP", "RIGHT_KNEE"],
-];
-const HEAD_LANDMARK = "NOSE";
-const CAPSULE_RADIUS = 0.05;
-const HEAD_RADIUS = 0.12;
 
 // Même palette que src/tms_vision/overlay.py::_COLOR_BY_LEVEL (converti BGR -> hex RGB).
 const ACTION_LEVEL_COLORS: Record<string, string> = {
@@ -33,8 +18,6 @@ const ACTION_LEVEL_COLORS: Record<string, string> = {
 };
 const DEFAULT_COLOR = "#9E9E9E";
 
-type Pose3DLandmarks = Record<string, [number, number, number]>;
-
 type Pose3DFrame = {
   frame_index: number;
   timestamp_seconds: number;
@@ -42,16 +25,6 @@ type Pose3DFrame = {
   landmarks: Pose3DLandmarks | null;
   action_level: string | null;
 };
-
-function toThreeVector(coords: [number, number, number]): THREE.Vector3 {
-  const [x, y, z] = coords;
-  // MediaPipe pose_world_landmarks : x droite, y vers le bas (même
-  // orientation que les landmarks 2D image), origine au centre des
-  // hanches. Three.js est y-vers-le-haut : on inverse y. À vérifier
-  // visuellement sur une vraie vidéo (Task 8) -- inverser un autre axe ici
-  // si l'avatar apparaît miroir ou de travers.
-  return new THREE.Vector3(x, -y, z);
-}
 
 function findNearestFrameIndex(frames: Pose3DFrame[], time: number): number {
   let low = 0;
@@ -81,107 +54,59 @@ function Rig({
   frames: Pose3DFrame[];
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }) {
-  const capsuleRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const capsuleMaterialRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
-  const headRef = useRef<THREE.Mesh | null>(null);
-  const headMaterialRef = useRef<THREE.MeshStandardMaterial | null>(null);
-  const lastKnownLandmarksRef = useRef<Pose3DLandmarks | null>(null);
+  const geometry = useMemo(() => buildTestSkinnedGeometry(), []);
+
+  const rigRef = useRef<{ skeleton: THREE.Skeleton; bones: Record<BoneKey, THREE.Bone> } | null>(null);
+  if (rigRef.current === null) {
+    rigRef.current = buildSkeleton();
+  }
+
+  const meshRef = useRef<THREE.SkinnedMesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const lastKnownLandmarksRef = useRef<Partial<Pose3DLandmarks>>({});
   const lastKnownColorRef = useRef<string>(DEFAULT_COLOR);
+  const hasDetectedOnceRef = useRef(false);
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    const rig = rigRef.current;
+    if (!mesh || !rig) return;
+    mesh.add(rig.bones.root);
+    mesh.bind(rig.skeleton);
+    mesh.visible = false;
+  }, []);
 
   useFrame(() => {
     const video = videoRef.current;
-    if (!video || frames.length === 0) return;
+    const mesh = meshRef.current;
+    const material = materialRef.current;
+    const rig = rigRef.current;
+    if (!video || !mesh || !material || !rig || frames.length === 0) return;
 
     const index = findNearestFrameIndex(frames, video.currentTime);
     const frame = frames[index];
+
     if (frame.landmarks) {
-      lastKnownLandmarksRef.current = frame.landmarks;
+      applyFrameToSkeleton(rig.bones, frame.landmarks, lastKnownLandmarksRef.current);
+      hasDetectedOnceRef.current = true;
+      mesh.visible = true;
       // `action_level` peut être null même quand une pose est détectée (les
       // angles RULA n'ont pas pu être calculés cette frame-là) : dans ce cas
       // on conserve la dernière couleur connue plutôt que de retomber sur le
-      // gris par défaut (même principe "dernière valeur connue" que pour
-      // lastKnownLandmarksRef ci-dessus).
+      // gris par défaut (même principe qu'en Tranche 1).
       if (frame.action_level) {
         lastKnownColorRef.current = ACTION_LEVEL_COLORS[frame.action_level] ?? DEFAULT_COLOR;
       }
     }
-    const landmarks = lastKnownLandmarksRef.current;
-    if (!landmarks) return;
-    const color = lastKnownColorRef.current;
 
-    SKELETON_CONNECTIONS.forEach(([startName, endName], i) => {
-      const mesh = capsuleRefs.current[i];
-      const material = capsuleMaterialRefs.current[i];
-      if (!mesh || !material) return;
-
-      const startCoords = landmarks[startName];
-      const endCoords = landmarks[endName];
-      if (!startCoords || !endCoords) {
-        // Articulation occultée cette frame (ex. bras opposé à la caméra en
-        // vue de profil) : on masque la capsule plutôt que de la laisser à
-        // sa position de montage par défaut (origine, échelle 1), ce qui
-        // produirait une barre grise fantôme au centre de l'avatar.
-        mesh.visible = false;
-        return;
-      }
-      mesh.visible = true;
-
-      const start = toThreeVector(startCoords);
-      const end = toThreeVector(endCoords);
-      const direction = new THREE.Vector3().subVectors(end, start);
-      const boneLength = direction.length();
-      const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-
-      mesh.position.copy(midpoint);
-      if (boneLength > 1e-4) {
-        mesh.quaternion.setFromUnitVectors(
-          new THREE.Vector3(0, 1, 0),
-          direction.clone().normalize()
-        );
-      }
-      // Toujours appliquer une échelle cohérente, même pour un os de
-      // longueur quasi nulle (deux articulations confondues) : sans ce
-      // plancher, la capsule garderait l'échelle de la frame précédente (ou
-      // l'échelle de montage 1) tout en étant rendue visible.
-      mesh.scale.set(1, Math.max(boneLength, 1e-4), 1);
-      material.color.set(color);
-    });
-
-    const headCoords = landmarks[HEAD_LANDMARK];
-    if (headRef.current && headMaterialRef.current) {
-      if (headCoords) {
-        headRef.current.visible = true;
-        headRef.current.position.copy(toThreeVector(headCoords));
-        headMaterialRef.current.color.set(color);
-      } else {
-        headRef.current.visible = false;
-      }
-    }
+    if (!hasDetectedOnceRef.current) return;
+    material.color.set(lastKnownColorRef.current);
   });
 
   return (
-    <>
-      {SKELETON_CONNECTIONS.map(([startName, endName], i) => (
-        <Capsule
-          key={`${startName}-${endName}`}
-          ref={(mesh) => {
-            capsuleRefs.current[i] = mesh;
-          }}
-          args={[CAPSULE_RADIUS, 1, 4, 8]}
-          visible={false}
-        >
-          <meshStandardMaterial
-            ref={(material) => {
-              capsuleMaterialRefs.current[i] = material;
-            }}
-            color={DEFAULT_COLOR}
-          />
-        </Capsule>
-      ))}
-      <Sphere ref={headRef} args={[HEAD_RADIUS, 16, 16]} visible={false}>
-        <meshStandardMaterial ref={headMaterialRef} color={DEFAULT_COLOR} />
-      </Sphere>
-    </>
+    <skinnedMesh ref={meshRef} geometry={geometry}>
+      <meshStandardMaterial ref={materialRef} color={DEFAULT_COLOR} />
+    </skinnedMesh>
   );
 }
 
@@ -224,8 +149,8 @@ export function PostureAvatar3D({
   if (!frames.some((frame) => frame.landmarks !== null)) {
     // `detected` signifie "angles RULA calculables", pas "pose détectée" :
     // une vidéo où MediaPipe trouve une pose sur chaque frame mais où le
-    // calcul d'angles échoue systématiquement (ex. landmarks du côté suivi
-    // sous le seuil de visibilité) a quand même un track 3D exploitable.
+    // calcul d'angles échoue systématiquement a quand même un track 3D
+    // exploitable (même critère qu'en Tranche 1).
     return <p className="text-sm text-gray-500">Aucune posture détectée sur cette vidéo.</p>;
   }
 
