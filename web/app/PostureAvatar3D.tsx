@@ -104,7 +104,7 @@ function Rig({
   });
 
   return (
-    <skinnedMesh ref={meshRef} geometry={geometry}>
+    <skinnedMesh ref={meshRef} geometry={geometry} visible={false}>
       <meshStandardMaterial ref={materialRef} color={DEFAULT_COLOR} />
     </skinnedMesh>
   );
