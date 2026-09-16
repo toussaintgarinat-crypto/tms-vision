@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { PostureAvatar3D } from "./PostureAvatar3D";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const MAX_RECORDING_MS = 30_000;
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5 Mo
@@ -22,6 +24,7 @@ type AnalysisResponse = {
   summary: AnalysisSummary;
   annotated_video_url: string;
   csv_url: string;
+  pose3d_url: string;
 };
 
 export default function Home() {
@@ -31,6 +34,7 @@ export default function Home() {
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const resultVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [cameraReady, setCameraReady] = useState(false);
   const [mode, setMode] = useState<"camera" | "upload" | null>(null);
@@ -389,11 +393,15 @@ export default function Home() {
       {result && (
         <section className="flex flex-col gap-4 rounded border p-4">
           <h2 className="text-lg font-semibold">Résultat</h2>
-          <video
-            src={`${API_URL}${result.annotated_video_url}`}
-            controls
-            className="w-full rounded-lg bg-black"
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <video
+              ref={resultVideoRef}
+              src={`${API_URL}${result.annotated_video_url}`}
+              controls
+              className="w-full rounded-lg bg-black"
+            />
+            <PostureAvatar3D pose3dUrl={result.pose3d_url} videoRef={resultVideoRef} />
+          </div>
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt>Frames analysées</dt>
             <dd>{result.summary.frame_count}</dd>
