@@ -258,7 +258,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
   calcul des rotations sur une pose de référence, comportement sur landmarks manquants/os dégénéré,
   attributs du maillage de test.
 - **Vérifié manuellement (2026-09-16)** sur `moi coupe.mp4` : le maillage suit la posture en synchro,
-  pas de distorsion aberrante aux jointures, pas de mannequin fantôme avant la première détection,
+  pas de distorsion aberrante aux jointures, pas de mannequin fantôme avant la première détection (confirmé par lecture de code — `visible={false}` en prop JSX synchrone — la vidéo de test n'ayant aucun segment sans détection pour l'observer en direct),
   fallback "aucune posture détectée" toujours correct sur `synthetic_smoke_test.mp4`.
 - **Ce qui n'est pas dans cette tranche** : vrais maillages musculaires Z-Anatomy, recherche sur leur
   riggabilité réelle — Tranche 3 (voir spec
@@ -272,7 +272,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
   implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
   salariés (voir section 7).
 - Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
-- Avatar 3D de posture, tranches 2 et 3 (voir spec `2026-09-16-3d-posture-avatar-design.md`) : vrais
+- Avatar 3D de posture, Tranche 3 (voir spec `2026-09-16-3d-posture-avatar-design.md`) : vrais
   maillages musculaires (Z-Anatomy, CC BY-SA) riggés sur le mannequin de la tranche 1, puis
   coloration/activation des muscles par segment à partir des sous-scores RULA déjà calculés.
 - Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
