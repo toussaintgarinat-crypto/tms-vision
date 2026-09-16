@@ -138,8 +138,12 @@ function Rig({
           new THREE.Vector3(0, 1, 0),
           direction.clone().normalize()
         );
-        mesh.scale.set(1, boneLength, 1);
       }
+      // Toujours appliquer une échelle cohérente, même pour un os de
+      // longueur quasi nulle (deux articulations confondues) : sans ce
+      // plancher, la capsule garderait l'échelle de la frame précédente (ou
+      // l'échelle de montage 1) tout en étant rendue visible.
+      mesh.scale.set(1, Math.max(boneLength, 1e-4), 1);
       material.color.set(color);
     });
 
@@ -164,6 +168,7 @@ function Rig({
             capsuleRefs.current[i] = mesh;
           }}
           args={[CAPSULE_RADIUS, 1, 4, 8]}
+          visible={false}
         >
           <meshStandardMaterial
             ref={(material) => {
@@ -173,7 +178,7 @@ function Rig({
           />
         </Capsule>
       ))}
-      <Sphere ref={headRef} args={[HEAD_RADIUS, 16, 16]}>
+      <Sphere ref={headRef} args={[HEAD_RADIUS, 16, 16]} visible={false}>
         <meshStandardMaterial ref={headMaterialRef} color={DEFAULT_COLOR} />
       </Sphere>
     </>
