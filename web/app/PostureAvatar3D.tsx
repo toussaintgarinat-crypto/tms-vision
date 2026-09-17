@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { applyFrameToSkeleton, BoneKey, buildSkeleton, Pose3DLandmarks } from "./pose3dSkeleton";
+import { applyFrameToSkeleton, buildSkeleton, Pose3DLandmarks, SkeletonRig } from "./pose3dSkeleton";
 import { buildTestSkinnedGeometry } from "./testSkinnedGeometry";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -56,7 +56,7 @@ function Rig({
 }) {
   const geometry = useMemo(() => buildTestSkinnedGeometry(), []);
 
-  const rigRef = useRef<{ skeleton: THREE.Skeleton; bones: Record<BoneKey, THREE.Bone> } | null>(null);
+  const rigRef = useRef<SkeletonRig | null>(null);
   if (rigRef.current === null) {
     rigRef.current = buildSkeleton();
   }
@@ -67,13 +67,22 @@ function Rig({
   const lastKnownColorRef = useRef<string>(DEFAULT_COLOR);
   const hasDetectedOnceRef = useRef(false);
 
-  useEffect(() => {
+  // `useLayoutEffect` et non `useEffect` : le bind doit être fait avant le
+  // premier tick de `useFrame` (dont l'abonnement se fait lui aussi en layout
+  // effect, donc après celui-ci vu l'ordre de déclaration des hooks).
+  useLayoutEffect(() => {
     const mesh = meshRef.current;
     const rig = rigRef.current;
     if (!mesh || !rig) return;
     mesh.add(rig.bones.root);
     mesh.bind(rig.skeleton);
-    mesh.visible = false;
+    // `mesh.visible` est déjà à false via la prop JSX `visible={false}`.
+    return () => {
+      // Libère la bone texture GPU. La géométrie n'est PAS libérée ici : elle
+      // est mémoïsée hors de cet effet et réutilisée telle quelle si le
+      // composant est remonté (double invocation des effets en StrictMode).
+      mesh.skeleton?.dispose();
+    };
   }, []);
 
   useFrame(() => {
@@ -104,7 +113,7 @@ function Rig({
   });
 
   return (
-    <skinnedMesh ref={meshRef} geometry={geometry} visible={false}>
+    <skinnedMesh ref={meshRef} geometry={geometry} visible={false} frustumCulled={false}>
       <meshStandardMaterial ref={materialRef} color={DEFAULT_COLOR} />
     </skinnedMesh>
   );
