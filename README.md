@@ -254,9 +254,12 @@ juste "finir" la Phase 1 avant de passer à la suite :
   mécanisme de skinning avant d'intégrer les vrais muscles.
 - **`web/app/PostureAvatar3D.tsx`** : rend désormais un unique `THREE.SkinnedMesh` lié au squelette,
   à la place des 10 capsules indépendantes de la Tranche 1.
-- **Première suite de tests automatisée dans `web/`** (Vitest, 6 tests) : hiérarchie du squelette,
+- **Première suite de tests automatisée dans `web/`** (Vitest, 9 tests) : hiérarchie du squelette,
   calcul des rotations sur une pose de référence, comportement sur landmarks manquants/os dégénéré,
-  attributs du maillage de test.
+  attributs du maillage de test, plus un test d'intégration bout-en-bout
+  (`web/app/skinning-integration.test.ts`) qui vérifie que les vertices posés du maillage retombent
+  près des segments de landmarks attendus — celui-là même qui aurait détecté le bug de géométrie
+  corrigé dans cette même série de correctifs.
 - **Vérification manuelle du 2026-09-16 : invalidée.** Elle annonçait un maillage sans distorsion
   aux jointures, alors que les captures d'écran prises pendant cette session
   (`.playwright-mcp/orbit-zoomout2.png`, `orbit-angle-*.png`) montrent des cylindres disjoints
@@ -274,9 +277,14 @@ juste "finir" la Phase 1 avant de passer à la suite :
   fournit jamais `LEFT_ELBOW` ni `LEFT_KNEE` (visibilité < 0,5, filtrées par
   `pose_estimation.py`) — 0 frame sur 798. Le bras gauche et la cuisse gauche restent donc figés
   dans leur pose de repos, pointant vers le haut : deux cylindres dépassent au-dessus de la tête.
-  Comportement préexistant du repli « landmark manquant → on garde la rotation courante », pas un
-  effet de la correction de géométrie, mais visuellement non humain. À traiter dans une tranche
-  ultérieure (masquer les os sans donnée, ou les dériver du côté visible).
+  Le filtre de visibilité MediaPipe date d'avant cette tranche, mais pas le repli qui l'exploite ici
+  (« landmark manquant → on garde la rotation courante », `web/app/pose3dSkeleton.ts`, introduit
+  dans cette tranche, commit `9b7c83d`) — ce n'est donc pas un effet de la correction de géométrie de
+  cette série de correctifs, mais c'est bien une régression **par rapport à la Tranche 1**, qui
+  traitait déjà ce même cas de figure en masquant la capsule occultée (`mesh.visible = false`,
+  commentaire citant explicitement la « vue de profil » comme cause) plutôt que de la laisser dans
+  une pose figée traversant le corps. À traiter dans une tranche ultérieure (masquer les os sans
+  donnée, ou les dériver du côté visible).
 - Pas de mannequin fantôme avant la première détection (confirmé par lecture de code —
   `visible={false}` en prop JSX synchrone — la vidéo de test n'ayant aucun segment sans détection
   pour l'observer en direct) ; fallback "aucune posture détectée" toujours correct sur

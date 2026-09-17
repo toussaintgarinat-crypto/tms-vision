@@ -81,8 +81,16 @@ export function buildSkeleton(): SkeletonRig {
 // discontinue quand `direction` est quasi antiparallèle à `UP` — exactement le
 // cas d'un bras ou d'une cuisse qui pend à la verticale : le roll de l'os
 // bascule alors de ~180° d'une frame à l'autre sur un simple bruit de capteur.
-// On construit donc explicitement une base orthonormée continue à partir d'un
-// axe de référence stable.
+// On construit donc explicitement une base orthonormée à partir d'un axe de
+// référence stable. Un champ de repères totalement continu sur toutes les
+// directions est impossible (théorème de la boule chevelue) : cette
+// construction ne fait que déplacer la discontinuité de ±UP vers ±Z (l'axe de
+// profondeur de la caméra dans la convention MediaPipe), un cas beaucoup plus
+// rare pour un membre humain filmé de profil ou de face. Elle reste possible
+// (un membre pointant droit vers/depuis la caméra) : un flip de roll de
+// ~90° sur une frame de bruit peut encore s'y produire.
+// TODO : à revisiter si la Tranche 3 (vrais maillages musculaires) rend ce
+// flip résiduel visible.
 const STABLE_REFERENCE = new THREE.Vector3(0, 0, 1);
 const FALLBACK_REFERENCE = new THREE.Vector3(1, 0, 0);
 
