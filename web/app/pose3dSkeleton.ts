@@ -170,9 +170,15 @@ export function applyFrameToSkeleton(
       // figé en pose de repos — même principe que le masquage de capsule de la
       // Tranche 1 (commit c166cd0), adapté à un maillage skinné unique. Un bone
       // masqué masque aussi ses enfants (l'échelle se propage dans la
-      // hiérarchie) : accepté ici, l'occlusion d'un membre touche typiquement
-      // toute sa chaîne d'un coup (confirmé par les données réelles : coude ET
-      // genou gauches occultés ensemble sur ce clip).
+      // hiérarchie) : sans conséquence quand l'occlusion touche une seule
+      // chaîne d'un même membre (ex. épaule+coude+poignet, tous dans la même
+      // chaîne parent-enfant). Risque réel, non démontré : `spine` dépend des
+      // DEUX hanches (cf. BONE_SPECS) alors que ses enfants `neck`,
+      // `L_upper_arm` et `R_upper_arm` n'en dépendent pas — une vidéo future
+      // qui n'exporterait jamais une seule hanche masquerait donc tout le haut
+      // du corps (cou, deux bras, deux avant-bras, tête) via cette cascade. Pas
+      // déclenché par `moi coupe.mp4` (les deux hanches y sont visibles en
+      // continu) ; non corrigé ici.
       bone.scale.setScalar(HIDDEN_SCALE);
       worldQuatByBone[key] = parentWorldQuat.clone().multiply(bone.quaternion);
       continue;

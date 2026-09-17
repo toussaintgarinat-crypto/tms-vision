@@ -289,10 +289,17 @@ juste "finir" la Phase 1 avant de passer à la suite :
   sans nécessiter de visibilité par mesh (impossible avec le maillage skinné unique de cette
   tranche) — du cas d'un os simplement dégénéré cette frame (landmarks confondus), qui continue de
   garder sa dernière rotation valide sans être masqué. Même principe que le masquage de capsule de
-  la Tranche 1, adapté au maillage skinné unique. Revérifié manuellement sur `moi coupe.mp4` : le
-  bras gauche et la cuisse gauche sont désormais invisibles au lieu de traverser la tête, et les
-  segments avec données valides (tronc, cou, bras et cuisse droits) continuent d'animer
-  correctement sur toute la timeline.
+  la Tranche 1, adapté au maillage skinné unique. Revérifié manuellement sur `moi coupe.mp4`,
+  captures d'écran à l'appui (`.playwright-mcp/occlusion-fix-*.png`) : le bras gauche et la
+  cuisse gauche sont désormais invisibles au lieu de traverser la tête, sur toute la timeline
+  scrutée et sous tous les angles de caméra testés — observation directe, solide. Les segments
+  avec données valides (tronc, cou, bras droit) ont eux aussi été vus animer correctement en
+  direct ; la cuisse droite n'a en revanche pas pu être isolée visuellement dans cette pose
+  accroupie précise (hanche-genou quasi vertical, en partie masqué par le tronc sous cet angle) —
+  sa continuité repose sur la logique du code (seuls les os sans landmark passent par
+  `HIDDEN_SCALE` ; `RIGHT_HIP`/`RIGHT_KNEE` sont présents sur toutes les frames de ce clip, donc
+  `R_thigh` ne prend jamais cette branche, et sa rotation se propage indépendamment de celle de
+  ses os frères) et sur la suite de tests unitaires, pas sur une confirmation visuelle isolée.
 - Pas de mannequin fantôme avant la première détection (confirmé par lecture de code —
   `visible={false}` en prop JSX synchrone — la vidéo de test n'ayant aucun segment sans détection
   pour l'observer en direct) ; fallback "aucune posture détectée" toujours correct sur
