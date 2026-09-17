@@ -254,8 +254,9 @@ juste "finir" la Phase 1 avant de passer à la suite :
   mécanisme de skinning avant d'intégrer les vrais muscles.
 - **`web/app/PostureAvatar3D.tsx`** : rend désormais un unique `THREE.SkinnedMesh` lié au squelette,
   à la place des 10 capsules indépendantes de la Tranche 1.
-- **Première suite de tests automatisée dans `web/`** (Vitest, 9 tests) : hiérarchie du squelette,
-  calcul des rotations sur une pose de référence, comportement sur landmarks manquants/os dégénéré,
+- **Première suite de tests automatisée dans `web/`** (Vitest, 11 tests) : hiérarchie du squelette,
+  calcul des rotations sur une pose de référence, comportement sur landmarks manquants/os dégénéré
+  (y compris le masquage par échelle d'un os jamais détecté, cf. correctif ci-dessous),
   attributs du maillage de test, plus un test d'intégration bout-en-bout
   (`web/app/skinning-integration.test.ts`) qui vérifie que les vertices posés du maillage retombent
   près des segments de landmarks attendus — celui-là même qui aurait détecté le bug de géométrie
@@ -273,18 +274,25 @@ juste "finir" la Phase 1 avant de passer à la suite :
   on se déplace dans la timeline et sous tous les angles de caméra testés ; aucune erreur en console.
   Contrôle numérique complémentaire sur la frame t=12 s : tronc, cou/tête, bras droit et cuisse
   droite tombent à quelques centimètres des landmarks correspondants.
-  **Limite restante, connue et non corrigée** : sur cette vidéo filmée de profil, MediaPipe ne
+  **Limite identifiée puis corrigée (2026-09-17)** : sur cette vidéo filmée de profil, MediaPipe ne
   fournit jamais `LEFT_ELBOW` ni `LEFT_KNEE` (visibilité < 0,5, filtrées par
-  `pose_estimation.py`) — 0 frame sur 798. Le bras gauche et la cuisse gauche restent donc figés
-  dans leur pose de repos, pointant vers le haut : deux cylindres dépassent au-dessus de la tête.
-  Le filtre de visibilité MediaPipe date d'avant cette tranche, mais pas le repli qui l'exploite ici
-  (« landmark manquant → on garde la rotation courante », `web/app/pose3dSkeleton.ts`, introduit
-  dans cette tranche, commit `9b7c83d`) — ce n'est donc pas un effet de la correction de géométrie de
-  cette série de correctifs, mais c'est bien une régression **par rapport à la Tranche 1**, qui
-  traitait déjà ce même cas de figure en masquant la capsule occultée (`mesh.visible = false`,
-  commentaire citant explicitement la « vue de profil » comme cause) plutôt que de la laisser dans
-  une pose figée traversant le corps. À traiter dans une tranche ultérieure (masquer les os sans
-  donnée, ou les dériver du côté visible).
+  `pose_estimation.py`) — 0 frame sur 798. Le filtre de visibilité MediaPipe date d'avant cette
+  tranche, mais pas le repli qui l'exploitait ici (« landmark manquant → on garde la rotation
+  courante », `web/app/pose3dSkeleton.ts`, introduit dans cette tranche, commit `9b7c83d`) : faute de
+  distinguer « jamais détecté » de « juste absent cette frame », ce repli laissait le bras gauche et
+  la cuisse gauche figés dans leur pose de repos, pointant vers le haut — deux cylindres dépassant
+  au-dessus de la tête. C'était une régression **par rapport à la Tranche 1**, qui traitait déjà ce
+  même cas de figure en masquant la capsule occultée (`mesh.visible = false`, commentaire citant
+  explicitement la « vue de profil » comme cause). **Corrigé** : `applyFrameToSkeleton` distingue
+  désormais un os dont le landmark n'a jamais été vu (ni cette frame, ni en cache) — auquel cas son
+  échelle est ramenée à quasi zéro (`HIDDEN_SCALE`), ce qui masque visuellement le segment skinné
+  sans nécessiter de visibilité par mesh (impossible avec le maillage skinné unique de cette
+  tranche) — du cas d'un os simplement dégénéré cette frame (landmarks confondus), qui continue de
+  garder sa dernière rotation valide sans être masqué. Même principe que le masquage de capsule de
+  la Tranche 1, adapté au maillage skinné unique. Revérifié manuellement sur `moi coupe.mp4` : le
+  bras gauche et la cuisse gauche sont désormais invisibles au lieu de traverser la tête, et les
+  segments avec données valides (tronc, cou, bras et cuisse droits) continuent d'animer
+  correctement sur toute la timeline.
 - Pas de mannequin fantôme avant la première détection (confirmé par lecture de code —
   `visible={false}` en prop JSX synchrone — la vidéo de test n'ayant aucun segment sans détection
   pour l'observer en direct) ; fallback "aucune posture détectée" toujours correct sur

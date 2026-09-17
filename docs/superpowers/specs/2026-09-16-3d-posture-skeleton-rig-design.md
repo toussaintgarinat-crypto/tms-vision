@@ -183,6 +183,20 @@ TMS vision/
   Tranche 1 pour confirmer l'absence de régression de fidélité perçue, et vérifier le comportement
   sur au moins une frame non détectée (pose figée, cohérent avec la Tranche 1).
 
+  > **Correction (2026-09-17, après implémentation puis re-correction)** : « pose figée, cohérent
+  > avec la Tranche 1 » ci-dessus était faux dans le cas où un landmark n'est JAMAIS détecté sur
+  > toute la vidéo (pas seulement absent une frame) — cas réel sur `moi coupe.mp4` filmée de profil,
+  > où `LEFT_ELBOW`/`LEFT_KNEE` sont occultés sur les 798 frames. La Tranche 1 masquait déjà ce cas
+  > (`mesh.visible = false`) plutôt que de figer la pose ; l'implémentation initiale de cette tranche
+  > ne distinguait pas « jamais détecté » de « absent cette frame seulement » et figeait les deux de
+  > la même façon, régressant par rapport à la Tranche 1 pour le premier cas (bras/cuisse gauches
+  > visibles pointant vers le haut, traversant la tête). Corrigé dans `pose3dSkeleton.ts` :
+  > `applyFrameToSkeleton` ramène l'échelle de l'os à quasi zéro (`HIDDEN_SCALE`) quand son landmark
+  > n'a jamais été vu (ni cette frame, ni en cache), ce qui masque le segment skinné sans nécessiter
+  > de visibilité par mesh — impossible avec le `SkinnedMesh` unique de cette tranche, contrairement
+  > aux capsules indépendantes de la Tranche 1. Le cas « absent cette frame seulement, déjà vu avant »
+  > garde bien le comportement « pose figée » décrit ci-dessus, qui reste correct pour ce cas précis.
+
 ## Hors périmètre (cette tranche)
 
 - Vrais maillages musculaires Z-Anatomy (sourcing, export, intégration) — Tranche 3.
