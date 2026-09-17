@@ -257,9 +257,30 @@ juste "finir" la Phase 1 avant de passer à la suite :
 - **Première suite de tests automatisée dans `web/`** (Vitest, 6 tests) : hiérarchie du squelette,
   calcul des rotations sur une pose de référence, comportement sur landmarks manquants/os dégénéré,
   attributs du maillage de test.
-- **Vérifié manuellement (2026-09-16)** sur `moi coupe.mp4` : le maillage suit la posture en synchro,
-  pas de distorsion aberrante aux jointures, pas de mannequin fantôme avant la première détection (confirmé par lecture de code — `visible={false}` en prop JSX synchrone — la vidéo de test n'ayant aucun segment sans détection pour l'observer en direct),
-  fallback "aucune posture détectée" toujours correct sur `synthetic_smoke_test.mp4`.
+- **Vérification manuelle du 2026-09-16 : invalidée.** Elle annonçait un maillage sans distorsion
+  aux jointures, alors que les captures d'écran prises pendant cette session
+  (`.playwright-mcp/orbit-zoomout2.png`, `orbit-angle-*.png`) montrent des cylindres disjoints
+  projetés hors champ. Deux bugs de géométrie étaient en cause (repère local au lieu du repère monde
+  de bind pose pour les vertices ; décalage parent-enfant constant au lieu de la longueur du parent),
+  corrigés depuis, avec un test d'intégration bout-en-bout qui échoue sur l'ancien code
+  (`web/app/skinning-integration.test.ts`).
+- **Re-vérifié manuellement (2026-09-17)** sur `moi coupe.mp4`, après correction : le maillage forme
+  bien **un corps unique et connexe** (tronc, tête, bras, cuisses attachés aux articulations), aux
+  proportions humaines plausibles, il suit la posture en synchro avec la vidéo, reste connexe quand
+  on se déplace dans la timeline et sous tous les angles de caméra testés ; aucune erreur en console.
+  Contrôle numérique complémentaire sur la frame t=12 s : tronc, cou/tête, bras droit et cuisse
+  droite tombent à quelques centimètres des landmarks correspondants.
+  **Limite restante, connue et non corrigée** : sur cette vidéo filmée de profil, MediaPipe ne
+  fournit jamais `LEFT_ELBOW` ni `LEFT_KNEE` (visibilité < 0,5, filtrées par
+  `pose_estimation.py`) — 0 frame sur 798. Le bras gauche et la cuisse gauche restent donc figés
+  dans leur pose de repos, pointant vers le haut : deux cylindres dépassent au-dessus de la tête.
+  Comportement préexistant du repli « landmark manquant → on garde la rotation courante », pas un
+  effet de la correction de géométrie, mais visuellement non humain. À traiter dans une tranche
+  ultérieure (masquer les os sans donnée, ou les dériver du côté visible).
+- Pas de mannequin fantôme avant la première détection (confirmé par lecture de code —
+  `visible={false}` en prop JSX synchrone — la vidéo de test n'ayant aucun segment sans détection
+  pour l'observer en direct) ; fallback "aucune posture détectée" toujours correct sur
+  `synthetic_smoke_test.mp4`.
 - **Ce qui n'est pas dans cette tranche** : vrais maillages musculaires Z-Anatomy, recherche sur leur
   riggabilité réelle — Tranche 3 (voir spec
   `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`).
