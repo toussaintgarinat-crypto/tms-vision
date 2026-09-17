@@ -272,9 +272,12 @@ juste "finir" la Phase 1 avant de passer à la suite :
   implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
   salariés (voir section 7).
 - Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
-- Avatar 3D de posture, Tranche 3 (voir spec `2026-09-16-3d-posture-avatar-design.md`) : vrais
-  maillages musculaires (Z-Anatomy, CC BY-SA) riggés sur le mannequin de la tranche 1, puis
-  coloration/activation des muscles par segment à partir des sous-scores RULA déjà calculés.
+- Avatar 3D de posture, Tranche 3 (voir la section « Hors périmètre » de la spec
+  `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md` — la numérotation des
+  tranches a été renumérotée à partir de cette tranche-là, le travail « muscles » y est décrit) :
+  vrais maillages musculaires (Z-Anatomy, CC BY-SA) riggés sur le squelette articulé de la
+  Tranche 2, puis coloration/activation des muscles par segment à partir des sous-scores RULA déjà
+  calculés.
 - Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
   l'export : `neck`, `trunk`, `upper_arm`, `lower_arm`, `wrist`) aux capsules d'étirement.
 
