@@ -94,6 +94,13 @@ export function buildSkeleton(): SkeletonRig {
 const STABLE_REFERENCE = new THREE.Vector3(0, 0, 1);
 const FALLBACK_REFERENCE = new THREE.Vector3(1, 0, 0);
 
+// Échelle appliquée à un os dont le landmark n'a JAMAIS été détecté sur toute
+// la vidéo (occultation en vue de profil, ex. LEFT_ELBOW/LEFT_KNEE) : on ne
+// peut pas mettre 0 exactement (matrice non inversible pour le skinning),
+// mais une échelle quasi nulle collapse visuellement le segment sans risque
+// numérique.
+const HIDDEN_SCALE = 1e-6;
+
 // `direction` doit déjà être normalisé. Les deux références étant orthogonales,
 // au plus une des deux peut être quasi parallèle à `direction` : le produit
 // vectoriel qui construit `xAxis` ne dégénère jamais.
@@ -155,9 +162,26 @@ export function applyFrameToSkeleton(
 
     const from = averageLandmark(merged, spec.from);
     const to = averageLandmark(merged, spec.to);
-    const direction = from && to ? new THREE.Vector3().subVectors(to, from) : null;
 
-    if (direction && direction.lengthSq() > 1e-8) {
+    if (from === null || to === null) {
+      // Articulation jamais détectée sur toute la vidéo (occultée en vue de
+      // profil, ex. LEFT_ELBOW/LEFT_KNEE sur une vidéo filmée de côté) : on
+      // masque le segment via une échelle quasi nulle plutôt que de le laisser
+      // figé en pose de repos — même principe que le masquage de capsule de la
+      // Tranche 1 (commit c166cd0), adapté à un maillage skinné unique. Un bone
+      // masqué masque aussi ses enfants (l'échelle se propage dans la
+      // hiérarchie) : accepté ici, l'occlusion d'un membre touche typiquement
+      // toute sa chaîne d'un coup (confirmé par les données réelles : coude ET
+      // genou gauches occultés ensemble sur ce clip).
+      bone.scale.setScalar(HIDDEN_SCALE);
+      worldQuatByBone[key] = parentWorldQuat.clone().multiply(bone.quaternion);
+      continue;
+    }
+    bone.scale.setScalar(1);
+
+    const direction = new THREE.Vector3().subVectors(to, from);
+
+    if (direction.lengthSq() > 1e-8) {
       direction.normalize();
       const desiredWorldQuat = swingQuaternion(direction);
       bone.quaternion.copy(parentWorldQuat.clone().invert().multiply(desiredWorldQuat));

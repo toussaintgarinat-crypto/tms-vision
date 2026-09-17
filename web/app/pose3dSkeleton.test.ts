@@ -131,5 +131,70 @@ describe("applyFrameToSkeleton — landmarks manquants ou os dégénéré", () =
     expect(after.y).toBeCloseTo(before.y, 5);
     expect(after.z).toBeCloseTo(before.z, 5);
     expect(after.w).toBeCloseTo(before.w, 5);
+    // Os dégénéré (landmarks confondus) mais PAS manquant : ne doit pas
+    // déclencher le masquage par échelle, contrairement au cas "jamais vu".
+    expect(bones.L_upper_arm.scale.x).toBeCloseTo(1, 5);
+    expect(bones.L_upper_arm.scale.y).toBeCloseTo(1, 5);
+    expect(bones.L_upper_arm.scale.z).toBeCloseTo(1, 5);
+  });
+
+  it("masque (échelle quasi nulle) un os dont le landmark n'a jamais été détecté, sans affecter un os valide", () => {
+    const { bones } = buildSkeleton();
+    const cache: Partial<Pose3DLandmarks> = {};
+
+    // Vue de profil : LEFT_ELBOW n'apparaît jamais (occlusion sur toute la
+    // vidéo), contrairement au reste des landmarks du tronc.
+    applyFrameToSkeleton(
+      bones,
+      {
+        LEFT_HIP: [-0.1, 0, 0],
+        RIGHT_HIP: [0.1, 0, 0],
+        LEFT_SHOULDER: [-0.1, -0.5, 0],
+        RIGHT_SHOULDER: [0.1, -0.5, 0],
+      },
+      cache
+    );
+
+    expect(bones.L_upper_arm.scale.x).toBeLessThan(1e-3);
+    expect(bones.L_upper_arm.scale.y).toBeLessThan(1e-3);
+    expect(bones.L_upper_arm.scale.z).toBeLessThan(1e-3);
+    // Un os avec des landmarks valides ne doit pas être affecté.
+    expect(bones.spine.scale.x).toBeCloseTo(1, 5);
+    expect(bones.spine.scale.y).toBeCloseTo(1, 5);
+    expect(bones.spine.scale.z).toBeCloseTo(1, 5);
+  });
+
+  it("restaure l'échelle à 1 dès que le landmark manquant est enfin détecté", () => {
+    const { bones } = buildSkeleton();
+    const cache: Partial<Pose3DLandmarks> = {};
+
+    applyFrameToSkeleton(
+      bones,
+      {
+        LEFT_HIP: [-0.1, 0, 0],
+        RIGHT_HIP: [0.1, 0, 0],
+        LEFT_SHOULDER: [-0.1, -0.5, 0],
+        RIGHT_SHOULDER: [0.1, -0.5, 0],
+        // LEFT_ELBOW jamais vu pour l'instant.
+      },
+      cache
+    );
+    expect(bones.L_upper_arm.scale.x).toBeLessThan(1e-3);
+
+    applyFrameToSkeleton(
+      bones,
+      {
+        LEFT_HIP: [-0.1, 0, 0],
+        RIGHT_HIP: [0.1, 0, 0],
+        LEFT_SHOULDER: [-0.1, -0.5, 0],
+        RIGHT_SHOULDER: [0.1, -0.5, 0],
+        LEFT_ELBOW: [-0.6, -0.5, 0], // enfin détecté.
+      },
+      cache
+    );
+
+    expect(bones.L_upper_arm.scale.x).toBeCloseTo(1, 5);
+    expect(bones.L_upper_arm.scale.y).toBeCloseTo(1, 5);
+    expect(bones.L_upper_arm.scale.z).toBeCloseTo(1, 5);
   });
 });
