@@ -135,6 +135,18 @@ TMS vision/
   première frame par `applyFrameToSkeleton`). Retourne `{ skeleton, bones }` (map nom → `THREE.Bone`)
   pour que `PostureAvatar3D.tsx` puisse construire le `SkinnedMesh` de test à partir des mêmes
   références d'os.
+
+  > **Correction (2026-09-17, après implémentation)** : la phrase ci-dessus est fausse sur la
+  > longueur des os. `applyFrameToSkeleton` n'a jamais appliqué que la *rotation* (plus la position
+  > de la racine), jamais la longueur — et c'est le comportement correct pour un rig skinné, où les
+  > proportions du personnage sont fixes et seules les articulations tournent. Les longueurs sont
+  > donc figées une fois pour toutes dans `BONE_LENGTH` (`pose3dSkeleton.ts`) : des proportions
+  > humaines adultes approximatives en mètres, cohérentes avec l'échelle métrique des
+  > `pose_world_landmarks`, et non des mesures dérivées de la vidéo analysée. Simplification
+  > assumée pour un maillage de test non anatomique. Corollaire : l'origine d'un os est décalée de
+  > la longueur **de son parent** (donc 0 pour les enfants de `root`, qui est un locateur de
+  > longueur nulle), et non d'une constante unique.
+
 - `applyFrameToSkeleton(bones, frame, lastKnownLandmarksRef)` : pour chaque os, calcule la direction
   monde `toLandmark - fromLandmark` à partir de `frame.landmarks` (ou `lastKnownLandmarksRef.current`
   si `frame.detected === false`, même garde-fou que la Tranche 1), en déduit le quaternion de
