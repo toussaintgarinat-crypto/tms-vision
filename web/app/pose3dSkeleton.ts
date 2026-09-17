@@ -15,7 +15,22 @@ export const BONE_ORDER = [
 ] as const;
 export type BoneKey = (typeof BONE_ORDER)[number];
 
-export const BIND_LENGTH = 1;
+// Longueurs d'os fixes, en mètres (proportions humaines adultes approximatives),
+// cohérentes avec l'échelle métrique des `pose_world_landmarks` MediaPipe dont
+// provient `root.position`. Comme dans tout rig skinné classique, ces longueurs
+// ne sont PAS recalculées par frame : seule la rotation des os est animée.
+// `root` est un simple locateur de longueur nulle.
+export const BONE_LENGTH: Record<BoneKey, number> = {
+  root: 0,
+  spine: 0.5,
+  neck: 0.25,
+  L_upper_arm: 0.3,
+  L_forearm: 0.25,
+  R_upper_arm: 0.3,
+  R_forearm: 0.25,
+  L_thigh: 0.45,
+  R_thigh: 0.45,
+};
 
 interface BoneSpec {
   parent: BoneKey;
@@ -54,13 +69,34 @@ export function buildSkeleton(): SkeletonRig {
     if (key === "root") continue;
     const spec = BONE_SPECS[key];
     bones[spec.parent].add(bones[key]);
-    bones[key].position.set(0, BIND_LENGTH, 0);
+    // L'origine d'un os se place au bout de son parent : le décalage est donc
+    // la longueur DU PARENT (0 pour les enfants de `root`, qui est un locateur).
+    bones[key].position.set(0, BONE_LENGTH[spec.parent], 0);
   }
   const skeleton = new THREE.Skeleton(BONE_ORDER.map((key) => bones[key]));
   return { skeleton, bones };
 }
 
-const UP = new THREE.Vector3(0, 1, 0);
+// `THREE.Quaternion.setFromUnitVectors(UP, direction)` contient une branche
+// discontinue quand `direction` est quasi antiparallèle à `UP` — exactement le
+// cas d'un bras ou d'une cuisse qui pend à la verticale : le roll de l'os
+// bascule alors de ~180° d'une frame à l'autre sur un simple bruit de capteur.
+// On construit donc explicitement une base orthonormée continue à partir d'un
+// axe de référence stable.
+const STABLE_REFERENCE = new THREE.Vector3(0, 0, 1);
+const FALLBACK_REFERENCE = new THREE.Vector3(1, 0, 0);
+
+// `direction` doit déjà être normalisé. Les deux références étant orthogonales,
+// au plus une des deux peut être quasi parallèle à `direction` : le produit
+// vectoriel qui construit `xAxis` ne dégénère jamais.
+function swingQuaternion(direction: THREE.Vector3): THREE.Quaternion {
+  const reference =
+    Math.abs(direction.dot(STABLE_REFERENCE)) > 0.99 ? FALLBACK_REFERENCE : STABLE_REFERENCE;
+  const xAxis = new THREE.Vector3().crossVectors(reference, direction).normalize();
+  const zAxis = new THREE.Vector3().crossVectors(xAxis, direction).normalize();
+  const matrix = new THREE.Matrix4().makeBasis(xAxis, direction, zAxis);
+  return new THREE.Quaternion().setFromRotationMatrix(matrix);
+}
 
 function toThreeVector(coords: readonly [number, number, number]): THREE.Vector3 {
   // MediaPipe pose_world_landmarks : x droite, y vers le bas, origine au
@@ -115,7 +151,7 @@ export function applyFrameToSkeleton(
 
     if (direction && direction.lengthSq() > 1e-8) {
       direction.normalize();
-      const desiredWorldQuat = new THREE.Quaternion().setFromUnitVectors(UP, direction);
+      const desiredWorldQuat = swingQuaternion(direction);
       bone.quaternion.copy(parentWorldQuat.clone().invert().multiply(desiredWorldQuat));
       worldQuatByBone[key] = desiredWorldQuat;
     } else {

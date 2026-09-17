@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BIND_LENGTH, BONE_ORDER, BoneKey } from "./pose3dSkeleton";
+import { BONE_LENGTH, BONE_ORDER, BoneKey, buildSkeleton } from "./pose3dSkeleton";
 
 const CYLINDER_RADIUS = 0.05;
 const HEAD_RADIUS = 0.12;
@@ -10,17 +10,31 @@ export function buildTestSkinnedGeometry(): THREE.BufferGeometry {
     boneIndexOf[key] = index;
   });
 
+  // `mesh.bind(skeleton)` sans bindMatrix calcule les inverses de bind depuis la
+  // matrice MONDE courante de chaque os : les vertices doivent donc être
+  // exprimés dans l'espace monde de la bind pose, pas dans le repère local de
+  // chaque os. On instancie un squelette jetable uniquement pour récupérer ces
+  // matrices. `buildSkeleton()` étant déterministe, cette instance a exactement
+  // la même bind pose que le squelette « vivant » de l'appelant — ce qui évite
+  // de faire transiter des os par le rendu React (la signature publique de
+  // cette fonction reste sans argument).
+  const { bones } = buildSkeleton();
+  bones.root.updateMatrixWorld(true);
+
   const geometries: THREE.BufferGeometry[] = [];
   for (const key of BONE_ORDER) {
     if (key === "root") continue;
-    const cylinder = new THREE.CylinderGeometry(CYLINDER_RADIUS, CYLINDER_RADIUS, BIND_LENGTH, 8);
-    cylinder.translate(0, BIND_LENGTH / 2, 0);
+    const length = BONE_LENGTH[key];
+    const cylinder = new THREE.CylinderGeometry(CYLINDER_RADIUS, CYLINDER_RADIUS, length, 8);
+    cylinder.translate(0, length / 2, 0);
+    cylinder.applyMatrix4(bones[key].matrixWorld);
     assignSkinAttributes(cylinder, boneIndexOf[key]);
     geometries.push(cylinder);
   }
 
   const head = new THREE.SphereGeometry(HEAD_RADIUS, 12, 12);
-  head.translate(0, BIND_LENGTH, 0);
+  head.translate(0, BONE_LENGTH.neck, 0);
+  head.applyMatrix4(bones.neck.matrixWorld);
   assignSkinAttributes(head, boneIndexOf.neck);
   geometries.push(head);
 
