@@ -91,6 +91,55 @@ Cette recherche change l'approche technique par rapport à ce qui était envisag
   >    où l'algorithme automatique échoue purement et simplement, jamais utilisé comme raccourci
   >    général. Le rig final reste skinné à 100 % dans tous les cas.
 
+  > **Correction (2026-09-20, revue finale de branche complète)** : une revue de code indépendante,
+  > portant sur l'ensemble de la branche, a décodé directement les données binaires de skin
+  > (`JOINTS_0`/`WEIGHTS_0`) du `muscle-rig.glb` commité et trouvé un bug réel et sérieux, non
+  > détecté par les vérifications précédentes (aucune n'avait décodé le contenu binaire du skin
+  > exporté, seulement sa présence).
+  >
+  > 1. **Les 20 muscles de membre gauche étaient skinnés sur les os DROITS.** Cause racine : le
+  >    `.glb` contenait 27 noms de mesh uniques, chacun utilisé par exactement 2 nodes (`.l` et
+  >    `.r`). Blender impose des noms de datablock uniques dans `bpy.data.meshes` : deux objets
+  >    exportés de même nom ne peuvent provenir que d'UN SEUL datablock mesh partagé — les objets
+  >    gauche/droite de Z-Anatomy sont des duplicata liés, miroités par la matrice d'objet (pas une
+  >    géométrie indépendante par côté). Les poids de vertex vivant dans le datablock mesh (seule la
+  >    liste des noms de groupes est par-objet), `parent_set(type="ARMATURE_AUTO")` exécuté sur les
+  >    deux objets à la fois écrivait dans une seule couche de poids partagée : le côté traité en
+  >    dernier gagnait pour les deux. Invisible pour les 7 datablocks tronc/cou (les deux côtés
+  >    pointent de toute façon vers le même os `spine`/`neck`) — c'est exactement pour cette raison
+  >    que le bug est passé inaperçu jusqu'à ce décodage binaire direct.
+  >    **Correctif** : dans `export_muscle_rig.py`, juste avant `parent_set(ARMATURE_AUTO)`, chaque
+  >    objet dont `obj.data.users > 1` reçoit une copie privée de son datablock
+  >    (`obj.data = obj.data.copy()`), avec une assertion (`obj.data.users == 1` pour tous) qui fait
+  >    échouer l'export si un partage subsiste. Ré-exécution réelle du pipeline contre le vrai
+  >    `Startup.blend` : toujours 54 muscles (aucun changement de compte), et décodage indépendant du
+  >    nouveau `.glb` (binaire `JOINTS_0`/`WEIGHTS_0`, hors Blender) confirmant que l'os dominant de
+  >    chaque objet `.l`/`.r` de membre est désormais bien du bon côté sur l'ensemble des 54 objets.
+  >    `validate_muscle_rig.py` vérifie désormais cet invariant structurellement (pas seulement visé
+  >    par relecture) : aucun datablock mesh partagé entre objets exportés, et os dominant du bon
+  >    côté pour chaque objet `.l`/`.r`.
+  > 2. **Le correctif ci-dessus n'a PAS résolu la bavure de poids mesurée sur les muscles de tronc**
+  >    (ex. Latissimus dorsi). Hypothèse de départ (partage de datablock entre les objets `.l`/`.r`
+  >    du tronc eux-mêmes, donc corrigée par le même correctif) infirmée par remesure directe sur le
+  >    nouveau `.glb` : `Latissimus dorsi muscle.l` reste dominé à 45 % par `L_upper_arm` (37 % `neck`,
+  >    17 % `spine`) et `.r` à 47 % par `R_upper_arm` — quasi identique aux chiffres d'avant
+  >    correctif. C'est donc un problème de qualité de poids distinct, pas un symptôme du bug de
+  >    datablock partagé : la diffusion de chaleur de Blender, appliquée à un muscle en nappe qui
+  >    s'étend du bassin jusqu'à l'aisselle/l'humérus, ne trouve pas de dominante nette entre `spine`,
+  >    `neck` et `L_upper_arm`/`R_upper_arm` (aucun des trois ne dépasse ~45 %). C'est plus grave que
+  >    la « bavure entre muscles proches de l'avant-bras » anticipée par la puce ci-dessus : ici, l'os
+  >    dominant lui-même est le mauvais, pas seulement une contamination secondaire d'un os par
+  >    ailleurs correctement dominant. `External abdominal oblique muscle` et `Transverse part of
+  >    trapezius muscle`, en revanche, gardent un os dominant correct (`spine` à ~62-64 %, `neck` à
+  >    ~60-64 % respectivement) malgré une bavure secondaire non négligeable vers les os de membre.
+  >    **Non corrigé dans cette passe** : corriger la répartition fine des poids du Latissimus dorsi
+  >    demanderait soit une retouche manuelle du weight-painting dans Blender (repeindre
+  >    explicitement vers `spine`), soit un ajustement de la position calculée de l'os `L_upper_arm`/
+  >    `R_upper_arm` (actuellement dérivée de la bounding box des muscles de bras, pas d'un repère
+  >    squelettique réel), les deux hors périmètre de cette correction. Reste un point ouvert, à
+  >    traiter dans une session ultérieure si la déformation du Latissimus dorsi s'avère visuellement
+  >    gênante en posture réelle.
+
 ### Liste des muscles retenus
 
 Mappés sur les 8 os existants (voir `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`) :
