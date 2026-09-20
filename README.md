@@ -130,6 +130,11 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   l'avatar 3D de posture (squelette articulé + preuve de skinning).
 - `docs/superpowers/plans/2026-09-16-3d-posture-skeleton-rig-plan.md` — le plan d'implémentation de
   cette tranche.
+- `docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md` — la spec de la tranche 3 de
+  l'avatar 3D de posture (vrais maillages musculaires Z-Anatomy). **Approuvée mais pas encore
+  implémentée** — c'est le point de reprise si tu veux continuer l'avatar 3D. Pas de plan
+  d'implémentation écrit pour cette tranche pour l'instant (à faire via la skill `writing-plans` au
+  moment de reprendre).
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
