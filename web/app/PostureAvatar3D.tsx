@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { applyFrameToSkeleton, BONE_ORDER, BoneKey, Pose3DLandmarks } from "./pose3dSkeleton";
@@ -57,15 +58,32 @@ function Rig({
 }) {
   const gltf = useGLTF(MUSCLE_RIG_URL);
 
+  // `useGLTF` mémoïse et partage `gltf.scene` entre tous les composants qui
+  // chargent la même URL. Le traiter comme un template en clonant une copie
+  // dédiée à ce montage (via SkeletonUtils.clone, qui préserve correctement
+  // les liaisons squelette/SkinnedMesh, contrairement à Object3D.clone) :
+  // sans cela, muter `mesh.material` directement sur la scène partagée
+  // provoque une désynchronisation entre l'objet réellement affiché et
+  // celui mis à jour par la boucle de coloration ci-dessous dès que le
+  // composant est monté plus d'une fois sur la session (ex. Strict Mode en
+  // dev, ou plusieurs analyses successives) — chaque montage réattribue
+  // `mesh.material` sur les mêmes objets partagés, et le montage devenu
+  // obsolète peut rester celui dont la référence `.material` colle
+  // effectivement à la scène rendue, alors que sa propre boucle useFrame
+  // ne tourne plus. Constaté visuellement le 2026-09-20 : les muscles
+  // restaient gris quel que soit l'action_level tant que ce clonage
+  // n'était pas fait.
+  const scene = useMemo(() => cloneSkeleton(gltf.scene), [gltf]);
+
   const skinnedMeshes = useMemo(() => {
     const meshes: THREE.SkinnedMesh[] = [];
-    gltf.scene.traverse((object) => {
+    scene.traverse((object) => {
       if ((object as THREE.SkinnedMesh).isSkinnedMesh) {
         meshes.push(object as THREE.SkinnedMesh);
       }
     });
     return meshes;
-  }, [gltf]);
+  }, [scene]);
 
   const bones = useMemo(() => {
     const skeleton = skinnedMeshes[0]?.skeleton;
@@ -85,15 +103,44 @@ function Rig({
 
   // Cloner les matériaux importés plutôt que les muter directement : évite
   // de modifier l'asset source partagé (mémoïsé par useGLTF) si le
-  // composant est démonté/remonté.
+  // composant est démonté/remonté. `useMemo` doit rester pur (spec React) :
+  // la création des clones se fait ici, mais leur AFFECTATION à
+  // `mesh.material` est déportée dans un useEffect ci-dessous plutôt que
+  // faite ici en tant qu'effet de bord pendant le rendu.
   const clonedMaterials = useMemo(() => {
     return skinnedMeshes.map((mesh) => {
       const source = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
       const clone = (source as THREE.MeshStandardMaterial).clone();
-      mesh.material = clone;
+      // Les matériaux Z-Anatomy exportés portent un emissiveFactor blanc
+      // (1,1,1) sans texture d'émission (vérifié dans muscle-rig.glb : les
+      // 12 matériaux). À pleine intensité, ce terme émissif s'ajoute au
+      // rendu indépendamment de `color` et sature l'image en blanc, ce qui
+      // rend invisible toute teinte appliquée par action_level ci-dessous.
+      // On neutralise l'émissif pour que la teinte reste visible.
+      clone.emissive.set(0x000000);
       return clone;
     });
   }, [skinnedMeshes]);
+
+  // Affecter les clones aux meshes dans un effet (pas pendant le rendu) :
+  // en Strict Mode (dev), React invoque deux fois le corps du composant
+  // (et donc les initialiseurs `useMemo`) pour détecter les effets de bord
+  // impurs. Affecter `mesh.material = clone` DANS le `useMemo` ci-dessus
+  // (comme le faisait une version antérieure de ce code) crée deux
+  // générations de clones et mute les meshes partagés à chaque passage :
+  // le mesh réellement affiché pouvait alors garder le matériau de la
+  // première passe (jamais recoloré par la boucle ci-dessous), tandis que
+  // `clonedMaterials` référençait la seconde — désynchronisation constatée
+  // visuellement le 2026-09-20 (muscles restés gris quel que soit
+  // l'action_level, malgré `material.color` correctement mis à jour côté
+  // JS). Un `useEffect` s'exécute après le commit et réaffecte les mêmes
+  // références de façon idempotente, ce qui règle le problème même s'il
+  // est aussi rejoué deux fois par Strict Mode.
+  useEffect(() => {
+    skinnedMeshes.forEach((mesh, index) => {
+      mesh.material = clonedMaterials[index];
+    });
+  }, [skinnedMeshes, clonedMaterials]);
 
   const groupRef = useRef<THREE.Group>(null);
   const lastKnownLandmarksRef = useRef<Partial<Pose3DLandmarks>>({});
@@ -125,7 +172,7 @@ function Rig({
 
   return (
     <group ref={groupRef} visible={false}>
-      <primitive object={gltf.scene} />
+      <primitive object={scene} />
     </group>
   );
 }
