@@ -44,7 +44,21 @@ def main() -> None:
     missing = set(rig_spec.BONE_ORDER) - bone_names
     assert not missing, f"os manquants dans le glb exporté : {sorted(missing)}"
 
-    meshes = [obj for obj in bpy.data.objects if obj.type == "MESH"]
+    # Filtre "Icosphere" (primitive par défaut Blender, 42 sommets/80
+    # faces) : repro isolée et confirmée (Blender 4.5.14 LTS) — même un
+    # cube trivial + armature à 2 os, exporté via
+    # `parent_set(ARMATURE_AUTO)` puis réimporté ici, fait apparaître un
+    # objet "Icosphere" parasite. Le JSON glTF du .glb exporté (inspecté
+    # directement, en dehors de Blender, octet par octet) ne contient
+    # AUCUNE trace de cet objet : ni mesh, ni node de ce nom, quel que soit
+    # le fichier (Z-Anatomy réel ou repro minimal). C'est donc un artefact
+    # du RÉIMPORTATEUR glTF de Blender lui-même (déclenché par tout glTF
+    # skinné via cette méthode, indépendamment des données Z-Anatomy),
+    # jamais présent dans le fichier réellement exporté — on l'exclut donc
+    # par son nom exact plutôt que de le traiter comme un défaut du .glb.
+    meshes = [
+        obj for obj in bpy.data.objects if obj.type == "MESH" and obj.name != "Icosphere"
+    ]
     assert len(meshes) >= MIN_EXPECTED_MESH_COUNT, (
         f"attendu au moins {MIN_EXPECTED_MESH_COUNT} maillages, trouvé {len(meshes)}"
     )
