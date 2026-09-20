@@ -199,6 +199,32 @@ def resolve_muscle_objects() -> dict:
     return result
 
 
+def resolve_skeletal_landmarks() -> dict:
+    """Retourne {bone_key: objet mesh squelettique réel} pour les os où l'on
+    dispose d'un repère anatomique plus fiable que la bbox des muscles qui
+    lui sont assignés (voir la correction de spec du 2026-09-20 sur le
+    Latissimus dorsi : `L_upper_arm`/`R_upper_arm` dérivés de la bbox
+    combinée Deltoïde+Biceps+Triceps chevauchent géométriquement le
+    Latissimus dorsi, qui s'étend jusqu'à l'aisselle, et Automatic Weights
+    lui attribue alors à tort l'os de bras comme dominant). Noms `Humerus.l`/
+    `Humerus.r` vérifiés directement dans `Startup.blend` via
+    `bpy.data.objects` (2143 sommets / 4280 faces chacun, datablock mesh
+    partagé `Humerus` — même convention de duplicata miroité que les autres
+    paires `.l`/`.r` du fichier) ; longueur monde mesurée ~31.76 cm, cohérent
+    avec la mesure ~31.8 cm faite pendant le brainstorming de la Tranche 3.
+    Lève RuntimeError si un repère attendu est introuvable — même discipline
+    explicite que `resolve_muscle_objects` (jamais de repli silencieux)."""
+    landmarks = {}
+    for bone_key, object_name in (("L_upper_arm", "Humerus.l"), ("R_upper_arm", "Humerus.r")):
+        found = _mesh_objects_by_exact_name(object_name)
+        if not found:
+            raise RuntimeError(
+                f"Repère squelettique '{object_name}' introuvable pour l'os '{bone_key}'."
+            )
+        landmarks[bone_key] = found[0]
+    return landmarks
+
+
 def combined_world_bbox(objects: list) -> tuple:
     """Bounding box monde combinée d'une liste d'objets mesh. Lève
     ValueError si `objects` est vide."""

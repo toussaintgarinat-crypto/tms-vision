@@ -112,9 +112,24 @@ def main() -> None:
     root_head = spine_head
     root_tail = spine_head + type(spine_head)((0.0, 0.0, 0.02))
 
+    # L_upper_arm/R_upper_arm : position dérivée du vrai repère squelettique
+    # (Humerus.l/.r), pas de la bbox des muscles Deltoïde+Biceps+Triceps qui
+    # lui sont assignés — cette bbox chevauche géométriquement le
+    # Latissimus dorsi (qui remonte jusqu'à l'aisselle) et Automatic
+    # Weights lui attribuait à tort l'os de bras comme dominant (voir la
+    # correction de spec du 2026-09-20). Uniquement ces deux os : les autres
+    # (spine, neck, forearm, thigh) restent dérivés de la bbox des muscles,
+    # correctif ciblé pour ne pas risquer de régression ailleurs.
+    skeletal_landmarks = rig_spec.resolve_skeletal_landmarks()
+
     bone_positions = {"root": (root_head, root_tail)}
     for bone_key in rig_spec.BONE_ORDER:
         if bone_key == "root":
+            continue
+        if bone_key in skeletal_landmarks:
+            bone_positions[bone_key] = rig_spec.bone_head_tail(
+                [skeletal_landmarks[bone_key]], ascending=False
+            )
             continue
         ascending = bone_key in rig_spec.ASCENDING_BONES
         bone_positions[bone_key] = rig_spec.bone_head_tail(
