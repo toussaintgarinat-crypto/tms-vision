@@ -182,6 +182,85 @@ Cette recherche change l'approche technique par rapport à ce qui était envisag
   > (même diagnostic de chevauchement géométrique, cette fois avec la bbox Trapèze/SCM) et/ou une
   > retouche manuelle du weight-painting, toujours hors périmètre de ce correctif ciblé.
 
+  > **Correction (2026-09-20, fix définitif — changement d'approche, pas un nouvel ajustement de
+  > position d'os)** : les deux tentatives précédentes ci-dessus repositionnaient des os individuels
+  > pour tenter d'influencer le résultat du solveur Automatic Weights (heat-diffusion) de Blender —
+  > une approche jugée "whack-a-mole" après coup : le solveur considère toute l'armature et toute la
+  > topologie du maillage, pas seulement l'os le plus proche, et le Latissimus dorsi est un muscle en
+  > nappe qui s'étend du bassin jusqu'à l'aisselle/l'épaule, géométriquement ambigu entre `spine`,
+  > `neck` et `L_upper_arm`/`R_upper_arm` quel que soit le repositionnement d'un seul os. Changement
+  > d'approche, à la demande explicite de l'humain après ces deux tentatives : pour tout objet résolu
+  > sous `rig_spec.TRUNK_NECK_MUSCLES` (Erector spinae, Rectus abdominis muscle, External abdominal
+  > oblique muscle, Latissimus dorsi muscle, Ascending/Transverse/Descending part of trapezius
+  > muscle, Sternocleidomastoid muscle), on **n'invoque plus jamais Automatic Weights du tout** :
+  > `export_muscle_rig.py` sépare désormais explicitement `trunk_neck_objects` (parentés via
+  > `parent_set(type="ARMATURE")`, sans calcul de poids) de `limb_objects` (seuls à passer par
+  > `parent_set(type="ARMATURE_AUTO")`, heat-diffusion), puis assigne à chaque objet tronc/cou un poids
+  > rigide déterministe — 100 % sur son unique os connu avec certitude (`spine` ou `neck`, table
+  > `TRUNK_NECK_MUSCLES`), 0 % partout ailleurs — via une nouvelle fonction `apply_rigid_weight()`,
+  > généralisée depuis le filet de sécurité existant qui appliquait déjà ce même mécanisme (poids 1.0
+  > sur tous les sommets) au cas, plus étroit, où le solveur Bone Heat Weighting échouait à trouver
+  > une solution pour un muscle de MEMBRE. Justification du choix : ces muscles tronc/cou ne sont pas
+  > bi-articulaires (contrairement aux muscles de membre — ex. Biceps brachii, qui doit se répartir
+  > entre `L_upper_arm` et `L_forearm` pour bien se déformer au coude) — le blending heat-diffusion
+  > n'apporte donc aucun bénéfice pour cette catégorie et s'est révélé, sur deux tentatives, activement
+  > nuisible.
+  >
+  > Ré-exécution réelle du pipeline (`Muscles résolus : 55 objets sur 8 os`, 1 exclu pour géométrie
+  > dégénérée — `Erector spinae.j`, inchangé — donc toujours 54 muscles exportés ; log ajouté :
+  > `Poids rigide déterministe (tronc/cou) : 14 objet(s). Automatic Weights (membres) : 40 objet(s).`
+  > — 0 échec Bone Heat Weighting sur cette exécution) et décodage binaire indépendant du nouveau
+  > `.glb` (`JOINTS_0`/`WEIGHTS_0`, sans passer par Blender, avec agrégation par sommet des poids sur
+  > tous les groupes de vertex d'un objet, toutes primitives glTF confondues) :
+  > - **Les 14 objets tronc/cou réellement exportés** (7 noms de base × `.l`/`.r` — `Erector spinae`
+  >   n'est jamais exporté, géométrie dégénérée déjà exclue avant cette correction) portent
+  >   désormais un poids **exactement 100,000 % sur leur os correct et 0 % partout ailleurs**, sans
+  >   aucune exception : `Rectus abdominis muscle.l`/`.r` → `spine` 100 % ; `External abdominal
+  >   oblique muscle.l`/`.r` → `spine` 100 % ; **`Latissimus dorsi muscle.l`/`.r` → `spine` 100 %**
+  >   (le défaut ciblé par les deux tentatives précédentes — dominante `L_upper_arm`/`R_upper_arm`
+  >   puis `neck` — est cette fois résolu de façon exacte, pas seulement améliorée) ; `Ascending`/
+  >   `Transverse`/`Descending part of trapezius muscle.l`/`.r` → `neck` 100 % ;
+  >   `Sternocleidomastoid muscle.l`/`.r` → `neck` 100 %. Vérification faite objet par objet sur le
+  >   binaire exporté, pas seulement sur le log Blender.
+  > - **`WEIGHTS_0` valide mécaniquement** : sur les 106 couples (objet, primitive glTF) du fichier
+  >   exporté, 0 sommet avec une somme de poids ≠ 1,0 (tolérance 1e-4) ; `JOINTS_0` référence
+  >   exclusivement les 9 index de joint valides du skin. Nombre de triangles (356 060) et de
+  >   maillages (54) exportés identiques à avant ce correctif — seule l'assignation des poids change,
+  >   aucune géométrie n'est touchée.
+  > - **Aucune régression sur les 40 muscles de membre** (toujours skinnés via Automatic Weights,
+  >   inchangé) : échantillon vérifié incluant Deltoïde (3 parties), Biceps brachii (2 chefs),
+  >   Triceps brachii (3 chefs), Brachioradialis, Quadriceps femoris (4 chefs), Biceps femoris
+  >   (2 chefs) — `.l` et `.r` — tous restent dominants sur l'os de leur propre côté, aucune bascule
+  >   de dominante observée par rapport aux mesures du correctif précédent.
+  > - **`validate_muscle_rig.py` étendu** avec un nouvel invariant permanent : pour tout objet exporté
+  >   dont le nom de base figure dans `rig_spec.TRUNK_NECK_MUSCLES`, l'ensemble des groupes de vertex à
+  >   poids non nul doit être exactement `{os attendu}` (pas seulement "dominant" — aucun autre groupe
+  >   à poids non nul toléré) et chaque sommet doit avoir un poids total de exactement 1,0. Passe sur
+  >   le nouveau `.glb` (`OK: 9 os, 54 maillages skinnés, binding gauche/droite cohérent, poids rigide
+  >   tronc/cou exact sur 8 nom(s) de base.`) — rend cette garantie vérifiée mécaniquement à chaque
+  >   ré-export futur, pas seulement mesurée une fois au moment de ce correctif.
+  >
+  > **Déviation assumée, par souci d'honnêteté** : ce correctif étend l'usage du poids rigide
+  > hand-assigné bien au-delà de son périmètre d'origine (filet de sécurité pour un échec ponctuel et
+  > non déterministe du solveur, 1-3 objets sur 54 selon l'exécution) vers une catégorie entière de 14
+  > objets, assignée de façon systématique et inconditionnelle, jamais soumise au solveur Automatic
+  > Weights. C'est un écart réel par rapport à l'esprit initial de la spec ("gère les muscles
+  > bi-articulaires mieux qu'un rattachement rigide au bone le plus proche" — voir Décisions de
+  > cadrage ci-dessous), qui justifiait Automatic Weights de façon générale. Mais cet écart est
+  > mieux justifié que les deux tentatives précédentes : les muscles tronc/cou ne sont PAS
+  > bi-articulaires (contrairement à la justification citée, qui vise spécifiquement les muscles de
+  > membre), donc l'argument en faveur de heat-diffusion ne s'applique tout simplement pas à eux — et
+  > ce changement d'approche fait suite à la direction explicite de l'humain, après avoir vu deux
+  > tentatives basées sur Automatic Weights échouer à produire une dominante correcte. **Bilan
+  > honnête** : contrairement aux deux tentatives précédentes ("amélioration partielle"), celle-ci
+  > atteint l'objectif produit complet — dominante exacte et déterministe sur l'os correct pour les 14
+  > objets tronc/cou, garantie mécaniquement vérifiée par le validateur, sans régression mesurée sur
+  > les 40 muscles de membre. Point ouvert : le Latissimus dorsi et les autres muscles tronc/cou se
+  > déforment désormais de façon totalement rigide (pas de bulge/étirement naturel du muscle), une
+  > simplification anatomique assumée en échange de l'attachement osseux correct — non vérifié
+  > visuellement en contexte réel (pas d'accès GUI dans cette session), à confirmer lors d'une
+  > relecture manuelle ultérieure de la posture avatar (`moi coupe.mp4`).
+
 ### Liste des muscles retenus
 
 Mappés sur les 8 os existants (voir `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`) :
