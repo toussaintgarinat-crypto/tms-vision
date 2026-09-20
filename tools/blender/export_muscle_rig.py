@@ -130,6 +130,15 @@ def main() -> None:
         obj.hide_set(False)
         obj.hide_viewport = False
 
+    # Avant parent_set : Z-Anatomy partage un même datablock mesh entre les
+    # objets .l et .r (duplicata liés, miroir par la matrice d'objet). Les
+    # poids de vertex vivant dans le mesh, Automatic Weights écraserait les
+    # poids d'un côté par ceux de l'autre.
+    for obj in all_muscle_objects:
+        if obj.data.users > 1:
+            obj.data = obj.data.copy()
+    assert all(obj.data.users == 1 for obj in all_muscle_objects)
+
     bpy.ops.object.select_all(action="DESELECT")
     for obj in all_muscle_objects:
         obj.select_set(True)
