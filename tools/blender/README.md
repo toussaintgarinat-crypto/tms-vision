@@ -21,10 +21,18 @@ https://github.com/Z-Anatomy/The-blend avant de lancer la commande.
 ## 2. Exporter le rig
 
 ```bash
-blender --background --python tools/blender/export_muscle_rig.py -- \
+blender --background --python-exit-code 1 --python tools/blender/export_muscle_rig.py -- \
   /tmp/z-anatomy/Startup.blend \
   web/public/muscle-rig.glb
 ```
+
+`--python-exit-code 1` est nécessaire : sans lui, `blender --background` avale les
+exceptions Python (y compris `AssertionError`/`RuntimeError`) et quitte avec le
+code 0 même quand le script a échoué avant la fin — le script contient ses
+propres garde-fous (`assert obj.data.users == 1`, `RuntimeError` de
+`rig_spec.resolve_muscle_objects`/`resolve_skeletal_landmarks` si un muscle ou
+un repère squelettique attendu est introuvable) qui doivent pouvoir faire
+échouer un pipeline CI/script shell en amont.
 
 Sortie normale d'un run réussi (ne pas confondre avec un échec) : le script
 imprime deux lignes `ATTENTION :`, attendues et sans conséquence sur la
@@ -38,12 +46,16 @@ validité du rig —
   pas 55.
 - `ATTENTION : repli poids rigide appliqué (Bone Heat Weighting sans
   solution) pour N objet(s) : [...]` — le solveur de diffusion de chaleur de
-  Blender échoue de façon non déterministe sur 1 à 3 des 54 muscles selon
-  l'exécution (observé notamment sur "Descending part of trapezius muscle"
-  et "Sternocleidomastoid muscle"). Le script applique alors un rattachement
-  rigide (poids 1.0) à l'os logique déjà connu — le muscle reste skinné à
-  100 %, juste sans diffusion de chaleur pour ces quelques objets. La liste
-  exacte peut varier d'un run à l'autre.
+  Blender échoue de façon non déterministe sur 1 à 3 des 40 muscles de
+  membre (ceux qui passent par Automatic Weights) selon l'exécution ; les 14
+  muscles tronc/cou (dont "Descending part of trapezius muscle" et
+  "Sternocleidomastoid muscle") ne passent plus jamais par ce solveur du
+  tout depuis la correction de spec du 2026-09-20 (poids rigide déterministe
+  systématique, voir `export_muscle_rig.apply_rigid_weight`) et ne peuvent
+  donc plus structurellement déclencher ce repli. Le script applique alors un
+  rattachement rigide (poids 1.0) à l'os logique déjà connu — le muscle reste
+  skinné à 100 %, juste sans diffusion de chaleur pour ces quelques objets.
+  La liste exacte peut varier d'un run à l'autre.
 
 Avant `parent_set(ARMATURE_AUTO)`, le script dédoublonne aussi tout
 datablock mesh partagé entre plusieurs objets exportés (`obj.data.copy()`
@@ -57,20 +69,32 @@ Weights écrase les poids d'un côté par ceux de l'autre pour toute la paire
 ## 3. Valider le fichier exporté
 
 ```bash
-blender --background --python tools/blender/validate_muscle_rig.py -- \
+blender --background --python-exit-code 1 --python tools/blender/validate_muscle_rig.py -- \
   web/public/muscle-rig.glb
 ```
 
+`--python-exit-code 1` est nécessaire ici aussi et pour la même raison qu'à
+l'étape 2 : sans lui, un `assert` qui échoue dans ce script quitte quand même
+avec le code 0 (comportement `--background` de Blender), ce qui rendrait
+cette étape invisible à un pipeline CI/script shell qui teste le code de
+sortie — vérifié empiriquement (exit 0 sans le flag sur un `.glb` invalide,
+exit 1 avec le flag).
+
 Sortie attendue (exacte) : `OK: 9 os, 54 maillages skinnés, binding
-gauche/droite cohérent.` Le compte de maillages est une valeur EXACTE (54),
+gauche/droite cohérent, poids rigide tronc/cou exact sur 14 objet(s)
+(couverture vérifiée).` Le compte de maillages est une valeur EXACTE (54),
 pas un plancher — voir `EXPECTED_MESH_COUNT` dans `validate_muscle_rig.py`.
+Le compte de 14 objets tronc/cou est lui aussi une valeur EXACTE, dérivée
+(pas codée en dur) et re-vérifiée par une assertion de couverture — voir
+`EXPECTED_TRUNK_NECK_OBJECT_COUNT` dans `validate_muscle_rig.py`.
 Le validateur vérifie aussi qu'aucun objet exporté ne partage son datablock
 mesh avec un autre, et que l'os dominant de chaque objet `.l`/`.r` est bien
 de son propre côté (ou un os non latéralisé — tronc/cou/racine). Toute
 erreur (os manquant, maillage non skinné, datablock partagé, binding
-gauche/droite incohérent, compte de maillages différent de 54) fait échouer
-le script (`assert`, code de sortie différent de 0) — ne pas committer le
-`.glb` si cette étape échoue.
+gauche/droite incohérent, compte de maillages différent de 54, couverture du
+contrôle tronc/cou incorrecte) fait échouer le script (`assert`, code de
+sortie différent de 0 GRÂCE À `--python-exit-code 1` ci-dessus) — ne pas
+committer le `.glb` si cette étape échoue.
 
 ## 4. Vérification visuelle
 
