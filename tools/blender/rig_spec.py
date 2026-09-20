@@ -149,7 +149,7 @@ def resolve_muscle_objects() -> dict:
                 found = _mesh_objects_by_side_suffix(base_name, side_suffix, mode)
                 if not found:
                     raise RuntimeError(
-                        f"Muscle '{base_name}' (mode={mode}) introuvable per "
+                        f"Muscle '{base_name}' (mode={mode}) introuvable pour "
                         f"l'os '{bone_key}' (suffixe .{side_suffix})."
                     )
                 result[bone_key].extend(found)
