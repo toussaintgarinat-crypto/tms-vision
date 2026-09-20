@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
-import { applyFrameToSkeleton, buildSkeleton, Pose3DLandmarks, SkeletonRig } from "./pose3dSkeleton";
-import { buildTestSkinnedGeometry } from "./testSkinnedGeometry";
+import { OrbitControls, useGLTF } from "@react-three/drei";
+import { applyFrameToSkeleton, BONE_ORDER, BoneKey, Pose3DLandmarks } from "./pose3dSkeleton";
+
+const MUSCLE_RIG_URL = "/muscle-rig.glb";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -54,70 +55,82 @@ function Rig({
   frames: Pose3DFrame[];
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }) {
-  const geometry = useMemo(() => buildTestSkinnedGeometry(), []);
+  const gltf = useGLTF(MUSCLE_RIG_URL);
 
-  const rigRef = useRef<SkeletonRig | null>(null);
-  if (rigRef.current === null) {
-    rigRef.current = buildSkeleton();
-  }
+  const skinnedMeshes = useMemo(() => {
+    const meshes: THREE.SkinnedMesh[] = [];
+    gltf.scene.traverse((object) => {
+      if ((object as THREE.SkinnedMesh).isSkinnedMesh) {
+        meshes.push(object as THREE.SkinnedMesh);
+      }
+    });
+    return meshes;
+  }, [gltf]);
 
-  const meshRef = useRef<THREE.SkinnedMesh>(null);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const bones = useMemo(() => {
+    const skeleton = skinnedMeshes[0]?.skeleton;
+    if (!skeleton) {
+      throw new Error("muscle-rig.glb ne contient aucun SkinnedMesh.");
+    }
+    const map = {} as Record<BoneKey, THREE.Bone>;
+    for (const key of BONE_ORDER) {
+      const bone = skeleton.bones.find((candidate) => candidate.name === key);
+      if (!bone) {
+        throw new Error(`Os "${key}" introuvable dans le squelette importé (muscle-rig.glb).`);
+      }
+      map[key] = bone;
+    }
+    return map;
+  }, [skinnedMeshes]);
+
+  // Cloner les matériaux importés plutôt que les muter directement : évite
+  // de modifier l'asset source partagé (mémoïsé par useGLTF) si le
+  // composant est démonté/remonté.
+  const clonedMaterials = useMemo(() => {
+    return skinnedMeshes.map((mesh) => {
+      const source = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      const clone = (source as THREE.MeshStandardMaterial).clone();
+      mesh.material = clone;
+      return clone;
+    });
+  }, [skinnedMeshes]);
+
+  const groupRef = useRef<THREE.Group>(null);
   const lastKnownLandmarksRef = useRef<Partial<Pose3DLandmarks>>({});
   const lastKnownColorRef = useRef<string>(DEFAULT_COLOR);
   const hasDetectedOnceRef = useRef(false);
 
-  // `useLayoutEffect` et non `useEffect` : le bind doit être fait avant le
-  // premier tick de `useFrame` (dont l'abonnement se fait lui aussi en layout
-  // effect, donc après celui-ci vu l'ordre de déclaration des hooks).
-  useLayoutEffect(() => {
-    const mesh = meshRef.current;
-    const rig = rigRef.current;
-    if (!mesh || !rig) return;
-    mesh.add(rig.bones.root);
-    mesh.bind(rig.skeleton);
-    // `mesh.visible` est déjà à false via la prop JSX `visible={false}`.
-    return () => {
-      // Libère la bone texture GPU. La géométrie n'est PAS libérée ici : elle
-      // est mémoïsée hors de cet effet et réutilisée telle quelle si le
-      // composant est remonté (double invocation des effets en StrictMode).
-      mesh.skeleton?.dispose();
-    };
-  }, []);
-
   useFrame(() => {
     const video = videoRef.current;
-    const mesh = meshRef.current;
-    const material = materialRef.current;
-    const rig = rigRef.current;
-    if (!video || !mesh || !material || !rig || frames.length === 0) return;
+    const group = groupRef.current;
+    if (!video || !group || frames.length === 0) return;
 
     const index = findNearestFrameIndex(frames, video.currentTime);
     const frame = frames[index];
 
     if (frame.landmarks) {
-      applyFrameToSkeleton(rig.bones, frame.landmarks, lastKnownLandmarksRef.current);
+      applyFrameToSkeleton(bones, frame.landmarks, lastKnownLandmarksRef.current);
       hasDetectedOnceRef.current = true;
-      mesh.visible = true;
-      // `action_level` peut être null même quand une pose est détectée (les
-      // angles RULA n'ont pas pu être calculés cette frame-là) : dans ce cas
-      // on conserve la dernière couleur connue plutôt que de retomber sur le
-      // gris par défaut (même principe qu'en Tranche 1).
+      group.visible = true;
       if (frame.action_level) {
         lastKnownColorRef.current = ACTION_LEVEL_COLORS[frame.action_level] ?? DEFAULT_COLOR;
       }
     }
 
     if (!hasDetectedOnceRef.current) return;
-    material.color.set(lastKnownColorRef.current);
+    for (const material of clonedMaterials) {
+      material.color.set(lastKnownColorRef.current);
+    }
   });
 
   return (
-    <skinnedMesh ref={meshRef} geometry={geometry} visible={false} frustumCulled={false}>
-      <meshStandardMaterial ref={materialRef} color={DEFAULT_COLOR} />
-    </skinnedMesh>
+    <group ref={groupRef} visible={false}>
+      <primitive object={gltf.scene} />
+    </group>
   );
 }
+
+useGLTF.preload(MUSCLE_RIG_URL);
 
 export function PostureAvatar3D({
   pose3dUrl,
@@ -171,6 +184,10 @@ export function PostureAvatar3D({
         <Rig frames={frames} videoRef={videoRef} />
         <OrbitControls target={[0, 0, 0]} />
       </Canvas>
+      <p className="mt-1 text-xs text-gray-400">
+        Modèle musculaire dérivé de Z-Anatomy (BodyParts3D), licence CC BY-SA 4.0.
+        Voir NOTICE.md.
+      </p>
     </div>
   );
 }
