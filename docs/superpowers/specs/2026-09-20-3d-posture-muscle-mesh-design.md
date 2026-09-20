@@ -140,6 +140,48 @@ Cette recherche change l'approche technique par rapport à ce qui était envisag
   >    traiter dans une session ultérieure si la déformation du Latissimus dorsi s'avère visuellement
   >    gênante en posture réelle.
 
+  > **Correction (2026-09-20, tentative de correction ciblée du point ouvert ci-dessus — amélioration
+  > partielle, pas une résolution complète)** : suite à l'investigation qui a diagnostiqué le
+  > chevauchement géométrique bbox-Deltoïde/Biceps/Triceps ↔ Latissimus dorsi comme cause probable,
+  > `rig_spec.py` gagne `resolve_skeletal_landmarks()` qui résout les vrais objets `Humerus.l`/
+  > `Humerus.r` du `Startup.blend` (vérifiés directement via `bpy.data.objects` : 2143 sommets / 4280
+  > faces chacun, longueur monde ~31.76 cm, cohérent avec la mesure ~31.8 cm du brainstorming initial).
+  > `export_muscle_rig.py` dérive désormais la position des os `L_upper_arm`/`R_upper_arm`
+  > (uniquement ces deux os — `spine`/`neck`/`forearm`/`thigh` restent dérivés de la bbox des muscles,
+  > correctif ciblé) depuis la bbox de l'humérus réel plutôt que celle des muscles de bras.
+  >
+  > Ré-exécution réelle du pipeline (54 muscles, aucun changement de compte) et remesure directe du
+  > nouveau `.glb` (binaire `JOINTS_0`/`WEIGHTS_0`) :
+  > - **Latissimus dorsi muscle.l** : `L_upper_arm` chute de 45,4 % à 34,3 % (bavure vers le bras
+  >   nettement réduite) et `spine` progresse de 17,5 % à 20,5 % — mais l'os dominant devient
+  >   **`neck`** (36,7 % → 44,5 %), pas `spine`. **`.r`** : `R_upper_arm` 47,2 % → 34,7 %, `spine`
+  >   16,0 % → 18,9 %, dominant devient `neck` (36,7 % → 46,4 %). **Le défaut ciblé (dominante sur
+  >   l'os de bras) est corrigé, mais le muscle reste mal dominé — par `neck` au lieu de `spine`.**
+  >   Le rapprochement géométrique de l'os `L_upper_arm`/`R_upper_arm` vers l'axe huméral (loin du
+  >   dos) a bien réduit son influence sur la diffusion de chaleur du Latissimus dorsi, mais a
+  >   mécaniquement fait ressortir `neck` (déjà secondaire à ~37 % avant ce correctif) comme nouvelle
+  >   dominante, sans qu'aucun ajustement n'ait visé `neck`. Objectif produit non pleinement atteint.
+  > - **Transverse part of trapezius muscle** : bavure vers l'os de bras réduite sur les deux côtés
+  >   (`.l` : `L_upper_arm` 36,4 % → 20,4 %, `neck` dominant 63,6 % → 79,6 % ; `.r` : `R_upper_arm`
+  >   40,0 % → 24,7 %, `neck` dominant 60,0 % → 75,3 %) — nette amélioration, dominante déjà correcte
+  >   avant et après.
+  > - **External abdominal oblique muscle** : bavure vers l'os de bras réduite (`.l` : `L_upper_arm`
+  >   20,2 % → 18,3 %, `spine` dominant 64,4 % → 67,5 % ; `.r` : `R_upper_arm` 22,0 % → 20,3 %,
+  >   `spine` dominant 62,0 % → 65,4 %) — amélioration, dominante déjà correcte avant et après.
+  > - **Aucune régression détectée sur les muscles de bras déjà correctement pondérés** (Deltoïde x3,
+  >   Biceps brachii x2, Triceps brachii x3, Brachioradialis — `.l` et `.r`) : tous restent dominants
+  >   sur leur bon os `upper_arm`/`forearm`, et certains cas limites s'améliorent nettement — ex.
+  >   `Long head of biceps brachii.r` passait de justesse de `R_forearm` (53,5 %) devant `R_upper_arm`
+  >   (46,5 %) avant ce correctif ; après, `R_upper_arm` domine clairement à 83,8 %.
+  >
+  > **Bilan honnête** : amélioration réelle et mesurée (bavure vers `upper_arm` réduite d'environ
+  > moitié sur les 3 muscles de tronc concernés, aucune régression, muscles de bras déjà corrects
+  > renforcés), mais **le Latissimus dorsi n'a pas atteint la dominante `spine` attendue** — reste
+  > dominé par un os incorrect (`neck` au lieu de `L_upper_arm`/`R_upper_arm`). Point ouvert non
+  > refermé : une correction complète demanderait probablement un ajustement séparé pour `neck`
+  > (même diagnostic de chevauchement géométrique, cette fois avec la bbox Trapèze/SCM) et/ou une
+  > retouche manuelle du weight-painting, toujours hors périmètre de ce correctif ciblé.
+
 ### Liste des muscles retenus
 
 Mappés sur les 8 os existants (voir `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`) :
