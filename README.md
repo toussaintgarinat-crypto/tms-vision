@@ -330,7 +330,15 @@ juste "finir" la Phase 1 avant de passer à la suite :
   Weights** (diffusion de chaleur native de Blender), puis exportent le tout en un seul fichier
   glTF binaire. **54 muscles** (pas 55 — un objet source cassé exclu, voir la spec) sont ainsi
   livrés dans `web/public/muscle-rig.glb` (~15,7 Mo, committé), déjà validé indépendamment par
-  parsing direct du JSON glTF (squelette 9 os, 54 muscles, skins cohérents).
+  parsing direct du JSON glTF (squelette 9 os, 54 muscles, présence d'un skin par maillage).
+  **Précision (2026-09-20, après la revue finale de branche complète décrite dans la spec)** :
+  cette première passe ne décodait que la structure JSON du glTF (présence des skins), pas les
+  poids binaires eux-mêmes (`JOINTS_0`/`WEIGHTS_0`) — elle ne pouvait donc pas détecter que les 20
+  muscles de membre gauche étaient en réalité skinnés sur les os droits. C'est un décodage binaire
+  direct ultérieur, indépendant, qui a trouvé ce bug et permis de le corriger (trois passes de
+  correctifs côté pipeline Blender, détaillées dans la spec) ; `muscle-rig.glb` est désormais
+  revérifié binding correct sur les 40 muscles de membre et pondération rigide exacte sur les
+  14 muscles tronc/cou.
 - **`web/app/PostureAvatar3D.tsx`** charge désormais ce fichier via `useGLTF` (`@react-three/drei`)
   à la place du maillage de test de la Tranche 2 ; `pose3dSkeleton.ts` et `applyFrameToSkeleton`
   n'ont pas changé (bénéfice architectural de la Tranche 2 : le calcul de pose est découplé du
@@ -350,6 +358,19 @@ juste "finir" la Phase 1 avant de passer à la suite :
   première détection n'a pu être confirmée que par lecture de code (`visible={false}` en prop JSX
   synchrone) : cette vidéo de test détecte une pose dès la frame 0, donc ce cas n'est jamais observé
   en direct.
+  **Précision (2026-09-20, après la découverte ultérieure du bug de binding gauche/droite —
+  voir plus haut)** : cette observation (bras/cuisse gauches invisibles) était correcte et
+  démontrait bien que le mécanisme de masquage `HIDDEN_SCALE` fonctionnait avec les vrais muscles —
+  mais elle ne démontrait **pas**, comme la formulation d'origine pouvait le laisser penser, que le
+  binding squelettique du côté gauche lui-même était correct. Le `.glb` utilisé pour cette
+  vérification avait en réalité ses 20 muscles de membre gauche skinnés sur les os droits (bug
+  trouvé ensuite par décodage binaire direct, voir la spec) ; comme ces muscles étaient
+  systématiquement ramenés à une échelle quasi nulle avant d'être vus, le bug restait invisible à
+  l'écran quel que soit l'état du binding sous-jacent. Revérifié en direct après le correctif de
+  binding et les deux passes de correction de la pondération tronc/cou (voir plus haut) : le bras
+  droit suit correctement une pose très différente du repos sans que le bras gauche masqué ne
+  reflète cette rotation (bones gauches figés à l'identité, échelle nulle), confirmant cette fois
+  l'absence de mirroring gauche/droite.
 - **Deux défauts de rendu trouvés et corrigés pendant cette vérification**, invisibles en simple
   revue de code : la couleur d'`action_level` ne s'affichait en réalité jamais (muscles toujours
   gris/blancs). Cause 1 : les matériaux exportés par Blender portent un `emissiveFactor` blanc à
