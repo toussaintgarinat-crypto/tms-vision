@@ -31,6 +31,33 @@ Cette recherche change l'approche technique par rapport à ce qui était envisag
 - **Le fichier source Z-Anatomy (`Startup.blend`, ~293 Mo) n'est pas commité au dépôt.** Trop volumineux, re-téléchargeable depuis `github.com/Z-Anatomy/The-blend` (fichier `Z-Anatomy.zip` à la racine du dépôt). Le script d'export documente l'URL et les instructions de téléchargement. Seul le `.glb` final (résultat de l'export, attendu nettement plus petit — à mesurer à l'implémentation) est commité dans `web/public/`.
 - **Correctifs manuels après Automatic Weights, attendus et acceptés.** L'algorithme de diffusion de chaleur n'est pas parfait (ex. bavures de poids entre muscles proches de l'avant-bras). Une passe de vérification visuelle après export (et retouche manuelle ponctuelle dans Blender si besoin) fait partie du travail normal de cette tranche, pas un signe d'échec du pipeline.
 
+  > **Correction (2026-09-20, après exécution réelle du pipeline)** : l'exécution contre le vrai
+  > `Startup.blend` a révélé deux limites non anticipées par ce document.
+  >
+  > 1. **« Erector spinae » n'a aucune géométrie utilisable dans le fichier source.** Le seul objet
+  >    de ce nom résolu par `rig_spec.py` (`Erector spinae.j`) ne contient que 2 sommets et 0 face
+  >    (stub cassé du fichier Z-Anatomy) ; les seules autres variantes (`.ol`/`.or`) sont des
+  >    duplicata outline explicitement exclus par convention. `export_muscle_rig.py` détecte et
+  >    exclut désormais tout maillage dégénéré (0 face) avant l'export plutôt que de laisser
+  >    l'exportateur glTF le remplacer silencieusement par un icosphère par défaut. Conséquence :
+  >    le rig final contient **54 muscles, pas 55** — le tronc (os `spine`) n'a plus que Rectus
+  >    abdominis, External abdominal oblique et Latissimus dorsi (les érecteurs du rachis manquent).
+  >    Limite de donnée source, pas de choix arbitraire ; reste à corriger si une version plus
+  >    complète de Z-Anatomy devient disponible.
+  > 2. **Le solveur "Bone Heat Weighting" de Blender échoue parfois, de façon non déterministe,
+  >    sur 1 à 3 des 54 muscles selon l'exécution** (observé sur plusieurs runs, ex. « Descending
+  >    part of trapezius muscle »), sans anomalie topologique détectable sur les maillages
+  >    concernés (manifold, une seule île, normales cohérentes avec leurs voisins qui, eux, se
+  >    skinnent sans problème) — limitation connue du solveur sur des maillages anatomiques
+  >    complexes, pas un défaut de nos données ou de notre script. **Décision utilisateur** : plutôt
+  >    que de laisser ces muscles totalement non skinnés ou de faire échouer tout l'export sur un
+  >    solveur non déterministe, `export_muscle_rig.py` applique un filet de sécurité — poids
+  >    rigide 1.0, codé en dur, sur l'os logique déjà connu via `rig_spec.resolve_muscle_objects()`
+  >    — pour tout muscle dont Automatic Weights ne trouve aucune solution. C'est un écart assumé
+  >    par rapport à l'affirmation ci-dessus (« pas de skinning fait main »), limité aux seuls cas
+  >    où l'algorithme automatique échoue purement et simplement, jamais utilisé comme raccourci
+  >    général. Le rig final reste skinné à 100 % dans tous les cas.
+
 ### Liste des muscles retenus
 
 Mappés sur les 8 os existants (voir `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`) :
