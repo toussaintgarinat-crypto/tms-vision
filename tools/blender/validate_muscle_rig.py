@@ -50,6 +50,21 @@ TRUNK_NECK_BASE_NAMES = {
     for base_name in base_names
 }
 
+# Nombre d'objets RÉELLEMENT attendus dans le .glb exporté pour ce contrôle
+# (pas la taille de la table ci-dessus, qui compte des NOMS DE BASE, pas des
+# objets Blender). `TRUNK_NECK_BASE_NAMES` a 8 entrées ; `resolve_muscle_objects`
+# essaie d'abord `{base_name}.l`/`{base_name}.r`, donc 7 des 8 noms de base
+# (tous sauf "Erector spinae.j") existent bien comme paire `.l`/`.r` dans le
+# fichier source -> 7 x 2 = 14 objets. Le 8e nom de base, "Erector spinae.j",
+# n'a lui-même AUCUN suffixe `.l`/`.r` dans Startup.blend (c'est déjà un nom
+# de mesh "joined" unique, résolu via le repli "objet médian" de
+# `resolve_muscle_objects`) ET son unique objet Blender est exclu en amont
+# par `export_muscle_rig.is_degenerate_mesh` (0 face, cf. le commentaire sur
+# `EXPECTED_MESH_COUNT` plus haut) : il ne contribue donc aucun objet au .glb
+# réellement exporté. D'où 8 noms de base x 2 côtés - 2 (pas de paire .l/.r
+# pour "Erector spinae.j") = 14, pas 16.
+EXPECTED_TRUNK_NECK_OBJECT_COUNT = len(TRUNK_NECK_BASE_NAMES) * 2 - 2
+
 
 def main() -> None:
     argv = sys.argv[sys.argv.index("--") + 1 :]
@@ -182,11 +197,13 @@ def main() -> None:
     # Rend cette garantie permanente et vérifiée mécaniquement, pas seulement
     # mesurée une fois au moment du correctif.
     rigid_violations = []
+    trunk_neck_objects_checked = 0
     for mesh in meshes:
         base_name = mesh.name[:-2] if mesh.name.endswith((".l", ".r")) else mesh.name
         expected_bone = TRUNK_NECK_BASE_NAMES.get(base_name)
         if expected_bone is None:
             continue
+        trunk_neck_objects_checked += 1
         nonzero_group_names = set()
         bad_weight_sum_vertices = 0
         for vertex in mesh.data.vertices:
@@ -213,10 +230,28 @@ def main() -> None:
         "poids rigide tronc/cou non exact (attendu 100 % sur l'os unique connu, 0 % ailleurs) :\n"
         + "\n".join(rigid_violations)
     )
+    # Garde de couverture : sans ceci, si la logique de résolution
+    # (`base_name = mesh.name[:-2] if ...`) ne matchait par erreur AUCUN
+    # objet — par exemple après un renommage silencieux dans rig_spec.py —
+    # la boucle ci-dessus ne lèverait jamais `rigid_violations` (liste vide
+    # par absence totale d'itération utile) et le message de succès plus bas
+    # continuerait d'imprimer une taille de table constante, sans jamais
+    # prouver qu'un seul objet a réellement été vérifié. On vérifie donc ici
+    # que le nombre d'objets EFFECTIVEMENT passés par la boucle correspond au
+    # compte réellement attendu (voir `EXPECTED_TRUNK_NECK_OBJECT_COUNT`
+    # ci-dessus pour le détail du calcul), pas seulement que les objets
+    # trouvés étaient individuellement corrects.
+    assert trunk_neck_objects_checked == EXPECTED_TRUNK_NECK_OBJECT_COUNT, (
+        f"couverture du contrôle tronc/cou incorrecte : {trunk_neck_objects_checked} "
+        f"objet(s) réellement vérifié(s), {EXPECTED_TRUNK_NECK_OBJECT_COUNT} attendu(s) "
+        "(la résolution nom-de-base -> objet a probablement changé sans mise à "
+        "jour de ce validateur ou de rig_spec.TRUNK_NECK_MUSCLES)"
+    )
 
     print(
         f"OK: {len(bone_names)} os, {len(meshes)} maillages skinnés, binding gauche/droite "
-        f"cohérent, poids rigide tronc/cou exact sur {len(TRUNK_NECK_BASE_NAMES)} nom(s) de base."
+        f"cohérent, poids rigide tronc/cou exact sur {trunk_neck_objects_checked} objet(s) "
+        f"(couverture vérifiée)."
     )
 
 
