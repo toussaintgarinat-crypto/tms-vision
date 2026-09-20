@@ -131,10 +131,15 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - `docs/superpowers/plans/2026-09-16-3d-posture-skeleton-rig-plan.md` — le plan d'implémentation de
   cette tranche.
 - `docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md` — la spec de la tranche 3 de
-  l'avatar 3D de posture (vrais maillages musculaires Z-Anatomy). **Approuvée mais pas encore
-  implémentée** — c'est le point de reprise si tu veux continuer l'avatar 3D. Pas de plan
-  d'implémentation écrit pour cette tranche pour l'instant (à faire via la skill `writing-plans` au
-  moment de reprendre).
+  l'avatar 3D de posture (vrais maillages musculaires Z-Anatomy). **Livrée et vérifiée
+  manuellement dans un vrai navigateur.** 54 muscles Z-Anatomy (BodyParts3D, licence CC BY-SA 4.0)
+  riggés sur le squelette articulé de la Tranche 2 via un pipeline Blender → glTF
+  (`tools/blender/export_muscle_rig.py`, Automatic Weights), exportés dans
+  `web/public/muscle-rig.glb` (~15,7 Mo, committé) et chargés par `PostureAvatar3D.tsx` via
+  `useGLTF`. Deux défauts de rendu invisibles en simple revue de code (matériaux systématiquement
+  blancs quel que soit l'`action_level`) ont été détectés et corrigés pendant cette vérification —
+  voir le bloc « Correction (2026-09-20, vérification manuelle Task 7) » dans la spec pour le
+  détail. Crédit CC BY-SA affiché sous l'avatar dans l'interface et dans `NOTICE.md`.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -310,8 +315,56 @@ juste "finir" la Phase 1 avant de passer à la suite :
   pour l'observer en direct) ; fallback "aucune posture détectée" toujours correct sur
   `synthetic_smoke_test.mp4`.
 - **Ce qui n'est pas dans cette tranche** : vrais maillages musculaires Z-Anatomy, recherche sur leur
-  riggabilité réelle — Tranche 3 (voir spec
-  `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`).
+  riggabilité réelle — livré depuis dans la Tranche 3 (voir section suivante).
+
+#### ✅ Avatar 3D de posture, Tranche 3 (vrais maillages musculaires Z-Anatomy) — TERMINÉE
+
+- **Contexte** : la Tranche 2 skinnait un maillage de test non anatomique (cylindres) sur le
+  squelette articulé, pour prouver que le mécanisme de skinning fonctionnait. Cette tranche
+  remplace ce maillage de test par de vrais muscles.
+- **Pipeline Blender → glTF (hors runtime)** : `tools/blender/rig_spec.py` (table de hiérarchie
+  d'os et de sélection des muscles) et `tools/blender/export_muscle_rig.py` (script exécuté
+  manuellement via `blender --background --python` contre le fichier source Z-Anatomy
+  `Startup.blend`, non commité — voir spec pour le téléchargement) construisent une armature
+  identique à celle de `pose3dSkeleton.ts`, y rattachent les muscles sélectionnés via **Automatic
+  Weights** (diffusion de chaleur native de Blender), puis exportent le tout en un seul fichier
+  glTF binaire. **54 muscles** (pas 55 — un objet source cassé exclu, voir la spec) sont ainsi
+  livrés dans `web/public/muscle-rig.glb` (~15,7 Mo, committé), déjà validé indépendamment par
+  parsing direct du JSON glTF (squelette 9 os, 54 muscles, skins cohérents).
+- **`web/app/PostureAvatar3D.tsx`** charge désormais ce fichier via `useGLTF` (`@react-three/drei`)
+  à la place du maillage de test de la Tranche 2 ; `pose3dSkeleton.ts` et `applyFrameToSkeleton`
+  n'ont pas changé (bénéfice architectural de la Tranche 2 : le calcul de pose est découplé du
+  maillage qui l'affiche).
+- **Attribution CC BY-SA** : les muscles sont dérivés de BodyParts3D via Z-Anatomy (licence
+  CC BY-SA 4.0). Crédit affiché sous le canvas 3D dans l'interface et détaillé dans `NOTICE.md`.
+- **Vérifié manuellement (2026-09-20)** — première vérification visuelle réelle de tout le travail
+  « muscles » (Tâches 1 à 6 de cette tranche n'avaient été validées que par revue de code statique
+  et parsing du glb, jamais en faisant réellement tourner l'avatar dans un navigateur). Sur
+  `moi coupe.mp4`, via le flux d'import de fichier : les muscles suivent la posture en synchro avec
+  la vidéo à plusieurs points de la timeline, sans distorsion aberrante aux jointures ; le bras
+  gauche et la cuisse gauche (jamais détectés sur cette vidéo de profil, `LEFT_ELBOW`/`LEFT_KNEE`)
+  restent invisibles tout du long au lieu de rester figés — le correctif `HIDDEN_SCALE` de la
+  Tranche 2 fonctionne toujours avec les vrais muscles ; aucune erreur ni avertissement de projet en
+  console (seuls des avertissements bénins hors-projet : dépréciation interne `THREE.Clock`,
+  polices préchargées non utilisées). Comme en Tranche 2, l'absence de mannequin fantôme avant la
+  première détection n'a pu être confirmée que par lecture de code (`visible={false}` en prop JSX
+  synchrone) : cette vidéo de test détecte une pose dès la frame 0, donc ce cas n'est jamais observé
+  en direct.
+- **Deux défauts de rendu trouvés et corrigés pendant cette vérification**, invisibles en simple
+  revue de code : la couleur d'`action_level` ne s'affichait en réalité jamais (muscles toujours
+  gris/blancs). Cause 1 : les matériaux exportés par Blender portent un `emissiveFactor` blanc à
+  pleine intensité qui sature le rendu indépendamment de `material.color` — neutralisé sur les
+  clones. Cause 2 : l'affectation `mesh.material = clone` se faisait comme effet de bord dans un
+  `useMemo` (impur), ce que React 18 Strict Mode (actif par défaut en `next dev`) rejoue deux fois
+  et désynchronisait le mesh réellement affiché de la boucle de coloration — déplacé dans un
+  `useEffect` idempotent, scène GLTF clonée par montage (`SkeletonUtils.clone`) plutôt que mutée en
+  partagé. Détail complet dans le bloc « Correction (2026-09-20, vérification manuelle Task 7) » de
+  la spec. Revérifié après correctif : la couleur change bien (jaune → orange → rouge observés sur
+  ce clip) uniformément sur l'ensemble des muscles au fil de la lecture.
+- **Ce qui n'est pas dans cette tranche** : musculature complète (~600 muscles), coloration par
+  muscle individuel selon les sous-scores RULA (Tranche 4 future), correction du roll/torsion des
+  os, correction du risque de cascade d'échelle sur une hanche jamais détectée (voir spec) —
+  `testSkinnedGeometry.ts` conservé tel quel (décision de suppression explicitement hors périmètre).
 
 #### Reste à faire pour la suite de la Phase 2
 
@@ -321,12 +374,11 @@ juste "finir" la Phase 1 avant de passer à la suite :
   implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
   salariés (voir section 7).
 - Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
-- Avatar 3D de posture, Tranche 3 (voir la section « Hors périmètre » de la spec
-  `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md` — la numérotation des
-  tranches a été renumérotée à partir de cette tranche-là, le travail « muscles » y est décrit) :
-  vrais maillages musculaires (Z-Anatomy, CC BY-SA) riggés sur le squelette articulé de la
-  Tranche 2, puis coloration/activation des muscles par segment à partir des sous-scores RULA déjà
-  calculés.
+- Avatar 3D de posture, Tranche 4 (future, non planifiée) : coloration/activation des muscles par
+  segment anatomique à partir des sous-scores RULA déjà calculés (`neck`, `trunk`, `upper_arm`,
+  `lower_arm`, `wrist`), à la place de la teinte uniforme sur l'ensemble des muscles livrée en
+  Tranche 3 — voir la section « Hors périmètre » de
+  `docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md`.
 - Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
   l'export : `neck`, `trunk`, `upper_arm`, `lower_arm`, `wrist`) aux capsules d'étirement.
 

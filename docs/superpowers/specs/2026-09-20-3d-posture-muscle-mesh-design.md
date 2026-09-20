@@ -27,6 +27,39 @@ Cette recherche change l'approche technique par rapport à ce qui était envisag
 - **Pipeline d'export Blender → glTF, pas de skinning fait main.** Une armature Blender est générée par script avec exactement la même hiérarchie que `pose3dSkeleton.ts` (mêmes noms d'os, mêmes longueurs `BONE_LENGTH`), les muscles sélectionnés y sont rattachés via **Automatic Weights** (algorithme de diffusion de chaleur natif de Blender — gère les muscles bi-articulaires mieux qu'un rattachement rigide au bone le plus proche), puis le tout est exporté en un fichier **`.glb`** (glTF binaire, autoporteur) via l'exportateur glTF intégré de Blender.
 - **`pose3dSkeleton.ts` n'est pas modifié.** Le calcul de rotation par frame (`applyFrameToSkeleton`) reste exactement le même ; au runtime, on retrouve les os du squelette **importé** par leur nom (`BoneKey`) et on leur applique les mêmes rotations qu'au squelette de test de la Tranche 2. C'est le principal bénéfice architectural de la Tranche 2 : le calcul de pose est découplé du maillage qui l'affiche.
 - **Couleur uniforme par frame, inchangée depuis la Tranche 1/2.** Pas de coloration par muscle individuel dans cette tranche (reportée à une Tranche 4 future, cohérent avec ce qui était déjà prévu). Concrètement, la teinte de l'`action_level` courant est appliquée à **tous** les matériaux des muscles importés (potentiellement plusieurs dizaines de matériaux, un par muscle/partie), pas à un seul matériau comme en Tranche 2.
+
+  > **Correction (2026-09-20, vérification manuelle Task 7)** : cette teinte ne s'affichait en
+  > réalité **jamais** avant correctif, pour deux raisons invisibles en revue de code statique
+  > (Tasks 1-6) et détectées uniquement en faisant réellement tourner l'avatar dans un navigateur.
+  >
+  > 1. **Les 12 matériaux exportés par le pipeline Blender portent un `emissiveFactor` blanc
+  >    (1, 1, 1) sans texture d'émission** (confirmé en parsant directement le JSON glTF de
+  >    `muscle-rig.glb`). À pleine intensité, ce terme émissif s'ajoute au rendu indépendamment de
+  >    `material.color` et sature l'image en blanc — origine probable : un réglage d'émission par
+  >    défaut du matériau Blender/Principled BSDF de Z-Anatomy, jamais neutralisé par
+  >    `export_muscle_rig.py`. Non corrigé côté Blender (aurait obligé à rejouer tout le pipeline
+  >    Automatic Weights, non déterministe — voir la correction ci-dessus sur le solveur) ; corrigé
+  >    côté rendu en mettant `clone.emissive` à zéro sur chaque matériau cloné dans
+  >    `PostureAvatar3D.tsx`.
+  > 2. **`mesh.material = clone` était affecté comme effet de bord à l'intérieur d'un `useMemo`**,
+  >    qui doit rester pur. En Strict Mode (React 18, actif par défaut en `next dev` — l'environnement
+  >    utilisé pour toute vérification manuelle de ce projet), React rejoue deux fois le corps du
+  >    composant pour détecter ce genre d'impureté ; cela créait deux générations de matériaux
+  >    clonés et laissait le mesh réellement affiché attaché à la mauvaise génération (jamais
+  >    recolorée par la boucle `useFrame`), démontré par inspection directe des `uuid` des matériaux
+  >    en jeu. Corrigé en clonant `gltf.scene` par montage (`SkeletonUtils.clone`, qui préserve les
+  >    liaisons squelette/SkinnedMesh, contrairement à un `Object3D.clone` nu) plutôt que de muter la
+  >    scène partagée/mémoïsée par `useGLTF`, et en déplaçant l'affectation `mesh.material` dans un
+  >    `useEffect` séparé et idempotent.
+  >
+  > Revérifié en direct dans le navigateur après correctif (commit séparé) : la couleur de l'avatar
+  > change bien (jaune/orange/rouge, les trois niveaux non « acceptable » observés sur
+  > `moi coupe.mp4`) en suivant l'`action_level` courant au fil de la lecture, uniformément sur
+  > l'ensemble des muscles. Enseignement pour la suite du projet : une mutation d'effet de bord
+  > (`objet.propriété = valeur` sur un objet THREE.js externe à React) ne doit jamais être placée
+  > dans un `useMemo`, même quand ça « marche » en apparence — Strict Mode la rend visible dès qu'on
+  > regarde vraiment le rendu, pas seulement le code.
+
 - **Attribution CC BY-SA obligatoire.** Les maillages sont dérivés de BodyParts3D via Z-Anatomy (licence CC BY-SA 4.0). Un fichier `NOTICE.md` à la racine du projet et un crédit visible dans l'interface (ex. pied de page ou info-bulle près de l'avatar 3D) sont requis avant toute mise en production. Le wording exact est à finaliser à l'implémentation, pas figé ici.
 - **Le fichier source Z-Anatomy (`Startup.blend`, ~293 Mo) n'est pas commité au dépôt.** Trop volumineux, re-téléchargeable depuis `github.com/Z-Anatomy/The-blend` (fichier `Z-Anatomy.zip` à la racine du dépôt). Le script d'export documente l'URL et les instructions de téléchargement. Seul le `.glb` final (résultat de l'export, attendu nettement plus petit — à mesurer à l'implémentation) est commité dans `web/public/`.
 - **Correctifs manuels après Automatic Weights, attendus et acceptés.** L'algorithme de diffusion de chaleur n'est pas parfait (ex. bavures de poids entre muscles proches de l'avant-bras). Une passe de vérification visuelle après export (et retouche manuelle ponctuelle dans Blender si besoin) fait partie du travail normal de cette tranche, pas un signe d'échec du pipeline.
