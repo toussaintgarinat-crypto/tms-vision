@@ -139,6 +139,15 @@ function Rig({
   useEffect(() => {
     skinnedMeshes.forEach((mesh, index) => {
       mesh.material = clonedMaterials[index];
+      // Three.js calcule la bounding sphere d'un SkinnedMesh une seule fois
+      // (à partir de la géométrie en bind pose) et ne la recalcule jamais
+      // lorsque les os bougent via `applyFrameToSkeleton` (boucle useFrame
+      // ci-dessous). Sans désactiver le frustum culling, un membre qui
+      // s'écarte largement de sa pose de repos (ex. un bras très levé) peut
+      // sortir du volume englobant mis en cache et disparaître à tort dès
+      // qu'il dépasse les limites de la caméra calculées pour la pose de
+      // repos.
+      mesh.frustumCulled = false;
     });
   }, [skinnedMeshes, clonedMaterials]);
 
@@ -224,13 +233,15 @@ export function PostureAvatar3D({
   }
 
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-lg bg-gray-900">
-      <Canvas camera={{ position: [0, 0, 2.5], fov: 50 }}>
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[2, 2, 2]} intensity={0.8} />
-        <Rig frames={frames} videoRef={videoRef} />
-        <OrbitControls target={[0, 0, 0]} />
-      </Canvas>
+    <div className="w-full">
+      <div className="aspect-video w-full overflow-hidden rounded-lg bg-gray-900">
+        <Canvas camera={{ position: [0, 0, 2.5], fov: 50 }}>
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[2, 2, 2]} intensity={0.8} />
+          <Rig frames={frames} videoRef={videoRef} />
+          <OrbitControls target={[0, 0, 0]} />
+        </Canvas>
+      </div>
       <p className="mt-1 text-xs text-gray-400">
         Modèle musculaire dérivé de Z-Anatomy (BodyParts3D), licence CC BY-SA 4.0.
         Voir NOTICE.md.
