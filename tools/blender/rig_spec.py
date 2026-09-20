@@ -44,11 +44,26 @@ ASCENDING_BONES = {"spine", "neck"}
 
 # Muscles du tronc/cou : pas de bone gauche/droite séparé, donc les variantes
 # `.l` ET `.r` (si les deux existent) sont toutes les deux rattachées au même
-# os. Noms vérifiés dans Startup.blend pendant le brainstorming de la
-# Tranche 3 (voir la spec, section "Liste des muscles retenus").
+# os. Noms RÉELLEMENT vérifiés en inspectant `bpy.data.objects` sur le
+# Startup.blend téléchargé pendant la Tranche 3, Task 5 (le brainstorming
+# antérieur ne l'avait pas encore fait tourner).
+#
+# Correction Task 5 : "Erector spinae" seul (sans suffixe) n'existe pas dans
+# le fichier réel — les objets présents sont "Erector spinae.j" (mesh unique
+# couvrant tout le muscle, comme "Deltoid muscle.j"/"Trapezius muscle.j"/
+# "Triceps brachii muscle.j"/"Biceps brachii muscle.j" pour ces autres
+# muscles : une version "joined" à objet unique, par opposition aux variantes
+# "el"/"er" = duplicata exploded-view et "ol"/"or" = duplicata outline/
+# highlight de l'appli Z-Anatomy) et "Erector spinae.ol"/"Erector spinae.or"
+# (duplicata outline). Comme "spine" est un os unique sans côté gauche/droite
+# séparé, le mesh "joined" unique est fonctionnellement équivalent à une
+# paire .l/.r et correspond à la vraie géométrie du muscle (pas un proxy de
+# highlight) : on utilise donc "Erector spinae.j", qui matche via le repli
+# "objet médian unique" déjà prévu dans `resolve_muscle_objects` (aucun
+# changement de logique nécessaire, seulement la chaîne de nom).
 TRUNK_NECK_MUSCLES = {
     "spine": [
-        "Erector spinae",
+        "Erector spinae.j",
         "Rectus abdominis muscle",
         "External abdominal oblique muscle",
         "Latissimus dorsi muscle",
@@ -63,28 +78,55 @@ TRUNK_NECK_MUSCLES = {
 
 # Muscles de membre : une entrée par catégorie de membre ("upper_arm",
 # "forearm", "thigh"), appliquée aux deux côtés (L_<catégorie>/R_<catégorie>).
-# mode "exact" : nom d'objet vérifié tel quel dans la spec.
-# mode "contains" : le Deltoïde a 3 parties dont les noms d'objet exacts
-# n'ont PAS été vérifiés pendant le brainstorming (seule la structure
-# "3 parties, comme le trapèze" est confirmée) — on sélectionne donc par
-# sous-chaîne "deltoid" (insensible à la casse) plutôt que d'inventer des
-# noms exacts non vérifiés. `resolve_muscle_objects` échoue explicitement si
-# aucune part n'est trouvée pour un côté donné.
+# mode "exact" : nom d'objet vérifié tel quel dans le Startup.blend réel
+# (Task 5). mode "contains" : conservé dans le code de résolution mais plus
+# utilisé par aucune entrée ci-dessous depuis la correction Task 5 (voir
+# note Deltoïde).
+#
+# Correction Task 5 — constat général : dans le fichier réel, la plupart des
+# muscles composés (Deltoïde, Biceps brachii, Triceps brachii, Flexor/
+# Extensor carpi ulnaris, Quadriceps femoris, Biceps femoris) n'ont PAS de
+# mesh unique nommé "<Muscle> muscle.l"/".r" — seules leurs parties/chefs
+# anatomiques individuels portent ce suffixe bare ".l"/".r" ; le nom composé
+# lui-même n'existe qu'en variantes ".el"/".er" (exploded-view) ou ".j"
+# (mesh unique), toutes deux exclues par la logique `exact`/`contains` sur
+# suffixe bare. Chaque entrée ci-dessous a donc été remplacée par la liste
+# de ses parties/chefs réels, vérifiés un par un via `bpy.data.objects`.
+#
+# Deltoïde : la note de risque du plan notait que les noms exacts des 3
+# parties n'étaient pas vérifiés (seule "3 parties comme le trapèze" était
+# confirmée) — on utilisait donc un mode "contains" sur "deltoid" en repli.
+# Task 5 a vérifié les 3 noms exacts ET découvert que "contains" aurait en
+# prime capturé "Deltoid fascia.l/.r" (fascia, pas du muscle) et
+# "Deltoid region.l/.r" (probablement un proxy de sélection/hover de
+# l'appli, pas de la géométrie musculaire) : on bascule donc sur les 3 noms
+# exacts, plus précis et sans ce risque de pollution.
 LIMB_MUSCLES = {
     "upper_arm": [
-        ("deltoid", "contains"),
-        ("Biceps brachii muscle", "exact"),
-        ("Triceps brachii muscle", "exact"),
+        ("Acromial part of deltoid muscle", "exact"),
+        ("Clavicular part of deltoid muscle", "exact"),
+        ("Scapular spinal part of deltoid muscle", "exact"),
+        ("Long head of biceps brachii", "exact"),
+        ("Short head of biceps brachii", "exact"),
+        ("Lateral head of triceps brachii", "exact"),
+        ("Long head of triceps brachii", "exact"),
+        ("Medial head of triceps brachii", "exact"),
     ],
     "forearm": [
-        ("Brachioradialis", "exact"),
-        ("Flexor carpi ulnaris", "exact"),
-        ("Extensor carpi ulnaris", "exact"),
+        ("Brachioradialis muscle", "exact"),
+        ("Humeral head of flexor carpi ulnaris", "exact"),
+        ("Ulnar head of flexor carpi ulnaris", "exact"),
+        ("Humeral head of extensor carpi ulnaris", "exact"),
+        ("Ulnar head of extensor carpi ulnaris", "exact"),
         ("Extensor digitorum", "exact"),
     ],
     "thigh": [
-        ("Quadriceps femoris muscle", "exact"),
-        ("Biceps femoris muscle", "exact"),
+        ("Rectus femoris muscle", "exact"),
+        ("Vastus intermedius muscle", "exact"),
+        ("Vastus lateralis muscle", "exact"),
+        ("Vastus medialis muscle", "exact"),
+        ("Long head of biceps femoris", "exact"),
+        ("Short head of biceps femoris", "exact"),
     ],
 }
 
