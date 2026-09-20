@@ -1,0 +1,128 @@
+# Avatar 3D de posture — Tranche 3 : vrais maillages musculaires (Z-Anatomy)
+
+**Date** : 2026-09-20
+**Statut** : Approuvé (implémentation reportée à une session ultérieure, à la demande de l'utilisateur du projet)
+
+## Note sur la numérotation des tranches
+
+La spec de la Tranche 1 (`2026-09-16-3d-posture-avatar-design.md`) désignait par « Tranche 2 » l'intégration des muscles et par « Tranche 3 » leur coloration/activation. La Tranche 2 réellement livrée (`2026-09-16-3d-posture-skeleton-rig-design.md`) a consommé ce numéro pour le squelette articulé (préalable technique découvert nécessaire en cours de route). **Ce document adopte la numérotation réelle** : Tranche 2 = squelette articulé (livrée), Tranche 3 (ce document) = vrais maillages musculaires, une Tranche 4 future = coloration/activation par muscle selon les sous-scores RULA. Le README et `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md` référencent déjà cette tranche sous ce nom.
+
+## Contexte
+
+La Tranche 2 a livré un squelette articulé (`web/app/pose3dSkeleton.ts` — 8 os + racine, `THREE.Bone`/`THREE.Skeleton`, bind pose en espace monde, longueurs fixes par os en mètres) et un maillage de test non anatomique (cylindres) pour prouver que le mécanisme de skinning fonctionne. Cette tranche remplace ce maillage de test par de vrais muscles.
+
+**Recherche faite avant ce document** (voir aussi le brainstorming de la Tranche 2, qui avait identifié ces inconnues) :
+
+- **Z-Anatomy est un atlas statique, confirmé sans armature ni poids de peau.** Vérifié à la fois par la documentation du dépôt (`github.com/Z-Anatomy/The-blend`) et en inspectant directement le fichier `Startup.blend` réel via un script Blender headless (`bpy.data.objects` filtré sur `type == "ARMATURE"` → liste vide, sur 7184 objets). Il existe un rig communautaire séparé (« Z-Biomechanics ») qui riggue le squelette osseux, mais explicitement pas les muscles/tissus mous, sans dépôt officiel (partagé via des liens de paste temporaires sur un forum) — non réutilisable pour cette tranche.
+- **Le weight-painting manuel de la musculature complète (~600 muscles, décision prise en Tranche 2) est un chantier de plusieurs semaines, confirmé et non plus hypothétique.** Décision prise avec l'utilisateur du projet : réduire le périmètre à un sous-ensemble de muscles majeurs pour cette tranche, la musculature complète devenant une extension future explicitement hors périmètre ici.
+- **Le modèle Z-Anatomy est à l'échelle métrique réelle**, vérifié par inspection directe du fichier : silhouette totale ≈ 1,88 m (bounding box), humérus mesuré à 31,8 cm (`bpy` sur l'objet `Humerus.r`), axe Z vers le haut, unités Blender = mètres (`unit_settings.system == "METRIC"`, `scale_length == 1.0`). Compatible sans conversion avec les données MediaPipe (déjà en mètres) utilisées par `pose3dSkeleton.ts`.
+- **Chaque structure anatomique est nommée individuellement** selon la Terminologia Anatomica (ex. collection « Deltoid muscle » contenant 3 objets : parties acromiale/claviculaire/scapulaire, suffixes `.l`/`.r` pour gauche/droite). Sélectionner un sous-ensemble de muscles par leur nom de collection est direct.
+- **Blender est installé et scriptable en local** (`brew install --cask blender`, exécution headless via `blender --background --python script.py` déjà vérifiée sur le fichier réel).
+
+Cette recherche change l'approche technique par rapport à ce qui était envisagé en Tranche 2 (weight-painting manuel ou skinning approximatif par proximité géométrique codé à la main) : Blender fournit un algorithme de skinning automatique testé (**Automatic Weights**, diffusion de chaleur), et son exportateur **glTF** intégré gère nativement les données de skinning et la conversion d'axes Z-up → Y-up. Le pipeline recommandé s'appuie dessus plutôt que de réinventer ces deux briques.
+
+## Décisions de cadrage
+
+- **Sous-ensemble de muscles majeurs, pas la musculature complète.** ~17 groupes musculaires (voir liste ci-dessous), choisis pour leur pertinence RULA (couvrent les zones déjà scorées : cou, tronc, épaule/bras, avant-bras) et leur correspondance directe avec les 8 os existants. La musculature complète (~600 muscles) est un chantier futur explicitement hors périmètre.
+- **Pipeline d'export Blender → glTF, pas de skinning fait main.** Une armature Blender est générée par script avec exactement la même hiérarchie que `pose3dSkeleton.ts` (mêmes noms d'os, mêmes longueurs `BONE_LENGTH`), les muscles sélectionnés y sont rattachés via **Automatic Weights** (algorithme de diffusion de chaleur natif de Blender — gère les muscles bi-articulaires mieux qu'un rattachement rigide au bone le plus proche), puis le tout est exporté en un fichier **`.glb`** (glTF binaire, autoporteur) via l'exportateur glTF intégré de Blender.
+- **`pose3dSkeleton.ts` n'est pas modifié.** Le calcul de rotation par frame (`applyFrameToSkeleton`) reste exactement le même ; au runtime, on retrouve les os du squelette **importé** par leur nom (`BoneKey`) et on leur applique les mêmes rotations qu'au squelette de test de la Tranche 2. C'est le principal bénéfice architectural de la Tranche 2 : le calcul de pose est découplé du maillage qui l'affiche.
+- **Couleur uniforme par frame, inchangée depuis la Tranche 1/2.** Pas de coloration par muscle individuel dans cette tranche (reportée à une Tranche 4 future, cohérent avec ce qui était déjà prévu). Concrètement, la teinte de l'`action_level` courant est appliquée à **tous** les matériaux des muscles importés (potentiellement plusieurs dizaines de matériaux, un par muscle/partie), pas à un seul matériau comme en Tranche 2.
+- **Attribution CC BY-SA obligatoire.** Les maillages sont dérivés de BodyParts3D via Z-Anatomy (licence CC BY-SA 4.0). Un fichier `NOTICE.md` à la racine du projet et un crédit visible dans l'interface (ex. pied de page ou info-bulle près de l'avatar 3D) sont requis avant toute mise en production. Le wording exact est à finaliser à l'implémentation, pas figé ici.
+- **Le fichier source Z-Anatomy (`Startup.blend`, ~293 Mo) n'est pas commité au dépôt.** Trop volumineux, re-téléchargeable depuis `github.com/Z-Anatomy/The-blend` (fichier `Z-Anatomy.zip` à la racine du dépôt). Le script d'export documente l'URL et les instructions de téléchargement. Seul le `.glb` final (résultat de l'export, attendu nettement plus petit — à mesurer à l'implémentation) est commité dans `web/public/`.
+- **Correctifs manuels après Automatic Weights, attendus et acceptés.** L'algorithme de diffusion de chaleur n'est pas parfait (ex. bavures de poids entre muscles proches de l'avant-bras). Une passe de vérification visuelle après export (et retouche manuelle ponctuelle dans Blender si besoin) fait partie du travail normal de cette tranche, pas un signe d'échec du pipeline.
+
+### Liste des muscles retenus
+
+Mappés sur les 8 os existants (voir `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`) :
+
+Noms vérifiés directement dans `Startup.blend` via `bpy.data.objects` pendant le brainstorming (suffixes `.l`/`.r` = gauche/droite, présents sur les objets réels) :
+
+| Os | Muscles (nom d'objet Z-Anatomy, sans le suffixe `.l`/`.r`) |
+|---|---|
+| `spine` | Erector spinae, Rectus abdominis muscle, External abdominal oblique muscle, Latissimus dorsi muscle |
+| `neck` | Trapezius muscle — **scindé en 3 objets** (« Ascending part of trapezius muscle », « Transverse part of trapezius muscle », « Descending part of trapezius muscle »), même structure que le deltoïde ; Sternocleidomastoid muscle |
+| `L_upper_arm` / `R_upper_arm` | Deltoid muscle (3 parties : acromiale/claviculaire/scapulaire), Biceps brachii muscle, Triceps brachii muscle |
+| `L_forearm` / `R_forearm` | Brachioradialis muscle, Flexor carpi ulnaris, Extensor carpi ulnaris, Extensor digitorum |
+| `L_thigh` / `R_thigh` | Quadriceps femoris muscle, Biceps femoris muscle (ischio-jambiers) |
+
+Point d'attention découvert pendant la vérification : certains objets ont des variantes `.el`/`.er`/`.ol`/`.or` en plus de `.l`/`.r` (ex. `Latissimus dorsi muscle.el`) — probablement des niveaux de détail ou des variantes géométriques alternatives. Le script d'export devra choisir explicitement les variantes `.l`/`.r` de base et ignorer les autres (à vérifier au cas par cas à l'implémentation, ne pas supposer que toutes les variantes existent pour chaque muscle).
+
+## Approche
+
+```
+Étape 1 — Génération de l'armature (script Python, hors runtime)
+─────────────────────────────────────────────────────────────────
+tools/blender/export_muscle_rig.py (NOUVEAU, exécuté manuellement via
+`blender --background --python`, pas embarqué dans l'app)
+  ├─ Charge Startup.blend (téléchargé séparément, voir Décisions de cadrage)
+  ├─ Construit une bpy.types.Armature avec la même hiérarchie que
+  │  BONE_ORDER/BONE_SPECS/BONE_LENGTH de pose3dSkeleton.ts
+  │  (axes Z-up Blender ; l'export glTF convertit automatiquement en Y-up)
+  ├─ Sélectionne les objets mesh des muscles retenus (par nom de collection)
+  ├─ Parente chaque muscle à l'armature avec Automatic Weights
+  │  (bpy.ops.object.parent_set(type='ARMATURE_AUTO'))
+  └─ Exporte armature + muscles en un seul fichier .glb
+       (bpy.ops.export_scene.gltf, export des skins/joints inclus)
+                    │
+                    ▼
+        web/public/muscle-rig.glb (NOUVEAU, committé au dépôt)
+
+Étape 2 — Chargement runtime (Next.js, inchangé sur le fond depuis la Tranche 2)
+──────────────────────────────────────────────────────────────────────────────
+PostureAvatar3D.tsx (MODIFIÉ)
+  ├─ useGLTF("/muscle-rig.glb")  [@react-three/drei, déjà une dépendance]
+  ├─ Retrouve chaque bone du squelette importé par son nom (BoneKey)
+  │  → Record<BoneKey, THREE.Bone>, même contrat que buildSkeleton()
+  ├─ applyFrameToSkeleton(bones, frame.landmarks, cache)  [INCHANGÉ, Tranche 2]
+  ├─ Applique la couleur de l'action_level courant à TOUS les matériaux
+  │  des muscles importés (plusieurs dizaines, pas un seul comme en Tranche 2)
+  └─ OrbitControls, fallback "aucune posture détectée" (inchangés)
+```
+
+## Structure du projet (ajouts sur l'existant)
+
+```
+TMS vision/
+├── NOTICE.md                          # NOUVEAU — attribution CC BY-SA (BodyParts3D/Z-Anatomy)
+├── tools/
+│   └── blender/
+│       ├── export_muscle_rig.py       # NOUVEAU — script d'export, exécuté manuellement
+│       └── README.md                  # NOUVEAU — instructions (téléchargement Z-Anatomy, commande d'exécution)
+└── web/
+    ├── public/
+    │   └── muscle-rig.glb             # NOUVEAU — asset généré par le script, committé
+    └── app/
+        └── PostureAvatar3D.tsx        # MODIFIÉ — charge muscle-rig.glb au lieu du maillage de test
+                                         #   (testSkinnedGeometry.ts n'est plus utilisé par ce composant ;
+                                         #   à supprimer ou conserver comme test isolé, cf. Hors périmètre)
+```
+
+## Détail — `tools/blender/export_muscle_rig.py`
+
+- Table `BONE_HIERARCHY` répliquant `BONE_ORDER`/`BONE_SPECS`/`BONE_LENGTH` de `pose3dSkeleton.ts` (dupliquée intentionnellement en Python, pas de partage de source entre TypeScript et Blender — un commentaire dans chaque fichier renvoie vers l'autre, à tenir synchronisé manuellement si le squelette change).
+- Construction de l'armature : un `bpy.types.Bone` par entrée de `BONE_HIERARCHY`, position locale relative au parent = longueur du parent le long de l'axe Z de Blender (équivalent de l'axe Y de Three.js après conversion glTF), exactement comme `buildSkeleton()` le fait pour l'axe Y en Three.js.
+- Sélection des muscles : recherche par nom d'**objet** (`bpy.data.objects`), pas seulement par nom de collection — certains muscles (ex. Latissimus dorsi, Brachioradialis) existent comme objets nommés sans collection dédiée du même nom, découvert en inspectant le fichier réel pendant le brainstorming. Filtrer sur les suffixes `.l`/`.r` exacts (pas `.el`/`.er`/`.ol`/`.or`, des variantes non désirées repérées sur certains muscles). Erreur explicite si un objet attendu est introuvable (ne pas continuer silencieusement avec un sous-ensemble incomplet).
+- Rattachement : `bpy.ops.object.parent_set(type='ARMATURE_AUTO')` par muscle (ou par lot), en s'assurant que l'armature est bien l'objet actif au moment de l'appel (contrainte de l'API Blender).
+- Export : `bpy.ops.export_scene.gltf(filepath=..., export_format='GLB', export_skins=True, ...)`. Vérifier après export que le `.glb` produit contient bien un unique squelette partagé par tous les muscles (pas un squelette dupliqué par objet — comportement par défaut à confirmer contre la version de Blender installée).
+
+## Détail — `PostureAvatar3D.tsx`
+
+- `useGLTF("/muscle-rig.glb")` charge la scène ; on en extrait la liste des `THREE.SkinnedMesh` (potentiellement ~30, un par muscle/partie) et leur `THREE.Skeleton` partagé.
+- Construction de `Record<BoneKey, THREE.Bone>` : pour chaque valeur de `BoneKey`, chercher dans `skeleton.bones` l'entrée dont `.name` correspond — erreur explicite si un nom attendu est absent (signe que l'armature exportée ne correspond plus à `pose3dSkeleton.ts`, ne pas continuer avec un mapping partiel silencieux).
+- `applyFrameToSkeleton` appelé exactement comme en Tranche 2, sans modification.
+- Couleur : itérer sur tous les `SkinnedMesh` trouvés et appliquer la couleur de l'`action_level` courant à leur matériau (cloner un matériau partagé plutôt que muter le matériau original importé du glTF, pour ne pas modifier l'asset source en mémoire de façon inattendue si le composant est démonté/remonté).
+- Fallback "aucune posture détectée", `OrbitControls`, logique vidéo : inchangés.
+
+## Tests
+
+- **Validation de l'export** (script séparé ou étape manuelle, pas un test Vitest classique vu qu'il dépend d'un fichier binaire externe non commité) : charger le `.glb` généré et vérifier que les 9 noms de `BoneKey` sont bien présents dans son squelette, qu'au moins un `SkinnedMesh` existe par muscle attendu.
+- **Vérification manuelle obligatoire** (comme les tranches précédentes) : rejouer `moi coupe.mp4`, comparer visuellement les muscles importés à la posture de la vidéo et au squelette de test de la Tranche 2 (proportions, absence de déformation aberrante aux articulations), vérifier que les correctifs de la Tranche 2 (masquage des os jamais détectés, absence de mannequin fantôme à t=0) fonctionnent toujours avec les vrais maillages.
+- Les tests unitaires existants (`pose3dSkeleton.test.ts`, 11 tests) ne sont pas affectés : ce module n'est pas modifié par cette tranche.
+
+## Hors périmètre (cette tranche)
+
+- Musculature complète (~600 muscles) — extension future, après validation de ce sous-ensemble réduit.
+- Coloration/activation par muscle individuel selon les sous-scores RULA — Tranche 4 future.
+- Correction du roll/torsion des os (limite connue depuis la Tranche 2, non résolue ici).
+- Correction du risque de cascade d'échelle sur hanche jamais détectée (limite connue depuis la Tranche 2, non résolue ici).
+- `testSkinnedGeometry.ts` : conservé tel quel dans le dépôt (couvert par ses propres tests) mais plus utilisé par `PostureAvatar3D.tsx` une fois cette tranche livrée — décision de suppression ou de conservation comme filet de sécurité à prendre à l'implémentation, pas ici.
