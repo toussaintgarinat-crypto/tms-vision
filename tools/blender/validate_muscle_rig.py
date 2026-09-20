@@ -37,6 +37,19 @@ EXPECTED_MESH_COUNT = 54
 # qui n'existe pas pour lui.
 NON_SIDED_BONES = {"root", "spine", "neck"}
 
+# Muscles tronc/cou (rig_spec.TRUNK_NECK_MUSCLES) : depuis la correction de
+# spec du 2026-09-20 (poids rigide déterministe, pas d'Automatic Weights —
+# voir export_muscle_rig.apply_rigid_weight), ces objets doivent porter
+# EXACTEMENT 100 % de poids sur leur unique os connu (spine/neck), 0 %
+# partout ailleurs — une garantie mathématique exacte, pas juste "dominant".
+# Table nom de base -> os, dérivée directement de rig_spec pour ne jamais
+# désynchroniser ce validateur de la source de vérité.
+TRUNK_NECK_BASE_NAMES = {
+    base_name: bone_key
+    for bone_key, base_names in rig_spec.TRUNK_NECK_MUSCLES.items()
+    for base_name in base_names
+}
+
 
 def main() -> None:
     argv = sys.argv[sys.argv.index("--") + 1 :]
@@ -159,7 +172,52 @@ def main() -> None:
         + "\n".join(side_violations)
     )
 
-    print(f"OK: {len(bone_names)} os, {len(meshes)} maillages skinnés, binding gauche/droite cohérent.")
+    # Poids rigide déterministe des muscles tronc/cou (correction de spec du
+    # 2026-09-20, "poids rigide déterministe" — voir
+    # export_muscle_rig.apply_rigid_weight) : pour chaque objet dont le nom
+    # de base (sans suffixe `.l`/`.r`) figure dans `rig_spec.TRUNK_NECK_MUSCLES`,
+    # on exige un poids de vertex EXACTEMENT 100 % sur son unique os connu et
+    # 0 % partout ailleurs — pas seulement "dominant" (contrairement au
+    # contrôle gauche/droite ci-dessus, qui tolère une bavure secondaire).
+    # Rend cette garantie permanente et vérifiée mécaniquement, pas seulement
+    # mesurée une fois au moment du correctif.
+    rigid_violations = []
+    for mesh in meshes:
+        base_name = mesh.name[:-2] if mesh.name.endswith((".l", ".r")) else mesh.name
+        expected_bone = TRUNK_NECK_BASE_NAMES.get(base_name)
+        if expected_bone is None:
+            continue
+        nonzero_group_names = set()
+        bad_weight_sum_vertices = 0
+        for vertex in mesh.data.vertices:
+            vertex_total = 0.0
+            for group_element in vertex.groups:
+                weight = group_element.weight
+                if weight <= 0.0:
+                    continue
+                nonzero_group_names.add(mesh.vertex_groups[group_element.group].name)
+                vertex_total += weight
+            if abs(vertex_total - 1.0) > 1e-4:
+                bad_weight_sum_vertices += 1
+        if nonzero_group_names != {expected_bone}:
+            rigid_violations.append(
+                f"{mesh.name}: groupe(s) de vertex à poids non nul {sorted(nonzero_group_names)} "
+                f"(attendu exactement {{'{expected_bone}'}}, poids rigide 100 % sur ce seul os)"
+            )
+        elif bad_weight_sum_vertices:
+            rigid_violations.append(
+                f"{mesh.name}: {bad_weight_sum_vertices} sommet(s) avec un poids total != 1.0 "
+                f"sur '{expected_bone}' (attendu exactement 1.0 partout)"
+            )
+    assert not rigid_violations, (
+        "poids rigide tronc/cou non exact (attendu 100 % sur l'os unique connu, 0 % ailleurs) :\n"
+        + "\n".join(rigid_violations)
+    )
+
+    print(
+        f"OK: {len(bone_names)} os, {len(meshes)} maillages skinnés, binding gauche/droite "
+        f"cohérent, poids rigide tronc/cou exact sur {len(TRUNK_NECK_BASE_NAMES)} nom(s) de base."
+    )
 
 
 if __name__ == "__main__":
