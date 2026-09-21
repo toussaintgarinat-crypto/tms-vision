@@ -134,12 +134,17 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   l'avatar 3D de posture (vrais maillages musculaires Z-Anatomy). **Livrée et vérifiée
   manuellement dans un vrai navigateur.** 54 muscles Z-Anatomy (BodyParts3D, licence CC BY-SA 4.0)
   riggés sur le squelette articulé de la Tranche 2 via un pipeline Blender → glTF
-  (`tools/blender/export_muscle_rig.py`, Automatic Weights), exportés dans
-  `web/public/muscle-rig.glb` (~15,7 Mo, committé) et chargés par `PostureAvatar3D.tsx` via
-  `useGLTF`. Deux défauts de rendu invisibles en simple revue de code (matériaux systématiquement
-  blancs quel que soit l'`action_level`) ont été détectés et corrigés pendant cette vérification —
-  voir le bloc « Correction (2026-09-20, vérification manuelle Task 7) » dans la spec pour le
-  détail. Crédit CC BY-SA affiché sous l'avatar dans l'interface et dans `NOTICE.md`.
+  (`tools/blender/export_muscle_rig.py`), exportés dans `web/public/muscle-rig.glb` (~15,7 Mo,
+  committé) et chargés par `PostureAvatar3D.tsx` via `useGLTF`. Poids de skinning à deux vitesses
+  (voir les blocs « Correction » du 2026-09-20 et 2026-09-21 dans la spec) : Automatic Weights
+  (heat-diffusion Blender) n'est utilisé QUE pour les 28 muscles upper_arm/forearm, seul cas
+  réellement bi-articulaire (coude) de ce squelette à 9 os ; les 26 muscles tronc/cou/cuisse, qui ne
+  traversent aucune seconde articulation représentée, sont rattachés en poids rigide déterministe
+  (100 % sur leur unique os connu, jamais via heat-diffusion). Deux défauts de rendu invisibles en
+  simple revue de code (matériaux systématiquement blancs quel que soit l'`action_level`) ont été
+  détectés et corrigés pendant cette vérification — voir le bloc « Correction (2026-09-20,
+  vérification manuelle Task 7) » dans la spec pour le détail. Crédit CC BY-SA affiché sous l'avatar
+  dans l'interface et dans `NOTICE.md`.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -326,19 +331,31 @@ juste "finir" la Phase 1 avant de passer à la suite :
   d'os et de sélection des muscles) et `tools/blender/export_muscle_rig.py` (script exécuté
   manuellement via `blender --background --python` contre le fichier source Z-Anatomy
   `Startup.blend`, non commité — voir spec pour le téléchargement) construisent une armature
-  identique à celle de `pose3dSkeleton.ts`, y rattachent les muscles sélectionnés via **Automatic
-  Weights** (diffusion de chaleur native de Blender), puis exportent le tout en un seul fichier
-  glTF binaire. **54 muscles** (pas 55 — un objet source cassé exclu, voir la spec) sont ainsi
-  livrés dans `web/public/muscle-rig.glb` (~15,7 Mo, committé), déjà validé indépendamment par
-  parsing direct du JSON glTF (squelette 9 os, 54 muscles, présence d'un skin par maillage).
+  identique à celle de `pose3dSkeleton.ts`, y rattachent les muscles sélectionnés, puis exportent le
+  tout en un seul fichier glTF binaire. **Deux chemins de poids distincts, pas un seul** (voir les
+  blocs « Correction » du 2026-09-20 et 2026-09-21 dans la spec) : **Automatic Weights** (diffusion
+  de chaleur native de Blender) n'est utilisé QUE pour les 28 muscles upper_arm/forearm, le seul cas
+  réellement bi-articulaire (coude) de ce squelette à 9 os ; les 26 muscles tronc/cou/cuisse, qui ne
+  traversent aucune seconde articulation représentée dans ce squelette, sont rattachés en **poids
+  rigide déterministe** (100 % sur leur unique os connu par table, jamais via heat-diffusion).
+  **54 muscles** (pas 55 — un objet source cassé exclu, voir la spec) sont ainsi livrés dans
+  `web/public/muscle-rig.glb` (~15,7 Mo, committé), déjà validé indépendamment par parsing direct
+  du JSON glTF (squelette 9 os, 54 muscles, présence d'un skin par maillage).
   **Précision (2026-09-20, après la revue finale de branche complète décrite dans la spec)** :
   cette première passe ne décodait que la structure JSON du glTF (présence des skins), pas les
   poids binaires eux-mêmes (`JOINTS_0`/`WEIGHTS_0`) — elle ne pouvait donc pas détecter que les 20
   muscles de membre gauche étaient en réalité skinnés sur les os droits. C'est un décodage binaire
   direct ultérieur, indépendant, qui a trouvé ce bug et permis de le corriger (trois passes de
-  correctifs côté pipeline Blender, détaillées dans la spec) ; `muscle-rig.glb` est désormais
-  revérifié binding correct sur les 40 muscles de membre et pondération rigide exacte sur les
-  14 muscles tronc/cou.
+  correctifs côté pipeline Blender, détaillées dans la spec).
+  **Précision (2026-09-21, généralisation du poids rigide déterministe à la cuisse)** : la même
+  revue finale de branche a ensuite mesuré une bavure de poids secondaire (jusqu'à 36 % sur ~5 % des
+  sommets de `Vastus lateralis muscle.l`) des 12 muscles de cuisse vers `L_forearm`/`R_forearm` —
+  même cause racine que le tronc/cou (pas de bi-articulation à préserver pour `L_thigh`/`R_thigh`
+  dans ce squelette à 9 os), en plus léger (dominante déjà correcte partout, contrairement au
+  tronc/cou où elle était parfois fausse). Le même traitement poids-rigide a été étendu à la cuisse
+  (décision produit explicite) ; `muscle-rig.glb` est désormais revérifié sommet par sommet :
+  binding correct sur les 28 muscles upper_arm/forearm et pondération rigide exacte (100,000 %,
+  0 sommet en écart) sur les 26 muscles tronc/cou/cuisse.
 - **`web/app/PostureAvatar3D.tsx`** charge désormais ce fichier via `useGLTF` (`@react-three/drei`)
   à la place du maillage de test de la Tranche 2 ; `pose3dSkeleton.ts` et `applyFrameToSkeleton`
   n'ont pas changé (bénéfice architectural de la Tranche 2 : le calcul de pose est découplé du

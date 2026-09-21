@@ -261,6 +261,83 @@ Cette recherche change l'approche technique par rapport à ce qui était envisag
   > visuellement en contexte réel (pas d'accès GUI dans cette session), à confirmer lors d'une
   > relecture manuelle ultérieure de la posture avatar (`moi coupe.mp4`).
 
+  > **Correction (2026-09-21, généralisation du poids rigide déterministe aux muscles de cuisse)** :
+  > une revue finale de branche complète, portant sur l'ensemble du pipeline (pas seulement le
+  > tronc/cou déjà corrigé ci-dessus), a décodé indépendamment le binaire de skin (`JOINTS_0`/
+  > `WEIGHTS_0`) du `muscle-rig.glb` commité pour TOUS les objets exportés, pas seulement ceux déjà
+  > suspectés. Constat : les 12 muscles de cuisse (`rig_spec.LIMB_MUSCLES["thigh"]`, dominante déjà
+  > correcte sur `L_thigh`/`R_thigh` — donc jamais signalés par le contrôle gauche/droite existant,
+  > qui ne vérifie que la dominante) montraient tous une bavure de poids secondaire mesurable vers
+  > `L_forearm`/`R_forearm`, jusqu'à 8,7 % du poids total agrégé pour `Vastus lateralis muscle.l`
+  > (91,3 % `L_thigh` / 8,7 % `L_forearm`) et jusqu'à 36 % sur ~5 % de ses sommets pris
+  > individuellement (bavure très concentrée spatialement, diluée dans l'agrégat) — cause racine
+  > identifiée : en pose de repos Z-Anatomy, le bras pend le long de la cuisse, donc `L_forearm`
+  > (axe de l'os) se trouve géométriquement proche de la face externe de la cuisse, et Automatic
+  > Weights (heat-diffusion sur toute l'armature, pas seulement l'os le plus proche) y répond par du
+  > blending indésirable.
+  >
+  > **Même cause racine que le tronc/cou** (correction ci-dessus), en plus léger (dominante déjà
+  > correcte partout pour la cuisse, contrairement au tronc/cou où la dominante elle-même était
+  > fausse) : ni le tronc/cou ni la cuisse ne sont bi-articulaires dans ce squelette à 9 os — il
+  > n'existe aucun os "jambe"/tibia sous `L_thigh`/`R_thigh` pour blend across un genou, exactement
+  > comme il n'existe aucune seconde articulation sous `spine`/`neck`. Automatic Weights n'apporte
+  > donc structurellement aucun bénéfice pour la cuisse non plus — seul `L_upper_arm`/`L_forearm` (et
+  > son symétrique droit) représentent une vraie bi-articulation (coude) dans ce squelette.
+  > **Décision produit explicite de l'humain, déjà actée** (pas re-débattue ici) : étendre le même
+  > traitement — poids rigide déterministe, jamais Automatic Weights — à la cuisse.
+  >
+  > **Changement de code** : la frontière rigide-vs-Automatic-Weights, auparavant dérivée uniquement
+  > des clés de `rig_spec.TRUNK_NECK_MUSCLES`, est généralisée en un nouvel ensemble
+  > `rig_spec.RIGID_WEIGHT_BONE_KEYS = set(TRUNK_NECK_MUSCLES.keys()) | {LIMB_BONE_OF[side]["thigh"]
+  > for side in ("L", "R")}` (`spine`, `neck`, `L_thigh`, `R_thigh`). `export_muscle_rig.py` route
+  > tout objet assigné à un de ces os vers `apply_rigid_weight` (renommé conceptuellement
+  > `rigid_weight_objects`, ex-`trunk_neck_objects`) ; seuls les objets assignés à `L_upper_arm`/
+  > `L_forearm`/`R_upper_arm`/`R_forearm` (renommés `automatic_weight_objects`, ex-`limb_objects`)
+  > passent encore par `parent_set(type="ARMATURE_AUTO")`. La position de l'os `L_thigh`/`R_thigh`
+  > (dérivée de la bbox de `muscles_by_bone["L_thigh"]`/`["R_thigh"]`, donc exactement les mêmes
+  > objets que ceux désormais rattachés rigidement à cet os — pas de contamination par une géométrie
+  > étrangère, contrairement au cas `L_upper_arm`/Latissimus dorsi) n'a **pas** été retouchée : elle
+  > n'a plus aucun rôle dans l'assignation du poids (déterminée par table, pas par proximité), et
+  > reste pertinente pour la déformation visuelle au runtime puisqu'elle est déjà bien centrée sur les
+  > muscles qui lui sont rigidement liés.
+  >
+  > Ré-exécution réelle du pipeline (`Muscles résolus : 55 objets sur 8 os`, 1 exclu pour géométrie
+  > dégénérée — `Erector spinae.j`, inchangé — donc toujours 54 muscles exportés ; log :
+  > `Poids rigide déterministe (tronc/cou/cuisse) : 26 objet(s). Automatic Weights (upper_arm/
+  > forearm) : 28 objet(s).`) et décodage binaire indépendant du nouveau `.glb` :
+  > - **Les 12 muscles de cuisse portent désormais exactement 100,000 % de poids sur leur `L_thigh`/
+  >   `R_thigh` respectif et 0 % ailleurs**, vérifié sommet par sommet sur les 36 109 sommets
+  >   combinés des 12 objets (0 sommet avec une somme de poids ≠ 1,0, tolérance 1e-4 ; 0 groupe de
+  >   vertex non nul en dehors de l'os attendu) : `Vastus lateralis muscle.l` (le cas le plus
+  >   bavé avant correctif) → `L_thigh` 100 % exact, plus aucune trace de `L_forearm`.
+  > - **Aucune régression sur les 14 objets tronc/cou**, revérifiés selon la même rigueur exacte
+  >   (100,000 % sur `spine`/`neck` selon le cas, 0 % ailleurs, tous sommets à somme 1,0) : toujours
+  >   corrects, y compris `Latissimus dorsi muscle.l`/`.r` → `spine` 100 %.
+  > - **Aucune régression sur les 28 muscles upper_arm/forearm** (seule catégorie restant sur
+  >   Automatic Weights) : tous dominants sur l'os de leur propre côté, chiffres cohérents avec avant
+  >   ce correctif — ex. `Long head of biceps brachii.r` → `R_upper_arm` 83,8 % (inchangé).
+  > - **`validate_muscle_rig.py` étendu** : nouvel invariant permanent pour la cuisse, même
+  >   discipline exacte que le tronc/cou (logique de vérification per-vertex factorisée dans un
+  >   helper partagé `rigid_weight_violation`, réutilisé par les deux catégories), avec sa propre
+  >   garde de couverture (`EXPECTED_THIGH_OBJECT_COUNT = 12`, dérivée de
+  >   `rig_spec.LIMB_MUSCLES["thigh"]`, jamais codée en dur). Contrairement au tronc/cou (un seul os
+  >   possible quel que soit le côté), l'os attendu pour la cuisse dépend du suffixe `.l`/`.r` de
+  >   l'objet — dérivé via `rig_spec.LIMB_BONE_OF`, pas une simple table nom-de-base → os. Passe sur
+  >   le nouveau `.glb` : `OK: 9 os, 54 maillages skinnés, binding gauche/droite cohérent, poids
+  >   rigide déterministe exact sur 26 objet(s) (tronc/cou : 14, cuisse : 12 — couverture vérifiée),
+  >   Automatic Weights (upper_arm/forearm) sur 28 objet(s).`
+  >
+  > **Bilan** : Automatic Weights (heat-diffusion) n'est plus utilisé que pour les 2 segments de
+  > membre réellement bi-articulaires de ce squelette (upper_arm/forearm, coude) — tronc, cou et
+  > cuisse sont désormais tous les trois en poids rigide déterministe, pour la même raison
+  > structurelle (pas de seconde articulation représentée à préserver). Écart au même titre que celui
+  > déjà assumé pour le tronc/cou ci-dessus (le poids rigide dépasse son périmètre d'origine de
+  > filet-de-sécurité ponctuel), mais justifié par la même logique et, cette fois, une direction
+  > produit explicite couvrant directement ce cas. Point ouvert inchangé : les muscles de cuisse se
+  > déforment désormais de façon totalement rigide (pas de bulge naturel), simplification anatomique
+  > du même ordre que celle déjà assumée pour le tronc/cou — non vérifiée visuellement en contexte
+  > réel dans cette session.
+
 ### Liste des muscles retenus
 
 Mappés sur les 8 os existants (voir `docs/superpowers/specs/2026-09-16-3d-posture-skeleton-rig-design.md`) :

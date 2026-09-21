@@ -46,16 +46,32 @@ validité du rig —
   pas 55.
 - `ATTENTION : repli poids rigide appliqué (Bone Heat Weighting sans
   solution) pour N objet(s) : [...]` — le solveur de diffusion de chaleur de
-  Blender échoue de façon non déterministe sur 1 à 3 des 40 muscles de
-  membre (ceux qui passent par Automatic Weights) selon l'exécution ; les 14
-  muscles tronc/cou (dont "Descending part of trapezius muscle" et
-  "Sternocleidomastoid muscle") ne passent plus jamais par ce solveur du
-  tout depuis la correction de spec du 2026-09-20 (poids rigide déterministe
-  systématique, voir `export_muscle_rig.apply_rigid_weight`) et ne peuvent
-  donc plus structurellement déclencher ce repli. Le script applique alors un
+  Blender échoue de façon non déterministe sur 1 à 3 des 28 muscles
+  upper_arm/forearm (les seuls qui passent encore par Automatic Weights)
+  selon l'exécution ; les 26 muscles tronc/cou/cuisse (dont "Descending part
+  of trapezius muscle", "Sternocleidomastoid muscle" et, depuis la
+  correction de spec du 2026-09-21, tous les muscles de cuisse — "Rectus
+  femoris muscle", "Vastus lateralis muscle", etc.) ne passent plus jamais
+  par ce solveur du tout (poids rigide déterministe systématique, voir
+  `export_muscle_rig.apply_rigid_weight`) et ne peuvent donc plus
+  structurellement déclencher ce repli. Le script applique alors un
   rattachement rigide (poids 1.0) à l'os logique déjà connu — le muscle reste
   skinné à 100 %, juste sans diffusion de chaleur pour ces quelques objets.
   La liste exacte peut varier d'un run à l'autre.
+
+**Quel muscle passe par quel chemin de poids** (voir `rig_spec.RIGID_WEIGHT_BONE_KEYS`
+et la correction de spec du 2026-09-21 dans
+`docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md`) :
+Automatic Weights (heat-diffusion) est utilisé UNIQUEMENT pour les muscles
+`upper_arm`/`forearm` (28 objets, 2 côtés) — le seul cas réellement
+bi-articulaire de ce squelette à 9 os (coude entre `L_upper_arm` et
+`L_forearm`, et son symétrique droit). Tous les autres muscles — tronc,
+cou (`rig_spec.TRUNK_NECK_MUSCLES`, 14 objets) et cuisse
+(`rig_spec.LIMB_MUSCLES["thigh"]`, 12 objets, depuis le 2026-09-21) — passent
+par le poids rigide déterministe (`apply_rigid_weight`), jamais par
+Automatic Weights, parce qu'aucun d'eux ne traverse une seconde articulation
+représentée dans ce squelette (pas d'os "jambe" sous la cuisse, pas de
+second os sous le tronc/cou).
 
 Avant `parent_set(ARMATURE_AUTO)`, le script dédoublonne aussi tout
 datablock mesh partagé entre plusieurs objets exportés (`obj.data.copy()`
@@ -81,20 +97,23 @@ sortie — vérifié empiriquement (exit 0 sans le flag sur un `.glb` invalide,
 exit 1 avec le flag).
 
 Sortie attendue (exacte) : `OK: 9 os, 54 maillages skinnés, binding
-gauche/droite cohérent, poids rigide tronc/cou exact sur 14 objet(s)
-(couverture vérifiée).` Le compte de maillages est une valeur EXACTE (54),
-pas un plancher — voir `EXPECTED_MESH_COUNT` dans `validate_muscle_rig.py`.
-Le compte de 14 objets tronc/cou est lui aussi une valeur EXACTE, dérivée
-(pas codée en dur) et re-vérifiée par une assertion de couverture — voir
-`EXPECTED_TRUNK_NECK_OBJECT_COUNT` dans `validate_muscle_rig.py`.
+gauche/droite cohérent, poids rigide déterministe exact sur 26 objet(s)
+(tronc/cou : 14, cuisse : 12 — couverture vérifiée), Automatic Weights
+(upper_arm/forearm) sur 28 objet(s).` Le compte de maillages est une valeur
+EXACTE (54), pas un plancher — voir `EXPECTED_MESH_COUNT` dans
+`validate_muscle_rig.py`. Les comptes de 14 objets tronc/cou et 12 objets
+cuisse sont eux aussi des valeurs EXACTES, dérivées (pas codées en dur) et
+re-vérifiées chacune par une assertion de couverture séparée — voir
+`EXPECTED_TRUNK_NECK_OBJECT_COUNT` et `EXPECTED_THIGH_OBJECT_COUNT` dans
+`validate_muscle_rig.py`.
 Le validateur vérifie aussi qu'aucun objet exporté ne partage son datablock
 mesh avec un autre, et que l'os dominant de chaque objet `.l`/`.r` est bien
 de son propre côté (ou un os non latéralisé — tronc/cou/racine). Toute
 erreur (os manquant, maillage non skinné, datablock partagé, binding
 gauche/droite incohérent, compte de maillages différent de 54, couverture du
-contrôle tronc/cou incorrecte) fait échouer le script (`assert`, code de
-sortie différent de 0 GRÂCE À `--python-exit-code 1` ci-dessus) — ne pas
-committer le `.glb` si cette étape échoue.
+contrôle tronc/cou ou cuisse incorrecte) fait échouer le script (`assert`,
+code de sortie différent de 0 GRÂCE À `--python-exit-code 1` ci-dessus) — ne
+pas committer le `.glb` si cette étape échoue.
 
 ## 4. Vérification visuelle
 
