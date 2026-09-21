@@ -6,6 +6,7 @@ import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.j
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { applyFrameToSkeleton, BONE_ORDER, BoneKey, Pose3DLandmarks } from "./pose3dSkeleton";
+import { resolveMeshRouting, RULA_SEGMENTS, RulaSegment } from "./muscleSegments";
 
 const MUSCLE_RIG_URL = "/muscle-rig.glb";
 
@@ -20,12 +21,15 @@ const ACTION_LEVEL_COLORS: Record<string, string> = {
 };
 const DEFAULT_COLOR = "#9E9E9E";
 
+export type Side = "left" | "right";
+
 type Pose3DFrame = {
   frame_index: number;
   timestamp_seconds: number;
   detected: boolean;
   landmarks: Pose3DLandmarks | null;
   action_level: string | null;
+  segment_action_levels: Record<string, string> | null;
 };
 
 function findNearestFrameIndex(frames: Pose3DFrame[], time: number): number {
@@ -52,9 +56,11 @@ function findNearestFrameIndex(frames: Pose3DFrame[], time: number): number {
 function Rig({
   frames,
   videoRef,
+  side,
 }: {
   frames: Pose3DFrame[];
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  side: Side;
 }) {
   const gltf = useGLTF(MUSCLE_RIG_URL);
 
@@ -66,13 +72,7 @@ function Rig({
   // provoque une désynchronisation entre l'objet réellement affiché et
   // celui mis à jour par la boucle de coloration ci-dessous dès que le
   // composant est monté plus d'une fois sur la session (ex. Strict Mode en
-  // dev, ou plusieurs analyses successives) — chaque montage réattribue
-  // `mesh.material` sur les mêmes objets partagés, et le montage devenu
-  // obsolète peut rester celui dont la référence `.material` colle
-  // effectivement à la scène rendue, alors que sa propre boucle useFrame
-  // ne tourne plus. Constaté visuellement le 2026-09-20 : les muscles
-  // restaient gris quel que soit l'action_level tant que ce clonage
-  // n'était pas fait.
+  // dev, ou plusieurs analyses successives).
   const scene = useMemo(() => cloneSkeleton(gltf.scene), [gltf]);
 
   const skinnedMeshes = useMemo(() => {
@@ -84,6 +84,15 @@ function Rig({
     });
     return meshes;
   }, [scene]);
+
+  // Résolu une seule fois par mesh : le skinning (skinIndex/skinWeight) est
+  // figé après le chargement du .glb, il ne dépend ni de la frame ni du côté
+  // analysé (`side` n'intervient que dans la boucle useFrame ci-dessous, pour
+  // décider QUELLE couleur appliquer, pas quel segment un mesh représente).
+  const meshRouting = useMemo(
+    () => skinnedMeshes.map((mesh) => resolveMeshRouting(mesh)),
+    [skinnedMeshes]
+  );
 
   const bones = useMemo(() => {
     const skeleton = skinnedMeshes[0]?.skeleton;
@@ -112,11 +121,10 @@ function Rig({
       const source = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
       const clone = (source as THREE.MeshStandardMaterial).clone();
       // Les matériaux Z-Anatomy exportés portent un emissiveFactor blanc
-      // (1,1,1) sans texture d'émission (vérifié dans muscle-rig.glb : les
-      // 12 matériaux). À pleine intensité, ce terme émissif s'ajoute au
-      // rendu indépendamment de `color` et sature l'image en blanc, ce qui
-      // rend invisible toute teinte appliquée par action_level ci-dessous.
-      // On neutralise l'émissif pour que la teinte reste visible.
+      // (1,1,1) sans texture d'émission. À pleine intensité, ce terme
+      // émissif s'ajoute au rendu indépendamment de `color` et sature
+      // l'image en blanc, ce qui rend invisible toute teinte appliquée
+      // ci-dessous. On neutralise l'émissif pour que la teinte reste visible.
       clone.emissive.set(0x000000);
       return clone;
     });
@@ -125,17 +133,8 @@ function Rig({
   // Affecter les clones aux meshes dans un effet (pas pendant le rendu) :
   // en Strict Mode (dev), React invoque deux fois le corps du composant
   // (et donc les initialiseurs `useMemo`) pour détecter les effets de bord
-  // impurs. Affecter `mesh.material = clone` DANS le `useMemo` ci-dessus
-  // (comme le faisait une version antérieure de ce code) crée deux
-  // générations de clones et mute les meshes partagés à chaque passage :
-  // le mesh réellement affiché pouvait alors garder le matériau de la
-  // première passe (jamais recoloré par la boucle ci-dessous), tandis que
-  // `clonedMaterials` référençait la seconde — désynchronisation constatée
-  // visuellement le 2026-09-20 (muscles restés gris quel que soit
-  // l'action_level, malgré `material.color` correctement mis à jour côté
-  // JS). Un `useEffect` s'exécute après le commit et réaffecte les mêmes
-  // références de façon idempotente, ce qui règle le problème même s'il
-  // est aussi rejoué deux fois par Strict Mode.
+  // impurs. Un `useEffect` s'exécute après le commit et réaffecte les mêmes
+  // références de façon idempotente.
   useEffect(() => {
     skinnedMeshes.forEach((mesh, index) => {
       mesh.material = clonedMaterials[index];
@@ -143,17 +142,27 @@ function Rig({
       // (à partir de la géométrie en bind pose) et ne la recalcule jamais
       // lorsque les os bougent via `applyFrameToSkeleton` (boucle useFrame
       // ci-dessous). Sans désactiver le frustum culling, un membre qui
-      // s'écarte largement de sa pose de repos (ex. un bras très levé) peut
-      // sortir du volume englobant mis en cache et disparaître à tort dès
-      // qu'il dépasse les limites de la caméra calculées pour la pose de
-      // repos.
+      // s'écarte largement de sa pose de repos peut disparaître à tort.
       mesh.frustumCulled = false;
     });
   }, [skinnedMeshes, clonedMaterials]);
 
   const groupRef = useRef<THREE.Group>(null);
   const lastKnownLandmarksRef = useRef<Partial<Pose3DLandmarks>>({});
-  const lastKnownColorRef = useRef<string>(DEFAULT_COLOR);
+  // Une couleur "dernière connue" par segment RULA, plus une entrée "global"
+  // pour la teinte uniforme dont dépendent encore les cuisses (segment ===
+  // null). Chaque entrée n'est mise à jour, frame après frame, que si sa
+  // propre donnée source (segment_action_levels[segment] ou action_level)
+  // est présente cette frame-là -- même principe de repli qu'avant cette
+  // tranche (Tranches 1-3), simplement répété par segment au lieu d'un seul
+  // ref partagé.
+  const lastKnownColorsRef = useRef<Record<RulaSegment | "global", string>>({
+    neck: DEFAULT_COLOR,
+    trunk: DEFAULT_COLOR,
+    upper_arm: DEFAULT_COLOR,
+    lower_arm: DEFAULT_COLOR,
+    global: DEFAULT_COLOR,
+  });
   const hasDetectedOnceRef = useRef(false);
 
   useFrame(() => {
@@ -169,14 +178,35 @@ function Rig({
       hasDetectedOnceRef.current = true;
       group.visible = true;
       if (frame.action_level) {
-        lastKnownColorRef.current = ACTION_LEVEL_COLORS[frame.action_level] ?? DEFAULT_COLOR;
+        lastKnownColorsRef.current.global = ACTION_LEVEL_COLORS[frame.action_level] ?? DEFAULT_COLOR;
+      }
+      if (frame.segment_action_levels) {
+        for (const segment of RULA_SEGMENTS) {
+          const level = frame.segment_action_levels[segment];
+          if (level) {
+            lastKnownColorsRef.current[segment] = ACTION_LEVEL_COLORS[level] ?? DEFAULT_COLOR;
+          }
+        }
       }
     }
 
     if (!hasDetectedOnceRef.current) return;
-    for (const material of clonedMaterials) {
-      material.color.set(lastKnownColorRef.current);
-    }
+    clonedMaterials.forEach((material, materialIndex) => {
+      const routing = meshRouting[materialIndex];
+      if (routing.segment === null) {
+        // Cuisses (ou tout mesh sans segment RULA) : teinte uniforme
+        // globale, comportement Tranche 3 inchangé.
+        material.color.set(lastKnownColorsRef.current.global);
+        return;
+      }
+      if (routing.side !== null && routing.side !== side) {
+        // Bras/avant-bras du côté NON analysé : aucune donnée mesurée pour
+        // ce côté, teinte neutre fixe en permanence.
+        material.color.set(DEFAULT_COLOR);
+        return;
+      }
+      material.color.set(lastKnownColorsRef.current[routing.segment]);
+    });
   });
 
   return (
@@ -191,9 +221,11 @@ useGLTF.preload(MUSCLE_RIG_URL);
 export function PostureAvatar3D({
   pose3dUrl,
   videoRef,
+  side,
 }: {
   pose3dUrl: string;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  side: Side;
 }) {
   const [frames, setFrames] = useState<Pose3DFrame[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -225,10 +257,6 @@ export function PostureAvatar3D({
     return <p className="text-sm text-gray-500">Chargement de l&apos;avatar 3D...</p>;
   }
   if (!frames.some((frame) => frame.landmarks !== null)) {
-    // `detected` signifie "angles RULA calculables", pas "pose détectée" :
-    // une vidéo où MediaPipe trouve une pose sur chaque frame mais où le
-    // calcul d'angles échoue systématiquement a quand même un track 3D
-    // exploitable (même critère qu'en Tranche 1).
     return <p className="text-sm text-gray-500">Aucune posture détectée sur cette vidéo.</p>;
   }
 
@@ -238,7 +266,7 @@ export function PostureAvatar3D({
         <Canvas camera={{ position: [0, 0, 2.5], fov: 50 }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[2, 2, 2]} intensity={0.8} />
-          <Rig frames={frames} videoRef={videoRef} />
+          <Rig frames={frames} videoRef={videoRef} side={side} />
           <OrbitControls target={[0, 0, 0]} />
         </Canvas>
       </div>

@@ -25,6 +25,7 @@ type AnalysisResponse = {
   annotated_video_url: string;
   csv_url: string;
   pose3d_url: string;
+  side: Side;
 };
 
 export default function Home() {
@@ -400,7 +401,7 @@ export default function Home() {
               controls
               className="w-full rounded-lg bg-black"
             />
-            <PostureAvatar3D pose3dUrl={result.pose3d_url} videoRef={resultVideoRef} />
+            <PostureAvatar3D pose3dUrl={result.pose3d_url} videoRef={resultVideoRef} side={result.side} />
           </div>
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt>Frames analysées</dt>
