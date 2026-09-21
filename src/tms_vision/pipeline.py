@@ -16,7 +16,7 @@ import cv2
 from tms_vision.capture import FrameSource
 from tms_vision.pose_estimation import PoseEstimator
 from tms_vision.angles import compute_joint_angles
-from tms_vision.rula.scoring import compute_rula_score, detect_muscle_use
+from tms_vision.rula.scoring import action_level, compute_rula_score, detect_muscle_use
 from tms_vision.overlay import draw_overlay
 from tms_vision.export import FrameRecord, ResultsExporter
 from tms_vision.pose3d_export import Pose3DFrameRecord, smooth_world_landmarks, write_pose3d_json
@@ -137,6 +137,14 @@ def analyze_video(
             score = compute_rula_score(
                 angles, wrist_twist=wrist_twist_code, load_kg=load_kg, muscle_use_score=muscle_use_score
             )
+        segment_action_levels = None
+        if score is not None:
+            segment_action_levels = {
+                "neck": action_level(score.neck),
+                "trunk": action_level(score.trunk),
+                "upper_arm": action_level(score.upper_arm),
+                "lower_arm": action_level(score.lower_arm),
+            }
         annotated = draw_overlay(frame.image, pose_result.landmarks, score)
         writer.write(annotated)
         exporter.add_frame(
@@ -155,7 +163,7 @@ def analyze_video(
                 detected=angles is not None,
                 landmarks=world_landmarks,
                 action_level=score.action_level if score is not None else None,
-                segment_action_levels=None,
+                segment_action_levels=segment_action_levels,
             )
         )
 

@@ -185,6 +185,7 @@ def test_analyze_video_produces_pose3d_json(tmp_path):
         assert entry["detected"] is False
         assert entry["landmarks"] is None
         assert entry["action_level"] is None
+        assert entry["segment_action_levels"] is None
 
 
 def _lm(x, y, z=0.0, visibility=1.0):
@@ -292,6 +293,16 @@ def test_analyze_video_pose3d_json_key_set_varies_per_frame_when_landmark_occlud
         assert entry["detected"] is True
         assert entry["landmarks"] is not None
         assert entry["action_level"] is not None
+        assert entry["segment_action_levels"] is not None
+        assert set(entry["segment_action_levels"].keys()) == {"neck", "trunk", "upper_arm", "lower_arm"}
+        valid_levels = {
+            "acceptable",
+            "investigation_recommandee",
+            "investigation_et_changement_bientot",
+            "changement_immediat",
+        }
+        for level in entry["segment_action_levels"].values():
+            assert level in valid_levels
         for name, coords in entry["landmarks"].items():
             assert isinstance(coords, list)
             assert len(coords) == 3
