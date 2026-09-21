@@ -147,6 +147,10 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   dans l'interface et dans `NOTICE.md`.
 - `docs/superpowers/plans/2026-09-20-3d-posture-muscle-mesh-implementation.md` — le plan
   d'implémentation de cette tranche.
+- `docs/superpowers/specs/2026-09-21-3d-posture-muscle-segment-coloring-design.md` — la spec de la
+  tranche 4 de l'avatar 3D de posture (coloration par segment anatomique).
+- `docs/superpowers/plans/2026-09-21-3d-posture-muscle-segment-coloring-plan.md` — le plan
+  d'implémentation de cette tranche.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -412,9 +416,63 @@ juste "finir" la Phase 1 avant de passer à la suite :
   la spec. Revérifié après correctif : la couleur change bien (jaune → orange → rouge observés sur
   ce clip) uniformément sur l'ensemble des muscles au fil de la lecture.
 - **Ce qui n'est pas dans cette tranche** : musculature complète (~600 muscles), coloration par
-  muscle individuel selon les sous-scores RULA (Tranche 4 future), correction du roll/torsion des
-  os, correction du risque de cascade d'échelle sur une hanche jamais détectée (voir spec) —
-  `testSkinnedGeometry.ts` conservé tel quel (décision de suppression explicitement hors périmètre).
+  muscle individuel selon les sous-scores RULA (coloration par segment anatomique livrée depuis en
+  Tranche 4, voir section suivante — la coloration par muscle individuel, plus fine, reste non
+  planifiée), correction du roll/torsion des os, correction du risque de cascade d'échelle sur une
+  hanche jamais détectée (voir spec) — `testSkinnedGeometry.ts` conservé tel quel (décision de
+  suppression explicitement hors périmètre).
+
+#### ✅ Avatar 3D de posture, Tranche 4 (coloration par segment anatomique) — TERMINÉE
+
+- **Contexte** : la Tranche 3 appliquait une teinte uniforme (`action_level` global) à tous les
+  muscles importés. Cette tranche colore chaque segment indépendamment à partir des sous-scores
+  RULA déjà calculés par `compute_rula_score()` mais jusqu'ici jetés avant d'atteindre le frontend.
+- **Backend** : `Pose3DFrameRecord` (`pose3d_export.py`) gagne un champ additif
+  `segment_action_levels` (cou/tronc/bras/avant-bras, réutilisant `action_level()` telle quelle sur
+  chaque sous-score) ; `side` (le côté analysé) est ajouté à la réponse JSON de `POST /analyses`,
+  pas à `pose3d.json`.
+- **`web/app/muscleSegments.ts`** (nouveau, module pur) : résout le segment RULA de chaque muscle
+  importé par son os dominant (somme des poids de peau `skinIndex`/`skinWeight`), via une table de 9
+  entrées (une par os) plutôt qu'une duplication des ~30 noms de muscles Z-Anatomy.
+- **`PostureAvatar3D.tsx`** : chaque muscle est coloré par son propre segment (cou, tronc, bras,
+  avant-bras) ; le bras/avant-bras du côté NON analysé reste en gris fixe en permanence (aucune
+  donnée mesurée pour ce côté) ; les cuisses gardent la teinte uniforme de la Tranche 3 (le score
+  `legs` est une constante jamais mesurée depuis la vidéo).
+- **Vérifié manuellement (2026-09-21)**, avec Playwright piloté dans un vrai navigateur, deux
+  serveurs réels (`uvicorn` + `next dev`) : côté **droit** sur `moi coupe.mp4` — vérification
+  confirmée par lecture directe du graphe de scène Three.js (hook `__THREE_DEVTOOLS__` officiel,
+  aucune modification de code produit) plutôt que par simple capture d'écran, la caméra par défaut
+  de l'avatar rendant les segments trop petits à l'œil pour une lecture couleur fiable : sur les 106
+  `SkinnedMesh` du rig, exactement les 28 correspondant aux muscles bras/avant-bras du côté gauche
+  (convention de nommage Z-Anatomy à suffixe `001`/`001_1`) restent figés en gris (`#9e9e9e`) à 4
+  instants de la vidéo pris à intervalles réguliers, pendant que les 78 autres (cou, tronc, cuisses,
+  bras/avant-bras droit) affichent des couleurs qui varient dans le temps (vert/jaune/orange
+  observés) ; aucune erreur console sur toute la session (en particulier aucune levée par
+  `resolveMeshBoneKey`/`resolveMeshRouting`).
+  **Précision (côté "gauche")** : `moi coupe.mp4` est une vidéo de profil qui ne montre que le côté
+  droit de la personne — la Tranche 3 documentait déjà que `LEFT_ELBOW`/`LEFT_KNEE` n'y sont jamais
+  détectés (voir bloc Tranche 3 ci-dessus). Avec `côté="gauche"`, `compute_joint_angles()`
+  (`angles.py`, inchangé par cette tranche) exige les landmarks `LEFT_SHOULDER`/`LEFT_ELBOW`/
+  `LEFT_WRIST`/`LEFT_EAR`/`LEFT_INDEX`, filtrés sous le seuil `min_visibility=0.5`
+  (`pose_estimation.py`) sur la totalité des 798 frames de cette vidéo — confirmé en comparant les
+  deux `pose3d.json` : `action_level`/`segment_action_levels` présents sur 746/798 frames côté
+  droit, sur 0/798 côté gauche, alors que les landmarks généraux (squelette 3D) restent détectés sur
+  795/798 frames dans les deux cas. Conséquence attendue, pas un bug de coloration : faute de
+  sous-scores RULA, l'avatar entier (y compris cou/tronc/cuisses, qui ne dépendent pourtant d'aucun
+  côté) reste en gris neutre du début à la fin — comportement de repli correct étant donné l'absence
+  de données, identique à ce qu'aurait produit la teinte globale unique de la Tranche 3 dans les
+  mêmes conditions. Le comportement miroir (bras/avant-bras droit gris, gauche coloré) n'a donc pas
+  pu être confirmé visuellement sur cet unique enregistrement disponible ; il est garanti par
+  construction du code — `sideOfBone()`/`resolveMeshRouting()` (`muscleSegments.ts`) sont purement
+  géométriques (dominance de poids de peau) et ignorent totalement la valeur de `side`, qui n'entre
+  en jeu qu'au moment de la comparaison `routing.side !== side` dans `PostureAvatar3D.tsx`,
+  strictement symétrique entre "left" et "right" — et par les tests unitaires existants de
+  `muscleSegments.test.ts`. Aucune erreur console sur cette session non plus.
+  Fallback "aucune posture détectée" toujours correct sur `synthetic_smoke_test.mp4` (40 frames, 0
+  détection, aucune erreur console).
+- **Ce qui n'est pas dans cette tranche** : analyse simultanée des deux côtés, coloration des
+  cuisses par un vrai signal mesuré, segments `wrist`/`wrist_twist` (pas d'os poignet dans le rig) —
+  voir la spec `docs/superpowers/specs/2026-09-21-3d-posture-muscle-segment-coloring-design.md`.
 
 #### Reste à faire pour la suite de la Phase 2
 
@@ -424,11 +482,6 @@ juste "finir" la Phase 1 avant de passer à la suite :
   implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
   salariés (voir section 7).
 - Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
-- Avatar 3D de posture, Tranche 4 (future, non planifiée) : coloration/activation des muscles par
-  segment anatomique à partir des sous-scores RULA déjà calculés (`neck`, `trunk`, `upper_arm`,
-  `lower_arm`, `wrist`), à la place de la teinte uniforme sur l'ensemble des muscles livrée en
-  Tranche 3 — voir la section « Hors périmètre » de
-  `docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md`.
 - Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
   l'export : `neck`, `trunk`, `upper_arm`, `lower_arm`, `wrist`) aux capsules d'étirement.
 
