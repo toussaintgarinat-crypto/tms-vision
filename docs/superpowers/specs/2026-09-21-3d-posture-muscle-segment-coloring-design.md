@@ -54,6 +54,38 @@ tranche comme "Tranche 4 future") :
   "acceptable" indépendamment de la vraie posture — trompeur. Les muscles de cuisse continuent donc
   de suivre la teinte uniforme du `action_level` global, exactement comme tous les muscles le
   faisaient avant cette tranche.
+
+  > **Correction (2026-09-21, revue finale de branche complète)** : une revue portant sur
+  > l'ensemble de la branche (pas seulement tâche par tâche) a relevé une interaction entre deux
+  > décisions individuellement approuvées ailleurs dans ce document, invisible tant que chacune
+  > n'était examinée qu'isolément. D'une part, les seuils de couleur des 4 vrais segments RULA
+  > (`neck`/`trunk`/`upper_arm`/`lower_arm`) sont structurellement plafonnés — sous-score brut max
+  > 6 (`neck`/`trunk`/`upper_arm`) ou 3 (`lower_arm`), et `action_level()` ne retourne
+  > `changement_immediat` (rouge) qu'à partir de 7 — donc **aucun des 4 segments réels ne peut
+  > jamais afficher rouge**, quelle que soit la sévérité de la posture (voir la puce "Seuils de
+  > couleur réutilisés tels quels" ci-dessus, déjà actée). D'autre part, la puce ci-dessus
+  > maintenait les cuisses sur la teinte du `action_level` GLOBAL, qui lui n'est pas plafonné de la
+  > même façon et peut légitimement atteindre rouge. Conséquence mesurée sur la vidéo de référence
+  > du projet (`moi coupe.mp4`, 798 frames) : sur les 36 frames où le score global affiché était
+  > rouge (`changement_immediat`), les 4 segments réels affichaient tous jaune/orange ce même
+  > instant (jamais rouge, par construction) — **rouge n'apparaissait donc jamais que sur les
+  > cuisses**, le seul segment du corps sans aucun signal réellement mesuré depuis la vidéo (`legs`
+  > est `LEGS_SCORE`, une constante codée en dur, `scoring.py:9` — jamais dérivée de la pose
+  > détectée). Visuellement, l'avatar pouvait ainsi passer au rouge sur les cuisses en réponse à une
+  > mauvaise posture du cou/tronc/bras, en laissant croire à tort à un signal de jambe.
+  >
+  > **Décision produit explicite de l'humain** (posée pendant cette revue, tranchée directement,
+  > pas rouverte au débat) : les cuisses n'affichent plus la couleur du `action_level` global du
+  > tout. Elles passent à une teinte neutre fixe — `DEFAULT_COLOR` (`#9E9E9E`), la même déjà
+  > utilisée pour le bras/avant-bras du côté non analysé — en toutes circonstances, y compris
+  > quand une posture est détectée. C'est un changement de comportement assumé par rapport à la
+  > version originale de cette tranche décrite ci-dessus (qui suivait encore `action_level`), motivé
+  > par le même principe déjà appliqué au bras/avant-bras du côté non analysé un peu plus haut dans
+  > cette liste : ne jamais afficher une couleur dérivée d'une donnée qui n'a pas réellement été
+  > mesurée pour la partie du corps concernée. `Pose3DFrame.action_level` reste dans le type
+  > TypeScript et dans `pose3d.json` (il décrit fidèlement ce que le backend sérialise toujours) ;
+  > seul `PostureAvatar3D.tsx` cesse de le lire pour la coloration des cuisses — plus aucun code de
+  > ce composant ne le consulte après ce correctif.
 - **Seuils de couleur réutilisés tels quels, pas de normalisation proportionnelle.** Chaque
   sous-score brut est passé directement à `action_level()` (mêmes seuils absolus `<=2`/`<=4`/`<=6`
   que pour le score final). Conséquence assumée : `lower_arm` (échelle 1-3) ne peut jamais afficher
