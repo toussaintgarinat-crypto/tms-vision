@@ -37,6 +37,7 @@ def test_create_analysis_with_no_detectable_person_returns_empty_summary(tmp_pat
     assert body["annotated_video_url"].startswith("/outputs/")
     assert body["csv_url"].startswith("/outputs/")
     assert body["pose3d_url"].startswith("/outputs/")
+    assert body["side"] == "right"
 
 
 def test_create_analysis_rejects_negative_load_kg(tmp_path, monkeypatch):
