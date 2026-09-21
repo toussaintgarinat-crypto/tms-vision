@@ -29,7 +29,7 @@ type Pose3DFrame = {
   detected: boolean;
   landmarks: Pose3DLandmarks | null;
   action_level: string | null;
-  segment_action_levels: Record<string, string> | null;
+  segment_action_levels?: Record<string, string> | null;
 };
 
 function findNearestFrameIndex(frames: Pose3DFrame[], time: number): number {
@@ -149,19 +149,19 @@ function Rig({
 
   const groupRef = useRef<THREE.Group>(null);
   const lastKnownLandmarksRef = useRef<Partial<Pose3DLandmarks>>({});
-  // Une couleur "dernière connue" par segment RULA, plus une entrée "global"
-  // pour la teinte uniforme dont dépendent encore les cuisses (segment ===
-  // null). Chaque entrée n'est mise à jour, frame après frame, que si sa
-  // propre donnée source (segment_action_levels[segment] ou action_level)
-  // est présente cette frame-là -- même principe de repli qu'avant cette
-  // tranche (Tranches 1-3), simplement répété par segment au lieu d'un seul
-  // ref partagé.
-  const lastKnownColorsRef = useRef<Record<RulaSegment | "global", string>>({
+  // Une couleur "dernière connue" par segment RULA réel (neck/trunk/
+  // upper_arm/lower_arm) -- plus d'entrée "global" partagée : les cuisses
+  // n'ont plus de couleur mesurée du tout (voir DEFAULT_COLOR dans la boucle
+  // de coloration ci-dessous), donc plus rien ne lit `action_level` ici.
+  // Chaque entrée n'est mise à jour, frame après frame, que si sa propre
+  // donnée source (segment_action_levels[segment]) est présente cette
+  // frame-là -- même principe de repli qu'avant cette tranche (Tranches
+  // 1-3), simplement répété par segment au lieu d'un seul ref partagé.
+  const lastKnownColorsRef = useRef<Record<RulaSegment, string>>({
     neck: DEFAULT_COLOR,
     trunk: DEFAULT_COLOR,
     upper_arm: DEFAULT_COLOR,
     lower_arm: DEFAULT_COLOR,
-    global: DEFAULT_COLOR,
   });
   const hasDetectedOnceRef = useRef(false);
 
@@ -177,9 +177,6 @@ function Rig({
       applyFrameToSkeleton(bones, frame.landmarks, lastKnownLandmarksRef.current);
       hasDetectedOnceRef.current = true;
       group.visible = true;
-      if (frame.action_level) {
-        lastKnownColorsRef.current.global = ACTION_LEVEL_COLORS[frame.action_level] ?? DEFAULT_COLOR;
-      }
       if (frame.segment_action_levels) {
         for (const segment of RULA_SEGMENTS) {
           const level = frame.segment_action_levels[segment];
@@ -194,9 +191,21 @@ function Rig({
     clonedMaterials.forEach((material, materialIndex) => {
       const routing = meshRouting[materialIndex];
       if (routing.segment === null) {
-        // Cuisses (ou tout mesh sans segment RULA) : teinte uniforme
-        // globale, comportement Tranche 3 inchangé.
-        material.color.set(lastKnownColorsRef.current.global);
+        // Cuisses (ou tout mesh sans segment RULA) : teinte neutre fixe, pas
+        // la couleur du score global. `legs` est une constante codée en dur
+        // côté scoring (jamais dérivée de la vidéo, voir scoring.py::LEGS_SCORE),
+        // donc contrairement aux 4 vrais segments RULA, les cuisses n'ont
+        // aucun signal mesuré à afficher. Changement de comportement
+        // délibéré par rapport à la Tranche 3 (qui suivait encore la teinte
+        // globale ici) : décidé pendant la revue finale de cette branche,
+        // après avoir constaté que le score global -- contrairement aux
+        // sous-scores réels, structurellement plafonnés à 6 -- peut
+        // atteindre rouge, et n'atteint rouge QUE sur les cuisses (aucune
+        // donnée mesurée). Même principe que le gris fixe du bras/avant-bras
+        // non analysé ci-dessous : ne jamais colorer une donnée non mesurée.
+        // Voir la note de correction (2026-09-21) dans le spec de cette
+        // tranche pour le détail et les chiffres.
+        material.color.set(DEFAULT_COLOR);
         return;
       }
       if (routing.side !== null && routing.side !== side) {
@@ -232,6 +241,11 @@ export function PostureAvatar3D({
 
   useEffect(() => {
     let cancelled = false;
+    // Réinitialise l'état au début de chaque fetch (effet déclenché par un
+    // changement de `pose3dUrl`) : motif pré-existant d'une tranche
+    // antérieure, non touché par ce correctif -- juste rendu silencieux
+    // pour le lint, l'intention (reset avant re-fetch) est correcte.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFrames(null);
     setError(null);
     fetch(`${API_URL}${pose3dUrl}`)
