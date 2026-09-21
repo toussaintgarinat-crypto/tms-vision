@@ -155,6 +155,7 @@ def analyze_video(
                 detected=angles is not None,
                 landmarks=world_landmarks,
                 action_level=score.action_level if score is not None else None,
+                segment_action_levels=None,
             )
         )
 
