@@ -17,6 +17,7 @@ class Pose3DFrameRecord:
     detected: bool
     landmarks: dict[str, Landmark] | None
     action_level: str | None
+    segment_action_levels: dict[str, str] | None
 
 
 def smooth_world_landmarks(
@@ -69,6 +70,7 @@ def write_pose3d_json(path: str, records: list[Pose3DFrameRecord]) -> None:
                 "detected": record.detected,
                 "landmarks": landmarks,
                 "action_level": record.action_level,
+                "segment_action_levels": record.segment_action_levels,
             }
         )
     with open(path, "w") as f:
