@@ -416,7 +416,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
   la spec. Revérifié après correctif : la couleur change bien (jaune → orange → rouge observés sur
   ce clip) uniformément sur l'ensemble des muscles au fil de la lecture.
 - **Ce qui n'est pas dans cette tranche** : musculature complète (~600 muscles), coloration par
-  muscle individuel selon les sous-scores RULA (coloration par segment anatomique livrée depuis en
+  muscle individuel selon les sous-scores RULA (coloration par segment anatomique livrée en
   Tranche 4, voir section suivante — la coloration par muscle individuel, plus fine, reste non
   planifiée), correction du roll/torsion des os, correction du risque de cascade d'échelle sur une
   hanche jamais détectée (voir spec) — `testSkinnedGeometry.ts` conservé tel quel (décision de
@@ -441,7 +441,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
 - **Vérifié manuellement (2026-09-21)**, avec Playwright piloté dans un vrai navigateur, deux
   serveurs réels (`uvicorn` + `next dev`) : côté **droit** sur `moi coupe.mp4` — vérification
   confirmée par lecture directe du graphe de scène Three.js (hook `__THREE_DEVTOOLS__` officiel,
-  aucune modification de code produit) plutôt que par simple capture d'écran, la caméra par défaut
+  sans modifier le code de l'application) plutôt que par simple capture d'écran, la caméra par défaut
   de l'avatar rendant les segments trop petits à l'œil pour une lecture couleur fiable : sur les 106
   `SkinnedMesh` du rig, exactement les 28 correspondant aux muscles bras/avant-bras du côté gauche
   (convention de nommage Z-Anatomy à suffixe `001`/`001_1`) restent figés en gris (`#9e9e9e`) à 4
