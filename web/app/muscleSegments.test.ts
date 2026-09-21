@@ -1,0 +1,103 @@
+import { describe, expect, it } from "vitest";
+import * as THREE from "three";
+import { BoneKey, BONE_ORDER, buildSkeleton } from "./pose3dSkeleton";
+import {
+  dominantBoneIndex,
+  resolveMeshBoneKey,
+  resolveMeshRouting,
+  SEGMENT_BY_BONE,
+  sideOfBone,
+} from "./muscleSegments";
+
+function makeSkinAttributes(assignments: { boneIndex: number; weight: number }[][]) {
+  const vertexCount = assignments.length;
+  const skinIndices = new Uint16Array(vertexCount * 4);
+  const skinWeights = new Float32Array(vertexCount * 4);
+  assignments.forEach((slots, vertex) => {
+    slots.forEach((slot, i) => {
+      skinIndices[vertex * 4 + i] = slot.boneIndex;
+      skinWeights[vertex * 4 + i] = slot.weight;
+    });
+  });
+  return {
+    skinIndex: new THREE.Uint16BufferAttribute(skinIndices, 4),
+    skinWeight: new THREE.Float32BufferAttribute(skinWeights, 4),
+  };
+}
+
+describe("dominantBoneIndex", () => {
+  it("retourne l'os qui accumule le plus de poids sur l'ensemble du maillage", () => {
+    const { skinIndex, skinWeight } = makeSkinAttributes([
+      [{ boneIndex: 5, weight: 1 }],
+      [{ boneIndex: 5, weight: 1 }],
+      [{ boneIndex: 2, weight: 1 }],
+    ]);
+
+    expect(dominantBoneIndex(skinIndex, skinWeight)).toBe(5);
+  });
+
+  it("agrège les poids répartis sur plusieurs des 4 slots d'un même vertex", () => {
+    const { skinIndex, skinWeight } = makeSkinAttributes([
+      [
+        { boneIndex: 3, weight: 0.5 },
+        { boneIndex: 3, weight: 0.4 },
+        { boneIndex: 7, weight: 0.1 },
+      ],
+    ]);
+
+    expect(dominantBoneIndex(skinIndex, skinWeight)).toBe(3);
+  });
+});
+
+describe("SEGMENT_BY_BONE / sideOfBone", () => {
+  it("mappe chaque os sur son segment RULA (ou null si non applicable)", () => {
+    expect(SEGMENT_BY_BONE.spine).toBe("trunk");
+    expect(SEGMENT_BY_BONE.neck).toBe("neck");
+    expect(SEGMENT_BY_BONE.L_upper_arm).toBe("upper_arm");
+    expect(SEGMENT_BY_BONE.R_upper_arm).toBe("upper_arm");
+    expect(SEGMENT_BY_BONE.L_forearm).toBe("lower_arm");
+    expect(SEGMENT_BY_BONE.R_forearm).toBe("lower_arm");
+    expect(SEGMENT_BY_BONE.L_thigh).toBeNull();
+    expect(SEGMENT_BY_BONE.R_thigh).toBeNull();
+    expect(SEGMENT_BY_BONE.root).toBeNull();
+  });
+
+  it("déduit le côté d'un os depuis son préfixe L_/R_", () => {
+    expect(sideOfBone("L_forearm")).toBe("left");
+    expect(sideOfBone("R_upper_arm")).toBe("right");
+    expect(sideOfBone("spine")).toBeNull();
+    expect(sideOfBone("neck")).toBeNull();
+  });
+});
+
+function buildSingleVertexMesh(boneKey: BoneKey): THREE.SkinnedMesh {
+  const { skeleton, bones } = buildSkeleton();
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
+  const boneIndex = BONE_ORDER.indexOf(boneKey);
+  const { skinIndex, skinWeight } = makeSkinAttributes([[{ boneIndex, weight: 1 }]]);
+  geometry.setAttribute("skinIndex", skinIndex);
+  geometry.setAttribute("skinWeight", skinWeight);
+  const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshStandardMaterial());
+  mesh.add(bones.root);
+  mesh.bind(skeleton);
+  return mesh;
+}
+
+describe("resolveMeshBoneKey / resolveMeshRouting", () => {
+  it("retrouve le nom de l'os dominant d'un SkinnedMesh réel et son routage", () => {
+    const mesh = buildSingleVertexMesh("L_forearm");
+    expect(resolveMeshBoneKey(mesh)).toBe("L_forearm");
+    expect(resolveMeshRouting(mesh)).toEqual({ segment: "lower_arm", side: "left" });
+  });
+
+  it("retourne un segment null pour un os sans segment RULA (cuisse), sans côté pertinent", () => {
+    const mesh = buildSingleVertexMesh("R_thigh");
+    expect(resolveMeshRouting(mesh)).toEqual({ segment: null, side: "right" });
+  });
+
+  it("ne signale aucun côté pour le tronc (os unique, sans variante gauche/droite)", () => {
+    const mesh = buildSingleVertexMesh("spine");
+    expect(resolveMeshRouting(mesh)).toEqual({ segment: "trunk", side: null });
+  });
+});
