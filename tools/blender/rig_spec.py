@@ -135,6 +135,28 @@ LIMB_BONE_OF = {
     "R": {"upper_arm": "R_upper_arm", "forearm": "R_forearm", "thigh": "R_thigh"},
 }
 
+# Os SANS partenaire bi-articulaire dans ce squelette à 9 os : pas
+# d'articulation à préserver (genou/coude) entre l'os et un second os
+# représenté, donc Automatic Weights (heat-diffusion, dont toute la
+# justification est ce blending bi-articulaire — voir `LIMB_MUSCLES`
+# ci-dessus) n'apporte structurellement aucun bénéfice pour les muscles qui
+# lui sont assignés. `spine`/`neck` : voir la correction de spec du
+# 2026-09-20 (Latissimus dorsi). `L_thigh`/`R_thigh` : même raisonnement,
+# généralisé par la correction de spec du 2026-09-21 — il n'existe aucun os
+# "jambe" sous `L_thigh`/`R_thigh` dans ce squelette à 9 os pour blend across
+# un genou, contrairement à `L_upper_arm`/`L_forearm` qui blendent
+# réellement across le coude. Dérivé de `TRUNK_NECK_MUSCLES` (spine, neck) +
+# l'entrée "thigh" de `LIMB_BONE_OF` pour chaque côté, plutôt que codé en
+# dur, pour ne jamais désynchroniser cet ensemble de la source de vérité
+# si l'une ou l'autre table change. `export_muscle_rig.py` route tout objet
+# assigné à un de ces os vers `apply_rigid_weight` (poids 1.0 déterministe),
+# jamais vers `parent_set(type="ARMATURE_AUTO")` ; seuls les objets assignés
+# à `L_upper_arm`/`L_forearm`/`R_upper_arm`/`R_forearm` (absents de cet
+# ensemble) passent encore par Automatic Weights.
+RIGID_WEIGHT_BONE_KEYS = set(TRUNK_NECK_MUSCLES.keys()) | {
+    LIMB_BONE_OF[side]["thigh"] for side in ("L", "R")
+}
+
 _EXCLUDED_SUFFIXES = {"el", "er", "ol", "or"}
 
 

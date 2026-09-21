@@ -71,24 +71,31 @@ def apply_rigid_weight(obj: bpy.types.Object, bone_key: str, armature_obj: bpy.t
 
     Utilisée pour deux cas distincts :
     1. Filet de sécurité historique quand le solveur "Bone Heat Weighting"
-       (Automatic Weights) échoue à trouver une solution pour un muscle de
-       membre (voir l'appel dans `main()`, section limb_objects).
-    2. Assignation SYSTÉMATIQUE et INCONDITIONNELLE pour tout muscle de
-       `rig_spec.TRUNK_NECK_MUSCLES` (voir `main()`, section
-       trunk_neck_objects) — ces objets ne passent jamais par le solveur
-       heat-diffusion du tout. Contrairement aux muscles de membre (bi-
-       articulaires : Biceps doit se répartir entre `L_upper_arm` et
-       `L_forearm` pour bien se déformer à l'articulation du coude), les
-       muscles tronc/cou sont assignés avec certitude à un SEUL os
-       (`spine` ou `neck`, table `TRUNK_NECK_MUSCLES`) et ne traversent
-       aucune articulation à préserver. Le blending heat-diffusion n'apporte
-       donc aucun bénéfice pour eux et s'est révélé activement nuisible en
-       pratique sur deux tentatives précédentes (voir la correction de spec
-       2026-09-20 sur le Latissimus dorsi : dominante à tort sur
-       `L_upper_arm`/`R_upper_arm` puis, après un premier correctif, sur
-       `neck` — jamais `spine` malgré deux repositionnements d'os
-       successifs). Le poids rigide déterministe élimine cette classe de
-       défaut par construction plutôt que par ajustement empirique."""
+       (Automatic Weights) échoue à trouver une solution pour un muscle
+       bi-articulaire de membre (voir l'appel dans `main()`, section
+       automatic_weight_objects).
+    2. Assignation SYSTÉMATIQUE et INCONDITIONNELLE pour tout muscle assigné
+       à un os de `rig_spec.RIGID_WEIGHT_BONE_KEYS` (voir `main()`, section
+       rigid_weight_objects) — ces objets ne passent jamais par le solveur
+       heat-diffusion du tout. Contrairement aux muscles bi-articulaires
+       (Biceps doit se répartir entre `L_upper_arm` et `L_forearm` pour bien
+       se déformer à l'articulation du coude), les muscles tronc/cou/cuisse
+       sont assignés avec certitude à un SEUL os (`spine`/`neck`, table
+       `TRUNK_NECK_MUSCLES`, ou `L_thigh`/`R_thigh`) et ne traversent aucune
+       articulation à préserver dans ce squelette à 9 os (pas d'os "jambe"
+       sous la cuisse). Le blending heat-diffusion n'apporte donc aucun
+       bénéfice pour eux et s'est révélé activement nuisible en pratique :
+       dominante à tort pour le tronc/cou sur deux tentatives précédentes
+       (voir la correction de spec 2026-09-20 sur le Latissimus dorsi :
+       dominante à tort sur `L_upper_arm`/`R_upper_arm` puis, après un
+       premier correctif, sur `neck` — jamais `spine` malgré deux
+       repositionnements d'os successifs) et une bavure de poids mesurée
+       vers `L_forearm`/`R_forearm` pour les muscles de cuisse (voir la
+       correction de spec 2026-09-21 : jusqu'à 36 % sur ~5 % des sommets de
+       `Vastus lateralis muscle.l`, bras qui pend près de la cuisse en pose
+       de repos Z-Anatomy). Le poids rigide déterministe élimine cette
+       classe de défaut par construction plutôt que par ajustement
+       empirique."""
     for vg in list(obj.vertex_groups):
         obj.vertex_groups.remove(vg)
     vg = obj.vertex_groups.new(name=bone_key)
@@ -197,78 +204,84 @@ def main() -> None:
         obj.name: bone_key for bone_key, objs in muscles_by_bone.items() for obj in objs
     }
 
-    # Séparation tronc/cou (poids rigide déterministe, jamais d'Automatic
-    # Weights) vs. membres (Automatic Weights / heat-diffusion, blending
-    # bi-articulaire genuinement utile pour ces os). Les objets résolus sous
-    # `rig_spec.TRUNK_NECK_MUSCLES` sont assignés avec certitude à un SEUL os
-    # (`spine` ou `neck`) et ne sont pas bi-articulaires : deux tentatives
-    # précédentes (voir la correction de spec 2026-09-20 sur le Latissimus
-    # dorsi) ont montré que le solveur heat-diffusion de Blender, qui
-    # considère toute l'armature et toute la topologie du maillage plutôt
-    # que le seul os le plus proche, ne trouve pas de dominante correcte
-    # pour ces muscles en nappe géométriquement ambigus (dominante à tort
-    # sur `L_upper_arm`/`R_upper_arm` puis sur `neck`, jamais `spine`) — voir
-    # `apply_rigid_weight` ci-dessus pour la justification complète.
-    trunk_neck_bone_keys = set(rig_spec.TRUNK_NECK_MUSCLES.keys())
-    trunk_neck_objects = [
-        obj for bone_key in trunk_neck_bone_keys for obj in muscles_by_bone[bone_key]
+    # Séparation poids rigide déterministe (tronc/cou/cuisse) vs. Automatic
+    # Weights (heat-diffusion, blending bi-articulaire genuinement utile
+    # pour ces os). La frontière n'est plus "est-ce un objet tronc/cou ?"
+    # mais, généralisée : "l'os assigné a-t-il un partenaire bi-articulaire
+    # (une seconde articulation représentée dans ce squelette à 9 os) à
+    # préserver ?" — `rig_spec.RIGID_WEIGHT_BONE_KEYS` (spine, neck,
+    # L_thigh, R_thigh) répond non ; `L_upper_arm`/`L_forearm`/
+    # `R_upper_arm`/`R_forearm` (seuls os hors de cet ensemble) répondent
+    # oui, coude réel entre les deux. Pour les os "non" : le solveur
+    # heat-diffusion de Blender, qui considère toute l'armature et toute la
+    # topologie du maillage plutôt que le seul os le plus proche, ne trouve
+    # pas de dominante correcte pour le tronc/cou (voir la correction de
+    # spec 2026-09-20 sur le Latissimus dorsi : dominante à tort sur
+    # `L_upper_arm`/`R_upper_arm` puis sur `neck`, jamais `spine`) et
+    # produit une bavure de poids mesurée vers `L_forearm`/`R_forearm` pour
+    # la cuisse, où le bras pend à proximité en pose de repos Z-Anatomy
+    # (correction de spec 2026-09-21) — voir `apply_rigid_weight` ci-dessus
+    # pour la justification complète.
+    rigid_weight_objects = [
+        obj
+        for bone_key in rig_spec.RIGID_WEIGHT_BONE_KEYS
+        for obj in muscles_by_bone[bone_key]
     ]
-    limb_objects = [
+    automatic_weight_objects = [
         obj
         for bone_key, objs in muscles_by_bone.items()
-        if bone_key not in trunk_neck_bone_keys
+        if bone_key not in rig_spec.RIGID_WEIGHT_BONE_KEYS
         for obj in objs
     ]
-    assert len(trunk_neck_objects) + len(limb_objects) == len(all_muscle_objects)
+    assert len(rigid_weight_objects) + len(automatic_weight_objects) == len(all_muscle_objects)
     print(
-        f"Poids rigide déterministe (tronc/cou) : {len(trunk_neck_objects)} objet(s). "
-        f"Automatic Weights (membres) : {len(limb_objects)} objet(s)."
+        f"Poids rigide déterministe (tronc/cou/cuisse) : {len(rigid_weight_objects)} objet(s). "
+        f"Automatic Weights (upper_arm/forearm) : {len(automatic_weight_objects)} objet(s)."
     )
 
-    # Tronc/cou : parentage à l'armature SANS calcul de poids
+    # Tronc/cou/cuisse : parentage à l'armature SANS calcul de poids
     # (type="ARMATURE", pas "ARMATURE_AUTO" — aucun solveur heat-diffusion
     # n'est jamais invoqué pour ces objets), puis poids rigide 1.0
     # déterministe appliqué directement sur l'os connu de chaque objet.
-    if trunk_neck_objects:
+    if rigid_weight_objects:
         bpy.ops.object.select_all(action="DESELECT")
-        for obj in trunk_neck_objects:
+        for obj in rigid_weight_objects:
             obj.select_set(True)
         armature_obj.select_set(True)
         bpy.context.view_layer.objects.active = armature_obj
         bpy.ops.object.parent_set(type="ARMATURE")
-        for obj in trunk_neck_objects:
+        for obj in rigid_weight_objects:
             apply_rigid_weight(obj, obj_to_bone_key[obj.name], armature_obj)
 
-    # Membres : Automatic Weights (heat-diffusion) — blending bi-articulaire
-    # genuinement utile ici (ex. Biceps brachii doit se répartir entre
-    # `L_upper_arm` et `L_forearm` pour bien se déformer au coude), déjà
-    # vérifié sans régression lors de la correction de spec précédente.
+    # Upper_arm/forearm : Automatic Weights (heat-diffusion) — seul cas
+    # bi-articulaire de ce squelette (ex. Biceps brachii doit se répartir
+    # entre `L_upper_arm` et `L_forearm` pour bien se déformer au coude),
+    # déjà vérifié sans régression lors des corrections de spec précédentes.
     bpy.ops.object.select_all(action="DESELECT")
-    for obj in limb_objects:
+    for obj in automatic_weight_objects:
         obj.select_set(True)
     armature_obj.select_set(True)
     bpy.context.view_layer.objects.active = armature_obj
     bpy.ops.object.parent_set(type="ARMATURE_AUTO")
 
-    # Filet de sécurité (membres uniquement — les objets tronc/cou ne
-    # passent jamais par le solveur heat-diffusion, cet échec ne peut donc
-    # pas les concerner) : le solveur "Bone Heat Weighting" de Blender peut
-    # échouer de façon non déterministe pour un petit sous-ensemble de
-    # maillages (observé concrètement sur le vrai Startup.blend : 1-3
-    # objets selon l'exécution, ex. "Descending part of trapezius
-    # muscle.l"/".r" — maillages fermés, manifold, sans anomalie
-    # topologique ni de normales détectable par rapport aux maillages
-    # voisins qui, eux, se skinnent sans problème ; log Blender :
-    # "Bone Heat Weighting: failed to find solution for one or more
-    # bones"). Dans ce cas, un modifier Armature ET des groupes de vertex
-    # (un par os) sont bien créés, mais avec un poids total nul partout —
-    # l'exportateur glTF considère alors le maillage comme non skinné et
-    # n'émet aucune donnée de skin pour lui. Pour tout objet sans aucun
-    # poids non nul après Automatic Weights, on applique le même repli
-    # déterministe que le tronc/cou (`apply_rigid_weight`) : rattachement
-    # rigide à son os logique, déjà connu via `muscles_by_bone`.
+    # Filet de sécurité (upper_arm/forearm uniquement — les objets
+    # tronc/cou/cuisse ne passent jamais par le solveur heat-diffusion, cet
+    # échec ne peut donc pas les concerner) : le solveur "Bone Heat
+    # Weighting" de Blender peut échouer de façon non déterministe pour un
+    # petit sous-ensemble de maillages (observé concrètement sur le vrai
+    # Startup.blend : 1-3 objets selon l'exécution — maillages fermés,
+    # manifold, sans anomalie topologique ni de normales détectable par
+    # rapport aux maillages voisins qui, eux, se skinnent sans problème ;
+    # log Blender : "Bone Heat Weighting: failed to find solution for one or
+    # more bones"). Dans ce cas, un modifier Armature ET des groupes de
+    # vertex (un par os) sont bien créés, mais avec un poids total nul
+    # partout — l'exportateur glTF considère alors le maillage comme non
+    # skinné et n'émet aucune donnée de skin pour lui. Pour tout objet sans
+    # aucun poids non nul après Automatic Weights, on applique le même
+    # repli déterministe que le tronc/cou/cuisse (`apply_rigid_weight`) :
+    # rattachement rigide à son os logique, déjà connu via `muscles_by_bone`.
     heat_weighting_failures = []
-    for obj in limb_objects:
+    for obj in automatic_weight_objects:
         has_weight = any(g.weight > 0.0 for v in obj.data.vertices for g in v.groups)
         if has_weight:
             continue

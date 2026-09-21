@@ -65,6 +65,29 @@ TRUNK_NECK_BASE_NAMES = {
 # pour "Erector spinae.j") = 14, pas 16.
 EXPECTED_TRUNK_NECK_OBJECT_COUNT = len(TRUNK_NECK_BASE_NAMES) * 2 - 2
 
+# Muscles de cuisse (rig_spec.LIMB_MUSCLES["thigh"]) : depuis la correction
+# de spec du 2026-09-21, même traitement que le tronc/cou et pour la même
+# raison — pas de bi-articulation à préserver pour `L_thigh`/`R_thigh` dans
+# ce squelette à 9 os (pas d'os "jambe" en dessous), donc poids rigide
+# déterministe (`export_muscle_rig.apply_rigid_weight`) plutôt qu'Automatic
+# Weights, qui produisait une bavure mesurée vers `L_forearm`/`R_forearm`
+# (jusqu'à 36 % sur ~5 % des sommets de `Vastus lateralis muscle.l`, avant
+# ce correctif). Contrairement au tronc/cou (un seul os quel que soit le
+# côté), l'os attendu dépend ICI du côté de l'objet (`.l` -> `L_thigh`,
+# `.r` -> `R_thigh`) : un simple nom de base -> os ne suffit donc pas, la
+# vérification ci-dessous combine `THIGH_BASE_NAMES` (juste l'ensemble des
+# noms, dérivé de rig_spec) avec le suffixe `.l`/`.r` de l'objet et
+# `rig_spec.LIMB_BONE_OF` pour déterminer l'os attendu.
+THIGH_BASE_NAMES = {base_name for base_name, _mode in rig_spec.LIMB_MUSCLES["thigh"]}
+
+# Nombre d'objets RÉELLEMENT attendus pour le contrôle cuisse : chaque nom de
+# base de `LIMB_MUSCLES["thigh"]` est résolu via `_mesh_objects_by_side_suffix`
+# (mode "exact", suffixe `.l`/`.r` obligatoire — pas de repli "objet médian
+# unique" possible ici, ce sont des os latéralisés) et aucune géométrie
+# dégénérée connue dans cette catégorie (contrairement à "Erector spinae.j"
+# côté tronc/cou). D'où 6 noms de base x 2 côtés = 12, sans soustraction.
+EXPECTED_THIGH_OBJECT_COUNT = len(THIGH_BASE_NAMES) * 2
+
 
 def main() -> None:
     argv = sys.argv[sys.argv.index("--") + 1 :]
@@ -187,23 +210,16 @@ def main() -> None:
         + "\n".join(side_violations)
     )
 
-    # Poids rigide déterministe des muscles tronc/cou (correction de spec du
-    # 2026-09-20, "poids rigide déterministe" — voir
-    # export_muscle_rig.apply_rigid_weight) : pour chaque objet dont le nom
-    # de base (sans suffixe `.l`/`.r`) figure dans `rig_spec.TRUNK_NECK_MUSCLES`,
-    # on exige un poids de vertex EXACTEMENT 100 % sur son unique os connu et
-    # 0 % partout ailleurs — pas seulement "dominant" (contrairement au
-    # contrôle gauche/droite ci-dessus, qui tolère une bavure secondaire).
-    # Rend cette garantie permanente et vérifiée mécaniquement, pas seulement
-    # mesurée une fois au moment du correctif.
-    rigid_violations = []
-    trunk_neck_objects_checked = 0
-    for mesh in meshes:
-        base_name = mesh.name[:-2] if mesh.name.endswith((".l", ".r")) else mesh.name
-        expected_bone = TRUNK_NECK_BASE_NAMES.get(base_name)
-        if expected_bone is None:
-            continue
-        trunk_neck_objects_checked += 1
+    # Poids rigide déterministe (tronc/cou depuis la correction de spec du
+    # 2026-09-20, cuisse depuis celle du 2026-09-21 — voir
+    # export_muscle_rig.apply_rigid_weight pour la justification commune aux
+    # deux catégories) : pour un objet assigné à un os sans partenaire
+    # bi-articulaire, on exige un poids de vertex EXACTEMENT 100 % sur son
+    # unique os connu et 0 % partout ailleurs — pas seulement "dominant"
+    # (contrairement au contrôle gauche/droite ci-dessus, qui tolère une
+    # bavure secondaire). Logique de vérification factorisée ici (partagée
+    # par les deux catégories) pour ne jamais laisser diverger leur rigueur.
+    def rigid_weight_violation(mesh: bpy.types.Object, expected_bone: str) -> str | None:
         nonzero_group_names = set()
         bad_weight_sum_vertices = 0
         for vertex in mesh.data.vertices:
@@ -217,15 +233,30 @@ def main() -> None:
             if abs(vertex_total - 1.0) > 1e-4:
                 bad_weight_sum_vertices += 1
         if nonzero_group_names != {expected_bone}:
-            rigid_violations.append(
+            return (
                 f"{mesh.name}: groupe(s) de vertex à poids non nul {sorted(nonzero_group_names)} "
                 f"(attendu exactement {{'{expected_bone}'}}, poids rigide 100 % sur ce seul os)"
             )
-        elif bad_weight_sum_vertices:
-            rigid_violations.append(
+        if bad_weight_sum_vertices:
+            return (
                 f"{mesh.name}: {bad_weight_sum_vertices} sommet(s) avec un poids total != 1.0 "
                 f"sur '{expected_bone}' (attendu exactement 1.0 partout)"
             )
+        return None
+
+    # Tronc/cou : un seul os possible quel que soit le côté (`spine`/`neck`),
+    # table nom de base -> os directement utilisable.
+    rigid_violations = []
+    trunk_neck_objects_checked = 0
+    for mesh in meshes:
+        base_name = mesh.name[:-2] if mesh.name.endswith((".l", ".r")) else mesh.name
+        expected_bone = TRUNK_NECK_BASE_NAMES.get(base_name)
+        if expected_bone is None:
+            continue
+        trunk_neck_objects_checked += 1
+        violation = rigid_weight_violation(mesh, expected_bone)
+        if violation:
+            rigid_violations.append(violation)
     assert not rigid_violations, (
         "poids rigide tronc/cou non exact (attendu 100 % sur l'os unique connu, 0 % ailleurs) :\n"
         + "\n".join(rigid_violations)
@@ -248,10 +279,47 @@ def main() -> None:
         "jour de ce validateur ou de rig_spec.TRUNK_NECK_MUSCLES)"
     )
 
+    # Cuisse : contrairement au tronc/cou, l'os attendu dépend du côté de
+    # l'objet (`.l` -> `L_thigh`, `.r` -> `R_thigh`) — on dérive donc
+    # `expected_bone` du suffixe de l'objet via `rig_spec.LIMB_BONE_OF`
+    # plutôt que d'une simple table nom de base -> os.
+    thigh_rigid_violations = []
+    thigh_objects_checked = 0
+    for mesh in meshes:
+        if not mesh.name.endswith((".l", ".r")):
+            continue
+        base_name = mesh.name[:-2]
+        if base_name not in THIGH_BASE_NAMES:
+            continue
+        side = "L" if mesh.name.endswith(".l") else "R"
+        expected_bone = rig_spec.LIMB_BONE_OF[side]["thigh"]
+        thigh_objects_checked += 1
+        violation = rigid_weight_violation(mesh, expected_bone)
+        if violation:
+            thigh_rigid_violations.append(violation)
+    assert not thigh_rigid_violations, (
+        "poids rigide cuisse non exact (attendu 100 % sur L_thigh/R_thigh selon le côté, "
+        "0 % ailleurs) :\n" + "\n".join(thigh_rigid_violations)
+    )
+    # Même garde de couverture que pour le tronc/cou ci-dessus, et pour la
+    # même raison : prouver que la boucle a réellement examiné les objets
+    # attendus, pas seulement qu'aucune violation n'a été trouvée dans une
+    # boucle qui aurait pu itérer sur un ensemble vide.
+    assert thigh_objects_checked == EXPECTED_THIGH_OBJECT_COUNT, (
+        f"couverture du contrôle cuisse incorrecte : {thigh_objects_checked} "
+        f"objet(s) réellement vérifié(s), {EXPECTED_THIGH_OBJECT_COUNT} attendu(s) "
+        "(la résolution nom-de-base -> objet a probablement changé sans mise à "
+        "jour de ce validateur ou de rig_spec.LIMB_MUSCLES['thigh'])"
+    )
+
+    rigid_weight_objects_checked = trunk_neck_objects_checked + thigh_objects_checked
+    automatic_weight_objects_checked = len(meshes) - rigid_weight_objects_checked
     print(
         f"OK: {len(bone_names)} os, {len(meshes)} maillages skinnés, binding gauche/droite "
-        f"cohérent, poids rigide tronc/cou exact sur {trunk_neck_objects_checked} objet(s) "
-        f"(couverture vérifiée)."
+        f"cohérent, poids rigide déterministe exact sur {rigid_weight_objects_checked} objet(s) "
+        f"(tronc/cou : {trunk_neck_objects_checked}, cuisse : {thigh_objects_checked} — "
+        f"couverture vérifiée), Automatic Weights (upper_arm/forearm) sur "
+        f"{automatic_weight_objects_checked} objet(s)."
     )
 
 
