@@ -350,8 +350,10 @@ juste "finir" la Phase 1 avant de passer à la suite :
   direct ultérieur, indépendant, qui a trouvé ce bug et permis de le corriger (trois passes de
   correctifs côté pipeline Blender, détaillées dans la spec).
   **Précision (2026-09-21, généralisation du poids rigide déterministe à la cuisse)** : la même
-  revue finale de branche a ensuite mesuré une bavure de poids secondaire (jusqu'à 36 % sur ~5 % des
-  sommets de `Vastus lateralis muscle.l`) des 12 muscles de cuisse vers `L_forearm`/`R_forearm` —
+  revue finale de branche a ensuite mesuré une bavure de poids secondaire sur 10 des 12 muscles de
+  cuisse (2 étaient déjà exacts : Short head of biceps femoris côtés gauche et droit), incluant
+  contamination croisée vers l'os de la cuisse opposée et d'autres os, pas seulement vers
+  `L_forearm`/`R_forearm` (jusqu'à 36 % sur ~5 % des sommets de `Vastus lateralis muscle.l`) —
   même cause racine que le tronc/cou (pas de bi-articulation à préserver pour `L_thigh`/`R_thigh`
   dans ce squelette à 9 os), en plus léger (dominante déjà correcte partout, contrairement au
   tronc/cou où elle était parfois fausse). Le même traitement poids-rigide a été étendu à la cuisse

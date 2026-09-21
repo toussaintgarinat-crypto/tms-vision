@@ -70,9 +70,11 @@ EXPECTED_TRUNK_NECK_OBJECT_COUNT = len(TRUNK_NECK_BASE_NAMES) * 2 - 2
 # raison — pas de bi-articulation à préserver pour `L_thigh`/`R_thigh` dans
 # ce squelette à 9 os (pas d'os "jambe" en dessous), donc poids rigide
 # déterministe (`export_muscle_rig.apply_rigid_weight`) plutôt qu'Automatic
-# Weights, qui produisait une bavure mesurée vers `L_forearm`/`R_forearm`
-# (jusqu'à 36 % sur ~5 % des sommets de `Vastus lateralis muscle.l`, avant
-# ce correctif). Contrairement au tronc/cou (un seul os quel que soit le
+# Weights, qui produisait une bavure sur 10 des 12 muscles (2 étaient déjà
+# exacts : Short head of biceps femoris, côtés gauche et droit), incluant
+# contamination croisée vers l'os de la cuisse opposée/autres os, pas
+# seulement vers `L_forearm`/`R_forearm` (jusqu'à 36 % sur ~5 % des sommets
+# de `Vastus lateralis muscle.l`, avant ce correctif). Contrairement au tronc/cou (un seul os quel que soit le
 # côté), l'os attendu dépend ICI du côté de l'objet (`.l` -> `L_thigh`,
 # `.r` -> `R_thigh`) : un simple nom de base -> os ne suffit donc pas, la
 # vérification ci-dessous combine `THIGH_BASE_NAMES` (juste l'ensemble des

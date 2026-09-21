@@ -89,8 +89,9 @@ def apply_rigid_weight(obj: bpy.types.Object, bone_key: str, armature_obj: bpy.t
        (voir la correction de spec 2026-09-20 sur le Latissimus dorsi :
        dominante à tort sur `L_upper_arm`/`R_upper_arm` puis, après un
        premier correctif, sur `neck` — jamais `spine` malgré deux
-       repositionnements d'os successifs) et une bavure de poids mesurée
-       vers `L_forearm`/`R_forearm` pour les muscles de cuisse (voir la
+       repositionnements d'os successifs) et une bavure de poids sur 10 des 12
+       muscles de cuisse, incluant contamination croisée vers l'os de la cuisse
+       opposée et d'autres os, pas seulement vers `L_forearm`/`R_forearm` (voir la
        correction de spec 2026-09-21 : jusqu'à 36 % sur ~5 % des sommets de
        `Vastus lateralis muscle.l`, bras qui pend près de la cuisse en pose
        de repos Z-Anatomy). Le poids rigide déterministe élimine cette

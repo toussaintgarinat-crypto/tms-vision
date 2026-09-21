@@ -265,10 +265,12 @@ Cette recherche change l'approche technique par rapport à ce qui était envisag
   > une revue finale de branche complète, portant sur l'ensemble du pipeline (pas seulement le
   > tronc/cou déjà corrigé ci-dessus), a décodé indépendamment le binaire de skin (`JOINTS_0`/
   > `WEIGHTS_0`) du `muscle-rig.glb` commité pour TOUS les objets exportés, pas seulement ceux déjà
-  > suspectés. Constat : les 12 muscles de cuisse (`rig_spec.LIMB_MUSCLES["thigh"]`, dominante déjà
+  > suspectés. Constat : 10 des 12 muscles de cuisse (`rig_spec.LIMB_MUSCLES["thigh"]`, dominante déjà
   > correcte sur `L_thigh`/`R_thigh` — donc jamais signalés par le contrôle gauche/droite existant,
-  > qui ne vérifie que la dominante) montraient tous une bavure de poids secondaire mesurable vers
-  > `L_forearm`/`R_forearm`, jusqu'à 8,7 % du poids total agrégé pour `Vastus lateralis muscle.l`
+  > qui ne vérifie que la dominante) montraient une bavure de poids secondaire ; 2 d'entre eux (Short head
+  > of biceps femoris côtés gauche et droit) étaient exactement corrects. Les bavures incluaient une
+  > contamination croisée vers l'os de la cuisse opposée et d'autres os (racine, épine dorsale), pas
+  > seulement vers `L_forearm`/`R_forearm`. Exemple : jusqu'à 8,7 % du poids total agrégé pour `Vastus lateralis muscle.l`
   > (91,3 % `L_thigh` / 8,7 % `L_forearm`) et jusqu'à 36 % sur ~5 % de ses sommets pris
   > individuellement (bavure très concentrée spatialement, diluée dans l'agrégat) — cause racine
   > identifiée : en pose de repos Z-Anatomy, le bras pend le long de la cuisse, donc `L_forearm`
