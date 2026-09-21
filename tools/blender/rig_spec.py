@@ -224,13 +224,32 @@ def resolve_muscle_objects() -> dict:
 def resolve_skeletal_landmarks() -> dict:
     """Retourne {bone_key: objet mesh squelettique réel} pour les os où l'on
     dispose d'un repère anatomique plus fiable que la bbox des muscles qui
-    lui sont assignés (voir la correction de spec du 2026-09-20 sur le
-    Latissimus dorsi : `L_upper_arm`/`R_upper_arm` dérivés de la bbox
-    combinée Deltoïde+Biceps+Triceps chevauchent géométriquement le
+    lui sont assignés.
+
+    Motivation D'ORIGINE (2026-09-20, désormais historique) : la bbox
+    combinée Deltoïde+Biceps+Triceps chevauchait géométriquement le
     Latissimus dorsi, qui s'étend jusqu'à l'aisselle, et Automatic Weights
-    lui attribue alors à tort l'os de bras comme dominant). Noms `Humerus.l`/
-    `Humerus.r` vérifiés directement dans `Startup.blend` via
-    `bpy.data.objects` (2143 sommets / 4280 faces chacun, datablock mesh
+    lui attribuait alors à tort l'os de bras comme dominant. Cette
+    motivation est SUPERSÉDÉE : le Latissimus dorsi (et tout le tronc/cou)
+    ne passe plus du tout par Automatic Weights depuis la correction de spec
+    du 2026-09-20 "fix définitif" — poids rigide déterministe à la place
+    (voir `RIGID_WEIGHT_BONE_KEYS`), mécanisme totalement indépendant de ce
+    repositionnement d'os.
+
+    CE N'EST PAS DU CODE MORT — ne pas supprimer sous prétexte que la
+    justification Latissimus dorsi d'origine est obsolète. Raison ACTUELLE,
+    toujours valide : ce repère squelettique reste nécessaire à la qualité
+    du skinning des ~28 muscles upper_arm/forearm qui, eux, passent
+    toujours par Automatic Weights (seul cas réellement bi-articulaire —
+    coude — de ce squelette à 9 os) ; repositionner l'os sur le vrai humérus
+    a mesurablement amélioré leur pondération aussi, pas seulement celle du
+    Latissimus dorsi (ex. `Long head of biceps brachii.r` : dominante
+    passée d'un partage limite `R_forearm` 53,5 % / `R_upper_arm` 46,5 % à
+    `R_upper_arm` 83,8 % après ce repositionnement — voir la correction de
+    spec du 2026-09-20 dans le fichier de spec de cette tranche).
+
+    Noms `Humerus.l`/`Humerus.r` vérifiés directement dans `Startup.blend`
+    via `bpy.data.objects` (2143 sommets / 4280 faces chacun, datablock mesh
     partagé `Humerus` — même convention de duplicata miroité que les autres
     paires `.l`/`.r` du fichier) ; longueur monde mesurée ~31.76 cm, cohérent
     avec la mesure ~31.8 cm faite pendant le brainstorming de la Tranche 3.

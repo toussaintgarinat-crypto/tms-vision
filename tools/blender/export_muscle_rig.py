@@ -160,12 +160,32 @@ def main() -> None:
 
     # L_upper_arm/R_upper_arm : position dérivée du vrai repère squelettique
     # (Humerus.l/.r), pas de la bbox des muscles Deltoïde+Biceps+Triceps qui
-    # lui sont assignés — cette bbox chevauche géométriquement le
-    # Latissimus dorsi (qui remonte jusqu'à l'aisselle) et Automatic
-    # Weights lui attribuait à tort l'os de bras comme dominant (voir la
-    # correction de spec du 2026-09-20). Uniquement ces deux os : les autres
-    # (spine, neck, forearm, thigh) restent dérivés de la bbox des muscles,
-    # correctif ciblé pour ne pas risquer de régression ailleurs.
+    # lui sont assignés. Motivation D'ORIGINE (2026-09-20, désormais
+    # historique) : réduire la bavure de poids du Latissimus dorsi, dont la
+    # bbox Deltoïde+Biceps+Triceps chevauchait géométriquement le muscle et
+    # faisait ressortir l'os de bras comme dominant à tort sous Automatic
+    # Weights. Cette motivation est SUPERSÉDÉE : le Latissimus dorsi (et tout
+    # le tronc/cou) ne passe plus du tout par Automatic Weights depuis la
+    # correction de spec du 2026-09-20 "fix définitif" — poids rigide
+    # déterministe à la place (voir `rig_spec.RIGID_WEIGHT_BONE_KEYS` et
+    # `apply_rigid_weight` ci-dessous), mécanisme totalement indépendant de ce
+    # repositionnement d'os.
+    #
+    # CE N'EST PAS DU CODE MORT — ne pas supprimer sous prétexte que la
+    # justification Latissimus dorsi d'origine est obsolète. Raison ACTUELLE,
+    # toujours valide : ce repositionnement reste nécessaire pour la qualité
+    # du skinning des ~28 muscles upper_arm/forearm qui, eux, passent
+    # toujours par Automatic Weights (seul cas réellement bi-articulaire —
+    # coude — de ce squelette à 9 os). Repositionner l'os sur le vrai humérus
+    # a mesurablement amélioré leur pondération aussi, pas seulement celle du
+    # Latissimus dorsi : ex. `Long head of biceps brachii.r` passait de
+    # justesse de `R_forearm` (53,5 %) devant `R_upper_arm` (46,5 % —
+    # risque de dominante côté os du coude au lieu du bras) avant ce
+    # correctif ; après, `R_upper_arm` domine clairement à 83,8 % (voir la
+    # correction de spec du 2026-09-20 sur le repositionnement humérus).
+    # Uniquement ces deux os : les autres (spine, neck, forearm, thigh)
+    # restent dérivés de la bbox des muscles, correctif ciblé pour ne pas
+    # risquer de régression ailleurs.
     skeletal_landmarks = rig_spec.resolve_skeletal_landmarks()
 
     bone_positions = {"root": (root_head, root_tail)}

@@ -145,6 +145,8 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   détectés et corrigés pendant cette vérification — voir le bloc « Correction (2026-09-20,
   vérification manuelle Task 7) » dans la spec pour le détail. Crédit CC BY-SA affiché sous l'avatar
   dans l'interface et dans `NOTICE.md`.
+- `docs/superpowers/plans/2026-09-20-3d-posture-muscle-mesh-implementation.md` — le plan
+  d'implémentation de cette tranche.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -386,8 +388,16 @@ juste "finir" la Phase 1 avant de passer à la suite :
   l'écran quel que soit l'état du binding sous-jacent. Revérifié en direct après le correctif de
   binding et les deux passes de correction de la pondération tronc/cou (voir plus haut) : le bras
   droit suit correctement une pose très différente du repos sans que le bras gauche masqué ne
-  reflète cette rotation (bones gauches figés à l'identité, échelle nulle), confirmant cette fois
-  l'absence de mirroring gauche/droite.
+  reflète cette rotation (bones gauches figés à l'identité, échelle nulle) — mais cette observation
+  porte sur `THREE.Bone` (quaternion/échelle), la couche de calcul de pose pilotée par
+  `applyFrameToSkeleton` (`pose3dSkeleton.ts`), entièrement indépendante de la couche de binding
+  maillage↔os (`skinIndex`/`WEIGHTS_0`) où vivait le bug. Un binding mesh encore inversé aurait
+  produit exactement la même observation à l'écran, puisque ces quaternions ne renseignent en rien
+  quel sommet est skinné à quel os : elle confirme donc seulement que la couche de calcul de pose
+  suit le côté gauche/droite indépendamment, pas que le binding lui-même est correct. La correction
+  du binding gauche/droite au niveau maillage est établie par le décodage binaire direct de
+  `JOINTS_0`/`WEIGHTS_0` sur le `.glb` exporté, refait indépendamment à plusieurs reprises tout au
+  long de la chaîne de correctifs (voir plus haut et la spec).
 - **Deux défauts de rendu trouvés et corrigés pendant cette vérification**, invisibles en simple
   revue de code : la couleur d'`action_level` ne s'affichait en réalité jamais (muscles toujours
   gris/blancs). Cause 1 : les matériaux exportés par Blender portent un `emissiveFactor` blanc à
