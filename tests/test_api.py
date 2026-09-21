@@ -287,6 +287,7 @@ def test_upload_chunks_then_complete_matches_direct_analysis(tmp_path, monkeypat
     body = response.json()
     assert body["annotated_video_url"].startswith("/outputs/")
     assert body["csv_url"].startswith("/outputs/")
+    assert body["side"] == "right"
 
     # La session est nettoyée après complétion, réussie ou pas.
     assert not (tmp_path / ".uploads" / upload_id).exists()

@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { PostureAvatar3D } from "./PostureAvatar3D";
+import { PostureAvatar3D, Side } from "./PostureAvatar3D";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const MAX_RECORDING_MS = 30_000;
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5 Mo
 const MAX_CHUNK_RETRIES = 3;
 
-type Side = "left" | "right";
 type WristTwist = "normal" | "extreme";
 
 type AnalysisSummary = {

@@ -57,6 +57,12 @@ export function dominantBoneIndex(
   let bestBoneIndex = -1;
   let bestTotal = -Infinity;
   for (const [boneIndex, total] of totalWeightByBoneIndex) {
+    // Égalité stricte (`>`, pas `>=`) : en cas d'ex-aequo exact, le premier
+    // os rencontré selon l'ordre d'insertion du Map (donc l'ordre des
+    // slots skinIndex/skinWeight par vertex) l'emporte. Déterministe, mais
+    // sans signification anatomique particulière. Sans conséquence pratique
+    // sur ce rig : vérifié qu'aucune primitive du vrai muscle-rig.glb ne
+    // présente d'égalité réelle entre deux os (voir muscleRigInvariants.test.ts).
     if (total > bestTotal) {
       bestTotal = total;
       bestBoneIndex = boneIndex;
