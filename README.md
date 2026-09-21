@@ -436,8 +436,11 @@ juste "finir" la Phase 1 avant de passer à la suite :
   entrées (une par os) plutôt qu'une duplication des ~30 noms de muscles Z-Anatomy.
 - **`PostureAvatar3D.tsx`** : chaque muscle est coloré par son propre segment (cou, tronc, bras,
   avant-bras) ; le bras/avant-bras du côté NON analysé reste en gris fixe en permanence (aucune
-  donnée mesurée pour ce côté) ; les cuisses gardent la teinte uniforme de la Tranche 3 (le score
-  `legs` est une constante jamais mesurée depuis la vidéo).
+  donnée mesurée pour ce côté) ; **les cuisses aussi restent en gris fixe en permanence** (`legs`
+  est une constante jamais mesurée depuis la vidéo) — comportement corrigé après la livraison
+  initiale de cette tranche (elles suivaient d'abord la teinte `action_level` globale, qui pouvait
+  afficher rouge alors qu'aucun des 4 vrais segments ne le peut structurellement ; voir le bloc
+  « Correction (2026-09-21, revue finale de branche complète) » de la spec pour le détail).
 - **Vérifié manuellement (2026-09-21)**, avec Playwright piloté dans un vrai navigateur, deux
   serveurs réels (`uvicorn` + `next dev`) : côté **droit** sur `moi coupe.mp4` — vérification
   confirmée par lecture directe du graphe de scène Three.js (hook `__THREE_DEVTOOLS__` officiel,
@@ -449,6 +452,12 @@ juste "finir" la Phase 1 avant de passer à la suite :
   bras/avant-bras droit) affichent des couleurs qui varient dans le temps (vert/jaune/orange
   observés) ; aucune erreur console sur toute la session (en particulier aucune levée par
   `resolveMeshBoneKey`/`resolveMeshRouting`).
+  **Chiffres tels qu'observés à cette date** — le correctif du 2026-09-21 (cuisses en gris fixe, voir
+  ci-dessus) a changé la répartition depuis : d'après le décompte par os de
+  `muscleRigInvariants.test.ts` (`L_thigh`: 12, `R_thigh`: 12), la répartition réelle actuelle est
+  52 `SkinnedMesh` en gris fixe (28 bras/avant-bras gauche + 24 cuisses des deux côtés) et 54 dont la
+  couleur varie (cou, tronc, bras/avant-bras droit) — recalculée à partir du code et du test de
+  garde-fou, pas revérifiée par une nouvelle session Playwright.
   **Précision (côté "gauche")** : `moi coupe.mp4` est une vidéo de profil qui ne montre que le côté
   droit de la personne — la Tranche 3 documentait déjà que `LEFT_ELBOW`/`LEFT_KNEE` n'y sont jamais
   détectés (voir bloc Tranche 3 ci-dessus). Avec `côté="gauche"`, `compute_joint_angles()`

@@ -197,7 +197,10 @@ PostureAvatar3D.tsx      : pour chaque SkinnedMesh, résout son bone dominant
 - **Vérification manuelle obligatoire** (comme les tranches précédentes) : rejouer `moi coupe.mp4`,
   confirmer que chaque segment (cou, tronc, bras du côté analysé, avant-bras du côté analysé) se
   colore indépendamment au fil de la lecture, que le bras/avant-bras du côté non analysé reste gris
-  en permanence, et que les cuisses suivent toujours la teinte globale comme en Tranche 3.
+  en permanence, et que les cuisses suivent toujours la teinte globale comme en Tranche 3 (voir la
+  correction du 2026-09-21 ci-dessus : les cuisses passent finalement en gris fixe, comme le
+  bras/avant-bras non analysé — ce critère d'acceptation n'a pas été mis à jour rétroactivement,
+  ne pas l'appliquer littéralement).
 
 ## Hors périmètre (cette tranche)
 
