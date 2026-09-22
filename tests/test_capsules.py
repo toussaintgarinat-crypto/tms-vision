@@ -78,7 +78,7 @@ def test_compute_worst_zone_prefers_longer_exposure_over_priority_order():
     # neck cumule 3.0s (frames 0,1,2) contre 1.0s pour trunk (frame 0 seule) --
     # neck doit gagner malgré son rang inférieur dans ZONE_PRIORITY (trunk >
     # neck), preuve que le départage est bien "durée cumulée d'abord, priorité
-    # seulement en cas d'égalité stricte" et non "prembattre en priorité".
+    # seulement en cas d'égalité stricte" et non "premier dégradé par ordre de priorité".
     assert compute_worst_zone(frames) == "neck"
 
 

@@ -161,7 +161,7 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - `docs/superpowers/plans/2026-09-22-capsule-zone-recommendation-plan.md` — le plan
   d'implémentation de cette tranche.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
-- Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
+- Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 136 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
 ### ✅ Phase 1 : Prototypage & Validation PoC — TERMINÉE
 
@@ -525,7 +525,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
 
 - **Contexte** : le README (§6) décrivait depuis le début une médiathèque de capsules vidéo
   d'étirement déclenchée automatiquement après une analyse, sans que rien de tout cela n'existe
-  dans le code. Cette tranche construit la première version : catalogue placeholder, calcul de la
+  dans le code. Ce sprint construit la première version : catalogue placeholder, calcul de la
   zone RULA la plus dégradée, endpoint et affichage frontend — en s'appuyant sur les
   `segment_action_level` par zone déjà persistés par le sprint DuckDB précédent.
 - **`src/tms_vision/capsules.py`** (nouveau, module pur sans dépendance DuckDB) : un catalogue
@@ -565,7 +565,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
   6 contre seuil 7, voir la Tranche 4 de l'avatar 3D ci-dessus et le commit `989df73`) — décision
   prise en revue finale de branche de documenter plutôt que de redéfinir des seuils par segment ce
   sprint (voir le bloc « Correction (revue finale de branche) » de la spec).
-- **Ce qui n'est pas dans cette tranche** : vraies vidéos de capsules (contenu placeholder
+- **Ce qui n'est pas dans ce sprint** : vraies vidéos de capsules (contenu placeholder
   uniquement), édition du catalogue (pas d'admin UI ni de CMS), UI d'historique montrant les
   recommandations passées, mode temps réel (vérification webcam de l'exécution de l'étirement),
   recommandation de plusieurs capsules par zone.
