@@ -22,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
 
 from tms_vision import storage
+from tms_vision.capsules import Capsule, compute_worst_zone, recommend_capsule
 from tms_vision.pipeline import analyze_video, generate_run_id
 from tms_vision.pose3d_export import build_pose3d_payload
 
@@ -378,3 +379,23 @@ async def get_analysis_frames_csv(analysis_id: str) -> Response:
         content=csv_text, media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{analysis_id}_frames.csv"'},
     )
+
+
+def _capsule_to_dict(capsule: Capsule) -> dict:
+    return {
+        "zone": capsule.zone,
+        "title": capsule.title,
+        "description": capsule.description,
+        "video_url": capsule.video_url,
+    }
+
+
+@app.get("/analyses/{analysis_id}/recommendation")
+async def get_analysis_recommendation(analysis_id: str) -> dict:
+    frames = storage.get_frame_segments(analysis_id)
+    if frames is None:
+        raise HTTPException(status_code=404, detail="Analyse introuvable.")
+
+    zone = compute_worst_zone(frames)
+    capsule = recommend_capsule(zone)
+    return {"zone": zone, "capsule": _capsule_to_dict(capsule) if capsule is not None else None}

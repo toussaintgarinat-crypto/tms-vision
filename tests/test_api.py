@@ -1,4 +1,5 @@
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
@@ -600,3 +601,66 @@ def test_upload_chunk_rejects_malformed_upload_id(tmp_path, monkeypatch):
     )
 
     assert response.status_code == 404
+
+
+def test_get_recommendation_returns_404_for_unknown_id(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    response = client.get("/analyses/does-not-exist/recommendation")
+    assert response.status_code == 404
+
+
+def test_get_recommendation_returns_null_zone_when_nothing_is_degraded(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+    with open(video_path, "rb") as video_file:
+        create_response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+    analysis_id = create_response.json()["analysis_id"]
+
+    # Vidéo synthétique noire : aucune pose détectée -> aucun segment_action_level
+    # jamais non-null -> aucune zone ne peut être dégradée.
+    response = client.get(f"/analyses/{analysis_id}/recommendation")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["zone"] is None
+    assert body["capsule"] is None
+
+
+def test_get_recommendation_returns_worst_zone_and_matching_capsule(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+
+    summary = {
+        "frame_count": 1, "detected_frame_count": 1, "max_score": 7,
+        "average_score": 7.0, "time_by_action_level": {"changement_immediat": 1.0},
+    }
+    row = {field: None for field in storage.CSV_FIELDS}
+    row.update(frame_index=0, timestamp_seconds=0.0, detected=True)
+    row["neck_segment_action_level"] = "acceptable"
+    row["trunk_segment_action_level"] = "changement_immediat"
+    row["upper_arm_segment_action_level"] = "acceptable"
+    row["lower_arm_segment_action_level"] = "acceptable"
+    storage.save_analysis(
+        analysis_id="rec-1", created_at=datetime.now(timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"x", pose3d_json="[]", frame_rows=[row],
+    )
+
+    client = TestClient(app)
+    response = client.get("/analyses/rec-1/recommendation")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["zone"] == "trunk"
+    assert body["capsule"]["zone"] == "trunk"
+    assert body["capsule"]["title"]
+    assert body["capsule"]["video_url"]
