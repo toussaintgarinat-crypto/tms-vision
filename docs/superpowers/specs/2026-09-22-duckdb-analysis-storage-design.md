@@ -79,6 +79,14 @@ annotée, landmarks 3D) hors du système de fichiers, vers DuckDB.
 - **Seules les nouvelles analyses passent par DuckDB.** Les fichiers déjà présents dans `outputs/`
   (runs de test/dev antérieurs à ce sprint) ne sont pas migrés — pas de script de reprise
   d'historique dans ce sprint.
+- **La CLI (`cli.py`, workflow Phase 1 local) continue d'écrire des fichiers sur disque, pas
+  DuckDB.** `analyze_video()` est partagée entre la CLI et l'API — la rendre pure (voir
+  Architecture) casserait le flux CLI existant (`--output-dir`, messages affichés) si rien ne
+  compense. Plutôt que de faire basculer la CLI vers DuckDB (hors sujet : c'est un outil de
+  debug/Phase 1 local, pas le flux web dont ce sprint a besoin de suivre l'historique), c'est
+  `cli.py` qui récupère désormais le résultat en mémoire d'`analyze_video()` et écrit lui-même
+  vidéo/CSV/JSON dans `--output-dir` — mêmes messages affichés qu'aujourd'hui, côté utilisateur
+  aucun changement de comportement.
 
 ## Architecture
 
