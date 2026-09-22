@@ -513,8 +513,6 @@ juste "finir" la Phase 1 avant de passer à la suite :
 
 #### Reste à faire pour la suite de la Phase 2
 
-- Base de données (SQLite pour commencer, migration PostgreSQL si besoin) pour stocker les analyses
-  dans le temps, au lieu du système de fichiers actuel.
 - Module de floutage automatique des visages (OpenCV, en amont de l'analyse posturale) — non
   implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
   salariés (voir section 7).
