@@ -151,3 +151,44 @@ def get_analysis(analysis_id: str) -> dict | None:
     record["time_by_action_level"] = json.loads(record["time_by_action_level"])
     record["created_at"] = record["created_at"].isoformat()
     return record
+
+
+def list_analyses(
+    worker_label: str | None = None,
+    poste_label: str | None = None,
+    since: datetime | None = None,
+    until: datetime | None = None,
+) -> list[dict]:
+    clauses = []
+    params: list = []
+    if worker_label is not None:
+        clauses.append("worker_label = ?")
+        params.append(worker_label)
+    if poste_label is not None:
+        clauses.append("poste_label = ?")
+        params.append(poste_label)
+    if since is not None:
+        clauses.append("created_at >= ?")
+        params.append(since)
+    if until is not None:
+        clauses.append("created_at <= ?")
+        params.append(until)
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            f"SELECT {', '.join(_ANALYSIS_COLUMNS)} FROM analyses {where} "
+            "ORDER BY created_at DESC",
+            params,
+        ).fetchall()
+    finally:
+        conn.close()
+
+    results = []
+    for row in rows:
+        record = dict(zip(_ANALYSIS_COLUMNS, row))
+        record["time_by_action_level"] = json.loads(record["time_by_action_level"])
+        record["created_at"] = record["created_at"].isoformat()
+        results.append(record)
+    return results

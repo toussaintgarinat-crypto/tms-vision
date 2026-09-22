@@ -85,3 +85,51 @@ def test_get_analysis_returns_none_for_unknown_id(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
 
     assert storage.get_analysis("does-not-exist") is None
+
+
+def _save(analysis_id, created_at, worker_label=None, poste_label=None):
+    summary = {
+        "frame_count": 1, "detected_frame_count": 1, "max_score": 1,
+        "average_score": 1.0, "time_by_action_level": {"acceptable": 1.0},
+    }
+    storage.save_analysis(
+        analysis_id=analysis_id, created_at=created_at, side="right", load_kg=0.0,
+        wrist_twist="normal", worker_label=worker_label, poste_label=poste_label,
+        summary=summary, video_bytes=b"x", pose3d_json="[]", frame_rows=[],
+    )
+
+
+def test_list_analyses_orders_by_created_at_desc(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+    _save("a", datetime(2026, 9, 20, tzinfo=timezone.utc))
+    _save("b", datetime(2026, 9, 22, tzinfo=timezone.utc))
+    _save("c", datetime(2026, 9, 21, tzinfo=timezone.utc))
+
+    results = storage.list_analyses()
+
+    assert [r["id"] for r in results] == ["b", "c", "a"]
+
+
+def test_list_analyses_filters_by_worker_and_poste_label(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+    _save("a", datetime(2026, 9, 20, tzinfo=timezone.utc), worker_label="Marie D.", poste_label="Emballage")
+    _save("b", datetime(2026, 9, 21, tzinfo=timezone.utc), worker_label="Paul L.", poste_label="Emballage")
+
+    assert [r["id"] for r in storage.list_analyses(worker_label="Marie D.")] == ["a"]
+    assert [r["id"] for r in storage.list_analyses(poste_label="Emballage")] == ["b", "a"]
+
+
+def test_list_analyses_filters_by_date_range(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+    _save("a", datetime(2026, 9, 20, tzinfo=timezone.utc))
+    _save("b", datetime(2026, 9, 22, tzinfo=timezone.utc))
+
+    results = storage.list_analyses(
+        since=datetime(2026, 9, 21, tzinfo=timezone.utc),
+        until=datetime(2026, 9, 23, tzinfo=timezone.utc),
+    )
+
+    assert [r["id"] for r in results] == ["b"]
