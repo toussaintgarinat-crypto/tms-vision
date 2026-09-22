@@ -160,6 +160,10 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   recommandation de capsules d'étirement par zone anatomique dégradée.
 - `docs/superpowers/plans/2026-09-22-capsule-zone-recommendation-plan.md` — le plan
   d'implémentation de cette tranche.
+- `docs/superpowers/specs/2026-09-22-analysis-history-dashboard-design.md` — la spec du dashboard
+  d'historique des analyses.
+- `docs/superpowers/plans/2026-09-22-analysis-history-dashboard-plan.md` — le plan
+  d'implémentation de ce sprint.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 136 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -570,6 +574,40 @@ juste "finir" la Phase 1 avant de passer à la suite :
   recommandations passées, mode temps réel (vérification webcam de l'exécution de l'étirement),
   recommandation de plusieurs capsules par zone.
 
+#### ✅ Dashboard d'historique des analyses — TERMINÉE
+
+- **Contexte** : la tranche DuckDB avait exposé `GET /analyses` (filtres
+  worker_label/poste_label/since/until) et `GET /analyses/{id}` sans jamais construire l'UI qui
+  les consomme -- explicitement noté hors périmètre à l'époque, puis reconfirmé hors périmètre
+  par le sprint capsules suivant. Ce sprint construit cette UI, sans aucun changement backend :
+  les deux endpoints existants couvraient déjà tout le besoin.
+- **`web/app/AnalysisResult.tsx`** (nouveau) : le bloc "Résultat" (vidéo annotée, avatar 3D,
+  résumé RULA, lien CSV, recommandation de capsule), jusqu'ici câblé en dur dans `page.tsx` pour
+  une analyse tout juste terminée, en est extrait en composant partagé -- réutilisé à la fois par
+  la page d'accueil et par la nouvelle page de détail d'historique.
+- **`web/app/historique/page.tsx`** (nouveau) : liste des analyses passées, triée par date
+  décroissante (tri déjà fait côté backend), avec les 4 filtres déjà supportés par l'API
+  (salarié, poste -- tous deux en correspondance exacte, pas de recherche par sous-chaîne --
+  depuis/jusqu'à), un badge de score max coloré selon les mêmes seuils RULA que le reste de
+  l'interface (`action_level()`), et un lien vers le détail de chaque analyse. Pas de
+  pagination (dataset réduit à l'échelle d'un pilote mono-entreprise).
+- **`web/app/historique/[id]/page.tsx`** (nouveau) : détail complet d'une analyse passée --
+  exactement le même rendu que le résultat d'une analyse fraîche (`AnalysisResult`), les URLs
+  vidéo/CSV/pose3D étant reconstruites à partir du seul `analysis_id` (même convention de chemin
+  que `POST /analyses`). 404 propre sur un id inconnu.
+- **Vérifié manuellement (2026-09-22)**, avec Playwright piloté dans un vrai navigateur, deux
+  serveurs réels (`uvicorn` + `next dev`) : liste et filtres (y compris intersection de plusieurs
+  filtres actifs), navigation liste → détail → retour, id inconnu → message d'erreur propre,
+  aucune régression sur la page d'accueil (résultat d'une analyse fraîche identique à avant ce
+  sprint). Les valeurs affichées par `/historique` ont été recoupées indépendamment contre une
+  lecture directe de `storage.list_analyses()` sur la base réelle.
+- **Ce qui n'est pas dans ce sprint** : pagination, tri/colonnes personnalisables, suppression
+  d'une analyse depuis le dashboard (le gap RGPD rétention/suppression reste entier, voir §7),
+  export groupé multi-analyses (Phase 3), champs salarié/poste sur le formulaire d'analyse de la
+  page d'accueil (existent côté API depuis la tranche DuckDB, jamais exposés côté formulaire --
+  limite pré-existante, pas introduite par ce sprint, qui explique pourquoi les analyses de
+  vérification de ce sprint ont `worker_label`/`poste_label` à "—").
+
 #### Reste à faire pour la suite de la Phase 2
 
 - Module de floutage automatique des visages (OpenCV, en amont de l'analyse posturale) — non
@@ -673,6 +711,13 @@ Pour compenser l'absence du plafond côté navigateur, la même limite mémoire 
 celle décrite section 8 (tranche 2) s'applique : une vidéo dont la résolution et/ou la durée
 dépassent l'estimation de ~2 Gio est rejetée avec un message d'erreur clair plutôt que d'être
 acceptée et de risquer de saturer la mémoire du serveur.
+
+### Consulter l'historique des analyses
+
+Le lien « Historique » en haut de la page d'accueil ouvre `/historique` : liste de toutes les
+analyses déjà enregistrées, filtrable par salarié, poste et période (depuis/jusqu'à). Cliquer sur
+« Voir » ouvre le détail complet d'une analyse passée (`/historique/{id}`), avec le même rendu
+(vidéo annotée, avatar 3D, résumé, recommandation) que juste après l'avoir produite.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 
