@@ -1,12 +1,20 @@
-import json
-
-import numpy as np
 import cv2
+import numpy as np
 import pytest
 
-from tms_vision.pipeline import analyze_video, AnalysisResult, _RunningMean
+from tms_vision.pipeline import analyze_video, generate_run_id, AnalysisResult, _RunningMean
 from tms_vision.capture import Frame
 from tms_vision.pose_estimation import Landmark, PoseEstimator, PoseResult
+from tms_vision.pose3d_export import build_pose3d_payload
+
+
+def test_generate_run_id_has_timestamp_and_hex_suffix():
+    run_id = generate_run_id()
+    date_part, time_part, hex_part = run_id.split("-")
+    assert len(date_part) == 8
+    assert len(time_part) == 6
+    assert len(hex_part) == 6
+    int(hex_part, 16)  # ne lève pas si c'est bien de l'hexadécimal
 
 
 def test_running_mean_starts_at_none():
@@ -25,10 +33,6 @@ def test_running_mean_computes_average_incrementally():
 
 
 class _EmptyFrameSource:
-    """Simule une source vidéo qui s'ouvre correctement mais ne produit aucune
-    frame -- le cas que le garde-fou "aucune frame capturée" doit intercepter
-    avant toute tentative d'ouverture d'un cv2.VideoWriter en taille (0, 0)."""
-
     def __init__(self, *_args, **_kwargs):
         pass
 
@@ -42,72 +46,51 @@ class _EmptyFrameSource:
         pass
 
 
-def test_analyze_video_with_zero_frames_returns_empty_result_without_writing(
-    tmp_path, monkeypatch, capsys
-):
+def test_analyze_video_with_zero_frames_returns_empty_result(monkeypatch, capsys):
     monkeypatch.setattr("tms_vision.pipeline.FrameSource", _EmptyFrameSource)
 
-    output_dir = tmp_path / "outputs"
-    result = analyze_video(
-        source="webcam", side="right", load_kg=0.0, wrist_twist="normal",
-        output_dir=str(output_dir),
-    )
+    result = analyze_video(source="webcam", side="right", load_kg=0.0, wrist_twist="normal")
 
     assert result == AnalysisResult(empty=True)
     captured = capsys.readouterr()
     assert "Aucune frame capturée" in captured.err
-    assert list(output_dir.glob("*_annotated.mp4")) == []
-    assert list(output_dir.glob("*_frames.csv")) == []
-    assert list(output_dir.glob("*_summary.json")) == []
+
+
+def _write_synthetic_video(path):
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64))
+    for _ in range(3):
+        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
+    writer.release()
 
 
 def test_analyze_video_end_to_end_on_a_blank_synthetic_video(tmp_path):
     video_path = tmp_path / "synthetic.mp4"
-    writer = cv2.VideoWriter(
-        str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64)
-    )
-    for _ in range(3):
-        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
-    writer.release()
+    _write_synthetic_video(video_path)
 
-    output_dir = tmp_path / "outputs"
-    result = analyze_video(
-        source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal",
-        output_dir=str(output_dir),
-    )
+    result = analyze_video(source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal")
 
     assert result.empty is False
-    assert result.video_path.exists()
-    assert result.csv_path.exists()
-    assert result.summary_json_path.exists()
+    assert isinstance(result.video_bytes, bytes)
+    assert len(result.video_bytes) > 0
+    assert len(result.frame_rows) == 3
+    assert result.summary["frame_count"] == 3
+    assert len(result.pose3d_records) == 3
 
 
 def test_analyze_video_writes_browser_playable_h264_not_mp4v(tmp_path):
-    """Régression pour 9d6a9da : le fourcc d'écriture doit être "avc1"
-    (H.264, lisible par les navigateurs), pas "mp4v" (MPEG-4 Part 2, que
-    Chromium/Firefox refusent de décoder). On vérifie via une relecture
-    cv2.VideoCapture plutôt que via ffprobe (binaire externe non déclaré
-    comme dépendance du projet). Sur ce build OpenCV/FFmpeg, CAP_PROP_FOURCC
-    relit "h264" pour un fichier écrit avec le tag "avc1", et "FMP4" pour un
-    fichier écrit avec "mp4v" -- vérifié empiriquement (y compris en
-    ré-exécutant analyze_video) avant d'écrire cette assertion, donc "h264"
-    est bien la valeur à verrouiller ici plutôt qu'un "avc1" deviné."""
+    """Régression pour 9d6a9da : le fourcc d'écriture doit être "avc1" (H.264,
+    lisible par les navigateurs), pas "mp4v". Écrit result.video_bytes dans un
+    fichier temporaire pour le relire via cv2.VideoCapture, puisque
+    analyze_video() ne renvoie plus de chemin de fichier."""
     video_path = tmp_path / "synthetic.mp4"
-    writer = cv2.VideoWriter(
-        str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64)
-    )
-    for _ in range(3):
-        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
-    writer.release()
+    _write_synthetic_video(video_path)
 
-    output_dir = tmp_path / "outputs"
-    result = analyze_video(
-        source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal",
-        output_dir=str(output_dir),
-    )
+    result = analyze_video(source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal")
 
     assert result.empty is False
-    cap = cv2.VideoCapture(str(result.video_path))
+    readback_path = tmp_path / "readback.mp4"
+    readback_path.write_bytes(result.video_bytes)
+    cap = cv2.VideoCapture(str(readback_path))
     try:
         fourcc_int = int(cap.get(cv2.CAP_PROP_FOURCC))
         fourcc = fourcc_int.to_bytes(4, byteorder="little").decode("ascii", errors="replace")
@@ -122,9 +105,6 @@ def test_analyze_video_writes_browser_playable_h264_not_mp4v(tmp_path):
 
 
 class _InterruptingFrameSource:
-    """Simule une source vidéo qui produit quelques frames puis reçoit un
-    Ctrl+C (KeyboardInterrupt) pendant la boucle de capture."""
-
     def __init__(self, *_args, **_kwargs):
         self.released = False
 
@@ -143,45 +123,28 @@ class _InterruptingFrameSource:
         self.released = True
 
 
-def test_analyze_video_with_keyboard_interrupt_during_capture_still_writes_partial_outputs(
-    tmp_path, monkeypatch, capsys
+def test_analyze_video_with_keyboard_interrupt_during_capture_still_returns_partial_result(
+    monkeypatch, capsys
 ):
     monkeypatch.setattr("tms_vision.pipeline.FrameSource", _InterruptingFrameSource)
 
-    output_dir = tmp_path / "outputs"
-    result = analyze_video(
-        source="webcam", side="right", load_kg=0.0, wrist_twist="normal",
-        output_dir=str(output_dir),
-    )
+    result = analyze_video(source="webcam", side="right", load_kg=0.0, wrist_twist="normal")
 
     captured = capsys.readouterr()
     assert "Capture interrompue" in captured.out
     assert result.empty is False
-    assert result.video_path.exists()
-    assert result.csv_path.exists()
-    assert result.summary_json_path.exists()
+    assert len(result.frame_rows) == 2
 
 
-def test_analyze_video_produces_pose3d_json(tmp_path):
+def test_analyze_video_produces_pose3d_records(tmp_path):
     video_path = tmp_path / "synthetic.mp4"
-    writer = cv2.VideoWriter(
-        str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64)
-    )
-    for _ in range(3):
-        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
-    writer.release()
+    _write_synthetic_video(video_path)
 
-    output_dir = tmp_path / "outputs"
-    result = analyze_video(
-        source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal",
-        output_dir=str(output_dir),
-    )
+    result = analyze_video(source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal")
 
-    assert result.pose3d_path is not None
-    assert result.pose3d_path.exists()
-    data = json.loads(result.pose3d_path.read_text())
-    assert len(data) == 3
-    for entry in data:
+    payload = build_pose3d_payload(result.pose3d_records)
+    assert len(payload) == 3
+    for entry in payload:
         assert entry["detected"] is False
         assert entry["landmarks"] is None
         assert entry["action_level"] is None
@@ -192,145 +155,48 @@ def _lm(x, y, z=0.0, visibility=1.0):
     return Landmark(x=x, y=y, z=z, visibility=visibility)
 
 
-def test_analyze_video_pose3d_json_key_set_varies_per_frame_when_landmark_occluded(
-    tmp_path, monkeypatch
-):
-    """Régression pour la revue finale du plan avatar 3D (Finding #4) : le
-    contrat que consomme web/app/PostureAvatar3D.tsx n'est PAS seulement
-    "landmarks: null pour les frames non détectées" (déjà couvert par
-    test_analyze_video_produces_pose3d_json ci-dessus, sur une vidéo noire
-    où aucune pose n'est jamais détectée) -- c'est aussi que, quand une pose
-    EST détectée, l'ensemble des clés de `landmarks` peut varier d'une frame
-    à l'autre (une articulation occultée une frame donnée est absente du
-    dict cette frame-là précisément, pas juste sur des frames "detected:
-    false"). C'est exactement le cas réel (vue de profil, bras/genou côté
-    caméra opposée occultés quasi en continu) qui a permis Finding #1 (barre
-    grise fantôme) de passer inaperçu côté frontend : aucun test existant ne
-    fabrique un pose3d.json avec un jeu de clés variable sur des frames
-    `detected: true`.
-
-    On monkeypatch PoseEstimator.process (même style que _EmptyFrameSource /
-    _InterruptingFrameSource plus haut dans ce fichier) pour renvoyer des
-    PoseResult fabriqués à la main : landmarks 2D complets et constants (côté
-    droit, posture debout neutre -- même motif que
-    tests/test_integration_angles_to_score.py::_neutral_standing_landmarks,
-    pour garantir detected=True et un action_level non-null sur chaque
-    frame), mais des world_landmarks dont LEFT_ELBOW est présent sur les
-    frames 0 et 2 et absent sur la frame 1 (simulation d'une occultation
-    ponctuelle, comme LEFT_ELBOW/LEFT_KNEE sur la vidéo de référence réelle
-    du projet filmée de profil)."""
+def test_analyze_video_merges_segment_action_levels_into_frame_rows(tmp_path, monkeypatch):
+    """Les 4 colonnes {neck,trunk,upper_arm,lower_arm}_segment_action_level de
+    frame_rows doivent correspondre exactement aux segment_action_levels du
+    pose3d_record de la même frame (fusion faite par analyze_video, voir
+    architecture)."""
 
     def _neutral_landmarks_2d_right_side():
         return {
-            "LEFT_SHOULDER": _lm(0.50, 0.30),
-            "RIGHT_SHOULDER": _lm(0.50, 0.30),
-            "LEFT_HIP": _lm(0.50, 0.55),
-            "RIGHT_HIP": _lm(0.50, 0.55),
-            "NOSE": _lm(0.52, 0.20),
-            "RIGHT_EAR": _lm(0.51, 0.22),
-            "RIGHT_ELBOW": _lm(0.50, 0.45),
-            "RIGHT_WRIST": _lm(0.50, 0.60),
+            "LEFT_SHOULDER": _lm(0.50, 0.30), "RIGHT_SHOULDER": _lm(0.50, 0.30),
+            "LEFT_HIP": _lm(0.50, 0.55), "RIGHT_HIP": _lm(0.50, 0.55),
+            "NOSE": _lm(0.52, 0.20), "RIGHT_EAR": _lm(0.51, 0.22),
+            "RIGHT_ELBOW": _lm(0.50, 0.45), "RIGHT_WRIST": _lm(0.50, 0.60),
             "RIGHT_INDEX": _lm(0.50, 0.63),
         }
 
-    def _world_landmarks(include_left_elbow: bool):
-        world = {
-            "LEFT_SHOULDER": _lm(-0.1, -0.3, 0.0),
-            "RIGHT_SHOULDER": _lm(0.1, -0.3, 0.0),
-            "LEFT_HIP": _lm(-0.1, 0.0, 0.0),
-            "RIGHT_HIP": _lm(0.1, 0.0, 0.0),
-            "NOSE": _lm(0.0, -0.5, 0.05),
-            "RIGHT_EAR": _lm(0.05, -0.48, 0.02),
-            "RIGHT_ELBOW": _lm(0.15, -0.1, 0.0),
-            "RIGHT_WRIST": _lm(0.15, 0.15, 0.0),
+    def _world_landmarks():
+        return {
+            "LEFT_SHOULDER": _lm(-0.1, -0.3, 0.0), "RIGHT_SHOULDER": _lm(0.1, -0.3, 0.0),
+            "LEFT_HIP": _lm(-0.1, 0.0, 0.0), "RIGHT_HIP": _lm(0.1, 0.0, 0.0),
+            "NOSE": _lm(0.0, -0.5, 0.05), "RIGHT_EAR": _lm(0.05, -0.48, 0.02),
+            "RIGHT_ELBOW": _lm(0.15, -0.1, 0.0), "RIGHT_WRIST": _lm(0.15, 0.15, 0.0),
         }
-        if include_left_elbow:
-            world["LEFT_ELBOW"] = _lm(-0.15, -0.1, 0.0)
-        return world
 
-    fake_results = [
-        PoseResult(
-            landmarks=_neutral_landmarks_2d_right_side(),
-            world_landmarks=_world_landmarks(include_left_elbow=True),
-        ),
-        PoseResult(
-            landmarks=_neutral_landmarks_2d_right_side(),
-            world_landmarks=_world_landmarks(include_left_elbow=False),
-        ),
-        PoseResult(
-            landmarks=_neutral_landmarks_2d_right_side(),
-            world_landmarks=_world_landmarks(include_left_elbow=True),
-        ),
-    ]
-    call_count = {"n": 0}
-
-    def fake_process(self, image_bgr):
-        i = call_count["n"]
-        call_count["n"] = i + 1
-        return fake_results[i]
-
-    monkeypatch.setattr(PoseEstimator, "process", fake_process)
+    fake_result = PoseResult(
+        landmarks=_neutral_landmarks_2d_right_side(), world_landmarks=_world_landmarks(),
+    )
+    monkeypatch.setattr(PoseEstimator, "process", lambda self, image_bgr: fake_result)
 
     video_path = tmp_path / "synthetic.mp4"
-    writer = cv2.VideoWriter(
-        str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 5.0, (64, 64)
-    )
-    for _ in range(3):
-        writer.write(np.zeros((64, 64, 3), dtype=np.uint8))
-    writer.release()
+    _write_synthetic_video(video_path)
 
-    output_dir = tmp_path / "outputs"
-    result = analyze_video(
-        source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal",
-        output_dir=str(output_dir),
-    )
+    result = analyze_video(source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal")
 
-    assert result.pose3d_path is not None
-    data = json.loads(result.pose3d_path.read_text())
-    assert len(data) == 3
-
-    for entry in data:
-        assert entry["detected"] is True
-        assert entry["landmarks"] is not None
-        assert entry["action_level"] is not None
-        assert entry["segment_action_levels"] is not None
-        assert set(entry["segment_action_levels"].keys()) == {"neck", "trunk", "upper_arm", "lower_arm"}
-        valid_levels = {
-            "acceptable",
-            "investigation_recommandee",
-            "investigation_et_changement_bientot",
-            "changement_immediat",
-        }
-        for level in entry["segment_action_levels"].values():
-            assert level in valid_levels
-        for name, coords in entry["landmarks"].items():
-            assert isinstance(coords, list)
-            assert len(coords) == 3
-            assert all(isinstance(v, float) for v in coords)
-
-    assert "LEFT_ELBOW" in data[0]["landmarks"], (
-        "frame 0 doit conserver LEFT_ELBOW (présent dans les landmarks bruts "
-        "de cette frame)"
-    )
-    assert "LEFT_ELBOW" not in data[1]["landmarks"], (
-        "frame 1 doit exclure LEFT_ELBOW (absent des landmarks bruts de "
-        "cette frame précisément -- Finding #1 : un frontend qui ne teste "
-        "pas ce cas peut laisser une capsule à sa position de montage par "
-        "défaut au lieu de la masquer)"
-    )
-    assert "LEFT_ELBOW" in data[2]["landmarks"]
-
-    # Le reste des landmarks communs aux 3 frames doit être présent partout
-    # (contrat : le jeu de clés ne varie que pour l'articulation
-    # volontairement occultée dans ce test).
-    for entry in data:
-        for name in ("RIGHT_SHOULDER", "RIGHT_ELBOW", "RIGHT_WRIST", "NOSE"):
-            assert name in entry["landmarks"]
+    pose3d_payload = build_pose3d_payload(result.pose3d_records)
+    for row, pose3d_entry in zip(result.frame_rows, pose3d_payload):
+        segments = pose3d_entry["segment_action_levels"]
+        assert row["neck_segment_action_level"] == segments["neck"]
+        assert row["trunk_segment_action_level"] == segments["trunk"]
+        assert row["upper_arm_segment_action_level"] == segments["upper_arm"]
+        assert row["lower_arm_segment_action_level"] == segments["lower_arm"]
 
 
 def test_analyze_video_raises_on_missing_file():
     with pytest.raises(FileNotFoundError):
-        analyze_video(
-            source="does-not-exist.mp4", side="right", load_kg=0.0,
-            wrist_twist="normal", output_dir="outputs",
-        )
+        analyze_video(source="does-not-exist.mp4", side="right", load_kg=0.0, wrist_twist="normal")

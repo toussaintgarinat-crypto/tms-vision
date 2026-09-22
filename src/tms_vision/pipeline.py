@@ -1,12 +1,15 @@
 """Pipeline Phase 1 réutilisable : capture -> pose -> angles -> score RULA ->
-overlay vidéo + export CSV/JSON.
-
-Extrait de cli.py pour être appelable aussi bien depuis la CLI que depuis
-l'API FastAPI (api.py), sans dupliquer la logique (voir
-docs/superpowers/specs/2026-09-14-web-capture-fastapi-design.md).
+overlay vidéo, entièrement en mémoire (voir
+docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md). Le seul
+fichier écrit sur disque est un fichier temporaire imposé par
+cv2.VideoWriter (qui n'accepte pas d'écrire directement en mémoire) --
+supprimé avant que la fonction ne retourne. Persister le résultat (fichiers
+locaux pour la CLI, DuckDB pour l'API web) est la responsabilité de
+l'appelant (tms_vision.cli, tms_vision.api / tms_vision.storage).
 """
 import secrets
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,9 +22,16 @@ from tms_vision.angles import compute_joint_angles
 from tms_vision.rula.scoring import action_level, compute_rula_score, detect_muscle_use
 from tms_vision.overlay import draw_overlay
 from tms_vision.export import FrameRecord, ResultsExporter
-from tms_vision.pose3d_export import Pose3DFrameRecord, smooth_world_landmarks, write_pose3d_json
+from tms_vision.pose3d_export import Pose3DFrameRecord, build_pose3d_payload, smooth_world_landmarks
 
 WRIST_TWIST_CODES = {"normal": 1, "extreme": 2}
+
+
+def generate_run_id() -> str:
+    """Identifiant unique horodaté, réutilisé à la fois comme préfixe de nom
+    de fichier (CLI) et comme clé primaire d'analyse (DuckDB) -- deux espaces
+    de noms indépendants qui partagent simplement ce même format."""
+    return f"{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
 
 
 class _RunningMean:
@@ -48,19 +58,13 @@ class _RunningMean:
 @dataclass
 class AnalysisResult:
     empty: bool
-    video_path: Path | None = None
-    csv_path: Path | None = None
-    summary_json_path: Path | None = None
-    pose3d_path: Path | None = None
+    video_bytes: bytes | None = None
+    frame_rows: list[dict] | None = None
+    summary: dict | None = None
+    pose3d_records: list[Pose3DFrameRecord] | None = None
 
 
-def analyze_video(
-    source: str, side: str, load_kg: float, wrist_twist: str, output_dir: str
-) -> AnalysisResult:
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    run_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
-
+def analyze_video(source: str, side: str, load_kg: float, wrist_twist: str) -> AnalysisResult:
     wrist_twist_code = WRIST_TWIST_CODES[wrist_twist]
 
     frame_source = FrameSource(source)
@@ -89,10 +93,6 @@ def analyze_video(
         pose_result = estimator.process(frame.image)
         angles = None
         if pose_result.landmarks is not None:
-            # Baseline = moyenne des frames PRÉCÉDENTES uniquement (pas la
-            # frame courante) ; sur la toute première frame détectée, aucune
-            # donnée antérieure n'existe -> None (repli sur le comportement
-            # historique pour cette frame-là seulement).
             angles = compute_joint_angles(
                 pose_result.landmarks, side=side, shoulder_baseline_y=shoulder_y_baseline.value
             )
@@ -108,70 +108,78 @@ def analyze_video(
 
     muscle_use_score = 1 if detect_muscle_use(posture_load_history) else 0
 
-    # `frames` est garanti non vide ici : le garde-fou `if not frames: ...
-    # return` ci-dessus a déjà court-circuité la fonction sinon.
     height, width = frames[0].image.shape[:2]
-    # "mp4v" (MPEG-4 Part 2) n'est décodable par aucun navigateur (Chromium/
-    # Firefox renvoient MediaError code 4 sur le <video> de web/app/page.tsx).
-    # "avc1" (H.264/AVC) est vérifié disponible dans ce build d'OpenCV (FFMPEG
-    # avec fallback automatique vers le tag avc1, testé avec isOpened() +
-    # ffprobe + lecture réelle dans Chromium via Playwright) et reste dans un
-    # conteneur .mp4 classique.
-    video_path = output_path / f"{run_id}_annotated.mp4"
-    writer = cv2.VideoWriter(
-        str(video_path), cv2.VideoWriter_fourcc(*"avc1"), frame_source.fps() or 30.0, (width, height)
-    )
-
-    csv_path = output_path / f"{run_id}_frames.csv"
-    summary_json_path = output_path / f"{run_id}_summary.json"
-    pose3d_path = output_path / f"{run_id}_pose3d.json"
-    exporter = ResultsExporter(str(csv_path), str(summary_json_path))
+    exporter = ResultsExporter()
 
     raw_world_landmarks = [pose_result.world_landmarks for _, pose_result, _ in per_frame_angles]
     smoothed_world_landmarks = smooth_world_landmarks(raw_world_landmarks)
     pose3d_records: list[Pose3DFrameRecord] = []
 
-    for (frame, pose_result, angles), world_landmarks in zip(per_frame_angles, smoothed_world_landmarks):
-        score = None
-        if angles is not None:
-            score = compute_rula_score(
-                angles, wrist_twist=wrist_twist_code, load_kg=load_kg, muscle_use_score=muscle_use_score
-            )
-        segment_action_levels = None
-        if score is not None:
-            segment_action_levels = {
-                "neck": action_level(score.neck),
-                "trunk": action_level(score.trunk),
-                "upper_arm": action_level(score.upper_arm),
-                "lower_arm": action_level(score.lower_arm),
-            }
-        annotated = draw_overlay(frame.image, pose_result.landmarks, score)
-        writer.write(annotated)
-        exporter.add_frame(
-            FrameRecord(
-                frame_index=frame.index,
-                timestamp_seconds=frame.timestamp_seconds,
-                detected=angles is not None,
-                angles=angles,
-                score=score,
-            )
+    tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+    video_tmp_path = Path(tmp_video.name)
+    tmp_video.close()
+    try:
+        # "avc1" (H.264/AVC) est lisible par les navigateurs (Chromium/
+        # Firefox), contrairement à "mp4v" -- voir commit 9d6a9da et
+        # test_analyze_video_writes_browser_playable_h264_not_mp4v.
+        writer = cv2.VideoWriter(
+            str(video_tmp_path), cv2.VideoWriter_fourcc(*"avc1"),
+            frame_source.fps() or 30.0, (width, height),
         )
-        pose3d_records.append(
-            Pose3DFrameRecord(
-                frame_index=frame.index,
-                timestamp_seconds=frame.timestamp_seconds,
-                detected=angles is not None,
-                landmarks=world_landmarks,
-                action_level=score.action_level if score is not None else None,
-                segment_action_levels=segment_action_levels,
+        for (frame, pose_result, angles), world_landmarks in zip(per_frame_angles, smoothed_world_landmarks):
+            score = None
+            if angles is not None:
+                score = compute_rula_score(
+                    angles, wrist_twist=wrist_twist_code, load_kg=load_kg,
+                    muscle_use_score=muscle_use_score,
+                )
+            segment_action_levels = None
+            if score is not None:
+                segment_action_levels = {
+                    "neck": action_level(score.neck),
+                    "trunk": action_level(score.trunk),
+                    "upper_arm": action_level(score.upper_arm),
+                    "lower_arm": action_level(score.lower_arm),
+                }
+            annotated = draw_overlay(frame.image, pose_result.landmarks, score)
+            writer.write(annotated)
+            exporter.add_frame(
+                FrameRecord(
+                    frame_index=frame.index,
+                    timestamp_seconds=frame.timestamp_seconds,
+                    detected=angles is not None,
+                    angles=angles,
+                    score=score,
+                )
             )
-        )
+            pose3d_records.append(
+                Pose3DFrameRecord(
+                    frame_index=frame.index,
+                    timestamp_seconds=frame.timestamp_seconds,
+                    detected=angles is not None,
+                    landmarks=world_landmarks,
+                    action_level=score.action_level if score is not None else None,
+                    segment_action_levels=segment_action_levels,
+                )
+            )
+        writer.release()
+        video_bytes = video_tmp_path.read_bytes()
+    finally:
+        video_tmp_path.unlink(missing_ok=True)
 
-    writer.release()
-    exporter.finalize()
-    write_pose3d_json(str(pose3d_path), pose3d_records)
+    frame_rows = exporter.rows()
+    pose3d_payload = build_pose3d_payload(pose3d_records)
+    for row, pose3d_entry in zip(frame_rows, pose3d_payload):
+        segments = pose3d_entry["segment_action_levels"] or {}
+        row["neck_segment_action_level"] = segments.get("neck")
+        row["trunk_segment_action_level"] = segments.get("trunk")
+        row["upper_arm_segment_action_level"] = segments.get("upper_arm")
+        row["lower_arm_segment_action_level"] = segments.get("lower_arm")
 
     return AnalysisResult(
-        empty=False, video_path=video_path, csv_path=csv_path, summary_json_path=summary_json_path,
-        pose3d_path=pose3d_path,
+        empty=False,
+        video_bytes=video_bytes,
+        frame_rows=frame_rows,
+        summary=exporter.summary(),
+        pose3d_records=pose3d_records,
     )
