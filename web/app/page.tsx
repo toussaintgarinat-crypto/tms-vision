@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { PostureAvatar3D, Side } from "./PostureAvatar3D";
+import { AnalysisResult, AnalysisSummary } from "./AnalysisResult";
+import { Side } from "./PostureAvatar3D";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const MAX_RECORDING_MS = 30_000;
@@ -10,14 +11,6 @@ const CHUNK_SIZE = 5 * 1024 * 1024; // 5 Mo
 const MAX_CHUNK_RETRIES = 3;
 
 type WristTwist = "normal" | "extreme";
-
-type AnalysisSummary = {
-  frame_count: number;
-  detected_frame_count: number;
-  max_score: number;
-  average_score: number;
-  time_by_action_level: Record<string, number>;
-};
 
 type AnalysisResponse = {
   analysis_id: string;
@@ -28,25 +21,6 @@ type AnalysisResponse = {
   side: Side;
 };
 
-type Capsule = {
-  zone: string;
-  title: string;
-  description: string;
-  video_url: string;
-};
-
-type Recommendation = {
-  zone: string | null;
-  capsule: Capsule | null;
-};
-
-const ZONE_LABELS: Record<string, string> = {
-  neck: "cou",
-  trunk: "tronc",
-  upper_arm: "bras",
-  lower_arm: "avant-bras",
-};
-
 export default function Home() {
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -54,7 +28,6 @@ export default function Home() {
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const resultVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [cameraReady, setCameraReady] = useState(false);
   const [mode, setMode] = useState<"camera" | "upload" | null>(null);
@@ -66,10 +39,6 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
-  const [recommendation, setRecommendation] = useState<{
-    analysisId: string;
-    data: Recommendation;
-  } | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
     null
   );
@@ -79,27 +48,6 @@ export default function Home() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
-
-  useEffect(() => {
-    if (!result) return;
-    let cancelled = false;
-    fetch(`${API_URL}/analyses/${result.analysis_id}/recommendation`)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
-        return response.json() as Promise<Recommendation>;
-      })
-      .then((data) => {
-        if (!cancelled) setRecommendation({ analysisId: result.analysis_id, data });
-      })
-      .catch(() => {
-        // Erreur réseau ou analyse introuvable : on ne montre rien plutôt que
-        // de bloquer l'affichage du résultat principal -- silence volontaire,
-        // pas un oubli (voir revue finale de la tranche capsules).
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [result]);
 
   async function startCamera() {
     setError(null);
@@ -318,7 +266,12 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
-      <h1 className="text-2xl font-semibold">TMS Vision — Vérification RULA</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">TMS Vision — Vérification RULA</h1>
+        <a href="/historique" className="text-sm text-blue-600 underline">
+          Historique
+        </a>
+      </div>
 
       <video
         ref={videoPreviewRef}
@@ -436,41 +389,14 @@ export default function Home() {
       {error && <p className="text-red-600">{error}</p>}
 
       {result && (
-        <section className="flex flex-col gap-4 rounded border p-4">
-          <h2 className="text-lg font-semibold">Résultat</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <video
-              ref={resultVideoRef}
-              src={`${API_URL}${result.annotated_video_url}`}
-              controls
-              className="w-full rounded-lg bg-black"
-            />
-            <PostureAvatar3D pose3dUrl={result.pose3d_url} videoRef={resultVideoRef} side={result.side} />
-          </div>
-          <dl className="grid grid-cols-2 gap-2 text-sm">
-            <dt>Frames analysées</dt>
-            <dd>{result.summary.frame_count}</dd>
-            <dt>Frames avec pose détectée</dt>
-            <dd>{result.summary.detected_frame_count}</dd>
-            <dt>Score RULA max</dt>
-            <dd>{result.summary.max_score}</dd>
-            <dt>Score RULA moyen</dt>
-            <dd>{result.summary.average_score.toFixed(1)}</dd>
-          </dl>
-          <a href={`${API_URL}${result.csv_url}`} className="text-blue-600 underline">
-            Télécharger le CSV détaillé
-          </a>
-          {recommendation?.analysisId === result?.analysis_id && recommendation.data.capsule && (
-            <div className="rounded border border-blue-200 bg-blue-50 p-3">
-              <p className="text-sm font-semibold">
-                Recommandation : zone{" "}
-                {ZONE_LABELS[recommendation.data.zone ?? ""] ?? recommendation.data.zone}
-              </p>
-              <p className="font-medium">{recommendation.data.capsule.title}</p>
-              <p className="text-sm text-gray-700">{recommendation.data.capsule.description}</p>
-            </div>
-          )}
-        </section>
+        <AnalysisResult
+          analysisId={result.analysis_id}
+          side={result.side}
+          summary={result.summary}
+          videoUrl={result.annotated_video_url}
+          csvUrl={result.csv_url}
+          pose3dUrl={result.pose3d_url}
+        />
       )}
     </main>
   );
