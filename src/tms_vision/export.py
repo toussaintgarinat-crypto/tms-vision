@@ -1,4 +1,8 @@
-"""Export CSV par frame et résumé JSON de fin d'analyse."""
+"""Accumulation des résultats par frame, et deux fonctions d'écriture disque
+réutilisables (CSV/JSON) -- utilisées par la CLI (tms_vision.cli) pour
+reproduire le comportement historique d'écriture sur le système de fichiers.
+L'API web (tms_vision.api / tms_vision.storage) consomme rows()/summary()
+directement en mémoire, sans jamais écrire ces fichiers."""
 import csv
 import json
 from dataclasses import dataclass
@@ -26,16 +30,14 @@ class FrameRecord:
 
 
 class ResultsExporter:
-    def __init__(self, csv_path: str, summary_json_path: str):
-        self._csv_path = csv_path
-        self._summary_json_path = summary_json_path
+    def __init__(self) -> None:
         self._records: list[FrameRecord] = []
 
     def add_frame(self, record: FrameRecord) -> None:
         self._records.append(record)
 
     def _row_for(self, record: FrameRecord) -> dict:
-        row = {field: "" for field in CSV_FIELDS}
+        row = {field: None for field in CSV_FIELDS}
         row["frame_index"] = record.frame_index
         row["timestamp_seconds"] = record.timestamp_seconds
         row["detected"] = record.detected
@@ -61,7 +63,10 @@ class ResultsExporter:
             row["action_level"] = record.score.action_level
         return row
 
-    def _summary(self) -> dict:
+    def rows(self) -> list[dict]:
+        return [self._row_for(record) for record in self._records]
+
+    def summary(self) -> dict:
         detected = [r for r in self._records if r.detected and r.score is not None]
         if not detected:
             return {
@@ -74,15 +79,13 @@ class ResultsExporter:
 
         scores = [r.score.final_score for r in detected]
         time_by_level: dict[str, float] = {}
-        for index, record in enumerate(detected):
-            # Find next frame (detected or not) in self._records
+        for record in detected:
             next_timestamp = None
             for r in self._records:
                 if r.frame_index > record.frame_index:
                     next_timestamp = r.timestamp_seconds
                     break
 
-            # If no next frame found, use 1.0 only if single detected frame, else 0.0
             if next_timestamp is None:
                 duration = 1.0 if len(detected) == 1 else 0.0
             else:
@@ -102,12 +105,15 @@ class ResultsExporter:
             "time_by_action_level": time_by_level,
         }
 
-    def finalize(self) -> None:
-        with open(self._csv_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-            writer.writeheader()
-            for record in self._records:
-                writer.writerow(self._row_for(record))
 
-        with open(self._summary_json_path, "w") as f:
-            json.dump(self._summary(), f, indent=2, ensure_ascii=False)
+def write_frames_csv(rows: list[dict], path: str) -> None:
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+
+def write_summary_json(summary: dict, path: str) -> None:
+    with open(path, "w") as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False)
