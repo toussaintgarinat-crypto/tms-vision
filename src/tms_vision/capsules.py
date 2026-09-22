@@ -7,6 +7,15 @@ from dataclasses import dataclass
 
 ZONES = ["neck", "trunk", "upper_arm", "lower_arm"]
 ZONE_PRIORITY = ["trunk", "neck", "upper_arm", "lower_arm"]
+# lower_arm ne peut structurellement jamais atteindre ces niveaux : son sous-score
+# RULA brut est plafonné à 3 (classify_lower_arm, rula/scoring.py) alors que
+# action_level() n'entre dans ELEVATED_LEVELS qu'à partir de 5 -- même racine que
+# la limitation déjà documentée pour changement_immediat sur neck/trunk/upper_arm
+# (plafond 6 contre seuil 7, voir README.md et le commit 989df73). Conséquence :
+# le catalogue CAPSULES contient une entrée pour lower_arm, mais compute_worst_zone
+# ne pourra jamais la sélectionner tant que les seuils par segment ne sont pas
+# redéfinis -- accepté pour ce sprint, voir la spec
+# docs/superpowers/specs/2026-09-22-capsule-zone-recommendation-design.md.
 ELEVATED_LEVELS = {"investigation_et_changement_bientot", "changement_immediat"}
 
 
@@ -68,12 +77,18 @@ def compute_worst_zone(frames: list[dict]) -> str | None:
         else:
             next_timestamp = None
 
+        # Simplification délibérée par rapport à export.py.summary() : ce dernier garde
+        # un fallback `or (1.0 if len(detected) == 1 else 0.0)` dans sa branche `else`
+        # parce qu'il compte les frames *détectées*, un total différent de len(frames)
+        # ici. Ici, la branche `else` n'est atteinte que si `index + 1 < len(frames)`,
+        # ce qui implique `len(frames) >= 2` -- le fallback y vaudrait donc toujours
+        # 0.0, identique à `max(...)` seul. Pas besoin de distinguer les frames
+        # non détectées séparément : un segment_action_level à `None` exclut déjà
+        # naturellement la frame de tout cumul de zone.
         if next_timestamp is None:
             duration = 1.0 if len(frames) == 1 else 0.0
         else:
-            duration = max(next_timestamp - frame["timestamp_seconds"], 0.0) or (
-                1.0 if len(frames) == 1 else 0.0
-            )
+            duration = max(next_timestamp - frame["timestamp_seconds"], 0.0)
 
         for zone in ZONES:
             if frame[_segment_column(zone)] in ELEVATED_LEVELS:

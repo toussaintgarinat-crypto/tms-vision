@@ -1,4 +1,10 @@
-from tms_vision.capsules import CAPSULES, ZONES, compute_worst_zone, recommend_capsule
+from tms_vision.capsules import (
+    CAPSULES,
+    ZONE_PRIORITY,
+    ZONES,
+    compute_worst_zone,
+    recommend_capsule,
+)
 
 
 def _frame(frame_index, timestamp_seconds, **levels):
@@ -60,6 +66,24 @@ def test_compute_worst_zone_ignores_undetected_frames_for_cumulation_but_uses_th
 
 def test_compute_worst_zone_handles_empty_frame_list():
     assert compute_worst_zone([]) is None
+
+
+def test_compute_worst_zone_prefers_longer_exposure_over_priority_order():
+    frames = [
+        _frame(0, 0.0, neck="changement_immediat", trunk="changement_immediat"),
+        _frame(1, 1.0, neck="changement_immediat"),
+        _frame(2, 2.0, neck="changement_immediat"),
+        _frame(3, 3.0),
+    ]
+    # neck cumule 3.0s (frames 0,1,2) contre 1.0s pour trunk (frame 0 seule) --
+    # neck doit gagner malgré son rang inférieur dans ZONE_PRIORITY (trunk >
+    # neck), preuve que le départage est bien "durée cumulée d'abord, priorité
+    # seulement en cas d'égalité stricte" et non "prembattre en priorité".
+    assert compute_worst_zone(frames) == "neck"
+
+
+def test_zones_and_zone_priority_contain_the_same_members():
+    assert set(ZONES) == set(ZONE_PRIORITY)
 
 
 def test_recommend_capsule_returns_first_catalog_entry_for_the_zone():

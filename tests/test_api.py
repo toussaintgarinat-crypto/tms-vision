@@ -663,4 +663,5 @@ def test_get_recommendation_returns_worst_zone_and_matching_capsule(tmp_path, mo
     assert body["zone"] == "trunk"
     assert body["capsule"]["zone"] == "trunk"
     assert body["capsule"]["title"]
+    assert body["capsule"]["description"]
     assert body["capsule"]["video_url"]

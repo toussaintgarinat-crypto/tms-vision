@@ -279,6 +279,7 @@ def test_get_frame_segments_returns_ordered_rows_with_segment_columns(tmp_path, 
     assert frames[0]["trunk_segment_action_level"] == "changement_immediat"
     assert frames[1]["frame_index"] == 1
     assert frames[1]["neck_segment_action_level"] == "investigation_recommandee"
+    assert set(frames[0].keys()) == {"frame_index", "timestamp_seconds", *storage.SEGMENT_COLUMNS}
 
 
 def test_get_frame_segments_returns_none_for_unknown_id(tmp_path, monkeypatch):
