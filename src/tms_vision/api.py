@@ -306,7 +306,13 @@ def _parse_single_byte_range(range_header: str, total_length: int) -> tuple[int,
         else:
             return None
 
-    if start >= total_length or start > end:
+    if start > end:
+        # Syntaxiquement invalide (RFC 7233 §2.1 : last-byte-pos < first-byte-pos),
+        # pas insatisfiable -- l'appelant doit l'ignorer et servir le contenu
+        # complet (même traitement que les autres cas de syntaxe invalide
+        # ci-dessus), pas répondre 416.
+        return None
+    if start >= total_length:
         raise ValueError("Intervalle insatisfiable.")
     return start, min(end, total_length - 1)
 

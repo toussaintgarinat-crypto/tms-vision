@@ -181,11 +181,12 @@ vides).
   inconnu.
 - **`GET /outputs/{filename}`** est supprimé.
 
-**Limite acceptée** : servir la vidéo depuis un blob DuckDB (au lieu de `FileResponse`) perd le
-support automatique des requêtes HTTP `Range` que Starlette offrait pour un fichier statique — pas
-de seeking optimisé côté navigateur (un scrub dans la timeline retélécharge le blob entier plutôt
-qu'une plage d'octets). Acceptable vu le plafond actuel des clips (≤ 30s, quelques centaines de Ko
-à quelques Mo observés dans `outputs/` aujourd'hui). Hors périmètre de ce sprint.
+**Correction (revue finale de branche)** : la limite ci-dessous a été levée après la revue finale
+de ce sprint — `GET /analyses/{id}/video` implémente désormais un support `Range` HTTP simple
+(single-range, `206 Partial Content` / `416 Range Not Satisfiable`, `Accept-Ranges: bytes`),
+nécessaire à la lecture fiable de `<video>` sur Safari iOS. Servir la vidéo depuis un blob DuckDB
+(au lieu de `FileResponse`) ne perd donc plus ce support, contrairement à ce que ce document
+affirmait initialement.
 
 ## Gestion d'erreurs
 
@@ -215,7 +216,6 @@ qu'une plage d'octets). Acceptable vu le plafond actuel des clips (≤ 30s, quel
 - Migration des runs déjà présents dans `outputs/` (décision de cadrage ci-dessus).
 - Authentification / vrais comptes utilisateurs (`worker_label`/`poste_label` restent des tags
   texte libres).
-- Support des requêtes `Range` pour le streaming vidéo (limite acceptée ci-dessus).
 - Concurrence multi-process sur le fichier DuckDB (hors échelle actuelle du projet — un seul
   process `uvicorn`).
 - La brique recommandation de capsules par zone (sprint suivant, qui s'appuiera sur
