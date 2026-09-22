@@ -35,10 +35,19 @@ inchangé.
   (pas de slash final forcé) mais teste les `href` littéraux via `normalizeURL` (slash final
   toujours ajouté) — un vrai bug de la règle, vérifié empiriquement (édition directe du fichier +
   relance de `npm run lint`), qui fait qu'un `<a href="/">` littéral échoue le lint (seul cas où
-  les deux normalisations coïncident) alors qu'un `<a href="/historique">` ne se fait jamais
-  flaguer, même une fois cette route créée. Le lien de retour vers la racine `/` utilise donc
-  `next/link`'s `<Link>` — seul ce lien précis ; tout le reste (y compris les liens vers
-  `/historique/{id}`) reste en `<a>` classique.
+  les deux normalisations coïncident) alors qu'un `<a href="/historique">` ne se fait pas
+  flaguer tant que `/historique` n'a pas de sous-route dynamique. Le lien de retour vers la racine
+  `/` utilise donc `next/link`'s `<Link>` — seul ce lien précis à ce stade.
+  **Second cas découvert et approuvé pendant l'exécution (Task 3)** : dès que
+  `app/historique/[id]/` existe, la regex de route générée pour ce segment dynamique matche aussi
+  son propre chemin parent avec une capture vide -- `<a href="/historique">` se fait alors flaguer
+  partout dans le projet, y compris le lien "Historique" déjà approuvé en Task 1
+  (`web/app/page.tsx`), vérifié empiriquement de la même façon (retrait/remise du dossier
+  `[id]/`, 0 puis 2 erreurs). Les deux liens littéraux concernés (`page.tsx` et le nouveau lien de
+  retour "← Retour à l'historique" dans `historique/[id]/page.tsx`) utilisent donc eux aussi
+  `next/link`'s `<Link>` (commits `0943832`, `736f1bd`). Seuls ces liens littéraux vers `/` et
+  `/historique` sont concernés ; les liens dynamiques `href={`/historique/${id}`}` (template
+  literal, jamais testés par cette règle) restent en `<a>` classique.
 - Commandes de vérification standard pour tout `web/` : `cd web && npx tsc --noEmit`,
   `cd web && npm run lint`, `cd web && npm run build`, `cd web && npm run test` (vitest, suite
   existante de modules purs — doit rester verte après chaque tâche).
