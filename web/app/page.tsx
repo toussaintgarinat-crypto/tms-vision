@@ -20,11 +20,31 @@ type AnalysisSummary = {
 };
 
 type AnalysisResponse = {
+  analysis_id: string;
   summary: AnalysisSummary;
   annotated_video_url: string;
   csv_url: string;
   pose3d_url: string;
   side: Side;
+};
+
+type Capsule = {
+  zone: string;
+  title: string;
+  description: string;
+  video_url: string;
+};
+
+type Recommendation = {
+  zone: string | null;
+  capsule: Capsule | null;
+};
+
+const ZONE_LABELS: Record<string, string> = {
+  neck: "cou",
+  trunk: "tronc",
+  upper_arm: "bras",
+  lower_arm: "avant-bras",
 };
 
 export default function Home() {
@@ -46,6 +66,7 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
     null
   );
@@ -55,6 +76,28 @@ export default function Home() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
+
+  useEffect(() => {
+    if (!result) {
+      setRecommendation(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${API_URL}/analyses/${result.analysis_id}/recommendation`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        return response.json() as Promise<Recommendation>;
+      })
+      .then((data) => {
+        if (!cancelled) setRecommendation(data);
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendation(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [result]);
 
   async function startCamera() {
     setError(null);
@@ -415,6 +458,16 @@ export default function Home() {
           <a href={`${API_URL}${result.csv_url}`} className="text-blue-600 underline">
             Télécharger le CSV détaillé
           </a>
+          {recommendation?.capsule && (
+            <div className="rounded border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm font-semibold">
+                Recommandation : zone{" "}
+                {ZONE_LABELS[recommendation.zone ?? ""] ?? recommendation.zone}
+              </p>
+              <p className="font-medium">{recommendation.capsule.title}</p>
+              <p className="text-sm text-gray-700">{recommendation.capsule.description}</p>
+            </div>
+          )}
         </section>
       )}
     </main>
