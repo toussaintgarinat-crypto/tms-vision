@@ -30,6 +30,15 @@ inchangé.
   `next/navigation` (synchrone côté client), pas `use(params)`.
 - Ce projet n'utilise `next/link` nulle part aujourd'hui : rester cohérent et utiliser des
   `<a href="...">` classiques pour la navigation interne, pas d'import `next/link` nouveau.
+  **Exception découverte et approuvée pendant l'exécution (Task 2)** : `@next/eslint-plugin-next`
+  (règle `no-html-link-for-pages`) construit ses regex de route pour `app/` via `normalizeAppPath`
+  (pas de slash final forcé) mais teste les `href` littéraux via `normalizeURL` (slash final
+  toujours ajouté) — un vrai bug de la règle, vérifié empiriquement (édition directe du fichier +
+  relance de `npm run lint`), qui fait qu'un `<a href="/">` littéral échoue le lint (seul cas où
+  les deux normalisations coïncident) alors qu'un `<a href="/historique">` ne se fait jamais
+  flaguer, même une fois cette route créée. Le lien de retour vers la racine `/` utilise donc
+  `next/link`'s `<Link>` — seul ce lien précis ; tout le reste (y compris les liens vers
+  `/historique/{id}`) reste en `<a>` classique.
 - Commandes de vérification standard pour tout `web/` : `cd web && npx tsc --noEmit`,
   `cd web && npm run lint`, `cd web && npm run build`, `cd web && npm run test` (vitest, suite
   existante de modules purs — doit rester verte après chaque tâche).
