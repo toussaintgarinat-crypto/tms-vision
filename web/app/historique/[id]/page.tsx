@@ -57,7 +57,10 @@ export default function AnalysisDetailPage() {
         }
       })
       .catch(() => {
-        if (!cancelled) setFetchErrorFor(id);
+        if (!cancelled) {
+          setFetchErrorFor(id);
+          setNotFoundFor(null);
+        }
       });
     return () => {
       cancelled = true;

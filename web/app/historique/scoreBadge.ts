@@ -8,9 +8,11 @@ export function scoreBadgeColor(maxScore: number): string {
   return "#D23232";
 }
 
-// La bande jaune (#EBD23C, scores 3-4) n'a pas un contraste suffisant en texte
-// blanc (~1.7:1, sous le seuil WCAG AA de 4.5:1) -- texte sombre pour cette
-// bande uniquement, les 3 autres restent en blanc.
+// Contraste mesuré contre blanc pour les 4 couleurs de fond ci-dessus : vert
+// #4CAF50 (2.78:1), jaune #EBD23C (1.52:1) et orange #EB9628 (2.35:1) sont
+// tous sous le seuil WCAG AA de 4.5:1 -- seul le rouge #D23232 (4.95:1) passe.
+// Texte sombre pour les 3 premières bandes (scores 1-6), blanc uniquement
+// pour le rouge.
 export function scoreBadgeTextColor(maxScore: number): string {
-  return maxScore > 2 && maxScore <= 4 ? "#1F2937" : "#FFFFFF";
+  return maxScore <= 6 ? "#1F2937" : "#FFFFFF";
 }

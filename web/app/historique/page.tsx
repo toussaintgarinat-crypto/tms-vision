@@ -47,8 +47,18 @@ export default function HistoriquePage() {
     // backend et affiché en heure locale côté table ci-dessous
     // (toLocaleString) -- envoyer une date/heure locale sans suffixe de fuseau
     // décalerait la fenêtre de filtre par rapport à ce que l'utilisateur voit.
-    if (since) params.set("since", new Date(`${since}T00:00:00`).toISOString());
-    if (until) params.set("until", new Date(`${until}T23:59:59.999`).toISOString());
+    // toISOString() lève RangeError sur une date invalide/hors bornes -- <input
+    // type="date"> l'empêche en pratique dans les navigateurs courants, mais
+    // son champ année accepte jusqu'à 275760, qui déborde la valeur temporelle
+    // maximale représentable une fois l'heure de fin de journée ajoutée.
+    const sinceDate = since ? new Date(`${since}T00:00:00`) : null;
+    if (sinceDate && !Number.isNaN(sinceDate.getTime())) {
+      params.set("since", sinceDate.toISOString());
+    }
+    const untilDate = until ? new Date(`${until}T23:59:59.999`) : null;
+    if (untilDate && !Number.isNaN(untilDate.getTime())) {
+      params.set("until", untilDate.toISOString());
+    }
     const query = params.toString();
     fetch(`${API_URL}/analyses${query ? `?${query}` : ""}`)
       .then((response) => {

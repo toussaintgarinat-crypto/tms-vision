@@ -4,6 +4,7 @@ import { scoreBadgeColor, scoreBadgeTextColor } from "./scoreBadge";
 
 describe("scoreBadgeColor", () => {
   it.each([
+    [0, "#4CAF50"],
     [1, "#4CAF50"],
     [2, "#4CAF50"],
     [3, "#EBD23C"],
@@ -19,12 +20,13 @@ describe("scoreBadgeColor", () => {
 
 describe("scoreBadgeTextColor", () => {
   it.each([
-    [1, "#FFFFFF"],
-    [2, "#FFFFFF"],
+    [0, "#1F2937"],
+    [1, "#1F2937"],
+    [2, "#1F2937"],
     [3, "#1F2937"],
     [4, "#1F2937"],
-    [5, "#FFFFFF"],
-    [6, "#FFFFFF"],
+    [5, "#1F2937"],
+    [6, "#1F2937"],
     [7, "#FFFFFF"],
     [8, "#FFFFFF"],
   ])("maps score %i to text color %s", (score, expected) => {
