@@ -151,6 +151,11 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   tranche 4 de l'avatar 3D de posture (coloration par segment anatomique).
 - `docs/superpowers/plans/2026-09-21-3d-posture-muscle-segment-coloring-plan.md` — le plan
   d'implémentation de cette tranche.
+- `docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md` — la spec du stockage des
+  analyses RULA en DuckDB (persistance dans le temps, migration hors du système de fichiers pour
+  le flux API web).
+- `docs/superpowers/plans/2026-09-22-duckdb-analysis-storage-plan.md` — le plan d'implémentation
+  de cette tranche.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -482,6 +487,29 @@ juste "finir" la Phase 1 avant de passer à la suite :
 - **Ce qui n'est pas dans cette tranche** : analyse simultanée des deux côtés, coloration des
   cuisses par un vrai signal mesuré, segments `wrist`/`wrist_twist` (pas d'os poignet dans le rig) —
   voir la spec `docs/superpowers/specs/2026-09-21-3d-posture-muscle-segment-coloring-design.md`.
+
+#### ✅ Stockage des analyses en DuckDB — TERMINÉE
+
+- **Contexte** : depuis la Tranche 1, chaque analyse écrivait 4 fichiers isolés dans `outputs/`
+  (vidéo annotée, CSV, résumé JSON, landmarks 3D), sans aucun moyen de lister ou d'interroger les
+  analyses passées. Cette tranche migre ce stockage vers DuckDB, avec un historique interrogeable
+  — préalable nécessaire à la recommandation de capsules par zone (tranche suivante).
+- **`src/tms_vision/storage.py`** (nouveau) : deux tables DuckDB (`data/tms_vision.duckdb`,
+  non committé) — `analyses` (métadonnées, résumé agrégé, blobs vidéo/pose3D) et
+  `analysis_frames` (une ligne par frame, scores RULA et zones d'action par segment
+  interrogeables en SQL).
+- **`src/tms_vision/pipeline.py`** : `analyze_video()` devient pur (retourne bytes/dicts en
+  mémoire), n'écrit plus aucun fichier durable.
+- **`src/tms_vision/api.py`** : `POST /analyses` et `POST /uploads/{id}/complete` acceptent
+  désormais `worker_label`/`poste_label` (tags texte libres, pas d'authentification) et persistent
+  en DuckDB. `GET /outputs/{filename}` est remplacé par `GET /analyses`, `GET /analyses/{id}`,
+  `GET /analyses/{id}/video`, `GET /analyses/{id}/pose3d`, `GET /analyses/{id}/frames.csv`.
+- **`src/tms_vision/cli.py`** (workflow Phase 1 local) : continue d'écrire vidéo/CSV/JSON dans
+  `--output-dir` comme avant — seule la CLI écrit encore sur le système de fichiers, l'API web
+  persiste exclusivement en DuckDB.
+- **Ce qui n'est pas dans cette tranche** : UI d'historique/dashboard consommant `GET /analyses`,
+  migration des runs déjà présents dans `outputs/`, authentification, support des requêtes
+  `Range` pour le streaming vidéo (voir spec pour le détail).
 
 #### Reste à faire pour la suite de la Phase 2
 
