@@ -4,7 +4,7 @@ import random
 import pytest
 
 from tms_vision.pose_estimation import Landmark
-from tms_vision.pose3d_export import Pose3DFrameRecord, smooth_world_landmarks, write_pose3d_json
+from tms_vision.pose3d_export import Pose3DFrameRecord, build_pose3d_payload, smooth_world_landmarks, write_pose3d_json
 
 
 def test_smooth_world_landmarks_keeps_constant_sequence_unchanged():
@@ -76,3 +76,23 @@ def test_write_pose3d_json_writes_one_entry_per_frame(tmp_path):
     assert data[1]["landmarks"] is None
     assert data[1]["action_level"] is None
     assert data[1]["segment_action_levels"] is None
+
+
+def test_build_pose3d_payload_returns_one_dict_per_frame():
+    records = [
+        Pose3DFrameRecord(
+            0, 0.0, True, {"NOSE": Landmark(0.1, 0.2, 0.3, 0.9)}, "acceptable",
+            {"neck": "acceptable", "trunk": "investigation_recommandee",
+             "upper_arm": "acceptable", "lower_arm": "acceptable"},
+        ),
+        Pose3DFrameRecord(1, 1.0, False, None, None, None),
+    ]
+
+    payload = build_pose3d_payload(records)
+
+    assert len(payload) == 2
+    assert payload[0]["frame_index"] == 0
+    assert payload[0]["landmarks"]["NOSE"] == [0.1, 0.2, 0.3]
+    assert payload[0]["segment_action_levels"]["trunk"] == "investigation_recommandee"
+    assert payload[1]["landmarks"] is None
+    assert payload[1]["action_level"] is None

@@ -54,7 +54,7 @@ def smooth_world_landmarks(
     return smoothed
 
 
-def write_pose3d_json(path: str, records: list[Pose3DFrameRecord]) -> None:
+def build_pose3d_payload(records: list[Pose3DFrameRecord]) -> list[dict]:
     payload = []
     for record in records:
         landmarks = None
@@ -73,5 +73,9 @@ def write_pose3d_json(path: str, records: list[Pose3DFrameRecord]) -> None:
                 "segment_action_levels": record.segment_action_levels,
             }
         )
+    return payload
+
+
+def write_pose3d_json(path: str, records: list[Pose3DFrameRecord]) -> None:
     with open(path, "w") as f:
-        json.dump(payload, f, ensure_ascii=False)
+        json.dump(build_pose3d_payload(records), f, ensure_ascii=False)
