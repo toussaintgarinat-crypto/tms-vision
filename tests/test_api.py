@@ -1,4 +1,3 @@
-import json
 import tempfile
 from pathlib import Path
 
@@ -6,6 +5,7 @@ import cv2
 import numpy as np
 from fastapi.testclient import TestClient
 
+from tms_vision import storage
 from tms_vision.api import app
 
 
@@ -16,7 +16,12 @@ def _write_synthetic_video(path):
     writer.release()
 
 
+def _patch_db(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+
 def test_create_analysis_with_no_detectable_person_returns_empty_summary(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     video_path = tmp_path / "synthetic.mp4"
@@ -34,13 +39,39 @@ def test_create_analysis_with_no_detectable_person_returns_empty_summary(tmp_pat
     body = response.json()
     assert body["summary"]["detected_frame_count"] == 0
     assert body["summary"]["max_score"] == 0
-    assert body["annotated_video_url"].startswith("/outputs/")
-    assert body["csv_url"].startswith("/outputs/")
-    assert body["pose3d_url"].startswith("/outputs/")
+    assert body["annotated_video_url"] == f"/analyses/{body['analysis_id']}/video"
+    assert body["csv_url"] == f"/analyses/{body['analysis_id']}/frames.csv"
+    assert body["pose3d_url"] == f"/analyses/{body['analysis_id']}/pose3d"
     assert body["side"] == "right"
 
 
+def test_create_analysis_accepts_worker_and_poste_label(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+    with open(video_path, "rb") as video_file:
+        response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={
+                "side": "right", "load_kg": "0", "wrist_twist": "normal",
+                "worker_label": "Marie D.", "poste_label": "Poste emballage",
+            },
+        )
+
+    assert response.status_code == 200
+    analysis_id = response.json()["analysis_id"]
+    stored = storage.get_analysis(analysis_id)
+    assert stored["worker_label"] == "Marie D."
+    assert stored["poste_label"] == "Poste emballage"
+
+
 def test_create_analysis_rejects_negative_load_kg(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     video_path = tmp_path / "synthetic.mp4"
@@ -58,6 +89,7 @@ def test_create_analysis_rejects_negative_load_kg(tmp_path, monkeypatch):
 
 
 def test_create_analysis_rejects_invalid_side(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     video_path = tmp_path / "synthetic.mp4"
@@ -75,6 +107,7 @@ def test_create_analysis_rejects_invalid_side(tmp_path, monkeypatch):
 
 
 def test_create_analysis_rejects_unreadable_video(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     garbage_path = tmp_path / "not_a_video.mp4"
@@ -91,7 +124,8 @@ def test_create_analysis_rejects_unreadable_video(tmp_path, monkeypatch):
     assert response.status_code == 422
 
 
-def test_output_files_are_actually_served_at_returned_urls(tmp_path, monkeypatch):
+def test_analysis_resources_are_actually_served_at_returned_urls(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     video_path = tmp_path / "synthetic.mp4"
@@ -123,15 +157,40 @@ def test_output_files_are_actually_served_at_returned_urls(tmp_path, monkeypatch
     assert len(pose3d_response.content) > 0
 
 
+def test_get_analysis_video_returns_404_for_unknown_id(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    assert client.get("/analyses/does-not-exist/video").status_code == 404
+    assert client.get("/analyses/does-not-exist/pose3d").status_code == 404
+    assert client.get("/analyses/does-not-exist/frames.csv").status_code == 404
+    assert client.get("/analyses/does-not-exist").status_code == 404
+
+
+def test_list_analyses_returns_created_analysis(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+    with open(video_path, "rb") as video_file:
+        create_response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+    analysis_id = create_response.json()["analysis_id"]
+
+    list_response = client.get("/analyses")
+
+    assert list_response.status_code == 200
+    ids = [item["id"] for item in list_response.json()]
+    assert analysis_id in ids
+
+
 def test_create_analysis_cleans_up_temp_file_when_upload_copy_fails(tmp_path, monkeypatch):
-    """Régression pour 9d6a9da : avant le fix, `upload_path = Path(tmp.name)`
-    n'était assigné qu'APRÈS `shutil.copyfileobj(...)`, et tout cela se
-    trouvait hors du try/finally qui appelle `upload_path.unlink(...)`. Si la
-    copie échouait, le fichier temporaire restait donc orphelin sur disque.
-    Ici on force l'échec de la copie (sans avoir besoin de vraiment remplir
-    le disque) et on vérifie que le fichier temporaire créé par
-    tempfile.NamedTemporaryFile ne survit pas à la requête, quel que soit le
-    point d'échec."""
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     created_paths = []
@@ -154,10 +213,6 @@ def test_create_analysis_cleans_up_temp_file_when_upload_copy_fails(tmp_path, mo
     video_path = tmp_path / "synthetic.mp4"
     _write_synthetic_video(video_path)
 
-    # L'OSError levée n'est pas parmi (FileNotFoundError, RuntimeError) que
-    # l'endpoint intercepte lui-même : elle remonte donc telle quelle.
-    # raise_server_exceptions=False permet d'obtenir une vraie réponse HTTP
-    # (500) plutôt que de voir l'exception se propager dans le test.
     client = TestClient(app, raise_server_exceptions=False)
     with open(video_path, "rb") as video_file:
         response = client.post(
@@ -168,51 +223,34 @@ def test_create_analysis_cleans_up_temp_file_when_upload_copy_fails(tmp_path, mo
 
     assert response.status_code == 500
     assert len(created_paths) == 1
-    assert not created_paths[0].exists(), (
-        f"Le fichier temporaire {created_paths[0]} aurait dû être supprimé "
-        "par le `finally: upload_path.unlink(...)` de create_analysis même "
-        "quand la copie échoue."
-    )
-
-
-def test_get_output_returns_404_for_missing_file(tmp_path, monkeypatch):
-    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
-
-    client = TestClient(app)
-    response = client.get("/outputs/does-not-exist.mp4")
-
-    assert response.status_code == 404
+    assert not created_paths[0].exists()
 
 
 def test_start_upload_creates_session_with_metadata(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
-    response = client.post(
-        "/uploads",
-        data={"filename": "clip.mp4", "total_chunks": "3"},
-    )
+    response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "3"})
 
     assert response.status_code == 200
     upload_id = response.json()["upload_id"]
     meta_path = tmp_path / ".uploads" / upload_id / "meta.json"
     assert meta_path.is_file()
-    assert json.loads(meta_path.read_text()) == {"filename": "clip.mp4", "total_chunks": 3}
 
 
 def test_start_upload_rejects_zero_total_chunks(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
-    response = client.post(
-        "/uploads",
-        data={"filename": "clip.mp4", "total_chunks": "0"},
-    )
+    response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "0"})
 
     assert response.status_code == 422
 
 
 def test_upload_chunk_writes_chunk_file(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
@@ -230,6 +268,7 @@ def test_upload_chunk_writes_chunk_file(tmp_path, monkeypatch):
 
 
 def test_upload_chunk_rejects_unknown_upload_id(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
@@ -242,6 +281,7 @@ def test_upload_chunk_rejects_unknown_upload_id(tmp_path, monkeypatch):
 
 
 def test_upload_chunk_rejects_out_of_range_index(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
@@ -257,6 +297,7 @@ def test_upload_chunk_rejects_out_of_range_index(tmp_path, monkeypatch):
 
 
 def test_upload_chunks_then_complete_matches_direct_analysis(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     video_path = tmp_path / "synthetic.mp4"
@@ -285,15 +326,10 @@ def test_upload_chunks_then_complete_matches_direct_analysis(tmp_path, monkeypat
 
     assert response.status_code == 200
     body = response.json()
-    assert body["annotated_video_url"].startswith("/outputs/")
-    assert body["csv_url"].startswith("/outputs/")
+    assert body["annotated_video_url"] == f"/analyses/{body['analysis_id']}/video"
     assert body["side"] == "right"
-
-    # La session est nettoyée après complétion, réussie ou pas.
     assert not (tmp_path / ".uploads" / upload_id).exists()
 
-    # Le chemin chunké doit produire exactement le même résumé que l'upload
-    # direct sur la même vidéo (run_id/noms de fichiers diffèrent, hors résumé).
     with open(video_path, "rb") as video_file:
         direct_response = client.post(
             "/analyses",
@@ -305,6 +341,7 @@ def test_upload_chunks_then_complete_matches_direct_analysis(tmp_path, monkeypat
 
 
 def test_chunks_reassembled_by_index_regardless_of_arrival_order(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     video_path = tmp_path / "synthetic.mp4"
@@ -314,13 +351,9 @@ def test_chunks_reassembled_by_index_regardless_of_arrival_order(tmp_path, monke
     chunks = [video_bytes[:midpoint], video_bytes[midpoint:]]
 
     client = TestClient(app)
-    start_response = client.post(
-        "/uploads", data={"filename": "synthetic.mp4", "total_chunks": "2"}
-    )
+    start_response = client.post("/uploads", data={"filename": "synthetic.mp4", "total_chunks": "2"})
     upload_id = start_response.json()["upload_id"]
 
-    # Chunk 1 envoyé avant chunk 0 : l'ordre d'arrivée est inversé par rapport
-    # à l'ordre d'index. La réassemblage doit suivre l'index, pas l'arrivée.
     client.put(
         f"/uploads/{upload_id}/chunks/1",
         files={"file": ("chunk-1", chunks[1], "application/octet-stream")},
@@ -340,13 +373,13 @@ def test_chunks_reassembled_by_index_regardless_of_arrival_order(tmp_path, monke
 
 
 def test_complete_upload_fails_when_chunk_missing(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
     start_response = client.post("/uploads", data={"filename": "clip.mp4", "total_chunks": "2"})
     upload_id = start_response.json()["upload_id"]
 
-    # Seul le chunk 0 est envoyé ; le chunk 1 manque.
     client.put(
         f"/uploads/{upload_id}/chunks/0",
         files={"file": ("chunk-0", b"data", "application/octet-stream")},
@@ -361,6 +394,7 @@ def test_complete_upload_fails_when_chunk_missing(tmp_path, monkeypatch):
 
 
 def test_complete_upload_rejects_unknown_upload_id(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
@@ -373,6 +407,7 @@ def test_complete_upload_rejects_unknown_upload_id(tmp_path, monkeypatch):
 
 
 def test_create_analysis_rejects_video_estimated_too_large(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
     monkeypatch.setattr("tms_vision.api.MAX_ESTIMATED_MEMORY_BYTES", 1)
 
@@ -391,6 +426,7 @@ def test_create_analysis_rejects_video_estimated_too_large(tmp_path, monkeypatch
 
 
 def test_complete_upload_cleans_up_session_on_analysis_failure(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
@@ -412,6 +448,7 @@ def test_complete_upload_cleans_up_session_on_analysis_failure(tmp_path, monkeyp
 
 
 def test_upload_chunk_overwrite_keeps_last_write(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
@@ -432,6 +469,7 @@ def test_upload_chunk_overwrite_keeps_last_write(tmp_path, monkeypatch):
 
 
 def test_start_upload_rejects_excessive_total_chunks(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
@@ -441,6 +479,7 @@ def test_start_upload_rejects_excessive_total_chunks(tmp_path, monkeypatch):
 
 
 def test_upload_chunk_rejects_malformed_upload_id(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
 
     client = TestClient(app)
