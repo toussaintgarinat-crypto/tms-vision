@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { AnalysisResult, AnalysisSummary } from "./AnalysisResult";
@@ -268,9 +269,9 @@ export default function Home() {
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">TMS Vision — Vérification RULA</h1>
-        <a href="/historique" className="text-sm text-blue-600 underline">
+        <Link href="/historique" className="text-sm text-blue-600 underline">
           Historique
-        </a>
+        </Link>
       </div>
 
       <video
