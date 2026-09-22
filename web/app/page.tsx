@@ -66,7 +66,10 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [recommendation, setRecommendation] = useState<{
+    analysisId: string;
+    data: Recommendation;
+  } | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
     null
   );
@@ -78,26 +81,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!result) {
-      setRecommendation(null);
-      return;
-    }
+    if (!result) return;
     let cancelled = false;
-    // Réinitialise avant chaque fetch (même motif que PostureAvatar3D pour
-    // pose3dUrl) : sans ça, relancer une analyse dans la même session laisse
-    // la recommandation de l'analyse précédente affichée jusqu'à ce que la
-    // nouvelle requête aboutisse.
-    setRecommendation(null);
     fetch(`${API_URL}/analyses/${result.analysis_id}/recommendation`)
       .then((response) => {
         if (!response.ok) throw new Error(`Erreur ${response.status}`);
         return response.json() as Promise<Recommendation>;
       })
       .then((data) => {
-        if (!cancelled) setRecommendation(data);
+        if (!cancelled) setRecommendation({ analysisId: result.analysis_id, data });
       })
       .catch(() => {
-        if (!cancelled) setRecommendation(null);
+        // Erreur réseau ou analyse introuvable : on ne montre rien plutôt que
+        // de bloquer l'affichage du résultat principal -- silence volontaire,
+        // pas un oubli (voir revue finale de la tranche capsules).
       });
     return () => {
       cancelled = true;
@@ -463,14 +460,14 @@ export default function Home() {
           <a href={`${API_URL}${result.csv_url}`} className="text-blue-600 underline">
             Télécharger le CSV détaillé
           </a>
-          {recommendation?.capsule && (
+          {recommendation?.analysisId === result?.analysis_id && recommendation.data.capsule && (
             <div className="rounded border border-blue-200 bg-blue-50 p-3">
               <p className="text-sm font-semibold">
                 Recommandation : zone{" "}
-                {ZONE_LABELS[recommendation.zone ?? ""] ?? recommendation.zone}
+                {ZONE_LABELS[recommendation.data.zone ?? ""] ?? recommendation.data.zone}
               </p>
-              <p className="font-medium">{recommendation.capsule.title}</p>
-              <p className="text-sm text-gray-700">{recommendation.capsule.description}</p>
+              <p className="font-medium">{recommendation.data.capsule.title}</p>
+              <p className="text-sm text-gray-700">{recommendation.data.capsule.description}</p>
             </div>
           )}
         </section>
