@@ -245,3 +245,42 @@ def test_frames_csv_text_is_header_only_when_analysis_has_zero_frames(tmp_path, 
     assert csv_text is not None
     lines = csv_text.strip("\r\n").splitlines()
     assert lines == [",".join(CSV_FIELDS)]
+
+
+def test_get_frame_segments_returns_ordered_rows_with_segment_columns(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    summary = {
+        "frame_count": 2, "detected_frame_count": 2, "max_score": 1,
+        "average_score": 1.0, "time_by_action_level": {"acceptable": 2.0},
+    }
+    row0 = _frame_row(frame_index=0, timestamp_seconds=0.0)
+    row0["neck_segment_action_level"] = "acceptable"
+    row0["trunk_segment_action_level"] = "changement_immediat"
+    row0["upper_arm_segment_action_level"] = "acceptable"
+    row0["lower_arm_segment_action_level"] = "acceptable"
+    row1 = _frame_row(frame_index=1, timestamp_seconds=1.0)
+    row1["neck_segment_action_level"] = "investigation_recommandee"
+    row1["trunk_segment_action_level"] = "acceptable"
+    row1["upper_arm_segment_action_level"] = "acceptable"
+    row1["lower_arm_segment_action_level"] = "acceptable"
+
+    storage.save_analysis(
+        analysis_id="seg-1", created_at=datetime(2026, 9, 22, tzinfo=timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"x", pose3d_json="[]", frame_rows=[row0, row1],
+    )
+
+    frames = storage.get_frame_segments("seg-1")
+
+    assert frames is not None
+    assert len(frames) == 2
+    assert frames[0]["frame_index"] == 0
+    assert frames[0]["timestamp_seconds"] == 0.0
+    assert frames[0]["trunk_segment_action_level"] == "changement_immediat"
+    assert frames[1]["frame_index"] == 1
+    assert frames[1]["neck_segment_action_level"] == "investigation_recommandee"
+
+
+def test_get_frame_segments_returns_none_for_unknown_id(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    assert storage.get_frame_segments("does-not-exist") is None

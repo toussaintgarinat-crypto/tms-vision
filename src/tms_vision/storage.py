@@ -274,3 +274,23 @@ def frames_csv_text(analysis_id: str) -> str | None:
     for row in rows:
         writer.writerow(dict(zip(CSV_FIELDS, row)))
     return buffer.getvalue()
+
+
+def get_frame_segments(analysis_id: str) -> list[dict] | None:
+    conn = _connect()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM analyses WHERE id = ?", [analysis_id]
+        ).fetchone()
+        if exists is None:
+            return None
+        columns = ["frame_index", "timestamp_seconds"] + SEGMENT_COLUMNS
+        rows = conn.execute(
+            f"SELECT {', '.join(columns)} FROM analysis_frames "
+            "WHERE analysis_id = ? ORDER BY frame_index",
+            [analysis_id],
+        ).fetchall()
+    finally:
+        conn.close()
+
+    return [dict(zip(columns, row)) for row in rows]
