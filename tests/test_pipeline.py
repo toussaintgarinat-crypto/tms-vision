@@ -197,6 +197,132 @@ def test_analyze_video_merges_segment_action_levels_into_frame_rows(tmp_path, mo
         assert row["lower_arm_segment_action_level"] == segments["lower_arm"]
 
 
+def test_analyze_video_pose3d_payload_key_set_varies_per_frame_when_landmark_occluded(
+    tmp_path, monkeypatch
+):
+    """Régression pour la revue finale du plan avatar 3D (Finding #4) : le
+    contrat que consomme web/app/PostureAvatar3D.tsx n'est PAS seulement
+    "landmarks: null pour les frames non détectées" (déjà couvert par
+    test_analyze_video_produces_pose3d_records ci-dessus, sur une vidéo noire
+    où aucune pose n'est jamais détectée) -- c'est aussi que, quand une pose
+    EST détectée, l'ensemble des clés de `landmarks` peut varier d'une frame
+    à l'autre (une articulation occultée une frame donnée est absente du
+    dict cette frame-là précisément, pas juste sur des frames "detected:
+    false"). C'est exactement le cas réel (vue de profil, bras/genou côté
+    caméra opposée occultés quasi en continu) qui a permis Finding #1 (barre
+    grise fantôme) de passer inaperçu côté frontend : aucun test existant ne
+    fabrique un payload pose3D avec un jeu de clés variable sur des frames
+    `detected: true`.
+
+    On monkeypatch PoseEstimator.process (même style que _EmptyFrameSource /
+    _InterruptingFrameSource plus haut dans ce fichier) pour renvoyer des
+    PoseResult fabriqués à la main : landmarks 2D complets et constants (côté
+    droit, posture debout neutre -- même motif que
+    tests/test_integration_angles_to_score.py::_neutral_standing_landmarks,
+    pour garantir detected=True et un action_level non-null sur chaque
+    frame), mais des world_landmarks dont LEFT_ELBOW est présent sur les
+    frames 0 et 2 et absent sur la frame 1 (simulation d'une occultation
+    ponctuelle, comme LEFT_ELBOW/LEFT_KNEE sur la vidéo de référence réelle
+    du projet filmée de profil)."""
+
+    def _neutral_landmarks_2d_right_side():
+        return {
+            "LEFT_SHOULDER": _lm(0.50, 0.30),
+            "RIGHT_SHOULDER": _lm(0.50, 0.30),
+            "LEFT_HIP": _lm(0.50, 0.55),
+            "RIGHT_HIP": _lm(0.50, 0.55),
+            "NOSE": _lm(0.52, 0.20),
+            "RIGHT_EAR": _lm(0.51, 0.22),
+            "RIGHT_ELBOW": _lm(0.50, 0.45),
+            "RIGHT_WRIST": _lm(0.50, 0.60),
+            "RIGHT_INDEX": _lm(0.50, 0.63),
+        }
+
+    def _world_landmarks(include_left_elbow: bool):
+        world = {
+            "LEFT_SHOULDER": _lm(-0.1, -0.3, 0.0),
+            "RIGHT_SHOULDER": _lm(0.1, -0.3, 0.0),
+            "LEFT_HIP": _lm(-0.1, 0.0, 0.0),
+            "RIGHT_HIP": _lm(0.1, 0.0, 0.0),
+            "NOSE": _lm(0.0, -0.5, 0.05),
+            "RIGHT_EAR": _lm(0.05, -0.48, 0.02),
+            "RIGHT_ELBOW": _lm(0.15, -0.1, 0.0),
+            "RIGHT_WRIST": _lm(0.15, 0.15, 0.0),
+        }
+        if include_left_elbow:
+            world["LEFT_ELBOW"] = _lm(-0.15, -0.1, 0.0)
+        return world
+
+    fake_results = [
+        PoseResult(
+            landmarks=_neutral_landmarks_2d_right_side(),
+            world_landmarks=_world_landmarks(include_left_elbow=True),
+        ),
+        PoseResult(
+            landmarks=_neutral_landmarks_2d_right_side(),
+            world_landmarks=_world_landmarks(include_left_elbow=False),
+        ),
+        PoseResult(
+            landmarks=_neutral_landmarks_2d_right_side(),
+            world_landmarks=_world_landmarks(include_left_elbow=True),
+        ),
+    ]
+    call_count = {"n": 0}
+
+    def fake_process(self, image_bgr):
+        i = call_count["n"]
+        call_count["n"] = i + 1
+        return fake_results[i]
+
+    monkeypatch.setattr(PoseEstimator, "process", fake_process)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    result = analyze_video(source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal")
+
+    payload = build_pose3d_payload(result.pose3d_records)
+    assert len(payload) == 3
+
+    for entry in payload:
+        assert entry["detected"] is True
+        assert entry["landmarks"] is not None
+        assert entry["action_level"] is not None
+        assert entry["segment_action_levels"] is not None
+        assert set(entry["segment_action_levels"].keys()) == {"neck", "trunk", "upper_arm", "lower_arm"}
+        valid_levels = {
+            "acceptable",
+            "investigation_recommandee",
+            "investigation_et_changement_bientot",
+            "changement_immediat",
+        }
+        for level in entry["segment_action_levels"].values():
+            assert level in valid_levels
+        for name, coords in entry["landmarks"].items():
+            assert isinstance(coords, list)
+            assert len(coords) == 3
+            assert all(isinstance(v, float) for v in coords)
+
+    assert "LEFT_ELBOW" in payload[0]["landmarks"], (
+        "frame 0 doit conserver LEFT_ELBOW (présent dans les landmarks bruts "
+        "de cette frame)"
+    )
+    assert "LEFT_ELBOW" not in payload[1]["landmarks"], (
+        "frame 1 doit exclure LEFT_ELBOW (absent des landmarks bruts de "
+        "cette frame précisément -- Finding #1 : un frontend qui ne teste "
+        "pas ce cas peut laisser une capsule à sa position de montage par "
+        "défaut au lieu de la masquer)"
+    )
+    assert "LEFT_ELBOW" in payload[2]["landmarks"]
+
+    # Le reste des landmarks communs aux 3 frames doit être présent partout
+    # (contrat : le jeu de clés ne varie que pour l'articulation
+    # volontairement occultée dans ce test).
+    for entry in payload:
+        for name in ("RIGHT_SHOULDER", "RIGHT_ELBOW", "RIGHT_WRIST", "NOSE"):
+            assert name in entry["landmarks"]
+
+
 def test_analyze_video_raises_on_missing_file():
     with pytest.raises(FileNotFoundError):
         analyze_video(source="does-not-exist.mp4", side="right", load_kg=0.0, wrist_twist="normal")
