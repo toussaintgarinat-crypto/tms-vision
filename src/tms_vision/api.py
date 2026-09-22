@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Literal
 
 import cv2
-from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
 
@@ -52,6 +52,10 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    # GET est volontairement absent : une requête GET "simple" (sans en-tête
+    # personnalisé) ne déclenche pas de preflight CORS, donc pas besoin de la
+    # lister ici -- ça vaut pour les routes GET /analyses/... (vidéo/CSV/
+    # pose3D) comme ça valait pour l'ancienne route GET /outputs/{filename}.
     allow_methods=["POST", "PUT"],
     allow_headers=["*"],
 )
@@ -108,6 +112,14 @@ async def _analyze_and_build_response(
 
     analysis_id = generate_run_id()
     pose3d_json = json.dumps(build_pose3d_payload(result.pose3d_records), ensure_ascii=False)
+    # storage.save_analysis (comme list_analyses/get_analysis plus bas) est un
+    # appel DuckDB bloquant exécuté ici de façon synchrone dans un handler
+    # async def -- ça bloque la boucle événementielle asyncio le temps de la
+    # requête SQL. Sans conséquence à l'échelle actuelle du projet (un seul
+    # utilisateur), mais si la concurrence augmente, l'enrober avec
+    # run_in_threadpool (comme analyze_video ci-dessus) serait sûr : DuckDB
+    # supporte plusieurs connexions concurrentes en-process vers le même
+    # fichier.
     storage.save_analysis(
         analysis_id=analysis_id,
         created_at=datetime.now(timezone.utc),
@@ -133,8 +145,8 @@ async def create_analysis(
     side: Literal["left", "right"] = Form(...),
     load_kg: float = Form(..., ge=0),
     wrist_twist: Literal["normal", "extreme"] = Form(...),
-    worker_label: str | None = Form(None),
-    poste_label: str | None = Form(None),
+    worker_label: str | None = Form(None, max_length=200),
+    poste_label: str | None = Form(None, max_length=200),
 ) -> dict:
     suffix = Path(file.filename or "").suffix or ".webm"
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
@@ -201,8 +213,8 @@ async def complete_upload(
     side: Literal["left", "right"] = Form(...),
     load_kg: float = Form(..., ge=0),
     wrist_twist: Literal["normal", "extreme"] = Form(...),
-    worker_label: str | None = Form(None),
-    poste_label: str | None = Form(None),
+    worker_label: str | None = Form(None, max_length=200),
+    poste_label: str | None = Form(None, max_length=200),
 ) -> dict:
     session_dir = _resolve_session_dir(upload_id)
     meta_path = session_dir / "meta.json"
@@ -255,15 +267,92 @@ async def get_analysis(analysis_id: str) -> dict:
     return analysis
 
 
+def _parse_single_byte_range(range_header: str, total_length: int) -> tuple[int, int] | None:
+    """Parse un unique intervalle "bytes=START-END" (RFC 7233 §2.1 -- un seul
+    range, END facultatif). Retourne (start, end) inclusifs quand l'en-tête
+    suit cette syntaxe ; None si l'en-tête ne suit pas du tout la syntaxe
+    "bytes=..." attendue (dans ce cas l'appelant doit l'ignorer et servir le
+    contenu complet, comportement RFC pour un Range mal formé -- on ne gère
+    pas le multi-range, absent des clients vidéo qui nous intéressent ici).
+    Lève ValueError si la syntaxe est valide mais l'intervalle insatisfiable
+    (-> 416 côté appelant)."""
+    if not range_header.startswith("bytes="):
+        return None
+    spec = range_header[len("bytes="):]
+    if "," in spec or "-" not in spec:
+        return None
+
+    start_str, _, end_str = spec.partition("-")
+    if start_str == "" and end_str == "":
+        return None
+
+    if start_str == "":
+        # Range suffixe ("bytes=-500" = les 500 derniers octets).
+        if not end_str.isdigit():
+            return None
+        suffix_length = int(end_str)
+        if suffix_length <= 0:
+            raise ValueError("Intervalle insatisfiable.")
+        start = max(total_length - suffix_length, 0)
+        end = total_length - 1
+    else:
+        if not start_str.isdigit():
+            return None
+        start = int(start_str)
+        if end_str == "":
+            end = total_length - 1
+        elif end_str.isdigit():
+            end = int(end_str)
+        else:
+            return None
+
+    if start >= total_length or start > end:
+        raise ValueError("Intervalle insatisfiable.")
+    return start, min(end, total_length - 1)
+
+
 @app.get("/analyses/{analysis_id}/video")
-async def get_analysis_video(analysis_id: str) -> Response:
+async def get_analysis_video(
+    analysis_id: str, range_header: str | None = Header(None, alias="Range")
+) -> Response:
+    """Sert la vidéo annotée avec support des requêtes HTTP Range (RFC 7233,
+    un seul intervalle) -- nécessaire pour que <video> fonctionne de façon
+    fiable sur iOS Safari (voir skill iphone-tunnel-test), qui s'appuie sur
+    Range pour le seek et le pré-chargement progressif. L'ancienne route
+    GET /outputs/{filename} l'avait gratuitement via FileResponse ; ce n'est
+    plus le cas ici puisque le contenu vient de DuckDB (bytes en mémoire),
+    d'où ce handling explicite."""
     video_bytes = storage.get_video_bytes(analysis_id)
     if video_bytes is None:
         raise HTTPException(status_code=404, detail="Analyse introuvable.")
-    return Response(
-        content=video_bytes, media_type="video/mp4",
-        headers={"Content-Disposition": f'attachment; filename="{analysis_id}_annotated.mp4"'},
-    )
+
+    total_length = len(video_bytes)
+    headers = {
+        "Content-Disposition": f'attachment; filename="{analysis_id}_annotated.mp4"',
+        "Accept-Ranges": "bytes",
+    }
+
+    if range_header is not None:
+        try:
+            parsed_range = _parse_single_byte_range(range_header, total_length)
+        except ValueError:
+            return Response(
+                status_code=416,
+                headers={**headers, "Content-Range": f"bytes */{total_length}"},
+            )
+        if parsed_range is not None:
+            start, end = parsed_range
+            chunk = video_bytes[start : end + 1]
+            return Response(
+                content=chunk, media_type="video/mp4", status_code=206,
+                headers={
+                    **headers,
+                    "Content-Range": f"bytes {start}-{end}/{total_length}",
+                    "Content-Length": str(len(chunk)),
+                },
+            )
+
+    return Response(content=video_bytes, media_type="video/mp4", headers=headers)
 
 
 @app.get("/analyses/{analysis_id}/pose3d")

@@ -157,6 +157,85 @@ def test_analysis_resources_are_actually_served_at_returned_urls(tmp_path, monke
     assert len(pose3d_response.content) > 0
 
 
+def test_get_analysis_video_without_range_header_returns_full_content(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+    with open(video_path, "rb") as video_file:
+        create_response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+    body = create_response.json()
+    full_video_bytes = storage.get_video_bytes(body["analysis_id"])
+
+    response = client.get(body["annotated_video_url"])
+
+    assert response.status_code == 200
+    assert response.content == full_video_bytes
+    assert response.headers["accept-ranges"] == "bytes"
+    assert "attachment" in response.headers.get("content-disposition", "")
+
+
+def test_get_analysis_video_with_valid_range_returns_206_partial_content(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+    with open(video_path, "rb") as video_file:
+        create_response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+    body = create_response.json()
+    full_video_bytes = storage.get_video_bytes(body["analysis_id"])
+    total_length = len(full_video_bytes)
+    end = min(9, total_length - 1)
+
+    response = client.get(body["annotated_video_url"], headers={"Range": f"bytes=0-{end}"})
+
+    assert response.status_code == 206
+    assert response.content == full_video_bytes[: end + 1]
+    assert response.headers["content-range"] == f"bytes 0-{end}/{total_length}"
+    assert response.headers["content-length"] == str(end + 1)
+    assert response.headers["accept-ranges"] == "bytes"
+
+
+def test_get_analysis_video_with_out_of_bounds_range_returns_416(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+    with open(video_path, "rb") as video_file:
+        create_response = client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal"},
+        )
+    body = create_response.json()
+    total_length = len(storage.get_video_bytes(body["analysis_id"]))
+
+    response = client.get(
+        body["annotated_video_url"],
+        headers={"Range": f"bytes={total_length + 1000}-{total_length + 2000}"},
+    )
+
+    assert response.status_code == 416
+    assert response.headers["content-range"] == f"bytes */{total_length}"
+
+
 def test_get_analysis_video_returns_404_for_unknown_id(tmp_path, monkeypatch):
     _patch_db(tmp_path, monkeypatch)
     client = TestClient(app)
@@ -187,6 +266,38 @@ def test_list_analyses_returns_created_analysis(tmp_path, monkeypatch):
     assert list_response.status_code == 200
     ids = [item["id"] for item in list_response.json()]
     assert analysis_id in ids
+
+
+def test_list_analyses_worker_label_query_param_narrows_http_response(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+
+    client = TestClient(app)
+
+    def _create(worker_label):
+        with open(video_path, "rb") as video_file:
+            response = client.post(
+                "/analyses",
+                files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+                data={
+                    "side": "right", "load_kg": "0", "wrist_twist": "normal",
+                    "worker_label": worker_label,
+                },
+            )
+        return response.json()["analysis_id"]
+
+    marie_id = _create("Marie D.")
+    paul_id = _create("Paul L.")
+
+    response = client.get("/analyses", params={"worker_label": "Marie D."})
+
+    assert response.status_code == 200
+    ids = [item["id"] for item in response.json()]
+    assert ids == [marie_id]
+    assert paul_id not in ids
 
 
 def test_create_analysis_cleans_up_temp_file_when_upload_copy_fails(tmp_path, monkeypatch):
