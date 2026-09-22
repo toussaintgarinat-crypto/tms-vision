@@ -126,43 +126,51 @@ def analyze_video(source: str, side: str, load_kg: float, wrist_twist: str) -> A
             str(video_tmp_path), cv2.VideoWriter_fourcc(*"avc1"),
             frame_source.fps() or 30.0, (width, height),
         )
-        for (frame, pose_result, angles), world_landmarks in zip(per_frame_angles, smoothed_world_landmarks):
-            score = None
-            if angles is not None:
-                score = compute_rula_score(
-                    angles, wrist_twist=wrist_twist_code, load_kg=load_kg,
-                    muscle_use_score=muscle_use_score,
+        try:
+            for (frame, pose_result, angles), world_landmarks in zip(per_frame_angles, smoothed_world_landmarks):
+                score = None
+                if angles is not None:
+                    score = compute_rula_score(
+                        angles, wrist_twist=wrist_twist_code, load_kg=load_kg,
+                        muscle_use_score=muscle_use_score,
+                    )
+                segment_action_levels = None
+                if score is not None:
+                    segment_action_levels = {
+                        "neck": action_level(score.neck),
+                        "trunk": action_level(score.trunk),
+                        "upper_arm": action_level(score.upper_arm),
+                        "lower_arm": action_level(score.lower_arm),
+                    }
+                annotated = draw_overlay(frame.image, pose_result.landmarks, score)
+                writer.write(annotated)
+                exporter.add_frame(
+                    FrameRecord(
+                        frame_index=frame.index,
+                        timestamp_seconds=frame.timestamp_seconds,
+                        detected=angles is not None,
+                        angles=angles,
+                        score=score,
+                    )
                 )
-            segment_action_levels = None
-            if score is not None:
-                segment_action_levels = {
-                    "neck": action_level(score.neck),
-                    "trunk": action_level(score.trunk),
-                    "upper_arm": action_level(score.upper_arm),
-                    "lower_arm": action_level(score.lower_arm),
-                }
-            annotated = draw_overlay(frame.image, pose_result.landmarks, score)
-            writer.write(annotated)
-            exporter.add_frame(
-                FrameRecord(
-                    frame_index=frame.index,
-                    timestamp_seconds=frame.timestamp_seconds,
-                    detected=angles is not None,
-                    angles=angles,
-                    score=score,
+                pose3d_records.append(
+                    Pose3DFrameRecord(
+                        frame_index=frame.index,
+                        timestamp_seconds=frame.timestamp_seconds,
+                        detected=angles is not None,
+                        landmarks=world_landmarks,
+                        action_level=score.action_level if score is not None else None,
+                        segment_action_levels=segment_action_levels,
+                    )
                 )
-            )
-            pose3d_records.append(
-                Pose3DFrameRecord(
-                    frame_index=frame.index,
-                    timestamp_seconds=frame.timestamp_seconds,
-                    detected=angles is not None,
-                    landmarks=world_landmarks,
-                    action_level=score.action_level if score is not None else None,
-                    segment_action_levels=segment_action_levels,
-                )
-            )
-        writer.release()
+        finally:
+            # Portée volontairement restreinte au cycle de vie du writer : si
+            # une exception survient en cours de boucle, on veut quand même
+            # libérer le handle OS cv2.VideoWriter avant que le `finally`
+            # englobant ne supprime video_tmp_path (sinon le fichier est bien
+            # supprimé -- pas de fuite disque visible -- mais le handle reste
+            # ouvert jusqu'au GC, ce qui n'est pas garanti immédiat).
+            writer.release()
         video_bytes = video_tmp_path.read_bytes()
     finally:
         video_tmp_path.unlink(missing_ok=True)

@@ -190,6 +190,7 @@ def test_analyze_video_merges_segment_action_levels_into_frame_rows(tmp_path, mo
 
     pose3d_payload = build_pose3d_payload(result.pose3d_records)
     for row, pose3d_entry in zip(result.frame_rows, pose3d_payload):
+        assert row["frame_index"] == pose3d_entry["frame_index"]
         segments = pose3d_entry["segment_action_levels"]
         assert row["neck_segment_action_level"] == segments["neck"]
         assert row["trunk_segment_action_level"] == segments["trunk"]

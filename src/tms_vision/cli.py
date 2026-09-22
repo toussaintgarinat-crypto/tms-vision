@@ -70,6 +70,12 @@ def main() -> None:
     except (FileNotFoundError, RuntimeError) as error:
         print(f"Erreur : {error}", file=sys.stderr)
         sys.exit(1)
+    # Un premier Ctrl+C est déjà intercepté à l'intérieur de la boucle de
+    # capture de frames d'analyze_video() (arrête proprement la capture et
+    # renvoie ce qui a été collecté jusque-là). Ce second except couvre un
+    # Ctrl+C pendant la boucle de traitement/encodage qui suit -- run() n'est
+    # alors plus dans analyze_video() et rien d'autre n'intercepterait cette
+    # interruption avant qu'elle ne remonte jusqu'ici.
     except KeyboardInterrupt:
         print("Traitement interrompu par l'utilisateur.", file=sys.stderr)
         sys.exit(1)

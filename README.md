@@ -508,8 +508,13 @@ juste "finir" la Phase 1 avant de passer à la suite :
   `--output-dir` comme avant — seule la CLI écrit encore sur le système de fichiers, l'API web
   persiste exclusivement en DuckDB.
 - **Ce qui n'est pas dans cette tranche** : UI d'historique/dashboard consommant `GET /analyses`,
-  migration des runs déjà présents dans `outputs/`, authentification, support des requêtes
-  `Range` pour le streaming vidéo (voir spec pour le détail).
+  migration des runs déjà présents dans `outputs/`, authentification. Aucun mécanisme de
+  suppression/purge des analyses : cette tranche rend possible, pour la première fois, le
+  stockage durable d'un nom de salarié (`worker_label`, texte libre) associé à sa vidéo annotée
+  — sans floutage des visages (toujours pas implémenté, voir section 7) ni endpoint de
+  suppression ni politique de rétention. À traiter avant tout test avec de vrais salariés.
+  (Le support des requêtes `Range` pour le streaming vidéo, lui, est couvert : voir
+  `GET /analyses/{id}/video` plus haut.)
 
 #### Reste à faire pour la suite de la Phase 2
 
