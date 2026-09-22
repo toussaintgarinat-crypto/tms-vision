@@ -133,3 +133,44 @@ def test_list_analyses_filters_by_date_range(tmp_path, monkeypatch):
     )
 
     assert [r["id"] for r in results] == ["b"]
+
+
+def test_get_video_bytes_and_pose3d_json_round_trip(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    summary = {
+        "frame_count": 1, "detected_frame_count": 1, "max_score": 1,
+        "average_score": 1.0, "time_by_action_level": {"acceptable": 1.0},
+    }
+    storage.save_analysis(
+        analysis_id="vid-1", created_at=datetime(2026, 9, 22, tzinfo=timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"\x00\x01mp4-bytes", pose3d_json='[{"frame_index": 0}]',
+        frame_rows=[],
+    )
+
+    assert storage.get_video_bytes("vid-1") == b"\x00\x01mp4-bytes"
+    assert storage.get_pose3d_json("vid-1") == '[{"frame_index": 0}]'
+    assert storage.get_video_bytes("unknown") is None
+    assert storage.get_pose3d_json("unknown") is None
+
+
+def test_frames_csv_text_generates_header_and_rows(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    summary = {
+        "frame_count": 1, "detected_frame_count": 1, "max_score": 1,
+        "average_score": 1.0, "time_by_action_level": {"acceptable": 1.0},
+    }
+    storage.save_analysis(
+        analysis_id="csv-1", created_at=datetime(2026, 9, 22, tzinfo=timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"x", pose3d_json="[]",
+        frame_rows=[_frame_row(frame_index=0)],
+    )
+
+    csv_text = storage.frames_csv_text("csv-1")
+
+    assert csv_text is not None
+    lines = csv_text.strip().splitlines()
+    assert lines[0] == ",".join(CSV_FIELDS)
+    assert "acceptable" in lines[1]
+    assert storage.frames_csv_text("unknown") is None

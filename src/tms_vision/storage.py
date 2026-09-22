@@ -3,6 +3,8 @@ docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md). Chaque
 fonction publique ouvre puis referme sa propre connexion -- suffisant à
 l'échelle actuelle du projet (un seul process uvicorn, pas de charge
 concurrente à optimiser)."""
+import csv
+import io
 import json
 from datetime import datetime
 from pathlib import Path
@@ -192,3 +194,49 @@ def list_analyses(
         record["created_at"] = record["created_at"].isoformat()
         results.append(record)
     return results
+
+
+def get_video_bytes(analysis_id: str) -> bytes | None:
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT video_bytes FROM analyses WHERE id = ?", [analysis_id]
+        ).fetchone()
+    finally:
+        conn.close()
+    return row[0] if row is not None else None
+
+
+def get_pose3d_json(analysis_id: str) -> str | None:
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT pose3d_json FROM analyses WHERE id = ?", [analysis_id]
+        ).fetchone()
+    finally:
+        conn.close()
+    return row[0] if row is not None else None
+
+
+def frames_csv_text(analysis_id: str) -> str | None:
+    conn = _connect()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM analyses WHERE id = ?", [analysis_id]
+        ).fetchone()
+        if exists is None:
+            return None
+        rows = conn.execute(
+            f"SELECT {', '.join(CSV_FIELDS)} FROM analysis_frames "
+            "WHERE analysis_id = ? ORDER BY frame_index",
+            [analysis_id],
+        ).fetchall()
+    finally:
+        conn.close()
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=CSV_FIELDS)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(dict(zip(CSV_FIELDS, row)))
+    return buffer.getvalue()
