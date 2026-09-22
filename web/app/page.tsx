@@ -83,6 +83,11 @@ export default function Home() {
       return;
     }
     let cancelled = false;
+    // Réinitialise avant chaque fetch (même motif que PostureAvatar3D pour
+    // pose3dUrl) : sans ça, relancer une analyse dans la même session laisse
+    // la recommandation de l'analyse précédente affichée jusqu'à ce que la
+    // nouvelle requête aboutisse.
+    setRecommendation(null);
     fetch(`${API_URL}/analyses/${result.analysis_id}/recommendation`)
       .then((response) => {
         if (!response.ok) throw new Error(`Erreur ${response.status}`);
