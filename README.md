@@ -156,6 +156,10 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   le flux API web).
 - `docs/superpowers/plans/2026-09-22-duckdb-analysis-storage-plan.md` — le plan d'implémentation
   de cette tranche.
+- `docs/superpowers/specs/2026-09-22-capsule-zone-recommendation-design.md` — la spec de la
+  recommandation de capsules d'étirement par zone anatomique dégradée.
+- `docs/superpowers/plans/2026-09-22-capsule-zone-recommendation-plan.md` — le plan
+  d'implémentation de cette tranche.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 96 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -503,7 +507,8 @@ juste "finir" la Phase 1 avant de passer à la suite :
 - **`src/tms_vision/api.py`** : `POST /analyses` et `POST /uploads/{id}/complete` acceptent
   désormais `worker_label`/`poste_label` (tags texte libres, pas d'authentification) et persistent
   en DuckDB. `GET /outputs/{filename}` est remplacé par `GET /analyses`, `GET /analyses/{id}`,
-  `GET /analyses/{id}/video`, `GET /analyses/{id}/pose3d`, `GET /analyses/{id}/frames.csv`.
+  `GET /analyses/{id}/video`, `GET /analyses/{id}/pose3d`, `GET /analyses/{id}/frames.csv`,
+  `GET /analyses/{id}/recommendation` (tranche suivante, voir ci-dessous).
 - **`src/tms_vision/cli.py`** (workflow Phase 1 local) : continue d'écrire vidéo/CSV/JSON dans
   `--output-dir` comme avant — seule la CLI écrit encore sur le système de fichiers, l'API web
   persiste exclusivement en DuckDB.
@@ -516,14 +521,63 @@ juste "finir" la Phase 1 avant de passer à la suite :
   (Le support des requêtes `Range` pour le streaming vidéo, lui, est couvert : voir
   `GET /analyses/{id}/video` plus haut.)
 
+#### ✅ Recommandation de capsules par zone — TERMINÉE
+
+- **Contexte** : le README (§6) décrivait depuis le début une médiathèque de capsules vidéo
+  d'étirement déclenchée automatiquement après une analyse, sans que rien de tout cela n'existe
+  dans le code. Cette tranche construit la première version : catalogue placeholder, calcul de la
+  zone RULA la plus dégradée, endpoint et affichage frontend — en s'appuyant sur les
+  `segment_action_level` par zone déjà persistés par le sprint DuckDB précédent.
+- **`src/tms_vision/capsules.py`** (nouveau, module pur sans dépendance DuckDB) : un catalogue
+  statique `CAPSULES` (contenu factice, une entrée par zone mesurée) et
+  `compute_worst_zone(frames)`, qui calcule pour chaque zone le temps cumulé passé dans les
+  niveaux d'action élevés (`investigation_et_changement_bientot`, `changement_immediat`) — même
+  principe de calcul de durée que `ResultsExporter.summary()` (`export.py`), appliqué par zone
+  plutôt qu'au global. Égalité stricte entre zones → ordre de priorité fixe (`trunk > neck >
+  upper_arm > lower_arm`, les lombaires étant le risque TMS le plus sérieux). Aucune zone
+  dégradée → pas de recommandation forcée (`None`).
+- **4 zones seulement** : `neck`, `trunk`, `upper_arm`, `lower_arm` — les seules réellement
+  mesurées par le pipeline. Les zones "poignets/mains" et "hanches" du README §6 en sont
+  volontairement absentes : `wrist` n'a pas d'équivalent musculaire dans le rig 3D et `legs` est
+  une constante jamais dérivée de la vidéo (`LEGS_SCORE`, limite déjà documentée à la Tranche 4 de
+  l'avatar 3D ci-dessus) — les inclure aurait obligé à prévoir des zones qui ne pourraient jamais
+  être recommandées.
+- **`storage.get_frame_segments(analysis_id)`** (nouveau) lit `analysis_frames` (frame_index,
+  timestamp, les 4 colonnes segment), triée par frame_index ; `None` sur id inconnu. Aucune
+  logique de zone n'y vit — `storage.py` reste une couche de persistance pure.
+- **`GET /analyses/{id}/recommendation`** (nouveau, `api.py`) : 404 sur id inconnu (même pattern
+  que les autres routes `/analyses/{id}/...`), sinon `{"zone": ..., "capsule": {...} | null}`.
+- **Frontend** (`web/app/page.tsx`) : un petit bloc "Recommandation" sous le résumé d'une analyse
+  tout juste terminée — libellé français de la zone, titre et description de la capsule. Rien ne
+  s'affiche si `zone` est `null`. L'état est gardé sous la forme `{ analysisId, data }` plutôt
+  qu'un simple `Recommendation | null` : le rendu vérifie explicitement que `analysisId` correspond
+  à l'analyse actuellement affichée avant de montrer quoi que ce soit, ce qui évite d'afficher la
+  recommandation d'une analyse précédente sans avoir besoin de réinitialiser l'état de façon
+  synchrone dans l'effet (motif retenu en revue finale de branche pour satisfaire la règle ESLint
+  `react-hooks/set-state-in-effect`).
+- **Limitation connue, documentée et acceptée pour ce sprint** : la zone `lower_arm` ne peut en
+  pratique jamais être recommandée. Son sous-score RULA brut est plafonné à 3
+  (`classify_lower_arm`, `rula/scoring.py`), alors que `ELEVATED_LEVELS` réutilise les bandes du
+  niveau d'action global, qui ne s'activent qu'à partir de 5 — `lower_arm` ne peut donc jamais
+  cumuler de temps "dégradé", et son entrée de catalogue (« Étirement de l'avant-bras et du
+  coude ») ne pourra jamais être renvoyée par `compute_worst_zone`. Même racine que la limitation
+  déjà documentée pour `changement_immediat` sur `neck`/`trunk`/`upper_arm` (plafond de sous-score
+  6 contre seuil 7, voir la Tranche 4 de l'avatar 3D ci-dessus et le commit `989df73`) — décision
+  prise en revue finale de branche de documenter plutôt que de redéfinir des seuils par segment ce
+  sprint (voir le bloc « Correction (revue finale de branche) » de la spec).
+- **Ce qui n'est pas dans cette tranche** : vraies vidéos de capsules (contenu placeholder
+  uniquement), édition du catalogue (pas d'admin UI ni de CMS), UI d'historique montrant les
+  recommandations passées, mode temps réel (vérification webcam de l'exécution de l'étirement),
+  recommandation de plusieurs capsules par zone.
+
 #### Reste à faire pour la suite de la Phase 2
 
 - Module de floutage automatique des visages (OpenCV, en amont de l'analyse posturale) — non
   implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
   salariés (voir section 7).
-- Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes).
-- Déclenchement intelligent : associer les scores RULA par zone anatomique (déjà disponibles dans
-  l'export : `neck`, `trunk`, `upper_arm`, `lower_arm`, `wrist`) aux capsules d'étirement.
+- Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes) — la
+  recommandation de capsules par zone (ci-dessus) est prête côté logique et interface, mais tout
+  son contenu vidéo reste factice tant que ce tournage n'a pas eu lieu.
 
 ### Phase 3 : Tiers Test & Pilote Entreprise (Semaines 7 - 10)
 

@@ -157,3 +157,26 @@ tronc / bras / avant-bras) + titre et description de la capsule. Rien n'est affi
   README §6 comme "optionnel").
 - Zones "poignets/mains" et "hanches" (décision de cadrage ci-dessus).
 - Recommandation de plusieurs capsules par zone.
+
+## Correction (revue finale de branche)
+
+> **Correction (2026-09-22, revue finale de branche)** : une revue portant sur l'ensemble de la
+> branche (les 4 tâches déjà livrées et individuellement approuvées) a relevé que la zone
+> `lower_arm` ne peut en réalité jamais être recommandée avec les seuils actuels. `ELEVATED_LEVELS`
+> (`capsules.py`) réutilise les mêmes bandes que `action_level()` global
+> (`investigation_et_changement_bientot` à partir de 5, `changement_immediat` à partir de 7) --
+> mais `classify_lower_arm` (`rula/scoring.py`) plafonne le sous-score brut de cette zone à 3
+> (`_clamp(score, 1, 3)`), contre 6 pour `neck`/`trunk`/`upper_arm`. `action_level(3)` retourne
+> `investigation_recommandee`, qui n'est pas dans `ELEVATED_LEVELS` -- `lower_arm` ne peut donc
+> jamais cumuler la moindre seconde de temps "dégradé", et son entrée du catalogue (« Étirement de
+> l'avant-bras et du coude ») ne pourra jamais être renvoyée par `compute_worst_zone`. C'est la même
+> racine que la limitation déjà documentée pour `neck`/`trunk`/`upper_arm` et
+> `changement_immediat` (plafond de sous-score 6 contre seuil 7, voir README.md et le commit
+> `989df73`) -- ici simplement plus sévère, puisque `lower_arm` ne peut même pas atteindre la bande
+> `investigation_et_changement_bientot`.
+>
+> **Décision produit explicite de l'humain** (posée pendant cette revue) : documenter la limitation
+> et garder le code tel quel pour ce sprint, plutôt que de redéfinir des seuils par segment
+> maintenant. La zone et l'entrée de catalogue restent en place -- elles ne sont pas fausses, juste
+> inatteignables tant que les seuils ne sont pas revus, ce qui reste un chantier séparé, hors
+> périmètre de ce sprint.
