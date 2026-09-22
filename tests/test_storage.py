@@ -81,10 +81,57 @@ def test_save_analysis_then_get_analysis_round_trips(tmp_path, monkeypatch):
     assert analysis["time_by_action_level"] == {"acceptable": 2.0}
 
 
+def test_save_analysis_round_trips_created_at_as_exact_utc_instant(tmp_path, monkeypatch):
+    """Régression pour la revue finale de tranche : created_at doit revenir
+    exactement à l'instant UTC écrit, suffixe +00:00 inclus -- pas décalé de
+    l'heure locale du serveur DuckDB (voir storage._to_naive_utc/_attach_utc)."""
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+    summary = {
+        "frame_count": 0, "detected_frame_count": 0, "max_score": 0,
+        "average_score": 0.0, "time_by_action_level": {},
+    }
+    written = datetime(2026, 9, 22, 13, 45, 30, tzinfo=timezone.utc)
+    storage.save_analysis(
+        analysis_id="tz-1", created_at=written, side="right", load_kg=0.0,
+        wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"x", pose3d_json="[]", frame_rows=[],
+    )
+
+    analysis = storage.get_analysis("tz-1")
+
+    assert analysis["created_at"] == "2026-09-22T13:45:30+00:00"
+    assert datetime.fromisoformat(analysis["created_at"]) == written
+
+
 def test_get_analysis_returns_none_for_unknown_id(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
 
     assert storage.get_analysis("does-not-exist") is None
+
+
+def test_analysis_frames_columns_match_frame_value_columns(tmp_path, monkeypatch):
+    """Garde-fou anti-dérive de schéma : FRAME_VALUE_COLUMNS (dérivé de
+    export.CSV_FIELDS) doit rester exactement synchronisé avec les colonnes
+    réellement présentes dans analysis_frames (DDL maintenue à la main) --
+    sinon l'INSERT généré par save_analysis référence une colonne
+    inexistante, sans que rien ne le détecte avant une erreur en
+    production."""
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+    conn = storage._connect()
+    try:
+        actual_columns = {
+            row[0]
+            for row in conn.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'analysis_frames'"
+            ).fetchall()
+        }
+    finally:
+        conn.close()
+
+    assert set(storage.FRAME_VALUE_COLUMNS) | {"analysis_id"} == actual_columns
 
 
 def _save(analysis_id, created_at, worker_label=None, poste_label=None):
@@ -119,6 +166,11 @@ def test_list_analyses_filters_by_worker_and_poste_label(tmp_path, monkeypatch):
 
     assert [r["id"] for r in storage.list_analyses(worker_label="Marie D.")] == ["a"]
     assert [r["id"] for r in storage.list_analyses(poste_label="Emballage")] == ["b", "a"]
+    assert [
+        r["id"]
+        for r in storage.list_analyses(worker_label="Marie D.", poste_label="Emballage")
+    ] == ["a"]
+    assert storage.list_analyses(worker_label="Marie D.", poste_label="Poste inexistant") == []
 
 
 def test_list_analyses_filters_by_date_range(tmp_path, monkeypatch):
@@ -174,3 +226,22 @@ def test_frames_csv_text_generates_header_and_rows(tmp_path, monkeypatch):
     assert lines[0] == ",".join(CSV_FIELDS)
     assert "acceptable" in lines[1]
     assert storage.frames_csv_text("unknown") is None
+
+
+def test_frames_csv_text_is_header_only_when_analysis_has_zero_frames(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    summary = {
+        "frame_count": 0, "detected_frame_count": 0, "max_score": 0,
+        "average_score": 0.0, "time_by_action_level": {},
+    }
+    storage.save_analysis(
+        analysis_id="csv-empty", created_at=datetime(2026, 9, 22, tzinfo=timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"x", pose3d_json="[]", frame_rows=[],
+    )
+
+    csv_text = storage.frames_csv_text("csv-empty")
+
+    assert csv_text is not None
+    lines = csv_text.strip("\r\n").splitlines()
+    assert lines == [",".join(CSV_FIELDS)]

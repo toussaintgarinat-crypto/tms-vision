@@ -6,7 +6,7 @@ concurrente à optimiser)."""
 import csv
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import duckdb
@@ -67,6 +67,29 @@ CREATE TABLE IF NOT EXISTS analysis_frames (
 """
 
 
+def _to_naive_utc(value: datetime) -> datetime:
+    """DuckDB stocke `created_at` en TIMESTAMP naïf. Note : la colonne
+    TIMESTAMPTZ a été essayée pour ce champ, mais la conversion Python de ce
+    type nécessite le paquet `pytz` (absent de requirements.txt) dans cette
+    version de DuckDB -- échec à l'exécution ("Required module 'pytz' failed
+    to import"). Solution retenue à la place : on convertit nous-mêmes tout
+    datetime "aware" en UTC puis on retire le tzinfo avant l'écriture
+    (`_to_naive_utc`), et on réattache `timezone.utc` à la lecture
+    (`_attach_utc`) -- le round-trip est alors exact et sans ambiguïté, sans
+    dépendre de l'heure locale du serveur DuckDB. Un datetime déjà naïf en
+    entrée est supposé déjà exprimé en UTC et passe inchangé."""
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+def _attach_utc(value: datetime) -> datetime:
+    """Inverse de _to_naive_utc : réattache timezone.utc à une valeur naïve
+    lue depuis la colonne `created_at`, pour que .isoformat() produise un
+    suffixe +00:00 explicite plutôt qu'une chaîne ambiguë."""
+    return value.replace(tzinfo=timezone.utc)
+
+
 def _connect() -> "duckdb.DuckDBPyConnection":
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(DB_PATH))
@@ -105,34 +128,45 @@ def save_analysis(
 ) -> None:
     conn = _connect()
     try:
-        conn.execute(
-            """
-            INSERT INTO analyses (
-                id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
-                frame_count, detected_frame_count, max_score, average_score,
-                time_by_action_level, video_bytes, pose3d_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                analysis_id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
-                summary["frame_count"], summary["detected_frame_count"], summary["max_score"],
-                summary["average_score"],
-                json.dumps(summary["time_by_action_level"], ensure_ascii=False),
-                video_bytes, pose3d_json,
-            ],
-        )
-        insert_frame_sql = (
-            "INSERT INTO analysis_frames (analysis_id, "
-            + ", ".join(FRAME_VALUE_COLUMNS)
-            + ") VALUES ("
-            + ", ".join(["?"] * (len(FRAME_VALUE_COLUMNS) + 1))
-            + ")"
-        )
-        for row in frame_rows:
+        conn.begin()
+        try:
             conn.execute(
-                insert_frame_sql,
-                [analysis_id] + [row.get(column) for column in FRAME_VALUE_COLUMNS],
+                """
+                INSERT INTO analyses (
+                    id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
+                    frame_count, detected_frame_count, max_score, average_score,
+                    time_by_action_level, video_bytes, pose3d_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    analysis_id, _to_naive_utc(created_at), side, load_kg, wrist_twist,
+                    worker_label, poste_label,
+                    summary["frame_count"], summary["detected_frame_count"], summary["max_score"],
+                    summary["average_score"],
+                    json.dumps(summary["time_by_action_level"], ensure_ascii=False),
+                    video_bytes, pose3d_json,
+                ],
             )
+            if frame_rows:
+                insert_frame_sql = (
+                    "INSERT INTO analysis_frames (analysis_id, "
+                    + ", ".join(FRAME_VALUE_COLUMNS)
+                    + ") VALUES ("
+                    + ", ".join(["?"] * (len(FRAME_VALUE_COLUMNS) + 1))
+                    + ")"
+                )
+                conn.executemany(
+                    insert_frame_sql,
+                    [
+                        [analysis_id] + [row.get(column) for column in FRAME_VALUE_COLUMNS]
+                        for row in frame_rows
+                    ],
+                )
+        except Exception:
+            conn.rollback()
+            raise
+        else:
+            conn.commit()
     finally:
         conn.close()
 
@@ -151,7 +185,7 @@ def get_analysis(analysis_id: str) -> dict | None:
         return None
     record = dict(zip(_ANALYSIS_COLUMNS, row))
     record["time_by_action_level"] = json.loads(record["time_by_action_level"])
-    record["created_at"] = record["created_at"].isoformat()
+    record["created_at"] = _attach_utc(record["created_at"]).isoformat()
     return record
 
 
@@ -171,10 +205,10 @@ def list_analyses(
         params.append(poste_label)
     if since is not None:
         clauses.append("created_at >= ?")
-        params.append(since)
+        params.append(_to_naive_utc(since))
     if until is not None:
         clauses.append("created_at <= ?")
-        params.append(until)
+        params.append(_to_naive_utc(until))
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
     conn = _connect()
@@ -191,7 +225,7 @@ def list_analyses(
     for row in rows:
         record = dict(zip(_ANALYSIS_COLUMNS, row))
         record["time_by_action_level"] = json.loads(record["time_by_action_level"])
-        record["created_at"] = record["created_at"].isoformat()
+        record["created_at"] = _attach_utc(record["created_at"]).isoformat()
         results.append(record)
     return results
 
