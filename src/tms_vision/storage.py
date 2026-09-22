@@ -3,9 +3,13 @@ docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md). Chaque
 fonction publique ouvre puis referme sa propre connexion -- suffisant à
 l'échelle actuelle du projet (un seul process uvicorn, pas de charge
 concurrente à optimiser)."""
+import json
+from datetime import datetime
 from pathlib import Path
 
 import duckdb
+
+from tms_vision.export import CSV_FIELDS
 
 DB_PATH = Path("data/tms_vision.duckdb")
 
@@ -67,3 +71,83 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_ANALYSES_TABLE)
     conn.execute(CREATE_ANALYSIS_FRAMES_TABLE)
     return conn
+
+
+SEGMENT_COLUMNS = [
+    "neck_segment_action_level",
+    "trunk_segment_action_level",
+    "upper_arm_segment_action_level",
+    "lower_arm_segment_action_level",
+]
+FRAME_VALUE_COLUMNS = CSV_FIELDS + SEGMENT_COLUMNS
+
+_ANALYSIS_COLUMNS = [
+    "id", "created_at", "side", "load_kg", "wrist_twist", "worker_label", "poste_label",
+    "frame_count", "detected_frame_count", "max_score", "average_score", "time_by_action_level",
+]
+
+
+def save_analysis(
+    *,
+    analysis_id: str,
+    created_at: datetime,
+    side: str,
+    load_kg: float,
+    wrist_twist: str,
+    worker_label: str | None,
+    poste_label: str | None,
+    summary: dict,
+    video_bytes: bytes,
+    pose3d_json: str,
+    frame_rows: list[dict],
+) -> None:
+    conn = _connect()
+    try:
+        conn.execute(
+            """
+            INSERT INTO analyses (
+                id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
+                frame_count, detected_frame_count, max_score, average_score,
+                time_by_action_level, video_bytes, pose3d_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                analysis_id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
+                summary["frame_count"], summary["detected_frame_count"], summary["max_score"],
+                summary["average_score"],
+                json.dumps(summary["time_by_action_level"], ensure_ascii=False),
+                video_bytes, pose3d_json,
+            ],
+        )
+        insert_frame_sql = (
+            "INSERT INTO analysis_frames (analysis_id, "
+            + ", ".join(FRAME_VALUE_COLUMNS)
+            + ") VALUES ("
+            + ", ".join(["?"] * (len(FRAME_VALUE_COLUMNS) + 1))
+            + ")"
+        )
+        for row in frame_rows:
+            conn.execute(
+                insert_frame_sql,
+                [analysis_id] + [row.get(column) for column in FRAME_VALUE_COLUMNS],
+            )
+    finally:
+        conn.close()
+
+
+def get_analysis(analysis_id: str) -> dict | None:
+    conn = _connect()
+    try:
+        row = conn.execute(
+            f"SELECT {', '.join(_ANALYSIS_COLUMNS)} FROM analyses WHERE id = ?",
+            [analysis_id],
+        ).fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        return None
+    record = dict(zip(_ANALYSIS_COLUMNS, row))
+    record["time_by_action_level"] = json.loads(record["time_by_action_level"])
+    record["created_at"] = record["created_at"].isoformat()
+    return record
