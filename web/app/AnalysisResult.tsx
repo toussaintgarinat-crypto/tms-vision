@@ -58,7 +58,7 @@ export function AnalysisResult({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/analyses/${analysisId}/recommendation`)
+    fetch(`${API_URL}/analyses/${encodeURIComponent(analysisId)}/recommendation`)
       .then((response) => {
         if (!response.ok) throw new Error(`Erreur ${response.status}`);
         return response.json() as Promise<Recommendation>;

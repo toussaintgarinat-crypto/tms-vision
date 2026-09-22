@@ -25,33 +25,47 @@ export default function AnalysisDetailPage() {
   // État porteur de l'id auquel il correspond, comparé à `id` au rendu plutôt
   // que réinitialisé de façon synchrone en tête de l'effet -- même motif que
   // `recommendation` dans AnalysisResult.tsx, pour satisfaire
-  // react-hooks/set-state-in-effect (voir Global Constraints).
+  // react-hooks/set-state-in-effect (voir Global Constraints du plan).
   const [analysis, setAnalysis] = useState<{ id: string; data: StoredAnalysis } | null>(null);
   const [notFoundFor, setNotFoundFor] = useState<string | null>(null);
+  // Distinct de notFoundFor : un 404 (analyse qui n'existe vraiment pas) et une
+  // erreur réseau/serveur (l'analyse existe peut-être, on ne sait juste pas)
+  // ne doivent pas afficher le même message -- l'un est définitif, l'autre
+  // mérite une nouvelle tentative.
+  const [fetchErrorFor, setFetchErrorFor] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/analyses/${id}`)
+    fetch(`${API_URL}/analyses/${encodeURIComponent(id)}`)
       .then((response) => {
         if (response.status === 404) {
-          if (!cancelled) setNotFoundFor(id);
+          if (!cancelled) {
+            setNotFoundFor(id);
+            setFetchErrorFor(null);
+          }
           return null;
         }
         if (!response.ok) throw new Error(`Erreur ${response.status}`);
         return response.json() as Promise<StoredAnalysis>;
       })
       .then((data) => {
-        if (!cancelled && data) setAnalysis({ id, data });
+        if (!cancelled && data) {
+          setAnalysis({ id, data });
+          setNotFoundFor(null);
+          setFetchErrorFor(null);
+        }
       })
       .catch(() => {
-        if (!cancelled) setNotFoundFor(id);
+        if (!cancelled) setFetchErrorFor(id);
       });
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, retryToken]);
 
   const isNotFound = notFoundFor === id;
+  const isFetchError = fetchErrorFor === id;
   // Booléen simple (pas de narrowing TypeScript de `analysis` à travers une
   // variable dérivée) : uniquement pour la condition "Chargement..." ci-dessous.
   // Le rendu d'AnalysisResult re-teste `analysis && analysis.id === id` en
@@ -69,16 +83,30 @@ export default function AnalysisDetailPage() {
 
       {isNotFound && <p className="text-red-600">Analyse introuvable.</p>}
 
-      {!isNotFound && !isLoaded && <p>Chargement...</p>}
+      {isFetchError && (
+        <div className="flex flex-col items-start gap-2">
+          <p className="text-red-600">
+            Impossible de charger cette analyse (problème réseau ou serveur).
+          </p>
+          <button
+            onClick={() => setRetryToken((token) => token + 1)}
+            className="rounded border border-black px-3 py-1 text-sm"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {!isNotFound && !isFetchError && !isLoaded && <p>Chargement...</p>}
 
       {analysis && analysis.id === id && (
         <AnalysisResult
           analysisId={analysis.data.id}
           side={analysis.data.side}
           summary={analysis.data}
-          videoUrl={`/analyses/${analysis.data.id}/video`}
-          csvUrl={`/analyses/${analysis.data.id}/frames.csv`}
-          pose3dUrl={`/analyses/${analysis.data.id}/pose3d`}
+          videoUrl={`/analyses/${encodeURIComponent(analysis.data.id)}/video`}
+          csvUrl={`/analyses/${encodeURIComponent(analysis.data.id)}/frames.csv`}
+          pose3dUrl={`/analyses/${encodeURIComponent(analysis.data.id)}/pose3d`}
         />
       )}
     </main>

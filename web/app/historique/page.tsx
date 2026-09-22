@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { scoreBadgeColor, scoreBadgeTextColor } from "./scoreBadge";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type StoredAnalysis = {
@@ -20,17 +22,7 @@ type StoredAnalysis = {
   time_by_action_level: Record<string, number>;
 };
 
-const SIDE_LABELS: Record<string, string> = { right: "Droit", left: "Gauche" };
-
-// Mêmes seuils que rula/scoring.py::action_level(), même palette que
-// PostureAvatar3D.tsx::ACTION_LEVEL_COLORS -- dupliqué ici (4 couleurs figées,
-// pas de dépendance ajoutée pour si peu).
-function scoreBadgeColor(maxScore: number): string {
-  if (maxScore <= 2) return "#4CAF50";
-  if (maxScore <= 4) return "#EBD23C";
-  if (maxScore <= 6) return "#EB9628";
-  return "#D23232";
-}
+const SIDE_LABELS: Record<"left" | "right", string> = { right: "Droit", left: "Gauche" };
 
 export default function HistoriquePage() {
   const [analyses, setAnalyses] = useState<StoredAnalysis[] | null>(null);
@@ -40,13 +32,23 @@ export default function HistoriquePage() {
   const [since, setSince] = useState("");
   const [until, setUntil] = useState("");
 
+  // Contrairement à AnalysisResult.tsx et historique/[id]/page.tsx, cet état
+  // n'a pas besoin d'être porté par une clé (analysisId / id) : `cancelled`
+  // suffit à empêcher une réponse obsolète d'écraser un résultat plus récent,
+  // et rien ici n'a besoin d'associer une ligne affichée à la combinaison de
+  // filtres exacte qui l'a produite.
   useEffect(() => {
     let cancelled = false;
     const params = new URLSearchParams();
     if (workerLabel.trim()) params.set("worker_label", workerLabel.trim());
     if (posteLabel.trim()) params.set("poste_label", posteLabel.trim());
-    if (since) params.set("since", since);
-    if (until) params.set("until", `${until}T23:59:59`);
+    // Construit les bornes en heure LOCALE puis les convertit en UTC (ISO avec
+    // suffixe Z) avant l'envoi : `created_at` est stocké en UTC naïf côté
+    // backend et affiché en heure locale côté table ci-dessous
+    // (toLocaleString) -- envoyer une date/heure locale sans suffixe de fuseau
+    // décalerait la fenêtre de filtre par rapport à ce que l'utilisateur voit.
+    if (since) params.set("since", new Date(`${since}T00:00:00`).toISOString());
+    if (until) params.set("until", new Date(`${until}T23:59:59.999`).toISOString());
     const query = params.toString();
     fetch(`${API_URL}/analyses${query ? `?${query}` : ""}`)
       .then((response) => {
@@ -60,7 +62,10 @@ export default function HistoriquePage() {
         }
       })
       .catch(() => {
-        if (!cancelled) setError("Impossible de charger l'historique des analyses.");
+        if (!cancelled) {
+          setError("Impossible de charger l'historique des analyses.");
+          setAnalyses(null);
+        }
       });
     return () => {
       cancelled = true;
@@ -142,7 +147,9 @@ export default function HistoriquePage() {
                 <th className="p-2">Côté</th>
                 <th className="p-2">Score max</th>
                 <th className="p-2">Score moyen</th>
-                <th className="p-2" />
+                <th className="p-2">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -154,15 +161,21 @@ export default function HistoriquePage() {
                   <td className="p-2">{SIDE_LABELS[analysis.side]}</td>
                   <td className="p-2">
                     <span
-                      className="rounded px-2 py-1 text-white"
-                      style={{ backgroundColor: scoreBadgeColor(analysis.max_score) }}
+                      className="rounded px-2 py-1"
+                      style={{
+                        backgroundColor: scoreBadgeColor(analysis.max_score),
+                        color: scoreBadgeTextColor(analysis.max_score),
+                      }}
                     >
                       {analysis.max_score}
                     </span>
                   </td>
                   <td className="p-2">{analysis.average_score.toFixed(1)}</td>
                   <td className="p-2">
-                    <a href={`/historique/${analysis.id}`} className="text-blue-600 underline">
+                    <a
+                      href={`/historique/${encodeURIComponent(analysis.id)}`}
+                      className="text-blue-600 underline"
+                    >
                       Voir
                     </a>
                   </td>
