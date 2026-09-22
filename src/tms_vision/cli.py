@@ -1,13 +1,20 @@
-"""Point d'entrée CLI : parse les arguments et délègue le pipeline à
-tms_vision.pipeline.analyze_video() (voir ce module pour la logique complète).
+"""Point d'entrée CLI : parse les arguments, délègue le calcul à
+tms_vision.pipeline.analyze_video() (pur, voir ce module), puis écrit
+vidéo/CSV/JSON dans --output-dir -- seul endroit du projet qui écrit encore
+ces résultats sur le système de fichiers (voir
+docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md : l'API
+web persiste en DuckDB via tms_vision.storage, pas sur disque).
 
 Conseil de prise de vue : pour des angles fiables (flexion/extension du cou,
 du tronc et du bras), filmer la personne DE PROFIL plutôt que de face.
 """
 import argparse
 import sys
+from pathlib import Path
 
-from tms_vision.pipeline import analyze_video
+from tms_vision.pipeline import analyze_video, generate_run_id
+from tms_vision.export import write_frames_csv, write_summary_json
+from tms_vision.pose3d_export import write_pose3d_json
 
 
 def _non_negative_float(value: str) -> float:
@@ -31,16 +38,29 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def run(args: argparse.Namespace) -> None:
     result = analyze_video(
-        source=args.source,
-        side=args.side,
-        load_kg=args.load_kg,
-        wrist_twist=args.wrist_twist,
-        output_dir=args.output_dir,
+        source=args.source, side=args.side, load_kg=args.load_kg, wrist_twist=args.wrist_twist,
     )
     if result.empty:
         return
-    print(f"Vidéo annotée : {result.video_path}")
-    print(f"Export CSV/JSON : {result.csv_path}, {result.summary_json_path}")
+
+    output_path = Path(args.output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    run_id = generate_run_id()
+
+    video_path = output_path / f"{run_id}_annotated.mp4"
+    video_path.write_bytes(result.video_bytes)
+
+    csv_path = output_path / f"{run_id}_frames.csv"
+    write_frames_csv(result.frame_rows, str(csv_path))
+
+    summary_path = output_path / f"{run_id}_summary.json"
+    write_summary_json(result.summary, str(summary_path))
+
+    pose3d_path = output_path / f"{run_id}_pose3d.json"
+    write_pose3d_json(str(pose3d_path), result.pose3d_records)
+
+    print(f"Vidéo annotée : {video_path}")
+    print(f"Export CSV/JSON : {csv_path}, {summary_path}")
 
 
 def main() -> None:
@@ -51,12 +71,6 @@ def main() -> None:
         print(f"Erreur : {error}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:
-        # Un premier Ctrl+C pendant la capture est déjà intercepté à
-        # l'intérieur de analyze_video() et traite les frames déjà capturées.
-        # Un second Ctrl+C pendant la boucle de traitement qui suit (pose/
-        # score/écriture vidéo) n'est en revanche pas couvert par ce
-        # garde-fou interne : on l'attrape ici pour éviter une traceback
-        # brute sans sortie utile.
         print("Traitement interrompu par l'utilisateur.", file=sys.stderr)
         sys.exit(1)
 
