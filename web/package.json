@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "render:exercise": "node scripts/render-exercise.mjs"
   },
   "dependencies": {
     "@react-three/drei": "10.7.8",
