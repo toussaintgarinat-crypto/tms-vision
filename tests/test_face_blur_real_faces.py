@@ -2,6 +2,10 @@
 dans les vraies détections MediaPipe, puis dans l'anonymisation ; le critère est qu'un détecteur
 de visages ne trouve plus aucun visage ensuite.
 
+ATTENTION à ce critère : « le détecteur ne trouve plus de visage » est valable sur cette photo
+nette, mais PAS sur de vraies vidéos, où le détecteur se déclenche sur la mosaïque elle-même (voir
+docs/superpowers/specs/2026-10-22-face-blur-design.md) ; il y faut une relecture visuelle.
+
 Ignoré si scikit-image n'est pas installé (`pip install scikit-image`) ou si cette version de
 mediapipe n'a pas l'API `solutions` (voir requirements.txt)."""
 import cv2

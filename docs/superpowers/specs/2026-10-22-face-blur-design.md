@@ -42,9 +42,26 @@ visages nets. Cela bloquait tout pilote avec de vraies personnes.
 - **De bout en bout, vraie chaîne sur une vraie vidéo** (30 images, mouvement, zoom, 4 images sans
   personne) : visage lisible dans 26 images sur 30 sans floutage, **0 sur 30 avec**.
 - **Coût** : environ 10 à 20 ms de plus par image à 640×640 (analyse de 33-40 à 49-55 ms par image).
+- **Sur une vraie vidéo de poste de travail** (9 s, 1280×720, 227 images : une personne qui peint un mur,
+  de profil ou de trois quarts, les bras levés, une échelle devant elle) : pose détectée dans 227
+  images sur 227 ; relecture visuelle de 30 images réparties sur toute la durée : **les traits du
+  visage (yeux, nez, bouche, joues) sont illisibles dans toutes**, y compris tête baissée, tournée ou
+  levée ; audit indépendant par maillage facial sur gros plan de l'original : 9 visages exploitables,
+  couverts à 100 % (échantillon réduit : le maillage échoue sur les profils). Le détecteur de visages
+  seul ne trouvait le visage que dans 88 images sur 227 de l'original (les profils lui échappent) :
+  la pose est indispensable, la conception en union était justifiée. Surcoût : 10,8 s sans floutage,
+  12,8 s avec (+19 %).
+- **Ne pas se fier à « plus aucun visage détecté ».** Sur cette vidéo, un détecteur de visages signale
+  encore un visage dans 45 images de la sortie floutée : il se déclenche sur la **mosaïque** elle-même
+  (vérifié visuellement : aucun trait lisible). Ce critère n'est donc pas une preuve sur de vraies
+  vidéos ; il ne vaut que sur des images nettes comme la photo des tests. La preuve est la relecture
+  visuelle, éventuellement complétée par un audit indépendant.
 
 ## Limites connues
 
+- **Ce qui reste visible autour du visage :** la mosaïque couvre le visage, pas toute la tête. Sur une
+  personne de profil, l'arrière du crâne et les cheveux restent visibles, ainsi que la silhouette
+  du front et du nez au bord de la zone.
 - Ce n'est **pas une garantie d'anonymat**. Le détecteur peut manquer un visage petit, très éloigné,
   de profil ou partiellement caché, et la pose ne suit qu'une personne. Le corps, les vêtements, le
   badge et le poste de travail restent visibles : au sens du RGPD, la personne peut rester
