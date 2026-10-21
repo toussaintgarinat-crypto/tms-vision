@@ -67,43 +67,53 @@ class ResultsExporter:
         return [self._row_for(record) for record in self._records]
 
     def summary(self) -> dict:
-        detected = [r for r in self._records if r.detected and r.score is not None]
-        if not detected:
-            return {
-                "frame_count": len(self._records),
-                "detected_frame_count": 0,
-                "max_score": 0,
-                "average_score": 0,
-                "time_by_action_level": {},
-            }
+        return summarize_rows(self.rows())
 
-        scores = [r.score.final_score for r in detected]
-        time_by_level: dict[str, float] = {}
-        for record in detected:
+
+def summarize_rows(rows: list[dict]) -> dict:
+    """Résumé d'une analyse à partir de ses lignes de frame (clés utilisées :
+    frame_index, timestamp_seconds, detected, final_score, action_level). Sert
+    à la fois à l'analyse initiale (ResultsExporter.summary) et au recalcul
+    après saisie du poids (rescore.summarize_for_load)."""
+    detected = [
+        (index, row) for index, row in enumerate(rows)
+        if row["detected"] and row["final_score"] is not None
+    ]
+    if not detected:
+        return {
+            "frame_count": len(rows),
+            "detected_frame_count": 0,
+            "max_score": 0,
+            "average_score": 0,
+            "time_by_action_level": {},
+        }
+
+    scores = [row["final_score"] for _, row in detected]
+    time_by_level: dict[str, float] = {}
+    for index, row in detected:
+        # Durée d'une frame = écart jusqu'à la frame suivante de la séquence
+        # (détectée ou non) ; 1.0 s si c'est la seule frame détectée.
+        if index + 1 < len(rows):
+            next_timestamp = rows[index + 1]["timestamp_seconds"]
+        else:
             next_timestamp = None
-            for r in self._records:
-                if r.frame_index > record.frame_index:
-                    next_timestamp = r.timestamp_seconds
-                    break
 
-            if next_timestamp is None:
-                duration = 1.0 if len(detected) == 1 else 0.0
-            else:
-                duration = max(next_timestamp - record.timestamp_seconds, 0.0) or (
-                    1.0 if len(detected) == 1 else 0.0
-                )
-
-            time_by_level[record.score.action_level] = (
-                time_by_level.get(record.score.action_level, 0.0) + duration
+        if next_timestamp is None:
+            duration = 1.0 if len(detected) == 1 else 0.0
+        else:
+            duration = max(next_timestamp - row["timestamp_seconds"], 0.0) or (
+                1.0 if len(detected) == 1 else 0.0
             )
 
-        return {
-            "frame_count": len(self._records),
-            "detected_frame_count": len(detected),
-            "max_score": max(scores),
-            "average_score": sum(scores) / len(scores),
-            "time_by_action_level": time_by_level,
-        }
+        time_by_level[row["action_level"]] = time_by_level.get(row["action_level"], 0.0) + duration
+
+    return {
+        "frame_count": len(rows),
+        "detected_frame_count": len(detected),
+        "max_score": max(scores),
+        "average_score": sum(scores) / len(scores),
+        "time_by_action_level": time_by_level,
+    }
 
 
 def write_frames_csv(rows: list[dict], path: str) -> None:

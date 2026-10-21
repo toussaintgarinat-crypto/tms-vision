@@ -6,6 +6,7 @@ from tms_vision.rula.scoring import RulaScore
 from tms_vision.export import (
     FrameRecord,
     ResultsExporter,
+    summarize_rows,
     write_frames_csv,
     write_summary_json,
 )
@@ -102,3 +103,69 @@ def test_write_summary_json_writes_the_summary_dict(tmp_path):
 
     with open(summary_path) as f:
         assert json.load(f) == {"frame_count": 1, "max_score": 3}
+
+
+def _summary_for(records):
+    exporter = ResultsExporter()
+    for record in records:
+        exporter.add_frame(record)
+    return summarize_rows(exporter.rows())
+
+
+def test_summarize_rows_empty_sequence_is_zeroed():
+    assert _summary_for([]) == {
+        "frame_count": 0, "detected_frame_count": 0, "max_score": 0,
+        "average_score": 0, "time_by_action_level": {},
+    }
+
+
+def test_summarize_rows_single_detected_frame_lasts_one_second():
+    summary = _summary_for(
+        [FrameRecord(0, 5.0, True, _angles(), _score(3, "investigation_recommandee"))]
+    )
+
+    assert summary["time_by_action_level"] == {"investigation_recommandee": 1.0}
+    assert summary["max_score"] == 3
+    assert summary["average_score"] == 3.0
+
+
+def test_summarize_rows_duration_runs_to_the_next_frame_even_if_undetected():
+    summary = _summary_for([
+        FrameRecord(0, 0.0, False, None, None),
+        FrameRecord(1, 1.0, True, _angles(), _score(5, "investigation_et_changement_bientot")),
+        FrameRecord(2, 3.5, False, None, None),
+        FrameRecord(3, 4.0, True, _angles(), _score(2, "acceptable")),
+    ])
+
+    # frame 1 : 3.5 - 1.0 = 2.5 s ; frame 3 est la derniere de la sequence -> 0 s.
+    assert summary["frame_count"] == 4
+    assert summary["detected_frame_count"] == 2
+    assert summary["time_by_action_level"] == {
+        "investigation_et_changement_bientot": 2.5, "acceptable": 0.0,
+    }
+    assert summary["max_score"] == 5
+    assert summary["average_score"] == 3.5
+
+
+def test_summarize_rows_identical_timestamps_give_zero_duration_with_two_detected_frames():
+    summary = _summary_for([
+        FrameRecord(0, 0.0, True, _angles(), _score(1, "acceptable")),
+        FrameRecord(1, 0.0, True, _angles(), _score(1, "acceptable")),
+    ])
+
+    assert summary["time_by_action_level"] == {"acceptable": 0.0}
+
+
+def test_summarize_rows_skips_rows_without_a_score_even_if_detected():
+    rows = [
+        {"frame_index": 0, "timestamp_seconds": 0.0, "detected": True,
+         "final_score": None, "action_level": None},
+        {"frame_index": 1, "timestamp_seconds": 2.0, "detected": True,
+         "final_score": 4, "action_level": "investigation_recommandee"},
+    ]
+
+    summary = summarize_rows(rows)
+
+    assert summary["detected_frame_count"] == 1
+    assert summary["max_score"] == 4
+    assert summary["time_by_action_level"] == {"investigation_recommandee": 1.0}
