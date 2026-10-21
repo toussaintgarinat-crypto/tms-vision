@@ -104,6 +104,12 @@ SEGMENT_COLUMNS = [
     "upper_arm_segment_action_level",
     "lower_arm_segment_action_level",
 ]
+ANGLE_COLUMNS = [
+    "neck_flexion_deg",
+    "trunk_flexion_deg",
+    "upper_arm_flexion_deg",
+    "lower_arm_angle_deg",
+]
 FRAME_VALUE_COLUMNS = CSV_FIELDS + SEGMENT_COLUMNS
 
 _ANALYSIS_COLUMNS = [
@@ -285,6 +291,26 @@ def get_frame_segments(analysis_id: str) -> list[dict] | None:
         if exists is None:
             return None
         columns = ["frame_index", "timestamp_seconds"] + SEGMENT_COLUMNS
+        rows = conn.execute(
+            f"SELECT {', '.join(columns)} FROM analysis_frames "
+            "WHERE analysis_id = ? ORDER BY frame_index",
+            [analysis_id],
+        ).fetchall()
+    finally:
+        conn.close()
+
+    return [dict(zip(columns, row)) for row in rows]
+
+
+def get_frame_angles(analysis_id: str) -> list[dict] | None:
+    conn = _connect()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM analyses WHERE id = ?", [analysis_id]
+        ).fetchone()
+        if exists is None:
+            return None
+        columns = ["frame_index", "timestamp_seconds", "detected"] + ANGLE_COLUMNS + SEGMENT_COLUMNS
         rows = conn.execute(
             f"SELECT {', '.join(columns)} FROM analysis_frames "
             "WHERE analysis_id = ? ORDER BY frame_index",

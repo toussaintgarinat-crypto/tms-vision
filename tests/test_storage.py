@@ -285,3 +285,46 @@ def test_get_frame_segments_returns_ordered_rows_with_segment_columns(tmp_path, 
 def test_get_frame_segments_returns_none_for_unknown_id(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
     assert storage.get_frame_segments("does-not-exist") is None
+
+
+def test_get_frame_angles_returns_ordered_angles_and_segment_levels(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    summary = {
+        "frame_count": 2, "detected_frame_count": 1, "max_score": 1,
+        "average_score": 1.0, "time_by_action_level": {"acceptable": 1.0},
+    }
+    row0 = _frame_row(
+        frame_index=0, timestamp_seconds=0.0, neck_flexion_deg=12.5, trunk_flexion_deg=30.0,
+        upper_arm_flexion_deg=45.0, lower_arm_angle_deg=80.0,
+    )
+    row1 = _frame_row(
+        frame_index=1, timestamp_seconds=1.0, detected=False, neck_flexion_deg=None,
+        trunk_flexion_deg=None, upper_arm_flexion_deg=None, lower_arm_angle_deg=None,
+    )
+    storage.save_analysis(
+        analysis_id="ang-1", created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"x", pose3d_json="[]", frame_rows=[row1, row0],
+    )
+
+    frames = storage.get_frame_angles("ang-1")
+
+    assert frames is not None
+    assert [f["frame_index"] for f in frames] == [0, 1]
+    assert frames[0]["detected"] is True
+    assert frames[0]["neck_flexion_deg"] == 12.5
+    assert frames[0]["trunk_flexion_deg"] == 30.0
+    assert frames[0]["upper_arm_flexion_deg"] == 45.0
+    assert frames[0]["lower_arm_angle_deg"] == 80.0
+    assert frames[0]["trunk_segment_action_level"] == "investigation_recommandee"
+    assert frames[1]["detected"] is False
+    assert frames[1]["trunk_flexion_deg"] is None
+    assert set(frames[0].keys()) == {
+        "frame_index", "timestamp_seconds", "detected", *storage.ANGLE_COLUMNS,
+        *storage.SEGMENT_COLUMNS,
+    }
+
+
+def test_get_frame_angles_returns_none_for_unknown_id(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    assert storage.get_frame_angles("does-not-exist") is None

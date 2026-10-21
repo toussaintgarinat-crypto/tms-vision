@@ -68,9 +68,11 @@ def _segment_column(zone: str) -> str:
     return f"{zone}_segment_action_level"
 
 
-def compute_worst_zone(frames: list[dict]) -> str | None:
-    cumulative_seconds = {zone: 0.0 for zone in ZONES}
-
+def frame_durations(frames: list[dict]) -> list[float]:
+    """Durée attribuée à chaque frame : écart jusqu'au timestamp de la frame
+    suivante (jamais négatif). Cas limites : une frame unique vaut 1.0 s, la
+    dernière frame d'une séquence plus longue vaut 0.0 s."""
+    durations = []
     for index, frame in enumerate(frames):
         if index + 1 < len(frames):
             next_timestamp = frames[index + 1]["timestamp_seconds"]
@@ -86,10 +88,16 @@ def compute_worst_zone(frames: list[dict]) -> str | None:
         # non détectées séparément : un segment_action_level à `None` exclut déjà
         # naturellement la frame de tout cumul de zone.
         if next_timestamp is None:
-            duration = 1.0 if len(frames) == 1 else 0.0
+            durations.append(1.0 if len(frames) == 1 else 0.0)
         else:
-            duration = max(next_timestamp - frame["timestamp_seconds"], 0.0)
+            durations.append(max(next_timestamp - frame["timestamp_seconds"], 0.0))
+    return durations
 
+
+def compute_worst_zone(frames: list[dict]) -> str | None:
+    cumulative_seconds = {zone: 0.0 for zone in ZONES}
+
+    for frame, duration in zip(frames, frame_durations(frames)):
         for zone in ZONES:
             if frame[_segment_column(zone)] in ELEVATED_LEVELS:
                 cumulative_seconds[zone] += duration
