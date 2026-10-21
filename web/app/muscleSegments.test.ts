@@ -5,7 +5,7 @@ import {
   dominantBoneIndex,
   resolveMeshBoneKey,
   resolveMeshRouting,
-  SEGMENT_BY_BONE,
+  REGION_BY_BONE,
   sideOfBone,
 } from "./muscleSegments";
 
@@ -49,17 +49,25 @@ describe("dominantBoneIndex", () => {
   });
 });
 
-describe("SEGMENT_BY_BONE / sideOfBone", () => {
-  it("mappe chaque os sur son segment RULA (ou null si non applicable)", () => {
-    expect(SEGMENT_BY_BONE.spine).toBe("trunk");
-    expect(SEGMENT_BY_BONE.neck).toBe("neck");
-    expect(SEGMENT_BY_BONE.L_upper_arm).toBe("upper_arm");
-    expect(SEGMENT_BY_BONE.R_upper_arm).toBe("upper_arm");
-    expect(SEGMENT_BY_BONE.L_forearm).toBe("lower_arm");
-    expect(SEGMENT_BY_BONE.R_forearm).toBe("lower_arm");
-    expect(SEGMENT_BY_BONE.L_thigh).toBeNull();
-    expect(SEGMENT_BY_BONE.R_thigh).toBeNull();
-    expect(SEGMENT_BY_BONE.root).toBeNull();
+describe("REGION_BY_BONE / sideOfBone", () => {
+  it("mappe chaque os sur sa région", () => {
+    expect(REGION_BY_BONE.spine).toBe("trunk");
+    expect(REGION_BY_BONE.neck).toBe("neck");
+    expect(REGION_BY_BONE.head).toBe("head");
+    expect(REGION_BY_BONE.L_clavicle).toBe("shoulder");
+    expect(REGION_BY_BONE.L_upper_arm).toBe("upper_arm");
+    expect(REGION_BY_BONE.R_forearm).toBe("lower_arm");
+    expect(REGION_BY_BONE.L_hand).toBe("hand");
+    expect(REGION_BY_BONE.R_fingers).toBe("hand");
+    expect(REGION_BY_BONE.L_thumb).toBe("hand");
+    expect(REGION_BY_BONE.R_thigh).toBe("thigh");
+    expect(REGION_BY_BONE.L_shin).toBe("lower_leg");
+    expect(REGION_BY_BONE.R_toes).toBe("foot");
+    expect(REGION_BY_BONE.root).toBe("hip");
+  });
+
+  it("couvre tous les os", () => {
+    for (const key of BONE_ORDER) expect(REGION_BY_BONE[key], key).toBeDefined();
   });
 
   it("déduit le côté d'un os depuis son préfixe L_/R_", () => {
@@ -88,16 +96,29 @@ describe("resolveMeshBoneKey / resolveMeshRouting", () => {
   it("retrouve le nom de l'os dominant d'un SkinnedMesh réel et son routage", () => {
     const mesh = buildSingleVertexMesh("L_forearm");
     expect(resolveMeshBoneKey(mesh)).toBe("L_forearm");
-    expect(resolveMeshRouting(mesh)).toEqual({ segment: "lower_arm", side: "left" });
+    expect(resolveMeshRouting(mesh)).toEqual({ region: "lower_arm", segment: "lower_arm", side: "left" });
   });
 
-  it("retourne un segment null pour un os sans segment RULA (cuisse), sans côté pertinent", () => {
+  it("une région sans zone RULA (cuisse) n'a pas de segment mesuré, mais garde son côté", () => {
     const mesh = buildSingleVertexMesh("R_thigh");
-    expect(resolveMeshRouting(mesh)).toEqual({ segment: null, side: "right" });
+    expect(resolveMeshRouting(mesh)).toEqual({ region: "thigh", segment: null, side: "right" });
   });
 
   it("ne signale aucun côté pour le tronc (os unique, sans variante gauche/droite)", () => {
     const mesh = buildSingleVertexMesh("spine");
-    expect(resolveMeshRouting(mesh)).toEqual({ segment: "trunk", side: null });
+    expect(resolveMeshRouting(mesh)).toEqual({ region: "trunk", segment: "trunk", side: null });
+  });
+
+  it("la région déclarée par le fichier 3D prime sur l'os dominant", () => {
+    const mesh = buildSingleVertexMesh("spine");
+    mesh.userData = { region: "neck", side: "l" };
+    // Le cou n'a pas de côté, même si le muscle est exporté en deux objets .l et .r.
+    expect(resolveMeshRouting(mesh)).toEqual({ region: "neck", segment: "neck", side: null });
+  });
+
+  it("une région du membre prend le côté déclaré par le fichier 3D", () => {
+    const mesh = buildSingleVertexMesh("spine");
+    mesh.userData = { region: "hand", side: "r" };
+    expect(resolveMeshRouting(mesh)).toEqual({ region: "hand", segment: null, side: "right" });
   });
 });

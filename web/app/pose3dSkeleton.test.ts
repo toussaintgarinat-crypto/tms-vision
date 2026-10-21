@@ -1,23 +1,44 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { applyFrameToSkeleton, BONE_ORDER, buildSkeleton, Pose3DLandmarks } from "./pose3dSkeleton";
+import {
+  applyFrameToSkeleton,
+  BONE_ORDER,
+  buildSkeleton,
+  PARENT_OF,
+  Pose3DLandmarks,
+} from "./pose3dSkeleton";
 
 describe("buildSkeleton", () => {
-  it("crée 9 os (racine + 8) avec la hiérarchie attendue", () => {
+  it("crée 24 os avec la hiérarchie attendue", () => {
     const { skeleton, bones } = buildSkeleton();
 
-    expect(BONE_ORDER.length).toBe(9);
-    expect(skeleton.bones.length).toBe(9);
+    expect(BONE_ORDER.length).toBe(24);
+    expect(skeleton.bones.length).toBe(24);
 
     expect(bones.root.parent).toBeNull();
     expect(bones.spine.parent).toBe(bones.root);
     expect(bones.neck.parent).toBe(bones.spine);
-    expect(bones.L_upper_arm.parent).toBe(bones.spine);
+    expect(bones.head.parent).toBe(bones.neck);
+    expect(bones.L_clavicle.parent).toBe(bones.spine);
+    expect(bones.L_upper_arm.parent).toBe(bones.L_clavicle);
     expect(bones.L_forearm.parent).toBe(bones.L_upper_arm);
-    expect(bones.R_upper_arm.parent).toBe(bones.spine);
+    expect(bones.R_upper_arm.parent).toBe(bones.R_clavicle);
     expect(bones.R_forearm.parent).toBe(bones.R_upper_arm);
+    expect(bones.L_hand.parent).toBe(bones.L_forearm);
+    expect(bones.L_fingers.parent).toBe(bones.L_hand);
+    expect(bones.L_thumb.parent).toBe(bones.L_hand);
     expect(bones.L_thigh.parent).toBe(bones.root);
     expect(bones.R_thigh.parent).toBe(bones.root);
+    expect(bones.L_shin.parent).toBe(bones.L_thigh);
+    expect(bones.R_foot.parent).toBe(bones.R_shin);
+    expect(bones.R_toes.parent).toBe(bones.R_foot);
+  });
+
+  it("place chaque os après son parent dans BONE_ORDER", () => {
+    for (const key of BONE_ORDER) {
+      if (key === "root") continue;
+      expect(BONE_ORDER.indexOf(PARENT_OF[key]), key).toBeLessThan(BONE_ORDER.indexOf(key));
+    }
   });
 });
 
@@ -196,5 +217,70 @@ describe("applyFrameToSkeleton — landmarks manquants ou os dégénéré", () =
     expect(bones.L_upper_arm.scale.x).toBeCloseTo(1, 5);
     expect(bones.L_upper_arm.scale.y).toBeCloseTo(1, 5);
     expect(bones.L_upper_arm.scale.z).toBeCloseTo(1, 5);
+  });
+});
+
+describe("applyFrameToSkeleton — nouveaux os du corps complet", () => {
+  const upright = {
+    LEFT_HIP: [-0.1, 0, 0],
+    RIGHT_HIP: [0.1, 0, 0],
+    LEFT_SHOULDER: [-0.1, -0.5, 0],
+    RIGHT_SHOULDER: [0.1, -0.5, 0],
+  } as Pose3DLandmarks;
+
+  it("oriente la main du poignet vers le milieu de l'index et de l'auriculaire", () => {
+    const { bones } = buildSkeleton();
+    applyFrameToSkeleton(
+      bones,
+      {
+        ...upright,
+        LEFT_ELBOW: [-0.1, -0.2, 0],
+        LEFT_WRIST: [-0.1, 0.1, 0],
+        LEFT_INDEX: [-0.4, 0.1, 0],
+        LEFT_PINKY: [-0.4, 0.1, 0],
+      },
+      {}
+    );
+
+    const direction = worldDirection(bones.L_hand);
+    expect(direction.x).toBeCloseTo(-1, 5);
+    expect(direction.y).toBeCloseTo(0, 5);
+  });
+
+  it("oriente la jambe et le pied avec le genou, la cheville, le talon et le bout du pied", () => {
+    const { bones } = buildSkeleton();
+    applyFrameToSkeleton(
+      bones,
+      {
+        ...upright,
+        LEFT_KNEE: [-0.1, 0.4, 0],
+        LEFT_ANKLE: [-0.1, 0.8, 0],
+        LEFT_HEEL: [-0.1, 0.85, 0.1],
+        LEFT_FOOT_INDEX: [-0.1, 0.85, -0.2],
+      },
+      {}
+    );
+
+    const shin = worldDirection(bones.L_shin);
+    expect(shin.y).toBeCloseTo(-1, 5);
+    const foot = worldDirection(bones.L_foot);
+    expect(foot.z).toBeCloseTo(-1, 5);
+  });
+
+  it("les os sans point de repère (tête, clavicule, doigts, orteils) suivent leur parent sans être masqués", () => {
+    const { bones } = buildSkeleton();
+    applyFrameToSkeleton(
+      bones,
+      { ...upright, LEFT_ELBOW: [-0.6, -0.5, 0], LEFT_WRIST: [-1.0, -0.5, 0], LEFT_INDEX: [-1.3, -0.5, 0], LEFT_PINKY: [-1.3, -0.5, 0] },
+      {}
+    );
+
+    for (const key of ["head", "L_clavicle", "R_clavicle", "L_fingers", "R_toes"] as const) {
+      expect(bones[key].scale.x, key).toBeCloseTo(1, 5);
+    }
+    // Les doigts prolongent la main.
+    const hand = worldDirection(bones.L_hand);
+    const fingers = worldDirection(bones.L_fingers);
+    expect(fingers.distanceTo(hand)).toBeLessThan(1e-5);
   });
 });

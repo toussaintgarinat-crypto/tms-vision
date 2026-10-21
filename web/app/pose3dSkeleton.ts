@@ -2,18 +2,62 @@ import * as THREE from "three";
 
 export type Pose3DLandmarks = Record<string, [number, number, number]>;
 
+// 24 os, parent avant enfant. Même ordre et mêmes noms que `BONE_ORDER` dans
+// tools/blender/rig_spec.py (à tenir synchronisés à la main). `fingers` regroupe les quatre
+// doigts longs, `toes` les orteils ; le tronc reste un seul os `spine`.
 export const BONE_ORDER = [
   "root",
   "spine",
   "neck",
+  "head",
+  "L_clavicle",
+  "R_clavicle",
   "L_upper_arm",
-  "L_forearm",
   "R_upper_arm",
+  "L_forearm",
   "R_forearm",
+  "L_hand",
+  "R_hand",
+  "L_fingers",
+  "R_fingers",
+  "L_thumb",
+  "R_thumb",
   "L_thigh",
   "R_thigh",
+  "L_shin",
+  "R_shin",
+  "L_foot",
+  "R_foot",
+  "L_toes",
+  "R_toes",
 ] as const;
 export type BoneKey = (typeof BONE_ORDER)[number];
+
+export const PARENT_OF: Record<Exclude<BoneKey, "root">, BoneKey> = {
+  spine: "root",
+  neck: "spine",
+  head: "neck",
+  L_clavicle: "spine",
+  R_clavicle: "spine",
+  L_upper_arm: "L_clavicle",
+  R_upper_arm: "R_clavicle",
+  L_forearm: "L_upper_arm",
+  R_forearm: "R_upper_arm",
+  L_hand: "L_forearm",
+  R_hand: "R_forearm",
+  L_fingers: "L_hand",
+  R_fingers: "R_hand",
+  L_thumb: "L_hand",
+  R_thumb: "R_hand",
+  L_thigh: "root",
+  R_thigh: "root",
+  L_shin: "L_thigh",
+  R_shin: "R_thigh",
+  L_foot: "L_shin",
+  R_foot: "R_shin",
+  L_toes: "L_foot",
+  R_toes: "R_foot",
+};
 
 // Longueurs d'os fixes, en mètres (proportions humaines adultes approximatives),
 // cohérentes avec l'échelle métrique des `pose_world_landmarks` MediaPipe dont
@@ -23,19 +67,36 @@ export type BoneKey = (typeof BONE_ORDER)[number];
 export const BONE_LENGTH: Record<BoneKey, number> = {
   root: 0,
   spine: 0.5,
-  neck: 0.25,
+  neck: 0.12,
+  head: 0.16,
+  L_clavicle: 0.15,
+  R_clavicle: 0.15,
   L_upper_arm: 0.3,
-  L_forearm: 0.25,
   R_upper_arm: 0.3,
+  L_forearm: 0.25,
   R_forearm: 0.25,
-  L_thigh: 0.45,
-  R_thigh: 0.45,
+  L_hand: 0.09,
+  R_hand: 0.09,
+  L_fingers: 0.09,
+  R_fingers: 0.09,
+  L_thumb: 0.09,
+  R_thumb: 0.09,
+  L_thigh: 0.43,
+  R_thigh: 0.43,
+  L_shin: 0.35,
+  R_shin: 0.35,
+  L_foot: 0.13,
+  R_foot: 0.13,
+  L_toes: 0.055,
+  R_toes: 0.055,
 };
 
+// Un os sans `from`/`to` n'a pas de point de repère dans MediaPipe Pose (clavicule, tête, doigts,
+// orteils) : il suit son parent, dans sa position de repos par rapport à lui.
 interface BoneSpec {
   parent: BoneKey;
-  from: readonly string[];
-  to: readonly string[];
+  from?: readonly string[];
+  to?: readonly string[];
 }
 
 // `from`/`to` : noms de landmarks moyennés pour obtenir les extrémités de
@@ -44,12 +105,27 @@ interface BoneSpec {
 const BONE_SPECS: Record<Exclude<BoneKey, "root">, BoneSpec> = {
   spine: { parent: "root", from: ["LEFT_HIP", "RIGHT_HIP"], to: ["LEFT_SHOULDER", "RIGHT_SHOULDER"] },
   neck: { parent: "spine", from: ["LEFT_SHOULDER", "RIGHT_SHOULDER"], to: ["NOSE"] },
-  L_upper_arm: { parent: "spine", from: ["LEFT_SHOULDER"], to: ["LEFT_ELBOW"] },
+  head: { parent: "neck" },
+  L_clavicle: { parent: "spine" },
+  R_clavicle: { parent: "spine" },
+  L_upper_arm: { parent: "L_clavicle", from: ["LEFT_SHOULDER"], to: ["LEFT_ELBOW"] },
+  R_upper_arm: { parent: "R_clavicle", from: ["RIGHT_SHOULDER"], to: ["RIGHT_ELBOW"] },
   L_forearm: { parent: "L_upper_arm", from: ["LEFT_ELBOW"], to: ["LEFT_WRIST"] },
-  R_upper_arm: { parent: "spine", from: ["RIGHT_SHOULDER"], to: ["RIGHT_ELBOW"] },
   R_forearm: { parent: "R_upper_arm", from: ["RIGHT_ELBOW"], to: ["RIGHT_WRIST"] },
+  L_hand: { parent: "L_forearm", from: ["LEFT_WRIST"], to: ["LEFT_INDEX", "LEFT_PINKY"] },
+  R_hand: { parent: "R_forearm", from: ["RIGHT_WRIST"], to: ["RIGHT_INDEX", "RIGHT_PINKY"] },
+  L_fingers: { parent: "L_hand" },
+  R_fingers: { parent: "R_hand" },
+  L_thumb: { parent: "L_hand", from: ["LEFT_WRIST"], to: ["LEFT_THUMB"] },
+  R_thumb: { parent: "R_hand", from: ["RIGHT_WRIST"], to: ["RIGHT_THUMB"] },
   L_thigh: { parent: "root", from: ["LEFT_HIP"], to: ["LEFT_KNEE"] },
   R_thigh: { parent: "root", from: ["RIGHT_HIP"], to: ["RIGHT_KNEE"] },
+  L_shin: { parent: "L_thigh", from: ["LEFT_KNEE"], to: ["LEFT_ANKLE"] },
+  R_shin: { parent: "R_thigh", from: ["RIGHT_KNEE"], to: ["RIGHT_ANKLE"] },
+  L_foot: { parent: "L_shin", from: ["LEFT_HEEL"], to: ["LEFT_FOOT_INDEX"] },
+  R_foot: { parent: "R_shin", from: ["RIGHT_HEEL"], to: ["RIGHT_FOOT_INDEX"] },
+  L_toes: { parent: "L_foot" },
+  R_toes: { parent: "R_foot" },
 };
 
 const ROOT_LANDMARKS = ["LEFT_HIP", "RIGHT_HIP"] as const;
@@ -71,7 +147,10 @@ export function buildSkeleton(): SkeletonRig {
     bones[spec.parent].add(bones[key]);
     // L'origine d'un os se place au bout de son parent : le décalage est donc
     // la longueur DU PARENT (0 pour les enfants de `root`, qui est un locateur).
-    bones[key].position.set(0, BONE_LENGTH[spec.parent], 0);
+    // La clavicule du squelette de test est un simple locateur : l'épaule reste au bout du tronc,
+    // comme avant l'ajout de cet os (dans le vrai modèle, le décalage vient du fichier 3D).
+    const offset = spec.parent.endsWith("_clavicle") ? 0 : BONE_LENGTH[spec.parent];
+    bones[key].position.set(0, offset, 0);
   }
   const skeleton = new THREE.Skeleton(BONE_ORDER.map((key) => bones[key]));
   return { skeleton, bones };
@@ -159,6 +238,16 @@ export function applyFrameToSkeleton(
     const spec = BONE_SPECS[key];
     const bone = bones[key];
     const parentWorldQuat = worldQuatByBone[spec.parent]!;
+
+    if (!spec.from || !spec.to) {
+      // Pas de point de repère : l'os suit son parent dans sa position de repos (rotation
+      // locale capturée au premier appel, avant toute pose).
+      bone.userData.restQuaternion ??= bone.quaternion.clone();
+      bone.scale.setScalar(1);
+      bone.quaternion.copy(bone.userData.restQuaternion as THREE.Quaternion);
+      worldQuatByBone[key] = parentWorldQuat.clone().multiply(bone.quaternion);
+      continue;
+    }
 
     const from = averageLandmark(merged, spec.from);
     const to = averageLandmark(merged, spec.to);

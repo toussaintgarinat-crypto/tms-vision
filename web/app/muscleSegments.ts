@@ -1,26 +1,52 @@
 import * as THREE from "three";
 import { BoneKey } from "./pose3dSkeleton";
+import type { Region } from "./exercisePose";
 
 export type RulaSegment = "neck" | "trunk" | "upper_arm" | "lower_arm";
 
 export const RULA_SEGMENTS: readonly RulaSegment[] = ["neck", "trunk", "upper_arm", "lower_arm"];
 
-// Un seul os "logique" domine chaque muscle de ce rig (voir Tranche 3 : tronc/
-// cou/cuisse en poids rigide déterministe -- 100% sur un seul os -- et
-// bras/avant-bras via Automatic Weights mais toujours dominés par un seul des
-// deux os possibles) : mapper l'os dominant d'un SkinnedMesh sur son segment
-// RULA suffit, pas besoin de connaître le nom du muscle Z-Anatomy lui-même.
-export const SEGMENT_BY_BONE: Record<BoneKey, RulaSegment | null> = {
-  root: null,
+// Repli quand un maillage ne porte pas sa région dans le fichier 3D (anciens fichiers) : l'os qui
+// domine ses poids de peau donne la région. Le fichier actuel porte la région de chaque muscle
+// (`userData.region`, exportée par tools/blender/export_muscle_rig.py), qui prime.
+export const REGION_BY_BONE: Record<BoneKey, Region | null> = {
+  root: "hip",
   spine: "trunk",
   neck: "neck",
+  head: "head",
+  L_clavicle: "shoulder",
+  R_clavicle: "shoulder",
   L_upper_arm: "upper_arm",
   R_upper_arm: "upper_arm",
   L_forearm: "lower_arm",
   R_forearm: "lower_arm",
-  L_thigh: null,
-  R_thigh: null,
+  L_hand: "hand",
+  R_hand: "hand",
+  L_fingers: "hand",
+  R_fingers: "hand",
+  L_thumb: "hand",
+  R_thumb: "hand",
+  L_thigh: "thigh",
+  R_thigh: "thigh",
+  L_shin: "lower_leg",
+  R_shin: "lower_leg",
+  L_foot: "foot",
+  R_foot: "foot",
+  L_toes: "foot",
+  R_toes: "foot",
 };
+
+// Régions dont les muscles ont un côté (gauche ou droit) ; le tronc, le cou et la tête n'en ont pas.
+const SIDED_REGIONS: ReadonlySet<Region> = new Set<Region>([
+  "upper_arm",
+  "lower_arm",
+  "shoulder",
+  "hand",
+  "hip",
+  "thigh",
+  "lower_leg",
+  "foot",
+]);
 
 export function sideOfBone(boneKey: BoneKey): "left" | "right" | null {
   if (boneKey.startsWith("L_")) return "left";
@@ -86,11 +112,27 @@ export function resolveMeshBoneKey(mesh: THREE.SkinnedMesh): BoneKey {
 }
 
 export interface MeshSegmentRouting {
+  // Région du muscle (`null` si inconnue).
+  region: Region | null;
+  // Zone RULA mesurée, ou `null` pour les régions sans donnée mesurée (elles restent grises dans
+  // l'analyse : on ne colore jamais une donnée non mesurée).
   segment: RulaSegment | null;
   side: "left" | "right" | null;
 }
 
+function isRulaSegment(region: Region | null): region is RulaSegment {
+  return region !== null && (RULA_SEGMENTS as readonly string[]).includes(region);
+}
+
 export function resolveMeshRouting(mesh: THREE.SkinnedMesh): MeshSegmentRouting {
+  const declared = mesh.userData?.region as Region | undefined;
   const boneKey = resolveMeshBoneKey(mesh);
-  return { segment: SEGMENT_BY_BONE[boneKey] ?? null, side: sideOfBone(boneKey) };
+  const region = declared ?? REGION_BY_BONE[boneKey] ?? null;
+
+  let side: "left" | "right" | null = null;
+  if (region !== null && SIDED_REGIONS.has(region)) {
+    const declaredSide = mesh.userData?.side as string | undefined;
+    side = declaredSide === "l" ? "left" : declaredSide === "r" ? "right" : sideOfBone(boneKey);
+  }
+  return { region, segment: isRulaSegment(region) ? region : null, side };
 }

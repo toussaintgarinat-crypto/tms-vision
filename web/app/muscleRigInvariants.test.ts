@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import * as THREE from "three";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { BoneKey } from "./pose3dSkeleton";
+import { BONE_ORDER } from "./pose3dSkeleton";
+import { REGIONS, Region } from "./exercisePose";
 import { resolveMeshBoneKey, resolveMeshRouting } from "./muscleSegments";
 
 // Garde-fou de non-régression pour le fichier RÉEL et COMMITÉ
@@ -17,6 +18,9 @@ import { resolveMeshBoneKey, resolveMeshRouting } from "./muscleSegments";
 // `PostureAvatar3D.tsx` (via `resolveMeshBoneKey`/`resolveMeshRouting`,
 // réutilisées telles quelles, pas réimplémentées) sur le vrai `.glb`, pas sur
 // des données synthétiques comme `muscleSegments.test.ts`.
+//
+// Depuis la Tranche 4 (corps complet), le fichier a 24 os, ~360 muscles et porte la région et le
+// côté de chaque muscle dans `userData` (voir tools/blender/export_muscle_rig.py).
 
 const MUSCLE_RIG_PATH = path.resolve(__dirname, "..", "public", "muscle-rig.glb");
 
@@ -79,25 +83,29 @@ function buildMeshIndexToSide(document: GltfDocument): Map<number, "left" | "rig
   return map;
 }
 
-const EXPECTED_BONE_COUNTS: Record<BoneKey, number> = {
-  root: 0,
-  spine: 10,
-  neck: 16,
-  L_upper_arm: 16,
-  R_upper_arm: 16,
-  L_forearm: 12,
-  R_forearm: 12,
-  L_thigh: 12,
-  R_thigh: 12,
-};
-const EXPECTED_TOTAL_PRIMITIVES = 106;
+
+const EXPECTED_MESH_COUNT = 358;
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+
+// Régions dont les muscles se trouvent d'un seul côté du plan médian (le tronc, le cou, la tête, le
+// bassin et la ceinture scapulaire ont des muscles qui touchent ou franchissent le milieu).
+const LATERAL_REGIONS: ReadonlySet<Region> = new Set<Region>([
+  "upper_arm",
+  "lower_arm",
+  "hand",
+  "thigh",
+  "lower_leg",
+  "foot",
+]);
 
 describe("invariants du rig musculaire réel (web/public/muscle-rig.glb)", () => {
   let skinnedMeshes: THREE.SkinnedMesh[];
   let nameDerivedSideByMesh: Map<THREE.SkinnedMesh, "left" | "right" | undefined>;
+  let fileSize: number;
 
   beforeAll(async () => {
     const buffer = fs.readFileSync(MUSCLE_RIG_PATH);
+    fileSize = buffer.byteLength;
     const arrayBuffer = buffer.buffer.slice(
       buffer.byteOffset,
       buffer.byteOffset + buffer.byteLength
@@ -128,55 +136,97 @@ describe("invariants du rig musculaire réel (web/public/muscle-rig.glb)", () =>
     }
   });
 
-  it("contient exactement 106 primitives skinnées", () => {
-    expect(skinnedMeshes.length).toBe(EXPECTED_TOTAL_PRIMITIVES);
+  it(`contient exactement ${EXPECTED_MESH_COUNT} primitives skinnées, une par muscle`, () => {
+    expect(skinnedMeshes.length).toBe(EXPECTED_MESH_COUNT);
   });
 
-  it("résout chaque primitive sur un os dominant sensé, avec la répartition exacte attendue", () => {
-    // Réutilise `resolveMeshBoneKey` (donc `dominantBoneIndex`) telle quelle
-    // -- même logique que le composant de rendu, pas une réimplémentation
-    // séparée susceptible de diverger silencieusement de la vraie logique de
-    // coloration.
-    const boneCounts: Record<BoneKey, number> = {
-      root: 0,
-      spine: 0,
-      neck: 0,
-      L_upper_arm: 0,
-      R_upper_arm: 0,
-      L_forearm: 0,
-      R_forearm: 0,
-      L_thigh: 0,
-      R_thigh: 0,
-    };
+  it("tient dans 25 Mo", () => {
+    expect(fileSize).toBeLessThan(MAX_FILE_BYTES);
+  });
+
+  it("a un squelette de 24 os, avec exactement les noms de BONE_ORDER", () => {
+    const names = skinnedMeshes[0].skeleton.bones.map((bone) => bone.name);
+    expect(new Set(names)).toEqual(new Set(BONE_ORDER));
+    expect(names.length).toBe(BONE_ORDER.length);
     for (const mesh of skinnedMeshes) {
-      const boneKey = resolveMeshBoneKey(mesh);
-      boneCounts[boneKey] += 1;
+      expect(mesh.skeleton.bones.length, mesh.name).toBe(BONE_ORDER.length);
     }
-    expect(boneCounts).toEqual(EXPECTED_BONE_COUNTS);
   });
 
-  it("ne résout jamais une primitive sur `root` (locateur de longueur nulle, jamais un vrai muscle)", () => {
-    const rootCount = skinnedMeshes.filter((mesh) => resolveMeshBoneKey(mesh) === "root").length;
-    expect(rootCount).toBe(0);
+  it("déclare pour chaque muscle une région connue et un côté (l ou r)", () => {
+    for (const mesh of skinnedMeshes) {
+      expect(REGIONS as readonly string[], `${mesh.name} : région`).toContain(mesh.userData.region);
+      expect(["l", "r"], `${mesh.name} : côté`).toContain(mesh.userData.side);
+    }
   });
 
-  it("le côté déduit du nom de chaque primitive (.l/.r) correspond au préfixe L_/R_ de son os dominant", () => {
+  it("couvre toutes les régions, des deux côtés", () => {
+    for (const region of REGIONS) {
+      for (const side of ["l", "r"]) {
+        const count = skinnedMeshes.filter(
+          (mesh) => mesh.userData.region === region && mesh.userData.side === side
+        ).length;
+        expect(count, `${region}/${side}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("donne à chaque sommet des poids de peau positifs dont la somme vaut 1", () => {
+    for (const mesh of skinnedMeshes) {
+      const weights = mesh.geometry.attributes.skinWeight as THREE.BufferAttribute;
+      for (let vertex = 0; vertex < weights.count; vertex++) {
+        const sum = weights.getX(vertex) + weights.getY(vertex) + weights.getZ(vertex) + weights.getW(vertex);
+        if (Math.abs(sum - 1) > 1e-3) {
+          throw new Error(`${mesh.name} : somme des poids ${sum} au sommet ${vertex}`);
+        }
+      }
+    }
+  });
+
+  it("ne résout jamais une primitive sur `root` pour un muscle de membre", () => {
+    const sidedOnRoot = skinnedMeshes.filter(
+      (mesh) =>
+        LATERAL_REGIONS.has(mesh.userData.region) && resolveMeshBoneKey(mesh) === "root"
+    );
+    expect(sidedOnRoot.map((mesh) => mesh.name)).toEqual([]);
+  });
+
+  it("le côté déclaré (l/r) correspond au côté de l'os dominant, quand cet os est latéralisé", () => {
     let checked = 0;
     for (const mesh of skinnedMeshes) {
-      const nameDerivedSide = nameDerivedSideByMesh.get(mesh);
-      const routing = resolveMeshRouting(mesh);
-      if (routing.side === null) {
-        // Os sans variante gauche/droite (spine/neck) : rien à comparer.
-        continue;
-      }
-      expect(nameDerivedSide, `primitive "${mesh.name}" sans côté déductible de son nom`).toBeDefined();
-      expect(routing.side).toBe(nameDerivedSide);
+      const dominant = resolveMeshBoneKey(mesh);
+      if (!dominant.startsWith("L_") && !dominant.startsWith("R_")) continue;
+      const expected = dominant.startsWith("L_") ? "l" : "r";
+      expect(mesh.userData.side, `${mesh.name} dominé par ${dominant}`).toBe(expected);
       checked += 1;
     }
-    // Les 4 os de membre (L/R upper_arm, L/R forearm, L/R thigh) totalisent
-    // 16+16+12+12+12+12 = 80 primitives sur les 106 -- s'assurer que la
-    // comparaison ci-dessus a bien porté sur ce nombre, pas silencieusement
-    // sauté faute de correspondance trouvée.
-    expect(checked).toBe(80);
+    expect(checked).toBeGreaterThan(100);
+  });
+
+  it("le côté déduit du nom du node (.l/.r) est celui déclaré dans userData", () => {
+    for (const mesh of skinnedMeshes) {
+      const fromName = nameDerivedSideByMesh.get(mesh);
+      if (fromName === undefined) continue;
+      expect(mesh.userData.side, mesh.name).toBe(fromName === "left" ? "l" : "r");
+    }
+  });
+
+  it("place les muscles gauches des membres en +x et les droits en -x", () => {
+    let checked = 0;
+    for (const mesh of skinnedMeshes) {
+      if (!LATERAL_REGIONS.has(mesh.userData.region)) continue;
+      mesh.geometry.computeBoundingBox();
+      const centre = mesh.geometry.boundingBox!.getCenter(new THREE.Vector3());
+      if (mesh.userData.side === "l") expect(centre.x, mesh.name).toBeGreaterThan(0);
+      else expect(centre.x, mesh.name).toBeLessThan(0);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThan(100);
+  });
+
+  it("route chaque muscle vers sa région déclarée", () => {
+    for (const mesh of skinnedMeshes) {
+      expect(resolveMeshRouting(mesh).region, mesh.name).toBe(mesh.userData.region);
+    }
   });
 });
