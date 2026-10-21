@@ -1,0 +1,80 @@
+{
+  "id": "trunk-rotation-stretch",
+  "zone": "trunk",
+  "title": "Rotation du tronc",
+  "description": "Tourner le haut du corps de chaque côté pour mobiliser la colonne dorsale, après une posture assise ou penchée.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "turn_right": {
+      "spine": {
+        "twist": 30
+      }
+    },
+    "turn_left": {
+      "spine": {
+        "twist": -30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "turn_right"
+    },
+    {
+      "t": 15,
+      "pose": "turn_right"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "turn_left"
+    },
+    {
+      "t": 35,
+      "pose": "turn_left"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, les pieds écartés de la largeur du bassin."
+    },
+    {
+      "t": 5,
+      "text": "Tournez le haut du corps vers la droite, le bassin reste face à vous."
+    },
+    {
+      "t": 15,
+      "text": "Revenez au centre."
+    },
+    {
+      "t": 25,
+      "text": "Tournez vers la gauche."
+    },
+    {
+      "t": 35,
+      "text": "Revenez au centre et relâchez."
+    }
+  ],
+  "duration_seconds": 45
+}

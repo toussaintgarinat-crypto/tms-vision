@@ -1,0 +1,86 @@
+{
+  "id": "shoulder-blade-squeeze",
+  "zone": "shoulder",
+  "title": "Rapprocher les omoplates",
+  "description": "Ramener les épaules vers l'arrière pour ouvrir la poitrine et contrebalancer la posture enroulée devant un écran.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "shoulder"
+  ],
+  "poses": {
+    "neutral": {},
+    "squeeze": {
+      "L_clavicle": {
+        "twist": -14
+      },
+      "R_clavicle": {
+        "twist": -14
+      }
+    },
+    "rounded": {
+      "L_clavicle": {
+        "twist": 10
+      },
+      "R_clavicle": {
+        "twist": 10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "rounded"
+    },
+    {
+      "t": 7,
+      "pose": "neutral"
+    },
+    {
+      "t": 11,
+      "pose": "squeeze"
+    },
+    {
+      "t": 17,
+      "pose": "squeeze"
+    },
+    {
+      "t": 21,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, les bras le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Arrondissez légèrement les épaules vers l'avant."
+    },
+    {
+      "t": 7,
+      "text": "Revenez au centre."
+    },
+    {
+      "t": 11,
+      "text": "Ramenez les épaules vers l'arrière, comme pour rapprocher les omoplates."
+    },
+    {
+      "t": 17,
+      "text": "Gardez sans cambrer le bas du dos."
+    },
+    {
+      "t": 21,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 30
+}

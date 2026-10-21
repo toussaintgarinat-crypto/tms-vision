@@ -1,0 +1,113 @@
+{
+  "id": "ankle-mobility",
+  "zone": "foot",
+  "title": "Mobilité de la cheville",
+  "description": "Pied levé, pointer puis relever les orteils pour assouplir la cheville et le pied.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "lifted": {
+      "R_thigh": {
+        "flexion": 70
+      }
+    },
+    "pointed": {
+      "R_thigh": {
+        "flexion": 70
+      },
+      "R_foot": {
+        "flexion": -40
+      },
+      "R_toes": {
+        "flexion": -20
+      }
+    },
+    "flexed": {
+      "R_thigh": {
+        "flexion": 70
+      },
+      "R_foot": {
+        "flexion": 25
+      },
+      "R_toes": {
+        "flexion": 15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "lifted"
+    },
+    {
+      "t": 8,
+      "pose": "pointed"
+    },
+    {
+      "t": 12,
+      "pose": "flexed"
+    },
+    {
+      "t": 16,
+      "pose": "pointed"
+    },
+    {
+      "t": 20,
+      "pose": "flexed"
+    },
+    {
+      "t": 24,
+      "pose": "pointed"
+    },
+    {
+      "t": 28,
+      "pose": "flexed"
+    },
+    {
+      "t": 32,
+      "pose": "lifted"
+    },
+    {
+      "t": 36,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis au bord d'une chaise, le dos droit."
+    },
+    {
+      "t": 4,
+      "text": "Levez la jambe droite devant vous."
+    },
+    {
+      "t": 8,
+      "text": "Pointez le pied vers l'avant, orteils tendus."
+    },
+    {
+      "t": 12,
+      "text": "Ramenez les orteils vers vous."
+    },
+    {
+      "t": 28,
+      "text": "Continuez lentement, en soufflant."
+    },
+    {
+      "t": 36,
+      "text": "Reposez le pied."
+    }
+  ],
+  "duration_seconds": 40
+}

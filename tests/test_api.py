@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from tms_vision import storage
 from tms_vision.api import app
+from tms_vision.exercises import REGIONS
 
 
 def _write_synthetic_video(path):
@@ -1146,7 +1147,7 @@ def test_list_exercises_returns_the_catalog_without_the_heavy_fields(tmp_path, m
     assert response.status_code == 200
     body = response.json()
     assert [e["id"] for e in body] == sorted(e["id"] for e in body)
-    assert {e["zone"] for e in body} == {"neck", "trunk", "upper_arm", "lower_arm"}
+    assert {e["zone"] for e in body} == set(REGIONS)
     for exercise in body:
         assert exercise["status"] == "draft"
         assert exercise["duration_seconds"] > 0

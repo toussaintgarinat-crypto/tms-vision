@@ -2,9 +2,9 @@
 `exercises/`, validés ici, qui alimentent le catalogue de capsules (voir
 docs/superpowers/plans/2026-10-21-generation-modules-etirement-plan.md).
 
-Une pose donne, par os du squelette articulé de l'avatar 3D, deux angles
-(`flexion`, `lateral`, en degrés) à partir de la posture neutre ; le rendu les
-convertit en pose du squelette. Un exercice `source: "ai"` n'existe que dans
+Une pose donne, par os du squelette articulé de l'avatar 3D (24 os), trois angles
+(`flexion`, `lateral`, `twist`, en degrés) RELATIFS à l'os parent : un os sans angle
+reste aligné sur son parent. Le rendu les convertit en pose du squelette. Un exercice `source: "ai"` n'existe que dans
 `exercises/drafts/` et n'entre jamais au catalogue : un humain doit le relire,
 le corriger et le valider avant."""
 import argparse
@@ -18,11 +18,19 @@ from tms_vision.providers import ExerciseProvider, ProviderError, get_exercise_p
 
 EXERCISES_DIR = Path(__file__).resolve().parents[2] / "exercises"
 
+# Les quatre zones RULA mesurées : ce sont elles que l'analyse note et que le programme d'étirements
+# classe. Les régions ajoutées avec le corps complet (tête, épaule, main, hanche, cuisse, jambe,
+# pied) n'ont pas de mesure ; leurs exercices existent au catalogue et se génèrent, mais aucun
+# score ne les recommande encore.
 ZONES = ("neck", "trunk", "upper_arm", "lower_arm")
-BONES = (
-    "spine", "neck", "L_upper_arm", "L_forearm", "R_upper_arm", "R_forearm", "L_thigh", "R_thigh",
+REGIONS = ZONES + ("head", "shoulder", "hand", "hip", "thigh", "lower_leg", "foot")
+_SIDED_BONES = (
+    "clavicle", "upper_arm", "forearm", "hand", "fingers", "thumb", "thigh", "shin", "foot", "toes",
 )
-ANGLE_KEYS = ("flexion", "lateral")
+BONES = ("spine", "neck", "head") + tuple(
+    f"{side}_{bone}" for bone in _SIDED_BONES for side in ("L", "R")
+)
+ANGLE_KEYS = ("flexion", "lateral", "twist")
 STATUSES = ("draft", "validated")
 SOURCES = ("human", "ai")
 VIEWS = ("front", "side", "three_quarter")
@@ -137,7 +145,7 @@ def validate_exercise(
     if filename_stem is not None and data["id"] != filename_stem:
         _fail("id", f"doit être égal au nom du fichier ('{filename_stem}').")
 
-    _check_choice(data, "zone", ZONES)
+    _check_choice(data, "zone", REGIONS)
     _check_choice(data, "status", STATUSES)
     _check_choice(data, "source", SOURCES)
     _check_choice(data, "view", VIEWS)
@@ -161,8 +169,11 @@ def validate_exercise(
     if len(set(segments)) != len(segments):
         _fail("target_segments", "segments en double.")
     for segment in segments:
-        if segment not in ZONES:
-            _fail("target_segments", f"segment inconnu '{segment}' (attendu : {', '.join(ZONES)}).")
+        if segment not in REGIONS:
+            _fail(
+                "target_segments",
+                f"segment inconnu '{segment}' (attendu : {', '.join(REGIONS)}).",
+            )
 
     duration = data["duration_seconds"]
     if not _is_number(duration) or not MIN_DURATION_SECONDS <= duration <= MAX_DURATION_SECONDS:
@@ -209,8 +220,8 @@ def propose_draft(
     `exercises/drafts/`. Quoi que dise le fournisseur, l'exercice est marqué
     `source: "ai"`, `status: "draft"`, sans validation : il n'entre jamais au catalogue
     sans qu'un humain l'ait relu et déplacé. Ne remplace jamais un fichier existant."""
-    if zone not in ZONES:
-        _fail("zone", f"valeur '{zone}' inconnue (attendu : {', '.join(ZONES)}).")
+    if zone not in REGIONS:
+        _fail("zone", f"valeur '{zone}' inconnue (attendu : {', '.join(REGIONS)}).")
 
     proposal = provider.propose(zone, constraints or {})
     if not isinstance(proposal, dict):
@@ -245,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     propose = commands.add_parser(
         "propose", help="demander un brouillon d'exercice au fournisseur d'IA configuré"
     )
-    propose.add_argument("--zone", required=True, choices=ZONES)
+    propose.add_argument("--zone", required=True, choices=REGIONS)
     try:
         args = parser.parse_args(argv)
     except SystemExit as exit_request:

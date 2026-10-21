@@ -18,14 +18,11 @@
         "flexion": 90
       },
       "R_forearm": {
-        "flexion": 180
+        "flexion": 90
       }
     },
     "right_straight": {
       "R_upper_arm": {
-        "flexion": 90
-      },
-      "R_forearm": {
         "flexion": 90
       }
     },
@@ -34,14 +31,11 @@
         "flexion": 90
       },
       "L_forearm": {
-        "flexion": 180
+        "flexion": 90
       }
     },
     "left_straight": {
       "L_upper_arm": {
-        "flexion": 90
-      },
-      "L_forearm": {
         "flexion": 90
       }
     }

@@ -5,7 +5,14 @@ from pathlib import Path
 import pytest
 
 from tms_vision import exercises
-from tms_vision.exercises import ZONES, load_catalog, load_exercise, validate_exercise
+from tms_vision.exercises import (
+    BONES,
+    REGIONS,
+    ZONES,
+    load_catalog,
+    load_exercise,
+    validate_exercise,
+)
 
 
 def _valid():
@@ -190,10 +197,34 @@ def test_load_catalog_names_the_invalid_file(tmp_path):
         load_catalog(tmp_path)
 
 
-def test_shipped_exercises_are_valid_cover_every_zone_and_are_unvalidated_drafts():
+def test_the_whole_body_has_a_skeleton_of_23_bones_besides_the_root():
+    assert len(BONES) == 23
+    assert set(ZONES) < set(REGIONS)
+    assert {"head", "L_hand", "R_fingers", "L_thumb", "R_shin", "L_foot", "R_toes", "L_clavicle"} <= set(BONES)
+
+
+def test_a_pose_may_use_the_new_bones_and_the_twist_angle():
+    data = _mutate(
+        ["poses", "tilt_right"],
+        {"head": {"twist": 40}, "R_hand": {"flexion": -60, "lateral": 10}, "L_foot": {"flexion": 20}},
+    )
+    data["zone"] = "head"
+    data["target_segments"] = ["head", "hand", "foot"]
+
+    validate_exercise(data)
+
+
+def test_a_twist_angle_is_bounded_like_the_other_angles():
+    data = _mutate(["poses", "tilt_right"], {"neck": {"twist": 181}})
+
+    with pytest.raises(ValueError, match="twist"):
+        validate_exercise(data)
+
+
+def test_shipped_exercises_are_valid_cover_every_region_and_are_unvalidated_drafts():
     catalog = load_catalog()
 
-    assert {exercise["zone"] for exercise in catalog} == set(ZONES)
+    assert {exercise["zone"] for exercise in catalog} == set(REGIONS)
     for exercise in catalog:
         assert exercise["status"] == "draft", exercise["id"]
         assert exercise["source"] == "human", exercise["id"]

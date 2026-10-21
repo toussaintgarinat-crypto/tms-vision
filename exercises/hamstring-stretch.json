@@ -1,0 +1,85 @@
+{
+  "id": "hamstring-stretch",
+  "zone": "thigh",
+  "title": "Étirement des ischio-jambiers",
+  "description": "Jambe tendue vers l'avant, talon posé, se pencher légèrement pour étirer l'arrière de la cuisse.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "leg_forward": {
+      "R_thigh": {
+        "flexion": 50
+      },
+      "R_foot": {
+        "flexion": 25
+      }
+    },
+    "leaning": {
+      "R_thigh": {
+        "flexion": 50
+      },
+      "R_foot": {
+        "flexion": 25
+      },
+      "spine": {
+        "flexion": 18
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "leg_forward"
+    },
+    {
+      "t": 9,
+      "pose": "leaning"
+    },
+    {
+      "t": 24,
+      "pose": "leaning"
+    },
+    {
+      "t": 28,
+      "pose": "leg_forward"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, le dos droit."
+    },
+    {
+      "t": 4,
+      "text": "Posez le talon droit devant vous, jambe tendue, orteils vers le haut."
+    },
+    {
+      "t": 9,
+      "text": "Penchez-vous légèrement en gardant le dos droit."
+    },
+    {
+      "t": 24,
+      "text": "Gardez en respirant, sans douleur."
+    },
+    {
+      "t": 32,
+      "text": "Revenez debout, puis changez de jambe."
+    }
+  ],
+  "duration_seconds": 40
+}

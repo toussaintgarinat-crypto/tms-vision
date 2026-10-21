@@ -1,0 +1,71 @@
+{
+  "id": "chest-opening-stretch",
+  "zone": "shoulder",
+  "title": "Ouverture de la poitrine",
+  "description": "Écarter les bras vers l'arrière pour étirer les pectoraux, raccourcis par une posture penchée vers l'avant.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "open": {
+      "L_upper_arm": {
+        "flexion": -30,
+        "lateral": 35
+      },
+      "R_upper_arm": {
+        "flexion": -30,
+        "lateral": 35
+      },
+      "L_clavicle": {
+        "twist": -10
+      },
+      "R_clavicle": {
+        "twist": -10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "open"
+    },
+    {
+      "t": 15,
+      "pose": "open"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, les pieds écartés de la largeur du bassin."
+    },
+    {
+      "t": 5,
+      "text": "Écartez les bras en arrière, les épaules basses."
+    },
+    {
+      "t": 15,
+      "text": "Gardez en respirant calmement, sans cambrer."
+    },
+    {
+      "t": 20,
+      "text": "Ramenez les bras le long du corps."
+    }
+  ],
+  "duration_seconds": 30
+}

@@ -1,0 +1,83 @@
+{
+  "id": "head-chin-tuck",
+  "zone": "head",
+  "title": "Rentrer le menton",
+  "description": "Ramener la tête en arrière sans la lever, pour soulager la base du crâne quand la tête avance vers l'écran.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "head",
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "tuck": {
+      "neck": {
+        "flexion": -8
+      },
+      "head": {
+        "flexion": 14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "tuck"
+    },
+    {
+      "t": 10,
+      "pose": "tuck"
+    },
+    {
+      "t": 14,
+      "pose": "neutral"
+    },
+    {
+      "t": 18,
+      "pose": "tuck"
+    },
+    {
+      "t": 24,
+      "pose": "tuck"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Regardez devant vous, le dos droit."
+    },
+    {
+      "t": 4,
+      "text": "Rentrez le menton comme pour faire un double menton, sans baisser les yeux."
+    },
+    {
+      "t": 10,
+      "text": "Gardez la position en respirant."
+    },
+    {
+      "t": 14,
+      "text": "Relâchez."
+    },
+    {
+      "t": 18,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 28,
+      "text": "Relâchez complètement."
+    }
+  ],
+  "duration_seconds": 30
+}

@@ -1,0 +1,80 @@
+{
+  "id": "quadriceps-standing-stretch",
+  "zone": "thigh",
+  "title": "Étirement du quadriceps",
+  "description": "Ramener le talon vers la fesse pour étirer le devant de la cuisse.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "heel_right": {
+      "R_shin": {
+        "flexion": -115
+      }
+    },
+    "heel_left": {
+      "L_shin": {
+        "flexion": -115
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "heel_right"
+    },
+    {
+      "t": 19,
+      "pose": "heel_right"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    },
+    {
+      "t": 27,
+      "pose": "heel_left"
+    },
+    {
+      "t": 42,
+      "pose": "heel_left"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, une main appuyée sur un support."
+    },
+    {
+      "t": 4,
+      "text": "Pliez le genou droit et ramenez le talon vers la fesse."
+    },
+    {
+      "t": 19,
+      "text": "Gardez les genoux proches l'un de l'autre."
+    },
+    {
+      "t": 23,
+      "text": "Reposez le pied, puis changez de jambe."
+    },
+    {
+      "t": 42,
+      "text": "Reposez le pied."
+    }
+  ],
+  "duration_seconds": 50
+}

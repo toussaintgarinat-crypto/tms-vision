@@ -1,0 +1,68 @@
+{
+  "id": "calf-stretch",
+  "zone": "lower_leg",
+  "title": "Étirement du mollet",
+  "description": "Pied à plat derrière soi, talon vers le sol, pour étirer le mollet après une station debout prolongée.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "lower_leg"
+  ],
+  "poses": {
+    "neutral": {},
+    "stretch": {
+      "L_thigh": {
+        "flexion": 30
+      },
+      "L_shin": {
+        "flexion": -30
+      },
+      "R_thigh": {
+        "flexion": -22
+      },
+      "R_foot": {
+        "flexion": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "stretch"
+    },
+    {
+      "t": 25,
+      "pose": "stretch"
+    },
+    {
+      "t": 30,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, face à un mur, les mains à hauteur des épaules."
+    },
+    {
+      "t": 5,
+      "text": "Reculez une jambe, talon au sol, genou tendu."
+    },
+    {
+      "t": 25,
+      "text": "Gardez en respirant, puis changez de jambe."
+    },
+    {
+      "t": 30,
+      "text": "Revenez debout."
+    }
+  ],
+  "duration_seconds": 35
+}

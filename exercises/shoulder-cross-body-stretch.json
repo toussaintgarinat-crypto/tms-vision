@@ -17,18 +17,10 @@
       "R_upper_arm": {
         "flexion": 90,
         "lateral": -45
-      },
-      "R_forearm": {
-        "flexion": 90,
-        "lateral": -45
       }
     },
     "left_cross": {
       "L_upper_arm": {
-        "flexion": 90,
-        "lateral": -45
-      },
-      "L_forearm": {
         "flexion": 90,
         "lateral": -45
       }

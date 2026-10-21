@@ -1,0 +1,87 @@
+{
+  "id": "neck-rotation-stretch",
+  "zone": "neck",
+  "title": "Rotation du cou",
+  "description": "Tourner doucement la tête d'un côté puis de l'autre pour assouplir la nuque, après une posture prolongée devant un écran.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "neutral": {},
+    "turn_right": {
+      "neck": {
+        "twist": 25
+      },
+      "head": {
+        "twist": 40
+      }
+    },
+    "turn_left": {
+      "neck": {
+        "twist": -25
+      },
+      "head": {
+        "twist": -40
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "turn_right"
+    },
+    {
+      "t": 15,
+      "pose": "turn_right"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "turn_left"
+    },
+    {
+      "t": 35,
+      "pose": "turn_left"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis ou debout, le dos droit, les épaules relâchées."
+    },
+    {
+      "t": 5,
+      "text": "Tournez lentement la tête vers la droite, sans forcer."
+    },
+    {
+      "t": 15,
+      "text": "Revenez doucement au centre."
+    },
+    {
+      "t": 25,
+      "text": "Tournez la tête vers la gauche."
+    },
+    {
+      "t": 35,
+      "text": "Revenez au centre et relâchez la nuque."
+    }
+  ],
+  "duration_seconds": 45
+}
