@@ -11,7 +11,9 @@ import json
 import os
 import shutil
 import tempfile
+import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -51,7 +53,43 @@ ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-app = FastAPI()
+# Une session d'envoi abandonnée (jamais terminée) laisse sur le disque les morceaux de la vidéo
+# BRUTE, visages nets : on les supprime au bout de ce délai sans activité.
+UPLOAD_SESSION_MAX_AGE_SECONDS = 24 * 3600
+
+
+def _purge_stale_upload_sessions() -> int:
+    """Supprime les sessions d'envoi (OUTPUT_DIR/.uploads/<uuid>) sans activité depuis plus de
+    UPLOAD_SESSION_MAX_AGE_SECONDS ; l'activité est la date de modification la plus récente du
+    dossier et de ses morceaux. Ne touche qu'aux dossiers nommés comme un uuid, jamais au reste.
+    Retourne le nombre de sessions supprimées."""
+    root = OUTPUT_DIR / ".uploads"
+    if not root.is_dir():
+        return 0
+
+    removed = 0
+    now = time.time()
+    for entry in root.iterdir():
+        if not entry.is_dir():
+            continue
+        try:
+            uuid.UUID(entry.name)
+        except ValueError:
+            continue
+        last_activity = max([entry.stat().st_mtime, *(p.stat().st_mtime for p in entry.iterdir())])
+        if now - last_activity > UPLOAD_SESSION_MAX_AGE_SECONDS:
+            shutil.rmtree(entry, ignore_errors=True)
+            removed += 1
+    return removed
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    _purge_stale_upload_sessions()
+    yield
+
+
+app = FastAPI(lifespan=_lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -176,6 +214,7 @@ async def start_upload(
     survivre à un redémarrage d'uvicorn --reload en cours d'upload. C'est un
     état transitoire de transport, pas un résultat d'analyse -- il reste
     hors DuckDB, voir docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md."""
+    _purge_stale_upload_sessions()
     upload_id = uuid.uuid4().hex
     session_dir = OUTPUT_DIR / ".uploads" / upload_id
     session_dir.mkdir(parents=True, exist_ok=True)
