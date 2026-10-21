@@ -1,0 +1,29 @@
+{
+  "calibrated": false,
+  "zones": {
+    "neck": {
+      "min_prominence_deg": 10.0,
+      "static_variation_deg": 15.0,
+      "repetitive_cycles_per_minute": null,
+      "static_seconds": null
+    },
+    "trunk": {
+      "min_prominence_deg": 10.0,
+      "static_variation_deg": 15.0,
+      "repetitive_cycles_per_minute": null,
+      "static_seconds": null
+    },
+    "upper_arm": {
+      "min_prominence_deg": 10.0,
+      "static_variation_deg": 15.0,
+      "repetitive_cycles_per_minute": null,
+      "static_seconds": null
+    },
+    "lower_arm": {
+      "min_prominence_deg": 10.0,
+      "static_variation_deg": 15.0,
+      "repetitive_cycles_per_minute": null,
+      "static_seconds": null
+    }
+  }
+}
