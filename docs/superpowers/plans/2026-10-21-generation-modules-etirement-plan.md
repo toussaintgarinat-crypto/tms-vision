@@ -254,7 +254,7 @@ premier `t == 0`, dernier `t <= duration_seconds` ; `instructions[].t` croissant
 - Test: `tests/test_render_determinism.py` (ignoré si `node`, `ffmpeg` ou Chromium sont absents)
 
 **Comportement :** `node scripts/render-exercise.mjs --definition <fichier.json> --out <fichier.mp4>
-[--fps 24] [--size 640] [--base-url http://localhost:3000]`. Lance Chromium sans écran, ouvre
+[--fps 15] [--size 640] [--base-url http://localhost:3000]`. Lance Chromium sans écran, ouvre
 `/render/<id>`, injecte la définition via `window.__tmsRender.load`, boucle sur `t = i / fps`,
 capture le `stage` en PNG, envoie les images à `ffmpeg` (`image2pipe`, `libx264`, `yuv420p`, `-movflags
 +faststart`), sort avec un code non nul et un message clair si Chromium, `ffmpeg` ou le serveur
@@ -264,8 +264,8 @@ Next.js sont introuvables. Chemin de l'exécutable Chromium surchargeable (`CHRO
 - [ ] **Step 2:** Test de déterminisme : rendre deux fois le même exercice court, décoder les images
   des deux vidéos (`ffmpeg -f framehash` ou équivalent) et exiger des hashes identiques image par image.
   Test ignoré proprement quand l'environnement ne permet pas le rendu.
-- [ ] **Step 3:** Vérifier : durée de la vidéo = `duration_seconds` (à une image près), 24 images par
-  seconde, lisible (`ffprobe`), codec H.264. Consigner le temps de rendu mesuré.
+- [ ] **Step 3:** Vérifier : durée de la vidéo = `duration_seconds` (à une image près), 15 images par
+  seconde par défaut, lisible (`ffprobe`), codec H.264. Consigner le temps de rendu mesuré.
 - [ ] **Step 4:** Commit `feat: rend un exercice d'étirement en vidéo, image par image`.
 
 ---

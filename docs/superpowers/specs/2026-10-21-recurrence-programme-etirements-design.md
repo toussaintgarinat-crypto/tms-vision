@@ -254,6 +254,13 @@ pour référencer ces définitions plutôt qu'une URL.
   vérifiée dans l'environnement de développement : WebGL2 via SwiftShader, captures successives
   identiques, `ffmpeg` avec `libx264` et `aac`. Une porte de décision (spike sur le vrai
   `muscle-rig.glb`) ouvre la tranche ; le repli est Blender en ligne de commande.
+- **Mesure du spike (Tranche 3, Task 1), sur le vrai `muscle-rig.glb` :** 106 maillages chargés, dont
+  16 colorés pour le segment `neck` ; image non vide, teintes visibles, pas de saturation blanche ; 5
+  captures successives de la même pose ont le même hash (PNG et JPEG) ; aucune erreur de console. Coût :
+  environ 0,43 s par image, presque entièrement du rendu logiciel SwiftShader (la capture elle-même
+  ne coûte rien), dans un conteneur de 4 cœurs sans GPU. Cadence par défaut retenue : 15 images par
+  seconde, soit environ 5 minutes de calcul pour une vidéo de 45 s dans cet environnement ; une machine
+  avec carte graphique sera très nettement plus rapide.
 - **Crédit :** chaque vidéo incruste le crédit Z-Anatomy / BodyParts3D (CC BY-SA 4.0).
 - **Limite du squelette :** 9 os, sans poignet, main, rotation de la tête ni omoplate ; les exercices
   se limitent à ce que le rig sait montrer.
