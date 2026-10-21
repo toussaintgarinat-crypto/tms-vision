@@ -17,6 +17,7 @@ from pathlib import Path
 import cv2
 
 from tms_vision.capture import FrameSource
+from tms_vision.face_blur import FaceAnonymizer, MediaPipeFaceDetector
 from tms_vision.pose_estimation import PoseEstimator
 from tms_vision.angles import compute_joint_angles
 from tms_vision.rula.scoring import action_level, compute_rula_score, detect_muscle_use
@@ -64,7 +65,12 @@ class AnalysisResult:
     pose3d_records: list[Pose3DFrameRecord] | None = None
 
 
-def analyze_video(source: str, side: str, load_kg: float, wrist_twist: str) -> AnalysisResult:
+def analyze_video(
+    source: str, side: str, load_kg: float, wrist_twist: str, anonymize: bool = True
+) -> AnalysisResult:
+    """`anonymize` : pixelliser les têtes de la vidéo annotée avant son écriture (voir
+    face_blur.py). Actif par défaut ; ni l'API ni la CLI ne le désactivent, il n'existe que pour
+    les tests."""
     wrist_twist_code = WRIST_TWIST_CODES[wrist_twist]
 
     frame_source = FrameSource(source)
@@ -115,6 +121,13 @@ def analyze_video(source: str, side: str, load_kg: float, wrist_twist: str) -> A
     smoothed_world_landmarks = smooth_world_landmarks(raw_world_landmarks)
     pose3d_records: list[Pose3DFrameRecord] = []
 
+    # Les images brutes (visages nets) ne vivent qu'en mémoire : seule l'image pixellisée est
+    # écrite dans la vidéo annotée, donc jamais persistée.
+    anonymizer = (
+        FaceAnonymizer(fps=frame_source.fps() or 30.0, detector=MediaPipeFaceDetector())
+        if anonymize else None
+    )
+
     tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
     video_tmp_path = Path(tmp_video.name)
     tmp_video.close()
@@ -142,7 +155,11 @@ def analyze_video(source: str, side: str, load_kg: float, wrist_twist: str) -> A
                         "upper_arm": action_level(score.upper_arm),
                         "lower_arm": action_level(score.lower_arm),
                     }
-                annotated = draw_overlay(frame.image, pose_result.landmarks, score)
+                image = (
+                    anonymizer.anonymize(frame.image, pose_result.landmarks)
+                    if anonymizer is not None else frame.image
+                )
+                annotated = draw_overlay(image, pose_result.landmarks, score)
                 writer.write(annotated)
                 exporter.add_frame(
                     FrameRecord(
@@ -174,6 +191,8 @@ def analyze_video(source: str, side: str, load_kg: float, wrist_twist: str) -> A
         video_bytes = video_tmp_path.read_bytes()
     finally:
         video_tmp_path.unlink(missing_ok=True)
+        if anonymizer is not None:
+            anonymizer.close()
 
     frame_rows = exporter.rows()
     pose3d_payload = build_pose3d_payload(pose3d_records)
