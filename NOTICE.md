@@ -22,3 +22,10 @@ musculaires : ce sont des œuvres dérivées d'un matériau sous licence CC BY-S
 incruste le crédit « Modèle musculaire dérivé de Z-Anatomy (BodyParts3D), licence CC BY-SA 4.0 ».
 Avant toute diffusion, vérifier les obligations de la licence (attribution, partage dans les mêmes
 conditions) pour l'usage prévu, en particulier commercial.
+
+## Détecteur de visages YuNet
+
+`src/tms_vision/models/face_detection_yunet_2023mar.onnx` (SHA-256
+`8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4`) provient du dépôt
+OpenCV Zoo (`opencv/opencv_zoo`, `models/face_detection_yunet`), auteur Shiqi Yu, licence MIT
+(texte dans `src/tms_vision/models/LICENSE-yunet`). Il sert au floutage des visages.

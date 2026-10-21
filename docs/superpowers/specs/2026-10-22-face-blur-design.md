@@ -51,6 +51,17 @@ visages nets. Cela bloquait tout pilote avec de vraies personnes.
   seul ne trouvait le visage que dans 88 images sur 227 de l'original (les profils lui échappent) :
   la pose est indispensable, la conception en union était justifiée. Surcoût : 10,8 s sans floutage,
   12,8 s avec (+19 %).
+- **Scène de groupe, vidéo libre de droit** (film NIOSH sur la protection antichute, Public.Resource.Org,
+  archive.org `youtube-C3FvpjC7C6k`, CC BY 3.0 ; quatre extraits de 20 s) : plusieurs personnes, certaines
+  très petites (≈ 25 px de tête). La pose seule ne suit qu'une personne et BlazeFace manque les petits
+  visages. Ajout de **YuNet** (OpenCV Zoo, MIT) en union avec BlazeFace : sur l'image 521, les 3 visages
+  sont couverts ; le petit ouvrier de droite l'est aux images 226 et 300 ; les deux visages principaux de
+  l'image 595 aussi.
+  **Restent des défauts constatés :** la tête d'un petit ouvrier penché sous un casque (≈ 25 px) échappe
+  encore ; YuNet produit des faux positifs (grosses mosaïques sur torse ou sol, ex. image 447), ce qui
+  dégrade l'image sans gêner l'anonymat. Les pourcentages de couverture d'un audit indépendant sont
+  pollués par les faux positifs des détecteurs d'audit : seule la relecture visuelle fait foi.
+
 - **Ne pas se fier à « plus aucun visage détecté ».** Sur cette vidéo, un détecteur de visages signale
   encore un visage dans 45 images de la sortie floutée : il se déclenche sur la **mosaïque** elle-même
   (vérifié visuellement : aucun trait lisible). Ce critère n'est donc pas une preuve sur de vraies

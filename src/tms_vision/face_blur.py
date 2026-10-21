@@ -15,6 +15,7 @@ Les images brutes ne vivent qu'en mémoire pendant l'analyse ; seule l'image pix
 (voir pipeline.analyze_video)."""
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 import cv2
@@ -197,6 +198,75 @@ class MediaPipeFaceDetector:
 
     def close(self) -> None:
         self._detector.close()
+
+
+# Modèle YuNet (détecteur de visages d'OpenCV Zoo, licence MIT : voir models/LICENSE-yunet et
+# NOTICE.md), embarqué pour que l'analyse reste entièrement locale.
+DEFAULT_YUNET_MODEL = Path(__file__).resolve().parent / "models" / "face_detection_yunet_2023mar.onnx"
+
+
+class YuNetFaceDetector:
+    """Détecteur de visages YuNet (OpenCV). Entraîné sur des visages difficiles : petits (une
+    vingtaine de pixels), de trois quarts, sous un casque ou des lunettes de soleil. Complète
+    BlazeFace, qui rate ces cas. Le seuil est bas exprès : une fausse détection floute un bout
+    de décor, une non-détection laisse un visage net."""
+
+    def __init__(
+        self,
+        model_path: Path | str = DEFAULT_YUNET_MODEL,
+        score_threshold: float = 0.4,
+        nms_threshold: float = 0.3,
+    ):
+        path = Path(model_path)
+        if not path.is_file():
+            raise FileNotFoundError(f"Modèle YuNet introuvable : {path}")
+        self.score_threshold = score_threshold
+        self._size = (320, 320)
+        self._detector = cv2.FaceDetectorYN.create(
+            str(path), "", self._size, score_threshold, nms_threshold, 5000
+        )
+
+    def detect(self, image_bgr: np.ndarray) -> list[tuple[int, int, int, int]]:
+        height, width = image_bgr.shape[:2]
+        if (width, height) != self._size:
+            self._detector.setInputSize((width, height))
+            self._size = (width, height)
+        _, faces = self._detector.detect(image_bgr)
+        if faces is None:
+            return []
+        return [tuple(int(value) for value in face[:4]) for face in faces]
+
+    def close(self) -> None:
+        pass
+
+
+class CompositeFaceDetector:
+    """Réunit les visages trouvés par plusieurs détecteurs : chacun rate des cas que les autres
+    voient, et en matière d'anonymisation on garde la réunion."""
+
+    def __init__(self, detectors: list[FaceDetector]):
+        self.detectors = list(detectors)
+
+    def detect(self, image_bgr: np.ndarray) -> list[tuple[int, int, int, int]]:
+        boxes: list[tuple[int, int, int, int]] = []
+        for detector in self.detectors:
+            boxes.extend(detector.detect(image_bgr))
+        return boxes
+
+    def close(self) -> None:
+        first_error = None
+        for detector in self.detectors:
+            try:
+                detector.close()
+            except Exception as error:  # on ferme tous les détecteurs avant de signaler l'échec
+                first_error = first_error or error
+        if first_error is not None:
+            raise first_error
+
+
+def default_face_detector() -> CompositeFaceDetector:
+    """Détecteur utilisé par le pipeline : BlazeFace (MediaPipe) + YuNet (OpenCV)."""
+    return CompositeFaceDetector([MediaPipeFaceDetector(), YuNetFaceDetector()])
 
 
 class FaceAnonymizer:

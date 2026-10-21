@@ -98,7 +98,7 @@ def fakes(monkeypatch):
     FakeDetector.instances.clear()
     monkeypatch.setattr(pipeline, "FrameSource", FakeFrameSource)
     monkeypatch.setattr(pipeline, "PoseEstimator", FakeEstimator)
-    monkeypatch.setattr(pipeline, "MediaPipeFaceDetector", FakeDetector)
+    monkeypatch.setattr(pipeline, "default_face_detector", FakeDetector)
     monkeypatch.setattr(cv2, "VideoWriter", RecordingWriter)
     # On isole le floutage : le squelette et le badge de score ne doivent pas brouiller la mesure.
     monkeypatch.setattr(pipeline, "draw_overlay", lambda image, landmarks, score: image.copy())
@@ -169,7 +169,7 @@ def test_the_detector_receives_the_unblurred_frames(monkeypatch):
             seen.append(image_bgr.copy())
             return []
 
-    monkeypatch.setattr(pipeline, "MediaPipeFaceDetector", SpyDetector)
+    monkeypatch.setattr(pipeline, "default_face_detector", SpyDetector)
     run()
 
     assert len(seen) == FRAME_COUNT
@@ -182,7 +182,7 @@ def test_a_face_detector_that_cannot_start_aborts_the_analysis_instead_of_skippi
         def __init__(self, *_args, **_kwargs):
             raise RuntimeError("modèle introuvable")
 
-    monkeypatch.setattr(pipeline, "MediaPipeFaceDetector", Broken)
+    monkeypatch.setattr(pipeline, "default_face_detector", Broken)
 
     with pytest.raises(RuntimeError, match="modèle introuvable"):
         run()

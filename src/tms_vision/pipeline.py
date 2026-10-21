@@ -17,7 +17,7 @@ from pathlib import Path
 import cv2
 
 from tms_vision.capture import FrameSource
-from tms_vision.face_blur import FaceAnonymizer, MediaPipeFaceDetector
+from tms_vision.face_blur import FaceAnonymizer, default_face_detector
 from tms_vision.pose_estimation import PoseEstimator
 from tms_vision.angles import compute_joint_angles
 from tms_vision.rula.scoring import action_level, compute_rula_score, detect_muscle_use
@@ -124,7 +124,7 @@ def analyze_video(
     # Les images brutes (visages nets) ne vivent qu'en mémoire : seule l'image pixellisée est
     # écrite dans la vidéo annotée, donc jamais persistée.
     anonymizer = (
-        FaceAnonymizer(fps=frame_source.fps() or 30.0, detector=MediaPipeFaceDetector())
+        FaceAnonymizer(fps=frame_source.fps() or 30.0, detector=default_face_detector())
         if anonymize else None
     )
 

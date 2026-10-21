@@ -365,3 +365,112 @@ def test_the_hold_duration_is_converted_to_frames_using_the_frame_rate():
 
     assert anonymizer.hold_frames == 50
     assert FaceAnonymizer(fps=0, hold_seconds=1.0).hold_frames >= 1
+
+
+# --- Détecteurs de visages : YuNet et assemblage ----------------------------------------------
+
+from tms_vision.face_blur import (  # noqa: E402
+    DEFAULT_YUNET_MODEL,
+    CompositeFaceDetector,
+    YuNetFaceDetector,
+    default_face_detector,
+)
+
+
+def test_the_yunet_model_is_shipped_with_the_package():
+    assert DEFAULT_YUNET_MODEL.is_file()
+    assert DEFAULT_YUNET_MODEL.stat().st_size > 100_000
+
+
+def test_yunet_returns_integer_boxes_and_nothing_on_a_blank_image():
+    detector = YuNetFaceDetector()
+
+    assert detector.detect(np.full((240, 320, 3), 128, dtype=np.uint8)) == []
+    detector.close()
+
+
+def test_yunet_accepts_frames_of_different_sizes_in_a_row():
+    detector = YuNetFaceDetector()
+
+    for height, width in ((240, 320), (480, 640), (240, 320)):
+        boxes = detector.detect(np.full((height, width, 3), 90, dtype=np.uint8))
+        assert boxes == []
+    detector.close()
+
+
+def test_yunet_boxes_are_tuples_of_four_ints(monkeypatch):
+    class FakeYuNet:
+        def setInputSize(self, size):
+            pass
+
+        def detect(self, image):
+            return 1, np.array([[10.4, 20.6, 30.2, 40.9] + [0.0] * 10 + [0.9]], dtype=np.float32)
+
+    detector = YuNetFaceDetector()
+    monkeypatch.setattr(detector, "_detector", FakeYuNet())
+
+    boxes = detector.detect(np.zeros((100, 100, 3), dtype=np.uint8))
+
+    assert boxes == [(10, 20, 30, 40)]
+    assert all(isinstance(value, int) for value in boxes[0])
+
+
+def test_yunet_with_a_missing_model_file_fails_with_a_clear_message(tmp_path):
+    with pytest.raises(FileNotFoundError, match="YuNet"):
+        YuNetFaceDetector(model_path=tmp_path / "absent.onnx")
+
+
+def test_the_yunet_threshold_is_low_on_purpose_and_can_be_lowered_further():
+    assert YuNetFaceDetector().score_threshold <= 0.5
+    assert YuNetFaceDetector(score_threshold=0.2).score_threshold == 0.2
+
+
+class BoxesDetector:
+    def __init__(self, boxes):
+        self.boxes, self.closed = boxes, False
+
+    def detect(self, image_bgr):
+        return list(self.boxes)
+
+    def close(self):
+        self.closed = True
+
+
+def test_the_composite_detector_returns_the_boxes_of_every_member():
+    first, second = BoxesDetector([(1, 2, 3, 4)]), BoxesDetector([(5, 6, 7, 8), (9, 9, 9, 9)])
+
+    boxes = CompositeFaceDetector([first, second]).detect(np.zeros((10, 10, 3), dtype=np.uint8))
+
+    assert boxes == [(1, 2, 3, 4), (5, 6, 7, 8), (9, 9, 9, 9)]
+
+
+def test_the_composite_detector_closes_every_member_even_if_one_fails():
+    class FailingClose(BoxesDetector):
+        def close(self):
+            super().close()
+            raise RuntimeError("échec")
+
+    first, second = FailingClose([]), BoxesDetector([])
+
+    with pytest.raises(RuntimeError):
+        CompositeFaceDetector([first, second]).close()
+
+    assert first.closed and second.closed
+
+
+def test_an_empty_composite_detects_nothing():
+    assert CompositeFaceDetector([]).detect(np.zeros((10, 10, 3), dtype=np.uint8)) == []
+
+
+@pytest.mark.skipif(
+    not hasattr(__import__("mediapipe"), "solutions"),
+    reason="mediapipe sans l'API solutions (voir requirements.txt)",
+)
+def test_the_default_detector_combines_blazeface_and_yunet():
+    detector = default_face_detector()
+    try:
+        kinds = {type(member).__name__ for member in detector.detectors}
+    finally:
+        detector.close()
+
+    assert kinds == {"MediaPipeFaceDetector", "YuNetFaceDetector"}
