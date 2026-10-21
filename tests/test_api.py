@@ -993,3 +993,146 @@ def test_load_kg_is_optional_when_creating_an_analysis():
             assert "load_kg" in schema["properties"], name
             assert "load_kg" not in schema.get("required", []), name
             assert "side" in schema["required"], name
+
+
+def _segment_row(index, timestamp, **levels):
+    row = {field: None for field in storage.CSV_FIELDS}
+    row.update(frame_index=index, timestamp_seconds=timestamp, detected=True)
+    for zone in ("neck", "trunk", "upper_arm", "lower_arm"):
+        row[f"{zone}_segment_action_level"] = levels.get(zone, "acceptable")
+    return row
+
+
+def _save_with_segments(analysis_id, rows, load_kg=0.0):
+    storage.save_analysis(
+        analysis_id=analysis_id, created_at=datetime.now(timezone.utc), side="right",
+        load_kg=load_kg, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary={"frame_count": len(rows), "detected_frame_count": len(rows), "max_score": 1,
+                 "average_score": 1.0, "time_by_action_level": {}},
+        video_bytes=b"x", pose3d_json="[]", frame_rows=rows,
+    )
+
+
+def test_recommendation_returns_a_ranked_program_and_keeps_first_zone_and_capsule(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    hot = "changement_immediat"
+    _save_with_segments("p-1", [
+        _segment_row(0, 0.0, trunk=hot, neck=hot, upper_arm=hot),
+        _segment_row(1, 4.0, trunk=hot, neck="acceptable", upper_arm="acceptable"),
+        _segment_row(2, 6.0, trunk="acceptable"),
+    ])
+    client = TestClient(app)
+
+    body = client.get("/analyses/p-1/recommendation").json()
+
+    assert [item["zone"] for item in body["program"]] == ["trunk", "neck", "upper_arm"]
+    assert [item["rank"] for item in body["program"]] == [1, 2, 3]
+    assert body["zone"] == "trunk"
+    assert body["capsule"] == body["program"][0]["capsule"]
+    assert body["capsule"]["kind"] == "stretch"
+    assert body["gesture_corrections"] == []
+    assert body["program"][0]["reason"].startswith("Tronc : 6 s")
+
+
+def test_recommendation_with_a_single_loaded_zone_has_a_single_item(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_with_segments("p-1", [_segment_row(0, 0.0, neck="changement_immediat"), _segment_row(1, 2.0)])
+    client = TestClient(app)
+
+    body = client.get("/analyses/p-1/recommendation").json()
+
+    assert [item["zone"] for item in body["program"]] == ["neck"]
+    assert body["zone"] == "neck"
+
+
+def test_recommendation_without_any_risk_has_an_empty_program(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_with_segments("p-1", [_segment_row(0, 0.0), _segment_row(1, 1.0)])
+    client = TestClient(app)
+
+    body = client.get("/analyses/p-1/recommendation").json()
+
+    assert body["program"] == []
+    assert body["zone"] is None
+    assert body["capsule"] is None
+    assert body["gesture_corrections"] == []
+
+
+def test_recommendation_reason_mentions_the_entered_load_but_ranking_ignores_it(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    hot = "changement_immediat"
+    _save_with_segments("p-1", [
+        _segment_row(0, 0.0, neck=hot, trunk="acceptable"), _segment_row(1, 5.0),
+    ])
+    client = TestClient(app)
+    before = client.get("/analyses/p-1/recommendation").json()
+    # Le recalcul de score exige des sous-scores ; on ne passe donc pas par PUT ici mais par le
+    # stockage direct, pour verifier uniquement le texte du motif.
+    storage.update_load(
+        "p-1", load={"kind": "range", "kg": None, "kg_min": 8.0, "kg_max": 12.0},
+        effective_load_kg=12.0, frame_scores=[], score_range=None,
+        summary={"max_score": 1, "average_score": 1.0, "time_by_action_level": {}},
+    )
+
+    after = client.get("/analyses/p-1/recommendation").json()
+
+    assert [i["zone"] for i in after["program"]] == [i["zone"] for i in before["program"]]
+    assert after["program"][0]["reason"].endswith("(charge manipulée : 8 à 12 kg).")
+    assert "charge" not in before["program"][0]["reason"]
+    assert after["load"]["kind"] == "range"
+
+
+def test_recommendation_returns_404_for_unknown_analysis_still(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+
+    assert TestClient(app).get("/analyses/nope/recommendation").status_code == 404
+
+
+def test_bilan_program_ranks_zones_by_projected_hours(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    hot = "changement_immediat"
+    # a-1 : tronc eleve 50 % du temps ; a-2 : cou eleve 100 % du temps (frames de 10 s).
+    _save_with_segments("a-1", [
+        _segment_row(0, 0.0, trunk=hot), _segment_row(1, 10.0), _segment_row(2, 20.0),
+    ])
+    _save_with_segments("a-2", [
+        _segment_row(0, 0.0, neck=hot), _segment_row(1, 10.0, neck=hot), _segment_row(2, 20.0),
+    ])
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 9.0}).json()["id"]
+    for analysis_id, hours in (("a-1", 6.0), ("a-2", 3.0)):
+        client.post(f"/bilans/{bilan_id}/analyses",
+                    json={"analysis_id": analysis_id, "activity_hours": hours, "representative": True})
+
+    body = client.get(f"/bilans/{bilan_id}/program").json()
+
+    # a-1 : 10 s sur 20 s = 50 % de 6 h = 3 h de tronc ; a-2 : 20 s sur 20 s = 100 % de 3 h = 3 h de cou.
+    # Egalite a 3 h -> ordre fixe : tronc avant cou.
+    assert [item["zone"] for item in body["program"]] == ["trunk", "neck"]
+    assert body["program"][0]["reason"] == "Tronc : environ 3 h en posture à risque sur 9 h estimées."
+    assert body["gesture_corrections"] == []
+    assert body["warnings"] == []
+
+
+def test_bilan_program_excludes_non_representative_analyses(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    hot = "changement_immediat"
+    _save_with_segments("a-1", [_segment_row(0, 0.0, trunk=hot), _segment_row(1, 10.0), _segment_row(2, 20.0)])
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 4.0, "representative": False})
+
+    body = client.get(f"/bilans/{bilan_id}/program").json()
+
+    assert body["program"] == []
+    assert any("représentative" in warning for warning in body["warnings"])
+
+
+def test_bilan_program_of_empty_bilan_and_unknown_bilan(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+
+    assert client.get(f"/bilans/{bilan_id}/program").json()["program"] == []
+    assert client.get("/bilans/nope/program").status_code == 404

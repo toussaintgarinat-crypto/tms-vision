@@ -2,8 +2,12 @@ from tms_vision.capsules import (
     CAPSULES,
     ZONE_PRIORITY,
     ZONES,
+    MAX_PROGRAM_SIZE,
+    capsule_to_dict,
     compute_worst_zone,
+    elevated_seconds_by_zone,
     frame_durations,
+    rank_zones,
     recommend_capsule,
 )
 
@@ -113,3 +117,60 @@ def test_frame_durations_empty_single_and_multiple_frames():
 def test_frame_durations_clamps_negative_gaps_to_zero():
     frames = [_frame(0, 2.0), _frame(1, 1.0)]
     assert frame_durations(frames) == [0.0, 0.0]
+
+
+def test_elevated_seconds_by_zone_accumulates_only_elevated_levels():
+    frames = [
+        _frame(0, 0.0, trunk="changement_immediat", neck="investigation_recommandee"),
+        _frame(1, 2.0, trunk="investigation_et_changement_bientot", neck="acceptable"),
+        _frame(2, 5.0, trunk="acceptable"),
+    ]
+
+    seconds = elevated_seconds_by_zone(frames)
+
+    assert seconds == {"neck": 0.0, "trunk": 5.0, "upper_arm": 0.0, "lower_arm": 0.0}
+
+
+def test_compute_worst_zone_still_agrees_with_elevated_seconds_by_zone():
+    frames = [
+        _frame(0, 0.0, neck="changement_immediat"),
+        _frame(1, 3.0, neck="acceptable", trunk="changement_immediat"),
+        _frame(2, 4.0, trunk="acceptable"),
+    ]
+
+    assert compute_worst_zone(frames) == "neck"
+
+
+def test_rank_zones_sorts_by_load_descending():
+    ranked = rank_zones({"neck": 10.0, "trunk": 30.0, "upper_arm": 20.0, "lower_arm": 0.0})
+
+    assert ranked == [("trunk", 30.0), ("upper_arm", 20.0), ("neck", 10.0)]
+
+
+def test_rank_zones_breaks_ties_with_the_fixed_zone_priority():
+    ranked = rank_zones({"neck": 5.0, "trunk": 5.0, "upper_arm": 5.0, "lower_arm": 5.0})
+
+    assert [zone for zone, _ in ranked] == ["trunk", "neck", "upper_arm"]
+
+
+def test_rank_zones_excludes_zero_load_and_caps_the_program_size():
+    ranked = rank_zones({"neck": 1.0, "trunk": 2.0, "upper_arm": 3.0, "lower_arm": 4.0})
+
+    assert MAX_PROGRAM_SIZE == 3
+    assert len(ranked) == 3
+    assert [zone for zone, _ in ranked] == ["lower_arm", "upper_arm", "trunk"]
+    assert rank_zones({zone: 0.0 for zone in ZONES}) == []
+    assert rank_zones({}) == []
+
+
+def test_every_catalog_capsule_is_a_stretch_for_now():
+    assert {capsule.kind for capsule in CAPSULES} == {"stretch"}
+
+
+def test_capsule_to_dict_exposes_kind_and_content():
+    capsule = recommend_capsule("trunk")
+
+    assert capsule_to_dict(capsule) == {
+        "zone": "trunk", "kind": "stretch", "title": capsule.title,
+        "description": capsule.description, "video_url": capsule.video_url,
+    }

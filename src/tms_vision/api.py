@@ -24,8 +24,8 @@ from starlette.concurrency import run_in_threadpool
 
 from tms_vision import bilan, recurrence, storage
 from tms_vision.load import bounds, parse_load
+from tms_vision.program import build_analysis_program, build_bilan_program
 from tms_vision.rescore import rescore_frames, summarize_for_load
-from tms_vision.capsules import Capsule, compute_worst_zone, recommend_capsule
 from tms_vision.pipeline import analyze_video, generate_run_id
 from tms_vision.pose3d_export import build_pose3d_payload
 
@@ -384,24 +384,25 @@ async def get_analysis_frames_csv(analysis_id: str) -> Response:
     )
 
 
-def _capsule_to_dict(capsule: Capsule) -> dict:
-    return {
-        "zone": capsule.zone,
-        "title": capsule.title,
-        "description": capsule.description,
-        "video_url": capsule.video_url,
-    }
-
-
 @app.get("/analyses/{analysis_id}/recommendation")
 async def get_analysis_recommendation(analysis_id: str) -> dict:
+    analysis = storage.get_analysis(analysis_id)
     frames = storage.get_frame_segments(analysis_id)
-    if frames is None:
+    if analysis is None or frames is None:
         raise HTTPException(status_code=404, detail="Analyse introuvable.")
 
-    zone = compute_worst_zone(frames)
-    capsule = recommend_capsule(zone)
-    return {"zone": zone, "capsule": _capsule_to_dict(capsule) if capsule is not None else None}
+    program = build_analysis_program(frames, analysis["load"])
+    first = program[0] if program else None
+    return {
+        # `zone` et `capsule` : premier élément du programme, conservés pour les
+        # clients qui ne lisent que la recommandation unique d'origine.
+        "zone": first["zone"] if first else None,
+        "capsule": first["capsule"] if first else None,
+        "program": program,
+        # Réservé à la correction du geste (Partie D de la spec), vide pour l'instant.
+        "gesture_corrections": [],
+        "load": analysis["load"],
+    }
 
 
 @app.get("/analyses/{analysis_id}/recurrence")
@@ -475,9 +476,7 @@ async def attach_analysis_to_bilan(bilan_id: str, body: BilanAnalysisAttach) -> 
     return _get_bilan_or_404(bilan_id)
 
 
-@app.get("/bilans/{bilan_id}/recurrence")
-async def get_bilan_recurrence(bilan_id: str) -> dict:
-    record = _get_bilan_or_404(bilan_id)
+def _build_bilan_report(record: dict) -> dict:
     thresholds = recurrence.load_thresholds()
     items = []
     for item in record["items"]:
@@ -487,6 +486,22 @@ async def get_bilan_recurrence(bilan_id: str) -> dict:
             "recurrence": recurrence.compute_recurrence(frames or [], thresholds),
         })
     return bilan.project_bilan(record["workday_hours"], items)
+
+
+@app.get("/bilans/{bilan_id}/recurrence")
+async def get_bilan_recurrence(bilan_id: str) -> dict:
+    return _build_bilan_report(_get_bilan_or_404(bilan_id))
+
+
+@app.get("/bilans/{bilan_id}/program")
+async def get_bilan_program(bilan_id: str) -> dict:
+    report = _build_bilan_report(_get_bilan_or_404(bilan_id))
+    return {
+        "program": build_bilan_program(report),
+        # Réservé à la correction du geste (Partie D de la spec), vide pour l'instant.
+        "gesture_corrections": [],
+        "warnings": report["warnings"],
+    }
 
 
 class LoadUpdate(BaseModel):

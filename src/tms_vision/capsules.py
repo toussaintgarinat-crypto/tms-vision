@@ -17,6 +17,7 @@ ZONE_PRIORITY = ["trunk", "neck", "upper_arm", "lower_arm"]
 # redéfinis -- accepté pour ce sprint, voir la spec
 # docs/superpowers/specs/2026-09-22-capsule-zone-recommendation-design.md.
 ELEVATED_LEVELS = {"investigation_et_changement_bientot", "changement_immediat"}
+MAX_PROGRAM_SIZE = 3
 
 
 @dataclass
@@ -25,6 +26,9 @@ class Capsule:
     title: str
     description: str
     video_url: str
+    # "stretch" aujourd'hui ; la future correction du geste utilisera "gesture"
+    # (voir la Partie D de docs/superpowers/specs/2026-10-21-recurrence-programme-etirements-design.md).
+    kind: str = "stretch"
 
 
 CAPSULES: list[Capsule] = [
@@ -94,23 +98,32 @@ def frame_durations(frames: list[dict]) -> list[float]:
     return durations
 
 
-def compute_worst_zone(frames: list[dict]) -> str | None:
+def elevated_seconds_by_zone(frames: list[dict]) -> dict[str, float]:
+    """Temps cumulé passé dans les niveaux élevés, par zone."""
     cumulative_seconds = {zone: 0.0 for zone in ZONES}
-
     for frame, duration in zip(frames, frame_durations(frames)):
         for zone in ZONES:
             if frame[_segment_column(zone)] in ELEVATED_LEVELS:
                 cumulative_seconds[zone] += duration
+    return cumulative_seconds
 
-    best_zone = None
-    best_seconds = 0.0
-    for zone in ZONE_PRIORITY:
-        seconds = cumulative_seconds[zone]
-        if seconds > best_seconds:
-            best_zone = zone
-            best_seconds = seconds
 
-    return best_zone
+def compute_worst_zone(frames: list[dict]) -> str | None:
+    ranked = rank_zones(elevated_seconds_by_zone(frames), limit=1)
+    return ranked[0][0] if ranked else None
+
+
+def rank_zones(load_by_zone: dict[str, float], limit: int = MAX_PROGRAM_SIZE) -> list[tuple[str, float]]:
+    """Zones à charge strictement positive, de la plus chargée à la moins chargée
+    (égalité : ordre fixe ZONE_PRIORITY), tronquées à `limit`. Une zone absente
+    du dictionnaire compte pour 0."""
+    loaded = [
+        (zone, load_by_zone.get(zone, 0.0))
+        for zone in ZONE_PRIORITY
+        if load_by_zone.get(zone, 0.0) > 0
+    ]
+    # sorted() est stable : à charge égale, l'ordre de ZONE_PRIORITY est conservé.
+    return sorted(loaded, key=lambda item: -item[1])[:limit]
 
 
 def recommend_capsule(zone: str | None) -> Capsule | None:
@@ -120,3 +133,13 @@ def recommend_capsule(zone: str | None) -> Capsule | None:
         if capsule.zone == zone:
             return capsule
     return None
+
+
+def capsule_to_dict(capsule: Capsule) -> dict:
+    return {
+        "zone": capsule.zone,
+        "kind": capsule.kind,
+        "title": capsule.title,
+        "description": capsule.description,
+        "video_url": capsule.video_url,
+    }
