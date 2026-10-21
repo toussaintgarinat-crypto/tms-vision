@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import { GestureCorrection, ProgramItem, ProgramList } from "../../ProgramList";
 import { RecurrenceReport } from "../RecurrenceReport";
 import { formatHours } from "../recurrenceFormat";
 import { BilanReport, StoredBilan } from "../types";
@@ -18,7 +19,13 @@ type AnalysisOption = {
   max_score: number;
 };
 
-type LoadedBilan = { id: string; bilan: StoredBilan; report: BilanReport };
+type BilanProgram = {
+  program: ProgramItem[];
+  gesture_corrections: GestureCorrection[];
+  warnings: string[];
+};
+
+type LoadedBilan = { id: string; bilan: StoredBilan; report: BilanReport; program: BilanProgram };
 
 export default function BilanDetailPage() {
   const params = useParams<{ id: string }>();
@@ -44,20 +51,28 @@ export default function BilanDetailPage() {
     Promise.all([
       fetch(`${API_URL}/bilans/${encodedId}`),
       fetch(`${API_URL}/bilans/${encodedId}/recurrence`),
+      fetch(`${API_URL}/bilans/${encodedId}/program`),
     ])
-      .then(async ([bilanResponse, reportResponse]) => {
-        if (bilanResponse.status === 404 || reportResponse.status === 404) {
+      .then(async ([bilanResponse, reportResponse, programResponse]) => {
+        if (
+          bilanResponse.status === 404 ||
+          reportResponse.status === 404 ||
+          programResponse.status === 404
+        ) {
           if (!cancelled) {
             setNotFoundFor(id);
             setFetchErrorFor(null);
           }
           return;
         }
-        if (!bilanResponse.ok || !reportResponse.ok) throw new Error("Erreur serveur");
+        if (!bilanResponse.ok || !reportResponse.ok || !programResponse.ok) {
+          throw new Error("Erreur serveur");
+        }
         const bilan = (await bilanResponse.json()) as StoredBilan;
         const report = (await reportResponse.json()) as BilanReport;
+        const program = (await programResponse.json()) as BilanProgram;
         if (!cancelled) {
-          setLoaded({ id, bilan, report });
+          setLoaded({ id, bilan, report, program });
           setNotFoundFor(null);
           setFetchErrorFor(null);
         }
@@ -232,6 +247,16 @@ export default function BilanDetailPage() {
           </form>
 
           <RecurrenceReport report={loaded.report} />
+
+          {(loaded.program.program.length > 0 || loaded.program.gesture_corrections.length > 0) && (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-xl font-semibold">Programme d&apos;étirements du poste</h2>
+              <ProgramList
+                program={loaded.program.program}
+                gestureCorrections={loaded.program.gesture_corrections}
+              />
+            </section>
+          )}
         </>
       )}
     </main>
