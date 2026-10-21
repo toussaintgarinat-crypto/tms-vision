@@ -1,4 +1,10 @@
-mediapipe>=0.10.14
+# mediapipe : plafonné sous 0.10.30. Les versions 0.10.30 et suivantes (jusqu'à 1.x) ont
+# retiré l'API `mediapipe.solutions`, que pose_estimation.py utilise (solutions.pose) : une
+# installation non plafonnée casse l'estimation de pose. 0.10.21 est la dernière version qui
+# la fournit, et n'est publiée que pour Python 3.9 à 3.12 : utiliser Python 3.11
+# (voir .python-version). Migrer vers l'API « Tasks » (PoseLandmarker) permettrait de lever
+# ce plafond.
+mediapipe>=0.10.14,<0.10.30
 opencv-python>=4.9.0
 numpy>=1.26,<2.0
 pytest>=8.0

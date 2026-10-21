@@ -642,8 +642,14 @@ juste "finir" la Phase 1 avant de passer à la suite :
 
 ## 9. Lancer le PoC (Phase 1)
 
+**Python 3.11 est requis** (voir `.python-version`). `requirements.txt` plafonne `mediapipe` sous
+0.10.30 : à partir de cette version l'API `mediapipe.solutions` (utilisée pour l'estimation de pose) a
+été retirée, et la dernière version qui la fournit, 0.10.21, n'est publiée que pour Python 3.9 à 3.12.
+Avec un autre Python, l'installation échoue (« No matching distribution ») au lieu d'installer une
+version incompatible.
+
 ```bash
-python3 -m venv venv
+python3.11 -m venv venv
 venv/bin/pip install -r requirements.txt
 venv/bin/pytest                                    # suite de tests
 
