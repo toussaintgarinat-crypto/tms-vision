@@ -170,9 +170,12 @@ REPETITION_THRESHOLD_PER_MINUTE = 4.0
 REPETITION_MIN_PROMINENCE_DEG = 10.0
 
 
-def _longest_static_span_seconds(history: list[tuple[float, float]]) -> float:
+def longest_static_span_seconds(
+    history: list[tuple[float, float]],
+    variation_deg: float = STATIC_VARIATION_THRESHOLD_DEG,
+) -> float:
     """Plus longue plage temporelle (en secondes) d'une fenêtre contiguë où
-    max(angle) - min(angle) <= STATIC_VARIATION_THRESHOLD_DEG.
+    max(angle) - min(angle) <= variation_deg (défaut STATIC_VARIATION_THRESHOLD_DEG).
 
     Implémentation O(n) : fenêtre glissante avec deux deques monotones
     (max_deque décroissante, min_deque croissante) maintenant en O(1) amorti
@@ -194,7 +197,7 @@ def _longest_static_span_seconds(history: list[tuple[float, float]]) -> float:
             min_deque.pop()
         min_deque.append(end)
 
-        while history[max_deque[0]][1] - history[min_deque[0]][1] > STATIC_VARIATION_THRESHOLD_DEG:
+        while history[max_deque[0]][1] - history[min_deque[0]][1] > variation_deg:
             window_start += 1
             if max_deque[0] < window_start:
                 max_deque.popleft()
@@ -206,13 +209,16 @@ def _longest_static_span_seconds(history: list[tuple[float, float]]) -> float:
     return longest
 
 
-def _count_direction_changes(history: list[tuple[float, float]]) -> int:
+def count_direction_changes(
+    history: list[tuple[float, float]],
+    min_prominence_deg: float = REPETITION_MIN_PROMINENCE_DEG,
+) -> int:
     changes = 0
     last_extremum = history[0][1]
     direction = 0
     for _, angle in history[1:]:
         delta = angle - last_extremum
-        if abs(delta) < REPETITION_MIN_PROMINENCE_DEG:
+        if abs(delta) < min_prominence_deg:
             continue
         new_direction = 1 if delta > 0 else -1
         if direction != 0 and new_direction != direction:
@@ -229,13 +235,13 @@ def detect_muscle_use(history: list[tuple[float, float]]) -> bool:
     if len(history) < 2:
         return False
 
-    if _longest_static_span_seconds(history) >= STATIC_DURATION_THRESHOLD_SECONDS:
+    if longest_static_span_seconds(history) >= STATIC_DURATION_THRESHOLD_SECONDS:
         return True
 
     duration_minutes = (history[-1][0] - history[0][0]) / 60.0
     if duration_minutes <= 0:
         return False
 
-    direction_changes = _count_direction_changes(history)
+    direction_changes = count_direction_changes(history)
     cycles = direction_changes / 2.0
     return (cycles / duration_minutes) >= REPETITION_THRESHOLD_PER_MINUTE

@@ -153,7 +153,11 @@ def test_compute_rula_score_high_risk_posture():
     assert score.final_score >= 6
 
 
-from tms_vision.rula.scoring import detect_muscle_use, _longest_static_span_seconds
+from tms_vision.rula.scoring import (
+    count_direction_changes,
+    detect_muscle_use,
+    longest_static_span_seconds,
+)
 
 
 def test_longest_static_span_ignores_volatile_prefix_and_tail():
@@ -177,7 +181,7 @@ def test_longest_static_span_ignores_volatile_prefix_and_tail():
     # Calculé à la main : la fenêtre [2..8] a max=25, min=10 (amplitude 15,
     # au seuil), pour une plage de 8.0 - 2.0 = 6.0 secondes. Toute fenêtre
     # incluant l'index 1 (90.0) ou l'index 9 (200.0) dépasse le seuil.
-    assert _longest_static_span_seconds(history) == 6.0
+    assert longest_static_span_seconds(history) == 6.0
 
 
 def test_detect_muscle_use_static_posture_over_one_minute():
@@ -198,3 +202,17 @@ def test_detect_muscle_use_repetitive_motion_over_4_cycles_per_minute():
         angle = 20.0 + (20.0 if phase < 3.75 else -20.0)
         history.append((float(t), angle))
     assert detect_muscle_use(history) is True
+
+
+def test_longest_static_span_accepts_custom_variation_threshold():
+    history = [(0.0, 0.0), (1.0, 10.0), (2.0, 20.0), (3.0, 30.0)]
+    assert longest_static_span_seconds(history) == 1.0  # amplitude 15 : fenêtres de 2 points
+    assert longest_static_span_seconds(history, variation_deg=30.0) == 3.0
+    assert longest_static_span_seconds(history, variation_deg=5.0) == 0.0
+
+
+def test_count_direction_changes_accepts_custom_prominence():
+    # Oscillation d'amplitude 6 : ignorée à 10 degrés, comptée à 5 degrés.
+    history = [(float(t), 0.0 if t % 2 == 0 else 6.0) for t in range(8)]
+    assert count_direction_changes(history) == 0
+    assert count_direction_changes(history, min_prominence_deg=5.0) > 0
