@@ -1,7 +1,7 @@
 # Récurrence, projection journalière et programme d'étirements
 
 **Date** : 2026-10-21
-**Statut** : Tranches 1 (bilan de poste et récurrence) et 2 (poids et programme de capsules) livrées ; tranche 3 à planifier
+**Statut** : Tranches 1 (bilan de poste et récurrence), 2 (poids et programme de capsules) et 3 (génération des vidéos d'étirement) livrées
 
 ## Contexte
 
@@ -262,6 +262,14 @@ pour référencer ces définitions plutôt qu'une URL.
   ne coûte rien), dans un conteneur de 4 cœurs sans GPU. Cadence par défaut retenue : 15 images par
   seconde, soit environ 5 minutes de calcul pour une vidéo de 45 s dans cet environnement ; une machine
   avec carte graphique sera très nettement plus rapide.
+- **Mesure de bout en bout (Tranche 3).** Rendu réel du catalogue : environ 0,75 s par image à 640 px
+  (la scène a 1,8 fois plus de pixels que le spike), soit environ 8 minutes pour 45 s de vidéo à 15
+  images par seconde dans cet environnement ; vidéo silencieuse de 40,0 s en H.264 High `yuv420p`
+  (index en tête de fichier) ; avec une voix factice, segments sonores mesurés à 0, 5, 20, 25 et 40 s,
+  exactement aux instants des consignes ; deux rendus identiques image par image après décodage ; une
+  relance est ignorée tant que la définition ne change pas. **Non vérifié :** la lecture dans un
+  navigateur (le Chromium de test n'a pas de décodeur H.264) ; seuls la requête `Range` (206,
+  `video/mp4`) et les caractéristiques du fichier l'ont été.
 - **Crédit :** chaque vidéo incruste le crédit Z-Anatomy / BodyParts3D (CC BY-SA 4.0).
 - **Limite du squelette :** 9 os, sans poignet, main, rotation de la tête ni omoplate ; les exercices
   se limitent à ce que le rig sait montrer.

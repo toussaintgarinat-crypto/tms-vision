@@ -167,13 +167,15 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - `docs/superpowers/specs/2026-10-21-recurrence-programme-etirements-design.md` — la spec de la
   récurrence des mouvements, de la projection sur la journée, du programme de 2 à 3 capsules
   d'étirement (avec poids précis ou en fourchette), de la génération autonome des vidéos
-  d'étirement et de la correction du geste (réservée). **Tranches 1 et 2 livrées** (bilan de poste et
-  récurrence, poids et programme d'étirements, voir la section 10).
+  d'étirement et de la correction du geste (réservée). **Tranches 1, 2 et 3 livrées** (bilan de poste et
+  récurrence, poids et programme d'étirements, génération des vidéos, voir la section 10).
 - `docs/superpowers/plans/2026-10-21-bilan-poste-recurrence-plan.md` — le plan d'implémentation de
   la Tranche 1.
 - `docs/superpowers/plans/2026-10-21-poids-programme-capsules-plan.md` — le plan d'implémentation
   de la Tranche 2 (poids précis ou en fourchette, programme de capsules), **livrée** (voir la
   section 10).
+- `docs/superpowers/plans/2026-10-21-generation-modules-etirement-plan.md` — le plan d'implémentation
+  de la Tranche 3 (génération des vidéos d'étirement), **livrée** (voir la section 10).
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 136 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -779,6 +781,48 @@ en niveau élevé de chaque zone ; seules les zones réellement chargées sont p
 poste, `GET /bilans/{id}/program` classe les zones par heures projetées sur la journée. La réponse
 porte aussi une liste `gesture_corrections`, vide pour l'instant : c'est l'emplacement réservé à la
 correction du geste.
+
+### Générer les modules d'étirement
+
+Chaque exercice est un fichier JSON dans `exercises/` (zone, poses clés en angles par os, consignes
+datées : voir `exercises/README.md`). La commande suivante en fait une **vidéo** : l'avatar 3D
+musculaire est animé de pose en pose, les segments ciblés sont colorés en bleu, avec titre, minuteur,
+consigne en cours et crédit Z-Anatomy en surimpression. **Aucune IA n'intervient** dans ce chemin.
+
+```bash
+# Prérequis : ffmpeg, node, `npm install` dans web/, Chromium pour Playwright
+# (`npx playwright-core install chromium`, ou variable CHROMIUM_PATH), et le serveur Next.js :
+cd web && npm run dev              # dans un terminal
+
+# Dans un autre terminal, à la racine du dépôt :
+PYTHONPATH=src python -m tms_vision.capsule_build --all
+PYTHONPATH=src python -m tms_vision.capsule_build --id neck-lateral-stretch --force
+```
+
+Options : `--fps` (15 par défaut), `--language` (`fr`), `--gpu` (rendu avec le processeur graphique de la
+machine : beaucoup plus rapide, mais non reproductible d'une machine à l'autre), `--base-url`. Les
+vidéos sont écrites dans `data/capsules/<id>.mp4` (non versionné) avec leurs métadonnées ; une vidéo
+déjà à jour (même définition, cadence, langue et voix) est ignorée. Elles sont servies par
+`GET /capsules/{id}/video` (avec `Range`) et lues dans le programme d'étirements, avec un badge
+« Brouillon » tant que l'exercice n'est pas validé.
+
+- **Temps de calcul.** Par défaut le rendu est logiciel (reproductible) : environ **0,75 s par image**
+  mesuré dans un conteneur de 4 cœurs sans GPU, soit environ 8 minutes pour un exercice de 45 s à 15
+  images par seconde. Deux rendus du même exercice, sur la même machine, donnent des images décodées
+  identiques (test automatique).
+- **Voix, reformulation, proposition d'exercice : des fournisseurs optionnels**, désactivés par défaut
+  (`TMS_NARRATION_PROVIDER`, `TMS_INSTRUCTION_PROVIDER`, `TMS_EXERCISE_PROVIDER` : `none`, `command` pour
+  la voix, ou `module.chemin:Classe`). Une voix locale se branche sans code avec
+  `TMS_NARRATION_PROVIDER=command TMS_NARRATION_COMMAND="<commande>"` : la commande reçoit le texte sur
+  son entrée standard et écrit un WAV sur sa sortie standard (exécutée sans shell). Aucun appel
+  réseau n'est fait sans configuration explicite. Un exercice proposé par une IA
+  (`python -m tms_vision.exercises propose --zone neck`) est écrit dans `exercises/drafts/` comme
+  brouillon `source: "ai"` et **n'entre jamais au catalogue** sans relecture et validation humaines.
+- **Limites.** L'avatar a 9 os : pas de poignet, de main, de rotation de la tête ni d'omoplate, donc les
+  exercices se limitent à ce que ce squelette sait montrer. Les quatre exercices livrés sont des
+  **brouillons rédigés sans expertise d'ostéopathe** : ne pas les présenter comme validés. Les
+  navigateurs doivent savoir lire le H.264 (comme pour la vidéo annotée des analyses). Les vidéos
+  contiennent des maillages CC BY-SA 4.0 : voir `NOTICE.md` avant toute diffusion.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 
