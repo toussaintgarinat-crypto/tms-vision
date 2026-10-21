@@ -86,6 +86,19 @@ CREATE TABLE IF NOT EXISTS bilan_analyses (
 )
 """
 
+CREATE_ANALYSIS_LOADS_TABLE = """
+CREATE TABLE IF NOT EXISTS analysis_loads (
+    analysis_id VARCHAR PRIMARY KEY REFERENCES analyses(id),
+    kind VARCHAR NOT NULL,
+    kg DOUBLE,
+    kg_min DOUBLE,
+    kg_max DOUBLE,
+    original_load_kg DOUBLE NOT NULL,
+    score_range VARCHAR,
+    updated_at TIMESTAMP NOT NULL
+)
+"""
+
 
 def _to_naive_utc(value: datetime) -> datetime:
     """DuckDB stocke `created_at` en TIMESTAMP naïf. Note : la colonne
@@ -117,6 +130,7 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_ANALYSIS_FRAMES_TABLE)
     conn.execute(CREATE_BILANS_TABLE)
     conn.execute(CREATE_BILAN_ANALYSES_TABLE)
+    conn.execute(CREATE_ANALYSIS_LOADS_TABLE)
     return conn
 
 
@@ -214,7 +228,35 @@ def get_analysis(analysis_id: str) -> dict | None:
     record = dict(zip(_ANALYSIS_COLUMNS, row))
     record["time_by_action_level"] = json.loads(record["time_by_action_level"])
     record["created_at"] = _attach_utc(record["created_at"]).isoformat()
+    record["load"] = _read_load(analysis_id, record["load_kg"])
     return record
+
+
+def _read_load(analysis_id: str, analysis_load_kg: float) -> dict:
+    """Poids d'une analyse. Sans ligne analysis_loads (analyse jamais mise à
+    jour, ou antérieure à cette fonctionnalité), le poids est le `load_kg`
+    d'origine, lu comme un poids précis."""
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT kind, kg, kg_min, kg_max, original_load_kg, score_range "
+            "FROM analysis_loads WHERE analysis_id = ?",
+            [analysis_id],
+        ).fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        return {
+            "kind": "exact", "kg": analysis_load_kg, "kg_min": None, "kg_max": None,
+            "original_load_kg": analysis_load_kg, "score_range": None,
+        }
+    kind, kg, kg_min, kg_max, original_load_kg, score_range = row
+    return {
+        "kind": kind, "kg": kg, "kg_min": kg_min, "kg_max": kg_max,
+        "original_load_kg": original_load_kg,
+        "score_range": json.loads(score_range) if score_range is not None else None,
+    }
 
 
 def list_analyses(
@@ -428,3 +470,109 @@ def list_bilans() -> list[dict]:
     finally:
         conn.close()
     return [_bilan_record(row) for row in rows]
+
+
+def get_frame_scores(analysis_id: str) -> list[dict] | None:
+    """Sous-scores par frame nécessaires au recalcul d'un score pour un autre
+    poids (voir rescore.py)."""
+    conn = _connect()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM analyses WHERE id = ?", [analysis_id]
+        ).fetchone()
+        if exists is None:
+            return None
+        columns = [
+            "frame_index", "timestamp_seconds", "detected",
+            "posture_score_a", "posture_score_b", "muscle_use_score",
+        ]
+        rows = conn.execute(
+            f"SELECT {', '.join(columns)} FROM analysis_frames "
+            "WHERE analysis_id = ? ORDER BY frame_index",
+            [analysis_id],
+        ).fetchall()
+    finally:
+        conn.close()
+
+    return [dict(zip(columns, row)) for row in rows]
+
+
+def update_load(
+    analysis_id: str,
+    *,
+    load: dict,
+    effective_load_kg: float,
+    frame_scores: list[dict],
+    summary: dict,
+    score_range: dict | None,
+) -> None:
+    """Enregistre le poids saisi et réécrit, dans une seule transaction, les
+    scores par frame et le résumé de l'analyse (valeurs du cas défavorable,
+    voir le plan de la Tranche 2). `original_load_kg` (poids utilisé pour le
+    badge incrusté dans la vidéo annotée) n'est fixé qu'à la première mise à
+    jour. KeyError si l'analyse est inconnue."""
+    conn = _connect()
+    try:
+        conn.begin()
+        try:
+            row = conn.execute(
+                "SELECT load_kg FROM analyses WHERE id = ?", [analysis_id]
+            ).fetchone()
+            if row is None:
+                raise KeyError(f"analysis {analysis_id}")
+            analysis_load_kg = row[0]
+
+            previous = conn.execute(
+                "SELECT original_load_kg FROM analysis_loads WHERE analysis_id = ?",
+                [analysis_id],
+            ).fetchone()
+            original_load_kg = previous[0] if previous is not None else analysis_load_kg
+
+            conn.execute(
+                """
+                INSERT INTO analysis_loads (
+                    analysis_id, kind, kg, kg_min, kg_max, original_load_kg, score_range,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (analysis_id) DO UPDATE SET
+                    kind = excluded.kind, kg = excluded.kg, kg_min = excluded.kg_min,
+                    kg_max = excluded.kg_max, score_range = excluded.score_range,
+                    updated_at = excluded.updated_at
+                """,
+                [
+                    analysis_id, load["kind"], load["kg"], load["kg_min"], load["kg_max"],
+                    original_load_kg,
+                    json.dumps(score_range, ensure_ascii=False) if score_range is not None else None,
+                    _to_naive_utc(datetime.now(timezone.utc)),
+                ],
+            )
+
+            if frame_scores:
+                conn.executemany(
+                    "UPDATE analysis_frames SET force_load_score = ?, final_score = ?, "
+                    "action_level = ? WHERE analysis_id = ? AND frame_index = ?",
+                    [
+                        [
+                            frame["force_load_score"], frame["final_score"],
+                            frame["action_level"], analysis_id, frame["frame_index"],
+                        ]
+                        for frame in frame_scores
+                    ],
+                )
+
+            conn.execute(
+                "UPDATE analyses SET load_kg = ?, max_score = ?, average_score = ?, "
+                "time_by_action_level = ? WHERE id = ?",
+                [
+                    effective_load_kg, summary["max_score"], summary["average_score"],
+                    json.dumps(summary["time_by_action_level"], ensure_ascii=False),
+                    analysis_id,
+                ],
+            )
+        except Exception:
+            conn.rollback()
+            raise
+        else:
+            conn.commit()
+    finally:
+        conn.close()

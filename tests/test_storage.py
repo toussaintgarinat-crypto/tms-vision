@@ -38,7 +38,9 @@ def test_connect_creates_both_tables(tmp_path, monkeypatch):
     finally:
         conn.close()
 
-    assert {"analyses", "analysis_frames", "bilans", "bilan_analyses"} <= table_names
+    assert {
+        "analyses", "analysis_frames", "bilans", "bilan_analyses", "analysis_loads",
+    } <= table_names
 
 
 def test_connect_is_idempotent(tmp_path, monkeypatch):
@@ -439,3 +441,192 @@ def test_list_bilans_orders_most_recent_first_without_items(tmp_path, monkeypatc
 
     assert [b["id"] for b in bilans] == ["new", "old"]
     assert "items" not in bilans[0]
+
+
+def _scored_frame_row(index, final_score=3, level="investigation_recommandee"):
+    row = _frame_row(frame_index=index, timestamp_seconds=float(index))
+    row.update(
+        posture_score_a=3, posture_score_b=4, muscle_use_score=1,
+        force_load_score=0, final_score=final_score, action_level=level,
+    )
+    return row
+
+
+def _save_scored_analysis(analysis_id="load-1", load_kg=0.0, frame_count=3):
+    storage.save_analysis(
+        analysis_id=analysis_id, created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        side="right", load_kg=load_kg, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary={
+            "frame_count": frame_count, "detected_frame_count": frame_count, "max_score": 3,
+            "average_score": 3.0, "time_by_action_level": {"investigation_recommandee": 2.0},
+        },
+        video_bytes=b"x", pose3d_json="[]",
+        frame_rows=[_scored_frame_row(i) for i in range(frame_count)],
+    )
+
+
+def _rescored(index, final_score, level, force=2):
+    return {
+        "frame_index": index, "force_load_score": force, "final_score": final_score,
+        "action_level": level,
+    }
+
+
+_NEW_SUMMARY = {
+    "frame_count": 3, "detected_frame_count": 3, "max_score": 6, "average_score": 6.0,
+    "time_by_action_level": {"investigation_et_changement_bientot": 2.0},
+}
+_EXACT_15 = {"kind": "exact", "kg": 15.0, "kg_min": None, "kg_max": None}
+
+
+def _update_to_15kg(analysis_id="load-1", score_range=None):
+    storage.update_load(
+        analysis_id, load=_EXACT_15, effective_load_kg=15.0,
+        frame_scores=[_rescored(i, 6, "investigation_et_changement_bientot") for i in range(3)],
+        summary=_NEW_SUMMARY, score_range=score_range,
+    )
+
+
+def test_update_load_works_when_the_analysis_is_attached_to_a_bilan(tmp_path, monkeypatch):
+    # Risque DuckDB : mettre a jour une ligne parente referencee par des cles etrangeres
+    # (analysis_frames, bilan_analyses) doit rester possible.
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_scored_analysis()
+    storage.create_bilan(
+        bilan_id="b-1", created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        label=None, workday_hours=9.0,
+    )
+    storage.attach_analysis(bilan_id="b-1", analysis_id="load-1", activity_hours=2.0, representative=True)
+
+    _update_to_15kg()
+
+    assert storage.get_analysis("load-1")["max_score"] == 6
+    assert storage.get_bilan("b-1")["items"][0]["analysis_id"] == "load-1"
+
+
+def test_get_analysis_exposes_legacy_load_as_exact(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_scored_analysis(load_kg=7.5)
+
+    assert storage.get_analysis("load-1")["load"] == {
+        "kind": "exact", "kg": 7.5, "kg_min": None, "kg_max": None,
+        "original_load_kg": 7.5, "score_range": None,
+    }
+
+
+def test_update_load_rewrites_frames_summary_and_load(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_scored_analysis(load_kg=0.0)
+
+    _update_to_15kg()
+
+    analysis = storage.get_analysis("load-1")
+    assert analysis["max_score"] == 6
+    assert analysis["average_score"] == 6.0
+    assert analysis["load_kg"] == 15.0
+    assert analysis["time_by_action_level"] == {"investigation_et_changement_bientot": 2.0}
+    assert analysis["load"] == {
+        "kind": "exact", "kg": 15.0, "kg_min": None, "kg_max": None,
+        "original_load_kg": 0.0, "score_range": None,
+    }
+    csv_rows = storage.frames_csv_text("load-1").splitlines()
+    header = csv_rows[0].split(",")
+    first = dict(zip(header, csv_rows[1].split(",")))
+    assert first["force_load_score"] == "2"
+    assert first["final_score"] == "6"
+    assert first["action_level"] == "investigation_et_changement_bientot"
+    # Les sous-scores de posture ne bougent pas.
+    assert first["posture_score_a"] == "3"
+    assert first["posture_score_b"] == "4"
+
+
+def test_update_load_keeps_the_first_original_load_on_later_updates(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_scored_analysis(load_kg=3.0)
+    _update_to_15kg()
+
+    storage.update_load(
+        "load-1", load={"kind": "range", "kg": None, "kg_min": 8.0, "kg_max": 12.0},
+        effective_load_kg=12.0,
+        frame_scores=[_rescored(i, 5, "investigation_et_changement_bientot") for i in range(3)],
+        summary={**_NEW_SUMMARY, "max_score": 5, "average_score": 5.0},
+        score_range={"low": {"max_score": 4, "average_score": 4.0},
+                     "high": {"max_score": 5, "average_score": 5.0}},
+    )
+
+    analysis = storage.get_analysis("load-1")
+    assert analysis["load_kg"] == 12.0
+    assert analysis["load"]["kind"] == "range"
+    assert (analysis["load"]["kg_min"], analysis["load"]["kg_max"]) == (8.0, 12.0)
+    assert analysis["load"]["original_load_kg"] == 3.0
+    assert analysis["load"]["score_range"]["low"]["max_score"] == 4
+
+
+def test_update_load_unknown_analysis_raises_key_error(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+    with pytest.raises(KeyError):
+        storage.update_load(
+            "nope", load=_EXACT_15, effective_load_kg=15.0, frame_scores=[],
+            summary=_NEW_SUMMARY, score_range=None,
+        )
+
+
+def test_update_load_rolls_back_everything_on_failure(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_scored_analysis(load_kg=0.0)
+    bad_scores = [_rescored(0, 6, "investigation_et_changement_bientot"), {"frame_index": 1}]
+
+    with pytest.raises(KeyError):
+        storage.update_load(
+            "load-1", load=_EXACT_15, effective_load_kg=15.0, frame_scores=bad_scores,
+            summary=_NEW_SUMMARY, score_range=None,
+        )
+
+    analysis = storage.get_analysis("load-1")
+    assert analysis["max_score"] == 3
+    assert analysis["load_kg"] == 0.0
+    assert analysis["load"]["kg"] == 0.0  # toujours la valeur legacy : aucune ligne analysis_loads
+    first_row = storage.frames_csv_text("load-1").splitlines()[1].split(",")
+    assert "6" not in first_row[storage.CSV_FIELDS.index("final_score")]
+
+
+def test_get_frame_scores_returns_the_inputs_needed_for_rescoring(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_scored_analysis(frame_count=2)
+
+    frames = storage.get_frame_scores("load-1")
+
+    assert frames == [
+        {"frame_index": 0, "timestamp_seconds": 0.0, "detected": True,
+         "posture_score_a": 3, "posture_score_b": 4, "muscle_use_score": 1},
+        {"frame_index": 1, "timestamp_seconds": 1.0, "detected": True,
+         "posture_score_a": 3, "posture_score_b": 4, "muscle_use_score": 1},
+    ]
+
+
+def test_get_frame_scores_returns_none_for_unknown_id(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    assert storage.get_frame_scores("nope") is None
+
+
+def test_update_load_rolls_back_frame_updates_when_the_summary_write_fails(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_scored_analysis(load_kg=0.0)
+
+    # Les frames sont ecrites AVANT le resume : un resume incomplet fait echouer
+    # la derniere etape, apres que les frames et analysis_loads ont ete modifies.
+    with pytest.raises(KeyError):
+        storage.update_load(
+            "load-1", load=_EXACT_15, effective_load_kg=15.0,
+            frame_scores=[_rescored(i, 6, "investigation_et_changement_bientot") for i in range(3)],
+            summary={}, score_range=None,
+        )
+
+    header = storage.frames_csv_text("load-1").splitlines()[0].split(",")
+    for line in storage.frames_csv_text("load-1").splitlines()[1:]:
+        values = dict(zip(header, line.split(",")))
+        assert values["final_score"] == "3"
+        assert values["force_load_score"] == "0"
+    assert storage.get_analysis("load-1")["load"]["original_load_kg"] == 0.0
+    assert storage.get_analysis("load-1")["load"]["kind"] == "exact"
