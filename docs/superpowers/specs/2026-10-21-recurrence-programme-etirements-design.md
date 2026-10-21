@@ -26,7 +26,18 @@ Cette spec couvre trois parties livrables en tranches successives, plus une quat
 ## Décisions de cadrage
 
 - **La vidéo est un échantillon, la journée est la cible.** Les indicateurs de récurrence sont
-  calculés sur la vidéo puis **projetés** sur une durée de journée paramétrable (défaut 9 h).
+  calculés sur chaque vidéo puis **projetés** sur la durée de l'activité qu'elle représente dans une
+  journée paramétrable (défaut 9 h).
+- **Un poste = plusieurs vidéos, regroupées dans un « bilan de poste ».** Chaque vidéo garde son
+  analyse détaillée et porte la **durée passée sur son activité dans la journée** (par exemple
+  5 h de manutention, 3 h de saisie). Le rapport global (récurrence, projection, programme
+  d'étirements) porte sur le bilan. La part de journée non couverte par les vidéos est affichée
+  (« 1 h non documentée »).
+- **Représentativité confirmée vidéo par vidéo.** À l'ajout, l'opérateur coche « Cette séquence est
+  représentative de cette activité ». Une vidéo non confirmée apparaît dans le rapport avec ses
+  chiffres bruts mais est exclue de la projection.
+- **Seuils de cycles non fixés à ce stade.** Les valeurs seront calibrées plus tard avec
+  l'ostéopathe ; en attendant, le système n'en invente aucune (voir Partie A).
 - **La projection est toujours présentée comme une estimation** (« basée sur un échantillon de
   X min »). Elle suppose que l'échantillon est représentatif ; c'est à l'opérateur de le garantir
   en filmant un cycle typique.
@@ -43,6 +54,20 @@ Cette spec couvre trois parties livrables en tranches successives, plus une quat
   implémentée dans ce périmètre.
 
 ## Partie A : moteur de récurrence et projection journalière
+
+### Bilan de poste
+
+Un **bilan de poste** regroupe plusieurs analyses existantes. Pour chaque analyse rattachée :
+
+| Champ | Rôle |
+|---|---|
+| `activity_hours` | Durée passée sur cette activité dans la journée (> 0) |
+| `representative` | Booléen : l'opérateur confirme que la séquence est représentative |
+
+Le bilan porte `workday_hours` (défaut 9.0, > 0, plafonné à 24). La somme des `activity_hours`
+des analyses ne doit pas dépasser `workday_hours` ; la différence est restituée comme part non
+documentée. Un nouveau modèle (tables `postes_bilans` et `bilan_analyses`) évite de modifier les
+analyses existantes, qui restent utilisables seules.
 
 ### Indicateurs par zone
 
@@ -63,16 +88,29 @@ global. Il faut les promouvoir en API interne et les appliquer à l'angle de cha
 
 ### Projection journalière
 
-Entrée : `workday_hours` (défaut 9.0, > 0, plafonné à 24).
+Calcul par zone et par analyse **confirmée représentative**, puis somme sur le bilan :
 
 ```
-projected_cycles          = cycles_per_minute * 60 * workday_hours
-projected_elevated_hours  = elevated_seconds / video_duration_seconds * workday_hours
+projected_cycles          = sum_i( cycles_per_minute_i * 60 * activity_hours_i )
+projected_elevated_hours  = sum_i( elevated_seconds_i / video_duration_seconds_i * activity_hours_i )
 ```
 
-La projection d'un temps cumulé suppose que la proportion mesurée sur l'échantillon vaut pour la
-journée entière. Si la vidéo dure moins de 30 s, l'échantillon est jugé trop court : les valeurs
-sont calculées mais le rapport affiche un avertissement explicite.
+La projection d'un temps cumulé suppose que la proportion mesurée sur chaque vidéo vaut pour toute
+l'activité qu'elle représente. Si une vidéo dure moins de 30 s, l'échantillon est jugé trop court :
+les valeurs sont calculées mais le rapport affiche un avertissement explicite. Les analyses non
+confirmées sont listées avec leurs chiffres bruts et exclues des sommes.
+
+### Seuils de cycles : non calibrés
+
+Les seuils de détection d'un cycle (amplitude minimale, fréquence jugée répétitive) seront
+calibrés plus tard avec l'ostéopathe, **par zone**. Ils sont lus depuis un fichier de configuration
+dont les valeurs sont vides au départ. Tant qu'ils sont vides :
+
+- le rapport affiche les chiffres bruts (cycles, cycles par minute, durée moyenne, plage
+  statique) et la projection, avec la mention « seuils non calibrés » ;
+- aucune zone n'est classée « répétitive » ou « acceptable » ;
+- la détection de répétition existante dans `detect_muscle_use` (seuils du PoC) reste inchangée
+  pour le score RULA et n'est pas réutilisée pour cette interprétation.
 
 ### Restitution
 
@@ -207,7 +245,8 @@ fera partie du produit mais n'est pas développée maintenant. Pour qu'elle s'aj
 
 ## Tranches proposées
 
-1. **Tranche 1 : Récurrence** (Partie A) : indicateurs par zone, projection, affichage.
+1. **Tranche 1 : Bilan de poste et récurrence** (Partie A) : bilan regroupant plusieurs analyses,
+   indicateurs par zone, projection pondérée, affichage des chiffres bruts (seuils non calibrés).
 2. **Tranche 2 : Poids et programme** (Partie B) : saisie précise ou fourchette, recalcul sans
    relancer la pose, programme de 2 à 3 capsules, structure réservée de la Partie D.
 3. **Tranche 3 : Génération des modules** (Partie C) : définitions d'exercices, rendu déterministe,
@@ -217,9 +256,7 @@ Chaque tranche aura son plan d'implémentation dans `docs/superpowers/plans/`.
 
 ## Questions ouvertes
 
-- Validation de l'hypothèse de représentativité : faut-il demander à l'opérateur de la confirmer
-  explicitement avant de projeter sur 9 h ?
-- Les seuils de cycles (4 par minute, amplitude 10°) sont ceux du PoC RULA ; sont-ils adaptés
-  à une lecture par zone, ou faut-il les calibrer avec l'ostéopathe ?
+- Calibration des seuils de cycles par zone : aucun matériel disponible pour l'instant, à planifier
+  avec l'ostéopathe (vidéos d'essai de gestes connus ou valeurs de référence de sa pratique).
 - Rendu des vidéos : côté navigateur ou côté Blender (à trancher à la Tranche 3).
 - Le catalogue final de 30 à 45 exercices reste à définir par l'ostéopathe.
