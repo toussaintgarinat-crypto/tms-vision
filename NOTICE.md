@@ -14,3 +14,11 @@ Licence : Creative Commons Attribution-ShareAlike 4.0 International
 
 Toute redistribution de `muscle-rig.glb` (ou d'un dérivé) doit conserver
 cette attribution et rester sous licence CC BY-SA 4.0.
+
+## Vidéos d'exercices générées
+
+Les vidéos d'étirement produites par `python -m tms_vision.capsule_build` montrent ces maillages
+musculaires : ce sont des œuvres dérivées d'un matériau sous licence CC BY-SA 4.0. Chaque vidéo
+incruste le crédit « Modèle musculaire dérivé de Z-Anatomy (BodyParts3D), licence CC BY-SA 4.0 ».
+Avant toute diffusion, vérifier les obligations de la licence (attribution, partage dans les mêmes
+conditions) pour l'usage prévu, en particulier commercial.

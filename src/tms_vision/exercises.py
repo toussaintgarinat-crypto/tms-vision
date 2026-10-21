@@ -7,10 +7,14 @@ Une pose donne, par os du squelette articulé de l'avatar 3D, deux angles
 convertit en pose du squelette. Un exercice `source: "ai"` n'existe que dans
 `exercises/drafts/` et n'entre jamais au catalogue : un humain doit le relire,
 le corriger et le valider avant."""
+import argparse
 import json
 import re
+import sys
 from datetime import date
 from pathlib import Path
+
+from tms_vision.providers import ExerciseProvider, ProviderError, get_exercise_provider
 
 EXERCISES_DIR = Path(__file__).resolve().parents[2] / "exercises"
 
@@ -192,3 +196,69 @@ def load_catalog(directory: Path | str | None = None) -> list[dict]:
     base = Path(directory) if directory is not None else EXERCISES_DIR
     catalog = [load_exercise(path) for path in sorted(base.glob("*.json"))]
     return sorted(catalog, key=lambda exercise: exercise["id"])
+
+
+def propose_draft(
+    zone: str,
+    provider: ExerciseProvider,
+    constraints: dict | None = None,
+    *,
+    directory: Path | str | None = None,
+) -> Path:
+    """Demande une proposition d'exercice à un fournisseur et l'écrit comme BROUILLON dans
+    `exercises/drafts/`. Quoi que dise le fournisseur, l'exercice est marqué
+    `source: "ai"`, `status: "draft"`, sans validation : il n'entre jamais au catalogue
+    sans qu'un humain l'ait relu et déplacé. Ne remplace jamais un fichier existant."""
+    if zone not in ZONES:
+        _fail("zone", f"valeur '{zone}' inconnue (attendu : {', '.join(ZONES)}).")
+
+    proposal = provider.propose(zone, constraints or {})
+    if not isinstance(proposal, dict):
+        _fail("proposition", "le fournisseur doit renvoyer un objet JSON.")
+
+    data = {
+        **proposal, "source": "ai", "status": "draft", "validated_by": None, "validated_on": None,
+    }
+    try:
+        validate_exercise(data, in_drafts=True)
+    except ValueError as error:
+        raise ValueError(f"Proposition invalide : {error}") from error
+    if data["zone"] != zone:
+        _fail("zone", f"la proposition concerne '{data['zone']}', pas '{zone}'.")
+
+    base = Path(directory) if directory is not None else EXERCISES_DIR
+    destination = base / "drafts" / f"{data['id']}.json"
+    if destination.exists() or (base / f"{data['id']}.json").exists():
+        _fail("id", f"l'exercice '{data['id']}' existe déjà, il n'est pas remplacé.")
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return destination
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="python -m tms_vision.exercises",
+        description="Outils sur les définitions d'exercices.",
+    )
+    commands = parser.add_subparsers(dest="command", required=True)
+    propose = commands.add_parser(
+        "propose", help="demander un brouillon d'exercice au fournisseur d'IA configuré"
+    )
+    propose.add_argument("--zone", required=True, choices=ZONES)
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as exit_request:
+        return int(exit_request.code or 0)
+
+    try:
+        path = propose_draft(args.zone, get_exercise_provider())
+    except (ProviderError, ValueError) as error:
+        print(f"ÉCHEC : {error}", file=sys.stderr)
+        return 1
+    print(f"Brouillon écrit : {path} (source ai, à relire et valider par l'ostéopathe)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -211,3 +211,137 @@ def test_shipped_exercise_files_do_not_mutate_between_loads():
 
 def test_exercises_directory_has_a_drafts_folder_for_ai_proposals():
     assert (exercises.EXERCISES_DIR / "drafts").is_dir()
+
+
+# --- Propositions d'une IA : toujours des brouillons, jamais au catalogue ------------------
+
+from tms_vision.exercises import main as exercises_main  # noqa: E402
+from tms_vision.exercises import propose_draft  # noqa: E402
+from tms_vision.providers import ExerciseProvider, NullExerciseProvider, ProviderNotConfigured  # noqa: E402
+
+
+class FakeExerciseProvider(ExerciseProvider):
+    name = "fake"
+
+    def __init__(self, proposal=None):
+        self.proposal = proposal
+        self.calls = []
+
+    def propose(self, zone, constraints):
+        self.calls.append((zone, constraints))
+        return copy.deepcopy(self.proposal) if self.proposal is not None else _valid()
+
+
+@pytest.fixture
+def exercises_dir(tmp_path):
+    (tmp_path / "drafts").mkdir()
+    return tmp_path
+
+
+def test_propose_without_a_configured_provider_fails_and_writes_nothing(exercises_dir):
+    with pytest.raises(ProviderNotConfigured):
+        propose_draft("neck", NullExerciseProvider(), directory=exercises_dir)
+
+    assert list((exercises_dir / "drafts").iterdir()) == []
+
+
+def test_propose_forces_the_draft_status_whatever_the_provider_says(exercises_dir):
+    hostile = {**_valid(), "id": "neck-ai", "source": "human", "status": "validated",
+               "validated_by": "Dr Fictif", "validated_on": "2026-10-21"}
+
+    path = propose_draft("neck", FakeExerciseProvider(hostile), directory=exercises_dir)
+
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert path == exercises_dir / "drafts" / "neck-ai.json"
+    assert written["source"] == "ai"
+    assert written["status"] == "draft"
+    assert written["validated_by"] is None
+    assert written["validated_on"] is None
+    validate_exercise(written, in_drafts=True)
+
+
+def test_a_proposal_never_enters_the_catalog(exercises_dir):
+    propose_draft("neck", FakeExerciseProvider({**_valid(), "id": "neck-ai"}), directory=exercises_dir)
+
+    assert load_catalog(exercises_dir) == []
+
+
+def test_the_provider_receives_the_zone_and_constraints(exercises_dir):
+    provider = FakeExerciseProvider({**_valid(), "id": "neck-ai"})
+
+    propose_draft("neck", provider, {"max_duration": 30}, directory=exercises_dir)
+
+    assert provider.calls == [("neck", {"max_duration": 30})]
+
+
+def test_an_unknown_zone_is_rejected_before_calling_the_provider(exercises_dir):
+    provider = FakeExerciseProvider()
+
+    with pytest.raises(ValueError, match="zone"):
+        propose_draft("knee", provider, directory=exercises_dir)
+
+    assert provider.calls == []
+
+
+def test_an_invalid_proposal_is_rejected_and_nothing_is_written(exercises_dir):
+    broken = {**_valid(), "id": "neck-ai", "keyframes": []}
+
+    with pytest.raises(ValueError, match="keyframes"):
+        propose_draft("neck", FakeExerciseProvider(broken), directory=exercises_dir)
+
+    assert list((exercises_dir / "drafts").iterdir()) == []
+
+
+def test_a_proposal_for_another_zone_than_requested_is_rejected(exercises_dir):
+    with pytest.raises(ValueError, match="zone"):
+        propose_draft("trunk", FakeExerciseProvider({**_valid(), "id": "neck-ai"}), directory=exercises_dir)
+
+
+def test_a_proposal_that_is_not_an_object_is_rejected(exercises_dir):
+    class Bad(ExerciseProvider):
+        def propose(self, zone, constraints):
+            return "pas un dictionnaire"
+
+    with pytest.raises(ValueError):
+        propose_draft("neck", Bad(), directory=exercises_dir)
+
+
+def test_a_proposal_never_overwrites_an_existing_draft_or_catalog_exercise(exercises_dir):
+    _write(exercises_dir, {**_valid(), "id": "neck-taken"})
+    existing_draft = _write(exercises_dir / "drafts", {**_valid(), "id": "neck-old", "source": "ai"})
+    before = existing_draft.read_text(encoding="utf-8")
+
+    with pytest.raises(ValueError, match="existe déjà"):
+        propose_draft("neck", FakeExerciseProvider({**_valid(), "id": "neck-taken"}), directory=exercises_dir)
+    with pytest.raises(ValueError, match="existe déjà"):
+        propose_draft("neck", FakeExerciseProvider({**_valid(), "id": "neck-old"}), directory=exercises_dir)
+
+    assert existing_draft.read_text(encoding="utf-8") == before
+
+
+def test_cli_propose_fails_clearly_without_a_provider(monkeypatch, exercises_dir, capsys):
+    monkeypatch.setattr(exercises, "EXERCISES_DIR", exercises_dir)
+    monkeypatch.delenv("TMS_EXERCISE_PROVIDER", raising=False)
+
+    assert exercises_main(["propose", "--zone", "neck"]) == 1
+    assert "TMS_EXERCISE_PROVIDER" in capsys.readouterr().err
+
+
+def test_cli_propose_writes_a_draft_with_a_configured_provider(monkeypatch, exercises_dir, capsys):
+    monkeypatch.setattr(exercises, "EXERCISES_DIR", exercises_dir)
+    monkeypatch.setenv("TMS_EXERCISE_PROVIDER", f"{__name__}:CliProvider")
+
+    assert exercises_main(["propose", "--zone", "neck"]) == 0
+
+    assert (exercises_dir / "drafts" / "neck-cli.json").exists()
+    assert "neck-cli.json" in capsys.readouterr().out
+
+
+def test_cli_requires_a_known_command_and_zone(capsys):
+    assert exercises_main([]) == 2
+    assert exercises_main(["propose", "--zone", "knee"]) == 2
+
+
+class CliProvider(ExerciseProvider):
+    def propose(self, zone, constraints):
+        return {**_valid(), "id": "neck-cli"}
