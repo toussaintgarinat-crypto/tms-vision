@@ -211,21 +211,32 @@ IA**, avec des briques IA optionnelles et interchangeables.
 
 ### Définition d'un exercice en données
 
-Fichier déclaratif par exercice (YAML ou JSON, versionné dans le dépôt) :
+Fichier JSON par exercice, versionné dans le dépôt (`exercises/*.json`). Une pose donne, par os du
+squelette articulé, deux angles (`flexion`, `lateral`, en degrés) à partir de la posture neutre ; le
+code les convertit en landmarks synthétiques et réutilise `applyFrameToSkeleton`, donc le même chemin
+que l'avatar piloté par la vidéo. Extrait :
 
-```yaml
-id: neck-lateral-stretch
-zone: neck
-title: Étirement latéral du cou
-duration_seconds: 45
-instructions: ["Incline la tête vers l'épaule droite…", "…"]   # rédigé par l'ostéopathe
-keyframes:
-  - { t: 0,  pose: neutral }
-  - { t: 10, pose: neck_tilt_right }
-  - { t: 25, pose: neutral }
-  - { t: 35, pose: neck_tilt_left }
-target_segments: [neck]       # segments musculaires mis en évidence
+```json
+{
+  "id": "neck-lateral-stretch",
+  "zone": "neck",
+  "title": "Étirement latéral du cou",
+  "status": "draft",
+  "source": "human",
+  "view": "front",
+  "target_segments": ["neck"],
+  "poses": { "neutral": {}, "tilt_right": { "neck": { "lateral": 30 } } },
+  "keyframes": [ { "t": 0, "pose": "neutral" }, { "t": 8, "pose": "tilt_right" } ],
+  "instructions": [ { "t": 0, "text": "…" } ],
+  "duration_seconds": 45
+}
 ```
+
+Les consignes sont datées (`t`) pour s'afficher et être dites au bon moment. `status` vaut `draft` ou
+`validated` (ce dernier exige `validated_by` et `validated_on`) ; `source` vaut `human` ou `ai`. Un
+exercice `ai` n'existe que dans `exercises/drafts/` et n'entre jamais au catalogue sans relecture
+humaine. Le format détaillé et ses règles de validation sont dans
+`docs/superpowers/plans/2026-10-21-generation-modules-etirement-plan.md`.
 
 Le catalogue reste statique et curé (même décision que la spec de recommandation) ; il est étendu
 pour référencer ces définitions plutôt qu'une URL.
@@ -238,8 +249,14 @@ pour référencer ces définitions plutôt qu'une URL.
   consignes et minuteur en surimpression).
 - Aucune étape de ce chemin n'appelle une IA ; deux rendus du même fichier donnent la même
   vidéo.
-- Choix technique du rendu (navigateur sans interface via Playwright avec capture frame par frame
-  puis assemblage ffmpeg, ou rendu côté Blender) : à trancher lors de la planification.
+- **Décision de rendu :** navigateur sans interface (Playwright) avec capture image par image, puis
+  assemblage `ffmpeg`. Il réutilise le même avatar et la même coloration que l'interface. Faisabilité
+  vérifiée dans l'environnement de développement : WebGL2 via SwiftShader, captures successives
+  identiques, `ffmpeg` avec `libx264` et `aac`. Une porte de décision (spike sur le vrai
+  `muscle-rig.glb`) ouvre la tranche ; le repli est Blender en ligne de commande.
+- **Crédit :** chaque vidéo incruste le crédit Z-Anatomy / BodyParts3D (CC BY-SA 4.0).
+- **Limite du squelette :** 9 os, sans poignet, main, rotation de la tête ni omoplate ; les exercices
+  se limitent à ce que le rig sait montrer.
 
 ### Fournisseurs optionnels
 
@@ -286,6 +303,8 @@ Chaque tranche aura son plan d'implémentation dans `docs/superpowers/plans/`.
 
 - Calibration des seuils de cycles par zone : aucun matériel disponible pour l'instant, à planifier
   avec l'ostéopathe (vidéos d'essai de gestes connus ou valeurs de référence de sa pratique).
-- Rendu des vidéos : côté navigateur ou côté Blender (à trancher à la Tranche 3).
+- Licence des vidéos générées : elles contiennent des maillages CC BY-SA 4.0 ; à faire confirmer avant
+  toute diffusion commerciale.
+- Validation clinique des exercices : les premiers sont des brouillons rédigés sans ostéopathe.
 - Effet du poids sur le classement des zones du programme (voir le constat de la Partie B).
 - Le catalogue final de 30 à 45 exercices reste à définir par l'ostéopathe.
