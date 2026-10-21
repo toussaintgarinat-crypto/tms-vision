@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from tms_vision import storage
 from tms_vision.export import CSV_FIELDS
 
@@ -36,7 +38,7 @@ def test_connect_creates_both_tables(tmp_path, monkeypatch):
     finally:
         conn.close()
 
-    assert {"analyses", "analysis_frames"} <= table_names
+    assert {"analyses", "analysis_frames", "bilans", "bilan_analyses"} <= table_names
 
 
 def test_connect_is_idempotent(tmp_path, monkeypatch):
@@ -328,3 +330,112 @@ def test_get_frame_angles_returns_ordered_angles_and_segment_levels(tmp_path, mo
 def test_get_frame_angles_returns_none_for_unknown_id(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
     assert storage.get_frame_angles("does-not-exist") is None
+
+
+def _save_minimal_analysis(analysis_id):
+    storage.save_analysis(
+        analysis_id=analysis_id, created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary={
+            "frame_count": 0, "detected_frame_count": 0, "max_score": 0,
+            "average_score": 0, "time_by_action_level": {},
+        },
+        video_bytes=b"x", pose3d_json="[]", frame_rows=[],
+    )
+
+
+def test_create_bilan_then_get_bilan_round_trips(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+
+    storage.create_bilan(
+        bilan_id="b-1", created_at=datetime(2026, 10, 21, 8, 30, tzinfo=timezone.utc),
+        label="Quai 3", workday_hours=9.0,
+    )
+
+    bilan = storage.get_bilan("b-1")
+
+    assert bilan == {
+        "id": "b-1", "created_at": "2026-10-21T08:30:00+00:00", "label": "Quai 3",
+        "workday_hours": 9.0, "items": [],
+    }
+
+
+def test_get_bilan_returns_none_for_unknown_id(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    assert storage.get_bilan("nope") is None
+
+
+def test_attach_analysis_adds_item_in_attachment_order(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_minimal_analysis("a-1")
+    _save_minimal_analysis("a-2")
+    storage.create_bilan(
+        bilan_id="b-1", created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        label=None, workday_hours=9.0,
+    )
+
+    storage.attach_analysis(bilan_id="b-1", analysis_id="a-2", activity_hours=3.0, representative=False)
+    storage.attach_analysis(bilan_id="b-1", analysis_id="a-1", activity_hours=5.0, representative=True)
+
+    assert storage.get_bilan("b-1")["items"] == [
+        {"analysis_id": "a-2", "activity_hours": 3.0, "representative": False},
+        {"analysis_id": "a-1", "activity_hours": 5.0, "representative": True},
+    ]
+
+
+def test_attach_analysis_rejects_unknown_bilan_and_unknown_analysis(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_minimal_analysis("a-1")
+    storage.create_bilan(
+        bilan_id="b-1", created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        label=None, workday_hours=9.0,
+    )
+
+    with pytest.raises(KeyError):
+        storage.attach_analysis(bilan_id="nope", analysis_id="a-1", activity_hours=1.0, representative=True)
+    with pytest.raises(KeyError):
+        storage.attach_analysis(bilan_id="b-1", analysis_id="nope", activity_hours=1.0, representative=True)
+
+
+def test_attach_analysis_twice_to_same_bilan_raises_value_error(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_minimal_analysis("a-1")
+    storage.create_bilan(
+        bilan_id="b-1", created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        label=None, workday_hours=9.0,
+    )
+    storage.attach_analysis(bilan_id="b-1", analysis_id="a-1", activity_hours=1.0, representative=True)
+
+    with pytest.raises(ValueError):
+        storage.attach_analysis(bilan_id="b-1", analysis_id="a-1", activity_hours=2.0, representative=True)
+
+
+def test_same_analysis_can_belong_to_two_bilans(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_minimal_analysis("a-1")
+    for bilan_id in ("b-1", "b-2"):
+        storage.create_bilan(
+            bilan_id=bilan_id, created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+            label=None, workday_hours=9.0,
+        )
+        storage.attach_analysis(bilan_id=bilan_id, analysis_id="a-1", activity_hours=1.0, representative=True)
+
+    assert len(storage.get_bilan("b-1")["items"]) == 1
+    assert len(storage.get_bilan("b-2")["items"]) == 1
+
+
+def test_list_bilans_orders_most_recent_first_without_items(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    storage.create_bilan(
+        bilan_id="old", created_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
+        label="vieux", workday_hours=9.0,
+    )
+    storage.create_bilan(
+        bilan_id="new", created_at=datetime(2026, 10, 20, tzinfo=timezone.utc),
+        label="recent", workday_hours=7.0,
+    )
+
+    bilans = storage.list_bilans()
+
+    assert [b["id"] for b in bilans] == ["new", "old"]
+    assert "items" not in bilans[0]

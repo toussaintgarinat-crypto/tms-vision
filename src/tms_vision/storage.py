@@ -66,6 +66,26 @@ CREATE TABLE IF NOT EXISTS analysis_frames (
 )
 """
 
+CREATE_BILANS_TABLE = """
+CREATE TABLE IF NOT EXISTS bilans (
+    id VARCHAR PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    label VARCHAR,
+    workday_hours DOUBLE NOT NULL
+)
+"""
+
+CREATE_BILAN_ANALYSES_TABLE = """
+CREATE TABLE IF NOT EXISTS bilan_analyses (
+    bilan_id VARCHAR NOT NULL REFERENCES bilans(id),
+    analysis_id VARCHAR NOT NULL REFERENCES analyses(id),
+    activity_hours DOUBLE NOT NULL,
+    representative BOOLEAN NOT NULL,
+    attached_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (bilan_id, analysis_id)
+)
+"""
+
 
 def _to_naive_utc(value: datetime) -> datetime:
     """DuckDB stocke `created_at` en TIMESTAMP naïf. Note : la colonne
@@ -95,6 +115,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn = duckdb.connect(str(DB_PATH))
     conn.execute(CREATE_ANALYSES_TABLE)
     conn.execute(CREATE_ANALYSIS_FRAMES_TABLE)
+    conn.execute(CREATE_BILANS_TABLE)
+    conn.execute(CREATE_BILAN_ANALYSES_TABLE)
     return conn
 
 
@@ -320,3 +342,89 @@ def get_frame_angles(analysis_id: str) -> list[dict] | None:
         conn.close()
 
     return [dict(zip(columns, row)) for row in rows]
+
+
+_BILAN_COLUMNS = ["id", "created_at", "label", "workday_hours"]
+
+
+def _bilan_record(row) -> dict:
+    record = dict(zip(_BILAN_COLUMNS, row))
+    record["created_at"] = _attach_utc(record["created_at"]).isoformat()
+    return record
+
+
+def create_bilan(
+    *, bilan_id: str, created_at: datetime, label: str | None, workday_hours: float
+) -> None:
+    conn = _connect()
+    try:
+        conn.execute(
+            "INSERT INTO bilans (id, created_at, label, workday_hours) VALUES (?, ?, ?, ?)",
+            [bilan_id, _to_naive_utc(created_at), label, workday_hours],
+        )
+    finally:
+        conn.close()
+
+
+def attach_analysis(
+    *, bilan_id: str, analysis_id: str, activity_hours: float, representative: bool
+) -> None:
+    """Rattache une analyse à un bilan. KeyError si le bilan ou l'analyse est
+    inconnu, ValueError si l'analyse est déjà rattachée à ce bilan."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilans WHERE id = ?", [bilan_id]).fetchone() is None:
+            raise KeyError(f"bilan {bilan_id}")
+        if conn.execute("SELECT 1 FROM analyses WHERE id = ?", [analysis_id]).fetchone() is None:
+            raise KeyError(f"analysis {analysis_id}")
+        already_attached = conn.execute(
+            "SELECT 1 FROM bilan_analyses WHERE bilan_id = ? AND analysis_id = ?",
+            [bilan_id, analysis_id],
+        ).fetchone()
+        if already_attached is not None:
+            raise ValueError(f"analysis {analysis_id} already attached to bilan {bilan_id}")
+        conn.execute(
+            "INSERT INTO bilan_analyses "
+            "(bilan_id, analysis_id, activity_hours, representative, attached_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            [
+                bilan_id, analysis_id, activity_hours, representative,
+                _to_naive_utc(datetime.now(timezone.utc)),
+            ],
+        )
+    finally:
+        conn.close()
+
+
+def get_bilan(bilan_id: str) -> dict | None:
+    conn = _connect()
+    try:
+        row = conn.execute(
+            f"SELECT {', '.join(_BILAN_COLUMNS)} FROM bilans WHERE id = ?", [bilan_id]
+        ).fetchone()
+        if row is None:
+            return None
+        item_rows = conn.execute(
+            "SELECT analysis_id, activity_hours, representative FROM bilan_analyses "
+            "WHERE bilan_id = ? ORDER BY attached_at, analysis_id",
+            [bilan_id],
+        ).fetchall()
+    finally:
+        conn.close()
+
+    record = _bilan_record(row)
+    record["items"] = [
+        {"analysis_id": a, "activity_hours": h, "representative": r} for a, h, r in item_rows
+    ]
+    return record
+
+
+def list_bilans() -> list[dict]:
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            f"SELECT {', '.join(_BILAN_COLUMNS)} FROM bilans ORDER BY created_at DESC, id"
+        ).fetchall()
+    finally:
+        conn.close()
+    return [_bilan_record(row) for row in rows]
