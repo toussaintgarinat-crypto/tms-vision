@@ -1,299 +1,479 @@
-"""Hiérarchie d'os et table de sélection des muscles Z-Anatomy pour la
-Tranche 3 de l'avatar 3D. Dupliqué intentionnellement depuis
-`web/app/pose3dSkeleton.ts` (BONE_ORDER/PARENT_OF ci-dessous) : pas de
-partage de source entre TypeScript et Blender, à tenir synchronisé
-manuellement si le squelette de `pose3dSkeleton.ts` change.
+"""Squelette à 24 os et table des muscles Z-Anatomy de l'avatar du corps complet
+(Tranche 4, voir docs/superpowers/specs/2026-10-22-avatar-corps-complet-design.md).
 
-Ce module s'exécute UNIQUEMENT dans l'interpréteur Python embarqué de
-Blender (`blender --background --python ...`) : `bpy`/`mathutils` ne sont
-pas installables via pip standard.
+Dupliqué intentionnellement depuis `web/app/pose3dSkeleton.ts` (BONE_ORDER et PARENT_OF) : pas de
+partage de source entre TypeScript et Blender, à tenir synchronisé à la main.
+
+Ce module s'exécute UNIQUEMENT dans l'interpréteur Python embarqué de Blender
+(`blender --background --python ...`) : `bpy` et `mathutils` ne s'installent pas avec pip.
+
+Repère de Blender (Z vers le haut) : le côté gauche du modèle est +x, son avant est -y. L'export
+glTF convertit en Y vers le haut, avant +z, gauche +x.
 """
 
 import bpy
 from mathutils import Vector
 
-# Même 9 clés, même ordre que `BONE_ORDER` dans web/app/pose3dSkeleton.ts.
-BONE_ORDER = [
-    "root",
-    "spine",
+CENTRAL_BONES = ["root", "spine", "neck", "head"]
+SIDED_BONES = [
+    "clavicle",
+    "upper_arm",
+    "forearm",
+    "hand",
+    "fingers",
+    "thumb",
+    "thigh",
+    "shin",
+    "foot",
+    "toes",
+]
+# Ordre parent avant enfant, côté gauche puis droit pour chaque os pairé.
+BONE_ORDER = CENTRAL_BONES + [f"{side}_{bone}" for bone in SIDED_BONES for side in ("L", "R")]
+
+_SIDED_PARENT = {
+    "clavicle": "spine",
+    "upper_arm": "clavicle",
+    "forearm": "upper_arm",
+    "hand": "forearm",
+    "fingers": "hand",
+    "thumb": "hand",
+    "thigh": "root",
+    "shin": "thigh",
+    "foot": "shin",
+    "toes": "foot",
+}
+PARENT_OF = {"spine": "root", "neck": "spine", "head": "neck"}
+for _side in ("L", "R"):
+    for _bone, _parent in _SIDED_PARENT.items():
+        PARENT_OF[f"{_side}_{_bone}"] = _parent if _parent in CENTRAL_BONES else f"{_side}_{_parent}"
+
+# Demi-largeur (en mètres) de la zone de fondu autour de chaque articulation, mesurée le long de
+# l'axe de l'os distal. Plus étroite aux doigts et aux orteils.
+DEFAULT_BLEND_HALF_WIDTH = 0.04
+BLEND_HALF_WIDTH = {
+    "hand": 0.03,
+    "fingers": 0.02,
+    "thumb": 0.02,
+    "toes": 0.02,
+    "foot": 0.03,
+    "thigh": 0.05,
+    "upper_arm": 0.05,
+}
+
+# Articulations pondérées par proximité plutôt que par plan : (os proximal, os distal) -> (distance
+# en dessous de laquelle le sommet suit entièrement l'os distal, distance au-delà de laquelle il ne
+# le suit plus du tout), en mètres. Voir export_muscle_rig.chain_weights.
+PROXIMITY_JOINTS = {
+    ("spine", "upper_arm"): (0.04, 0.11),
+    ("clavicle", "upper_arm"): (0.04, 0.11),
+    ("spine", "clavicle"): (0.02, 0.08),
+}
+
+# Régions colorées par l'application (les quatre premières sont les zones RULA mesurées).
+REGIONS = [
     "neck",
-    "L_upper_arm",
-    "L_forearm",
-    "R_upper_arm",
-    "R_forearm",
-    "L_thigh",
-    "R_thigh",
+    "trunk",
+    "upper_arm",
+    "lower_arm",
+    "head",
+    "shoulder",
+    "hand",
+    "hip",
+    "thigh",
+    "lower_leg",
+    "foot",
 ]
 
-# Même relations parent-enfant que `BONE_SPECS` dans pose3dSkeleton.ts.
-PARENT_OF = {
-    "spine": "root",
-    "neck": "spine",
-    "L_upper_arm": "spine",
-    "L_forearm": "L_upper_arm",
-    "R_upper_arm": "spine",
-    "R_forearm": "R_upper_arm",
-    "L_thigh": "root",
-    "R_thigh": "root",
-}
+# Une entrée par muscle : (nom Z-Anatomy sans suffixe, chaîne d'os du proximal au distal, région).
+# Les os pairés s'écrivent sans préfixe (`upper_arm`) et prennent le côté de l'objet (`.l` ou `.r`) ;
+# `root`, `spine`, `neck` et `head` ne sont jamais préfixés. Chaque articulation entre deux os de la
+# chaîne devient une zone de fondu : un biceps passe progressivement de `upper_arm` à `forearm`.
+# Une chaîne d'un seul os est un rattachement rigide à 100 %.
+MUSCLES = [
+    # --- Tête et mâchoire (rigides sur la tête)
+    ("Temporalis muscle", ["head"], "head"),
+    ("Deep part of masseter", ["head"], "head"),
+    ("Superficial part of masseter", ["head"], "head"),
+    ("Frontalis muscle", ["head"], "head"),
+    ("Occipitalis muscle", ["head"], "head"),
+    # --- Cou
+    ("Sternocleidomastoid muscle", ["spine", "neck", "head"], "neck"),
+    ("Ascending part of trapezius muscle", ["spine", "neck"], "neck"),
+    ("Transverse part of trapezius muscle", ["spine", "neck"], "neck"),
+    ("Descending part of trapezius muscle", ["spine", "neck"], "neck"),
+    ("Splenius capitis muscle", ["spine", "neck", "head"], "neck"),
+    ("Splenius colli muscle", ["spine", "neck"], "neck"),
+    ("Semispinalis colli muscle", ["spine", "neck"], "neck"),
+    ("Longissimus capitis muscle", ["spine", "neck", "head"], "neck"),
+    ("Longissimus colli muscle", ["spine", "neck"], "neck"),
+    ("Spinalis capitis muscle", ["spine", "neck", "head"], "neck"),
+    ("Spinalis colli muscle", ["spine", "neck"], "neck"),
+    ("Iliocostalis colli muscle", ["spine", "neck"], "neck"),
+    ("Multifidus colli muscle", ["spine", "neck"], "neck"),
+    ("Interspinales colli muscles", ["spine", "neck"], "neck"),
+    ("Rectus posterior major capitis muscle", ["neck", "head"], "neck"),
+    ("Rectus posterior minor capitis muscle", ["neck", "head"], "neck"),
+    ("Rectus anterior capitis muscle", ["neck", "head"], "neck"),
+    ("Rectus lateralis capitis muscle", ["neck", "head"], "neck"),
+    ("Obliquus inferior capitis muscle", ["neck", "head"], "neck"),
+    ("Obliquus superior capitis muscle", ["neck", "head"], "neck"),
+    ("Longus capitis muscle", ["spine", "neck", "head"], "neck"),
+    ("Longus colli muscle", ["spine", "neck"], "neck"),
+    ("Scalenus anterior muscle", ["spine", "neck"], "neck"),
+    ("Scalenus medius muscle", ["spine", "neck"], "neck"),
+    ("Scalenus posterior muscle", ["spine", "neck"], "neck"),
+    ("Levator scapulae", ["spine", "neck"], "neck"),
+    ("Platysma", ["spine", "neck"], "neck"),
+    ("Omohyoid muscle", ["neck"], "neck"),
+    ("Sternohyoid muscle", ["neck"], "neck"),
+    ("Sternothyroid muscle", ["neck"], "neck"),
+    ("Thyrohyoid muscle", ["neck"], "neck"),
+    ("Mylohyoid muscle", ["neck", "head"], "neck"),
+    ("Geniohyoid muscle", ["neck", "head"], "neck"),
+    ("Stylohyoid muscle", ["neck", "head"], "neck"),
+    ("Anterior belly of digastric muscle", ["neck", "head"], "neck"),
+    ("Posterior belly of digastric muscle", ["neck", "head"], "neck"),
+    # --- Tronc
+    ("Latissimus dorsi muscle", ["spine", "upper_arm"], "trunk"),
+    ("Rectus abdominis muscle", ["root", "spine"], "trunk"),
+    ("Pyramidalis muscle", ["root", "spine"], "trunk"),
+    ("External abdominal oblique muscle", ["root", "spine"], "trunk"),
+    ("Internal abdominal oblique muscle", ["root", "spine"], "trunk"),
+    ("Transversus abdominis muscle", ["root", "spine"], "trunk"),
+    ("Quadratus lumborum muscle", ["root", "spine"], "trunk"),
+    ("Iliocostalis lumborum muscle", ["root", "spine"], "trunk"),
+    ("Iliocostalis thoracis muscle", ["root", "spine"], "trunk"),
+    ("Longissimus thoracis muscle", ["root", "spine"], "trunk"),
+    ("Spinalis thoracis muscle", ["root", "spine"], "trunk"),
+    ("Multifidus lumborum muscle", ["root", "spine"], "trunk"),
+    ("Multifidus thoracis muscle", ["root", "spine"], "trunk"),
+    ("Semispinalis thoracis muscle", ["spine"], "trunk"),
+    ("Rotatores", ["spine"], "trunk"),
+    ("Interspinales lumborum muscles", ["root", "spine"], "trunk"),
+    ("Interspinales thoracis muscles", ["spine"], "trunk"),
+    ("Dorsal parts of lateral intertransversarii lumborum muscles", ["root", "spine"], "trunk"),
+    ("Ventral parts of lateral intertransversarii lumborum muscles", ["root", "spine"], "trunk"),
+    ("Levatores breves costarum", ["spine"], "trunk"),
+    ("Levatores longi costarum", ["spine"], "trunk"),
+    ("Serratus posterior superior muscle", ["spine"], "trunk"),
+    ("Serratus posterior inferior muscle", ["spine"], "trunk"),
+    ("Transversus thoracis muscle", ["spine"], "trunk"),
+    # --- Épaule (ceinture scapulaire)
+    ("Serratus anterior muscle", ["spine", "upper_arm"], "shoulder"),
+    ("Rhomboid major muscle", ["spine", "clavicle"], "shoulder"),
+    ("Rhomboid minor muscle", ["spine", "clavicle"], "shoulder"),
+    ("Subclavius muscle", ["spine", "clavicle"], "shoulder"),
+    ("Pectoralis minor muscle", ["spine", "upper_arm"], "shoulder"),
+    ("Clavicular head of pectoralis major muscle", ["spine", "upper_arm"], "shoulder"),
+    ("Sternocostal head of pectoralis major muscle", ["spine", "upper_arm"], "shoulder"),
+    ("(Abdominal part of pectoralis major muscle)", ["spine", "upper_arm"], "shoulder"),
+    ("Supraspinatus muscle", ["clavicle", "upper_arm"], "shoulder"),
+    ("Infraspinatus muscle", ["clavicle", "upper_arm"], "shoulder"),
+    ("Teres minor muscle", ["clavicle", "upper_arm"], "shoulder"),
+    ("Teres major muscle", ["clavicle", "upper_arm"], "shoulder"),
+    ("Subscapularis muscle", ["clavicle", "upper_arm"], "shoulder"),
+    # --- Bras
+    ("Acromial part of deltoid muscle", ["clavicle", "upper_arm"], "upper_arm"),
+    ("Clavicular part of deltoid muscle", ["clavicle", "upper_arm"], "upper_arm"),
+    ("Scapular spinal part of deltoid muscle", ["clavicle", "upper_arm"], "upper_arm"),
+    ("Long head of biceps brachii", ["clavicle", "upper_arm", "forearm"], "upper_arm"),
+    ("Short head of biceps brachii", ["clavicle", "upper_arm", "forearm"], "upper_arm"),
+    ("Coracobrachialis muscle", ["upper_arm"], "upper_arm"),
+    ("Brachialis muscle", ["upper_arm", "forearm"], "upper_arm"),
+    ("Long head of triceps brachii", ["clavicle", "upper_arm", "forearm"], "upper_arm"),
+    ("Lateral head of triceps brachii", ["upper_arm", "forearm"], "upper_arm"),
+    ("Medial head of triceps brachii", ["upper_arm", "forearm"], "upper_arm"),
+    ("Anconeus muscle", ["upper_arm", "forearm"], "upper_arm"),
+    # --- Avant-bras
+    ("Brachioradialis muscle", ["upper_arm", "forearm"], "lower_arm"),
+    ("Superficial head of pronator teres", ["upper_arm", "forearm"], "lower_arm"),
+    ("Deep head of pronator teres", ["upper_arm", "forearm"], "lower_arm"),
+    ("Supinator", ["upper_arm", "forearm"], "lower_arm"),
+    ("Pronator quadratus", ["forearm"], "lower_arm"),
+    ("Flexor carpi radialis", ["forearm", "hand"], "lower_arm"),
+    ("Palmaris longus muscle", ["forearm", "hand"], "lower_arm"),
+    ("Humeral head of flexor carpi ulnaris", ["forearm", "hand"], "lower_arm"),
+    ("Ulnar head of flexor carpi ulnaris", ["forearm", "hand"], "lower_arm"),
+    ("Humero-ulnar head of flexor digitorum superficialis", ["forearm", "hand", "fingers"], "lower_arm"),
+    ("Radial head of flexor digitorum superficialis", ["forearm", "hand", "fingers"], "lower_arm"),
+    ("Flexor digitorum profundus", ["forearm", "hand", "fingers"], "lower_arm"),
+    ("Flexor pollicis longus", ["forearm", "hand", "thumb"], "lower_arm"),
+    ("Extensor carpi radialis longus", ["forearm", "hand"], "lower_arm"),
+    ("Extensor carpi radialis brevis", ["forearm", "hand"], "lower_arm"),
+    ("Humeral head of extensor carpi ulnaris", ["forearm", "hand"], "lower_arm"),
+    ("Ulnar head of extensor carpi ulnaris", ["forearm", "hand"], "lower_arm"),
+    ("Extensor digitorum", ["forearm", "hand", "fingers"], "lower_arm"),
+    ("Extensor digiti minimi", ["forearm", "hand", "fingers"], "lower_arm"),
+    ("Extensor indicis", ["forearm", "hand", "fingers"], "lower_arm"),
+    ("Abductor pollicis longus", ["forearm", "hand", "thumb"], "lower_arm"),
+    ("Extensor pollicis brevis", ["forearm", "hand", "thumb"], "lower_arm"),
+    ("Extensor pollicis longus", ["forearm", "hand", "thumb"], "lower_arm"),
+    # --- Main
+    ("Abductor pollicis brevis", ["hand", "thumb"], "hand"),
+    ("Opponens pollicis muscle", ["hand", "thumb"], "hand"),
+    ("Superficial head of flexor pollicis brevis", ["hand", "thumb"], "hand"),
+    ("Deep head of flexor pollicis brevis", ["hand", "thumb"], "hand"),
+    ("Oblique head of adductor pollicis", ["hand", "thumb"], "hand"),
+    ("Transverse head of adductor pollicis", ["hand", "thumb"], "hand"),
+    ("Abductor digiti minimi of hand", ["hand", "fingers"], "hand"),
+    ("Flexor digiti minimi of hand", ["hand", "fingers"], "hand"),
+    ("Opponens digiti minimi muscle of hand", ["hand"], "hand"),
+    ("Lumbrical muscles of hand", ["hand", "fingers"], "hand"),
+    ("Dorsal interossei muscles of hand", ["hand", "fingers"], "hand"),
+    ("Palmar interossei muscles", ["hand", "fingers"], "hand"),
+    # --- Hanche et bassin
+    ("Gluteus maximus muscle", ["root", "thigh"], "hip"),
+    ("Gluteus medius muscle", ["root", "thigh"], "hip"),
+    ("Gluteus minimus muscle", ["root", "thigh"], "hip"),
+    ("Piriformis muscle", ["root", "thigh"], "hip"),
+    ("Obturator internus", ["root", "thigh"], "hip"),
+    ("Obturator externus", ["root", "thigh"], "hip"),
+    ("Superior gemellus muscle", ["root", "thigh"], "hip"),
+    ("Inferior gemellus muscle", ["root", "thigh"], "hip"),
+    ("Quadratus femoris muscle", ["root", "thigh"], "hip"),
+    ("Iliacus muscle", ["root", "thigh"], "hip"),
+    ("Psoas major", ["root", "thigh"], "hip"),
+    ("Pectineus muscle", ["root", "thigh"], "hip"),
+    # --- Cuisse
+    ("Adductor longus", ["root", "thigh"], "thigh"),
+    ("Adductor brevis", ["root", "thigh"], "thigh"),
+    ("Adductor magnus", ["root", "thigh"], "thigh"),
+    ("(Adductor minimus)", ["root", "thigh"], "thigh"),
+    ("Gracilis muscle", ["root", "thigh", "shin"], "thigh"),
+    ("Sartorius muscle", ["root", "thigh", "shin"], "thigh"),
+    ("Rectus femoris muscle", ["root", "thigh", "shin"], "thigh"),
+    ("Vastus intermedius muscle", ["thigh", "shin"], "thigh"),
+    ("Vastus lateralis muscle", ["thigh", "shin"], "thigh"),
+    ("Vastus medialis muscle", ["thigh", "shin"], "thigh"),
+    ("Long head of biceps femoris", ["root", "thigh", "shin"], "thigh"),
+    ("Short head of biceps femoris", ["thigh", "shin"], "thigh"),
+    ("Semimembranosus muscle", ["root", "thigh", "shin"], "thigh"),
+    ("Semitendinosus muscle", ["root", "thigh", "shin"], "thigh"),
+    # --- Jambe
+    ("Medial head of gastrocnemius", ["thigh", "shin", "foot"], "lower_leg"),
+    ("Lateral head of gastrocnemius", ["thigh", "shin", "foot"], "lower_leg"),
+    ("Plantaris muscle", ["thigh", "shin", "foot"], "lower_leg"),
+    ("Popliteus muscle", ["thigh", "shin"], "lower_leg"),
+    ("Soleus muscle", ["shin", "foot"], "lower_leg"),
+    ("Tibialis anterior muscle", ["shin", "foot"], "lower_leg"),
+    ("Tibialis posterior muscle", ["shin", "foot"], "lower_leg"),
+    ("Fibularis longus muscle", ["shin", "foot"], "lower_leg"),
+    ("Fibularis brevis muscle", ["shin", "foot"], "lower_leg"),
+    ("Fibularis tertius muscle", ["shin", "foot"], "lower_leg"),
+    ("Extensor digitorum longus", ["shin", "foot", "toes"], "lower_leg"),
+    ("Extensor hallucis longus", ["shin", "foot", "toes"], "lower_leg"),
+    ("Flexor digitorum longus", ["shin", "foot", "toes"], "lower_leg"),
+    ("Flexor hallucis longus", ["shin", "foot", "toes"], "lower_leg"),
+    # --- Pied
+    ("Extensor digitorum brevis", ["foot", "toes"], "foot"),
+    ("Extensor hallucis brevis", ["foot", "toes"], "foot"),
+    ("Abductor hallucis", ["foot", "toes"], "foot"),
+    ("Flexor digitorum brevis", ["foot", "toes"], "foot"),
+    ("Abductor digiti minimi of foot", ["foot", "toes"], "foot"),
+    ("Quadratus plantae muscle", ["foot"], "foot"),
+    ("Lateral head of flexor hallucis brevis", ["foot", "toes"], "foot"),
+    ("Medial head of flexor hallucis brevis", ["foot", "toes"], "foot"),
+    ("Oblique head of adductor hallucis", ["foot", "toes"], "foot"),
+    ("Transverse head of adductor hallucis", ["foot", "toes"], "foot"),
+    ("Flexor digiti minimi of foot", ["foot", "toes"], "foot"),
+    ("(Opponens digiti minimi muscle of foot)", ["foot"], "foot"),
+    ("Lumbrical muscles of foot", ["foot", "toes"], "foot"),
+    ("Dorsal interossei muscles of foot", ["foot", "toes"], "foot"),
+    ("Plantar interossei muscles", ["foot", "toes"], "foot"),
+]
 
-# Os "ascendants" (tronc/cou : la tête de l'os est en bas, la queue en haut)
-# vs. os de membre (la tête est en haut/proximal, la queue en bas/distal).
-# Voir `bone_head_tail` ci-dessous.
-ASCENDING_BONES = {"spine", "neck"}
-
-# Muscles du tronc/cou : pas de bone gauche/droite séparé, donc les variantes
-# `.l` ET `.r` (si les deux existent) sont toutes les deux rattachées au même
-# os. Noms RÉELLEMENT vérifiés en inspectant `bpy.data.objects` sur le
-# Startup.blend téléchargé pendant la Tranche 3, Task 5 (le brainstorming
-# antérieur ne l'avait pas encore fait tourner).
-#
-# Correction Task 5 : "Erector spinae" seul (sans suffixe) n'existe pas dans
-# le fichier réel — les objets présents sont "Erector spinae.j" (mesh unique
-# couvrant tout le muscle, comme "Deltoid muscle.j"/"Trapezius muscle.j"/
-# "Triceps brachii muscle.j"/"Biceps brachii muscle.j" pour ces autres
-# muscles : une version "joined" à objet unique, par opposition aux variantes
-# "el"/"er" = duplicata exploded-view et "ol"/"or" = duplicata outline/
-# highlight de l'appli Z-Anatomy) et "Erector spinae.ol"/"Erector spinae.or"
-# (duplicata outline). Comme "spine" est un os unique sans côté gauche/droite
-# séparé, le mesh "joined" unique est fonctionnellement équivalent à une
-# paire .l/.r et correspond à la vraie géométrie du muscle (pas un proxy de
-# highlight) : on utilise donc "Erector spinae.j", qui matche via le repli
-# "objet médian unique" déjà prévu dans `resolve_muscle_objects` (aucun
-# changement de logique nécessaire, seulement la chaîne de nom).
-TRUNK_NECK_MUSCLES = {
-    "spine": [
-        "Erector spinae.j",
-        "Rectus abdominis muscle",
-        "External abdominal oblique muscle",
-        "Latissimus dorsi muscle",
-    ],
-    "neck": [
-        "Ascending part of trapezius muscle",
-        "Transverse part of trapezius muscle",
-        "Descending part of trapezius muscle",
-        "Sternocleidomastoid muscle",
-    ],
-}
-
-# Muscles de membre : une entrée par catégorie de membre ("upper_arm",
-# "forearm", "thigh"), appliquée aux deux côtés (L_<catégorie>/R_<catégorie>).
-# mode "exact" : nom d'objet vérifié tel quel dans le Startup.blend réel
-# (Task 5). mode "contains" : conservé dans le code de résolution mais plus
-# utilisé par aucune entrée ci-dessous depuis la correction Task 5 (voir
-# note Deltoïde).
-#
-# Correction Task 5 — constat général : dans le fichier réel, la plupart des
-# muscles composés (Deltoïde, Biceps brachii, Triceps brachii, Flexor/
-# Extensor carpi ulnaris, Quadriceps femoris, Biceps femoris) n'ont PAS de
-# mesh unique nommé "<Muscle> muscle.l"/".r" — seules leurs parties/chefs
-# anatomiques individuels portent ce suffixe bare ".l"/".r" ; le nom composé
-# lui-même n'existe qu'en variantes ".el"/".er" (exploded-view) ou ".j"
-# (mesh unique), toutes deux exclues par la logique `exact`/`contains` sur
-# suffixe bare. Chaque entrée ci-dessous a donc été remplacée par la liste
-# de ses parties/chefs réels, vérifiés un par un via `bpy.data.objects`.
-#
-# Deltoïde : la note de risque du plan notait que les noms exacts des 3
-# parties n'étaient pas vérifiés (seule "3 parties comme le trapèze" était
-# confirmée) — on utilisait donc un mode "contains" sur "deltoid" en repli.
-# Task 5 a vérifié les 3 noms exacts ET découvert que "contains" aurait en
-# prime capturé "Deltoid fascia.l/.r" (fascia, pas du muscle) et
-# "Deltoid region.l/.r" (probablement un proxy de sélection/hover de
-# l'appli, pas de la géométrie musculaire) : on bascule donc sur les 3 noms
-# exacts, plus précis et sans ce risque de pollution.
-LIMB_MUSCLES = {
-    "upper_arm": [
-        ("Acromial part of deltoid muscle", "exact"),
-        ("Clavicular part of deltoid muscle", "exact"),
-        ("Scapular spinal part of deltoid muscle", "exact"),
-        ("Long head of biceps brachii", "exact"),
-        ("Short head of biceps brachii", "exact"),
-        ("Lateral head of triceps brachii", "exact"),
-        ("Long head of triceps brachii", "exact"),
-        ("Medial head of triceps brachii", "exact"),
-    ],
-    "forearm": [
-        ("Brachioradialis muscle", "exact"),
-        ("Humeral head of flexor carpi ulnaris", "exact"),
-        ("Ulnar head of flexor carpi ulnaris", "exact"),
-        ("Humeral head of extensor carpi ulnaris", "exact"),
-        ("Ulnar head of extensor carpi ulnaris", "exact"),
-        ("Extensor digitorum", "exact"),
-    ],
-    "thigh": [
-        ("Rectus femoris muscle", "exact"),
-        ("Vastus intermedius muscle", "exact"),
-        ("Vastus lateralis muscle", "exact"),
-        ("Vastus medialis muscle", "exact"),
-        ("Long head of biceps femoris", "exact"),
-        ("Short head of biceps femoris", "exact"),
-    ],
-}
-
-LIMB_BONE_OF = {
-    "L": {"upper_arm": "L_upper_arm", "forearm": "L_forearm", "thigh": "L_thigh"},
-    "R": {"upper_arm": "R_upper_arm", "forearm": "R_forearm", "thigh": "R_thigh"},
-}
-
-# Os SANS partenaire bi-articulaire dans ce squelette à 9 os : pas
-# d'articulation à préserver (genou/coude) entre l'os et un second os
-# représenté, donc Automatic Weights (heat-diffusion, dont toute la
-# justification est ce blending bi-articulaire — voir `LIMB_MUSCLES`
-# ci-dessus) n'apporte structurellement aucun bénéfice pour les muscles qui
-# lui sont assignés. `spine`/`neck` : voir la correction de spec du
-# 2026-09-20 (Latissimus dorsi). `L_thigh`/`R_thigh` : même raisonnement,
-# généralisé par la correction de spec du 2026-09-21 — il n'existe aucun os
-# "jambe" sous `L_thigh`/`R_thigh` dans ce squelette à 9 os pour blend across
-# un genou, contrairement à `L_upper_arm`/`L_forearm` qui blendent
-# réellement across le coude. Dérivé de `TRUNK_NECK_MUSCLES` (spine, neck) +
-# l'entrée "thigh" de `LIMB_BONE_OF` pour chaque côté, plutôt que codé en
-# dur, pour ne jamais désynchroniser cet ensemble de la source de vérité
-# si l'une ou l'autre table change. `export_muscle_rig.py` route tout objet
-# assigné à un de ces os vers `apply_rigid_weight` (poids 1.0 déterministe),
-# jamais vers `parent_set(type="ARMATURE_AUTO")` ; seuls les objets assignés
-# à `L_upper_arm`/`L_forearm`/`R_upper_arm`/`R_forearm` (absents de cet
-# ensemble) passent encore par Automatic Weights.
-RIGID_WEIGHT_BONE_KEYS = set(TRUNK_NECK_MUSCLES.keys()) | {
-    LIMB_BONE_OF[side]["thigh"] for side in ("L", "R")
-}
-
+# Noms d'objets sources dont on sait qu'un des deux côtés manque ou est mal suffixé dans le fichier
+# Z-Anatomy ; l'autre côté est alors cherché sans suffixe. Vérifié sur Startup.blend.
 _EXCLUDED_SUFFIXES = {"el", "er", "ol", "or"}
 
-
-def _mesh_objects_by_exact_name(name: str) -> list:
-    return [obj for obj in bpy.data.objects if obj.type == "MESH" and obj.name == name]
-
-
-def _mesh_objects_by_side_suffix(base_name: str, side: str, mode: str) -> list:
-    """side: 'l' ou 'r'. mode: 'exact' (nom == f"{base_name}.{side}") ou
-    'contains' (nom se termine par f".{side}" et contient base_name, sans
-    casse). Dans les deux cas, les suffixes `.el`/`.er`/`.ol`/`.or` sont
-    explicitement exclus (variantes/LOD repérées pendant le brainstorming)."""
-    target_suffix = f".{side}"
-    matches = []
-    for obj in bpy.data.objects:
-        if obj.type != "MESH" or not obj.name.endswith(target_suffix):
-            continue
-        stem = obj.name[: -len(target_suffix)]
-        stem_suffix = stem.rsplit(".", 1)[-1] if "." in stem else ""
-        if stem_suffix in _EXCLUDED_SUFFIXES:
-            continue
-        if mode == "exact" and stem == base_name:
-            matches.append(obj)
-        elif mode == "contains" and base_name.lower() in stem.lower():
-            matches.append(obj)
-    return matches
+# Maillages squelettiques (nom sans suffixe) servant à placer les articulations.
+SKELETAL_NAMES = [
+    "Humerus", "Radius", "Ulna", "Femur", "Tibia", "Clavicle", "Talus",
+    "Third metatarsal bone", "Distal phalanx of third finger of foot",
+    "Third metacarpal bone", "Distal phalanx of third finger of hand",
+    "First metacarpal bone", "Distal phalanx of first finger of hand",
+]
+CENTRAL_SKELETAL_NAMES = ["Vertebra T1", "Atlas (C1)", "Sacrum", "Frontal bone", "Occipital bone"]
 
 
-def resolve_muscle_objects() -> dict:
-    """Retourne {bone_key: [objets muscle assignés]}. Lève RuntimeError avec
-    un message explicite si un muscle attendu est introuvable — jamais de
-    sous-ensemble partiel silencieux (contrainte de la spec)."""
-    result: dict = {key: [] for key in BONE_ORDER if key != "root"}
-
-    for bone_key, base_names in TRUNK_NECK_MUSCLES.items():
-        for base_name in base_names:
-            found = _mesh_objects_by_exact_name(f"{base_name}.l")
-            found += _mesh_objects_by_exact_name(f"{base_name}.r")
-            if not found:
-                # Repli : objet médian unique, sans suffixe de côté.
-                found = _mesh_objects_by_exact_name(base_name)
-            if not found:
-                raise RuntimeError(
-                    f"Muscle '{base_name}' introuvable pour l'os '{bone_key}' "
-                    f"(essayé '{base_name}.l', '{base_name}.r', '{base_name}')."
-                )
-            result[bone_key].extend(found)
-
-    for side in ("L", "R"):
-        side_suffix = side.lower()
-        for category, entries in LIMB_MUSCLES.items():
-            bone_key = LIMB_BONE_OF[side][category]
-            for base_name, mode in entries:
-                found = _mesh_objects_by_side_suffix(base_name, side_suffix, mode)
-                if not found:
-                    raise RuntimeError(
-                        f"Muscle '{base_name}' (mode={mode}) introuvable pour "
-                        f"l'os '{bone_key}' (suffixe .{side_suffix})."
-                    )
-                result[bone_key].extend(found)
-
-    return result
+def _ancestors(bone: str) -> set:
+    found = set()
+    while bone in PARENT_OF:
+        bone = PARENT_OF[bone]
+        found.add(bone)
+    return found
 
 
-def resolve_skeletal_landmarks() -> dict:
-    """Retourne {bone_key: objet mesh squelettique réel} pour les os où l'on
-    dispose d'un repère anatomique plus fiable que la bbox des muscles qui
-    lui sont assignés.
-
-    Motivation D'ORIGINE (2026-09-20, désormais historique) : la bbox
-    combinée Deltoïde+Biceps+Triceps chevauchait géométriquement le
-    Latissimus dorsi, qui s'étend jusqu'à l'aisselle, et Automatic Weights
-    lui attribuait alors à tort l'os de bras comme dominant. Cette
-    motivation est SUPERSÉDÉE : le Latissimus dorsi (et tout le tronc/cou)
-    ne passe plus du tout par Automatic Weights depuis la correction de spec
-    du 2026-09-20 "fix définitif" — poids rigide déterministe à la place
-    (voir `RIGID_WEIGHT_BONE_KEYS`), mécanisme totalement indépendant de ce
-    repositionnement d'os.
-
-    CE N'EST PAS DU CODE MORT — ne pas supprimer sous prétexte que la
-    justification Latissimus dorsi d'origine est obsolète. Raison ACTUELLE,
-    toujours valide : ce repère squelettique reste nécessaire à la qualité
-    du skinning des ~28 muscles upper_arm/forearm qui, eux, passent
-    toujours par Automatic Weights (seul cas réellement bi-articulaire —
-    coude — de ce squelette à 9 os) ; repositionner l'os sur le vrai humérus
-    a mesurablement amélioré leur pondération aussi, pas seulement celle du
-    Latissimus dorsi (ex. `Long head of biceps brachii.r` : dominante
-    passée d'un partage limite `R_forearm` 53,5 % / `R_upper_arm` 46,5 % à
-    `R_upper_arm` 83,8 % après ce repositionnement — voir la correction de
-    spec du 2026-09-20 dans le fichier de spec de cette tranche).
-
-    Noms `Humerus.l`/`Humerus.r` vérifiés directement dans `Startup.blend`
-    via `bpy.data.objects` (2143 sommets / 4280 faces chacun, datablock mesh
-    partagé `Humerus` — même convention de duplicata miroité que les autres
-    paires `.l`/`.r` du fichier) ; longueur monde mesurée ~31.76 cm, cohérent
-    avec la mesure ~31.8 cm faite pendant le brainstorming de la Tranche 3.
-    Lève RuntimeError si un repère attendu est introuvable — même discipline
-    explicite que `resolve_muscle_objects` (jamais de repli silencieux)."""
-    landmarks = {}
-    for bone_key, object_name in (("L_upper_arm", "Humerus.l"), ("R_upper_arm", "Humerus.r")):
-        found = _mesh_objects_by_exact_name(object_name)
-        if not found:
+def check_chain(base_name: str, chain_template: list) -> None:
+    """Chaque os de la chaîne doit descendre du précédent : la zone de fondu d'une articulation
+    est orientée selon l'axe de l'os distal, ce qui n'a de sens que dans cet ordre."""
+    for proximal, distal in zip(chain_template, chain_template[1:]):
+        probe = distal if distal in CENTRAL_BONES else f"L_{distal}"
+        ancestors = {a.removeprefix("L_") for a in _ancestors(probe)}
+        if proximal not in ancestors:
             raise RuntimeError(
-                f"Repère squelettique '{object_name}' introuvable pour l'os '{bone_key}'."
+                f"Chaîne invalide pour '{base_name}' : '{distal}' ne descend pas de '{proximal}'."
             )
-        landmarks[bone_key] = found[0]
-    return landmarks
 
 
-def combined_world_bbox(objects: list) -> tuple:
-    """Bounding box monde combinée d'une liste d'objets mesh. Lève
-    ValueError si `objects` est vide."""
-    if not objects:
-        raise ValueError("combined_world_bbox: liste d'objets vide.")
-    min_corner = Vector((float("inf"),) * 3)
-    max_corner = Vector((float("-inf"),) * 3)
-    for obj in objects:
-        for corner in obj.bound_box:
-            world_corner = obj.matrix_world @ Vector(corner)
-            min_corner = Vector(min(a, b) for a, b in zip(min_corner, world_corner))
-            max_corner = Vector(max(a, b) for a, b in zip(max_corner, world_corner))
-    return min_corner, max_corner
+def mesh_object(name: str):
+    obj = bpy.data.objects.get(name)
+    if obj is None or obj.type != "MESH":
+        raise RuntimeError(f"Objet maillage '{name}' introuvable dans le fichier source.")
+    return obj
 
 
-def bone_head_tail(objects: list, ascending: bool) -> tuple:
-    """Dérive tête/queue d'un os depuis la bounding box monde réelle des
-    objets qui lui sont assignés (voir la Note d'implémentation du plan pour
-    la justification de cet écart par rapport à BONE_LENGTH). `ascending`
-    True pour les os de tronc (tête en bas, queue en haut), False pour les
-    os de membre (tête en haut/proximal, queue en bas/distal)."""
-    min_corner, max_corner = combined_world_bbox(objects)
-    center_x = (min_corner.x + max_corner.x) / 2
-    center_y = (min_corner.y + max_corner.y) / 2
-    if ascending:
-        head = Vector((center_x, center_y, min_corner.z))
-        tail = Vector((center_x, center_y, max_corner.z))
-    else:
-        head = Vector((center_x, center_y, max_corner.z))
-        tail = Vector((center_x, center_y, min_corner.z))
-    return head, tail
+def world_vertices(obj) -> list:
+    matrix = obj.matrix_world
+    return [matrix @ vertex.co for vertex in obj.data.vertices]
+
+
+def _centroid(points: list) -> Vector:
+    total = Vector((0.0, 0.0, 0.0))
+    for point in points:
+        total += point
+    return total / len(points)
+
+
+def extreme_centroid(obj, axis: int, high: bool, fraction: float = 0.06) -> Vector:
+    """Centre des sommets situés dans la fraction `fraction` la plus haute (ou basse) de l'objet
+    selon `axis` (0 = x, 1 = y, 2 = z)."""
+    points = world_vertices(obj)
+    values = [p[axis] for p in points]
+    low, top = min(values), max(values)
+    margin = (top - low) * fraction
+    chosen = [p for p in points if (p[axis] >= top - margin if high else p[axis] <= low + margin)]
+    return _centroid(chosen)
+
+
+def farthest_vertex(obj, origin: Vector) -> Vector:
+    return max(world_vertices(obj), key=lambda p: (p - origin).length)
+
+
+def _side_object(base: str, side: str):
+    return mesh_object(f"{base}.{side.lower()}")
+
+
+def joint_positions(side: str) -> dict:
+    """Positions monde (Blender) des articulations d'un côté, déduites des os réels de Z-Anatomy."""
+    humerus = _side_object("Humerus", side)
+    radius = _side_object("Radius", side)
+    ulna = _side_object("Ulna", side)
+    femur = _side_object("Femur", side)
+    tibia = _side_object("Tibia", side)
+    clavicle = _side_object("Clavicle", side)
+
+    # Tête du fémur : le haut de l'os, moitié la plus proche du plan médian (le grand trochanter
+    # est du côté externe).
+    top_points = world_vertices(femur)
+    z_values = [p.z for p in top_points]
+    z_top, z_low = max(z_values), min(z_values)
+    head_points = [p for p in top_points if p.z >= z_top - 0.1 * (z_top - z_low)]
+    x_mid = (min(p.x for p in head_points) + max(p.x for p in head_points)) / 2
+    medial = [p for p in head_points if abs(p.x) < abs(x_mid)]
+    hip = _centroid(medial or head_points)
+
+    shoulder = extreme_centroid(humerus, 2, True)
+    elbow = (extreme_centroid(humerus, 2, False) + extreme_centroid(ulna, 2, True)) / 2
+    wrist = (extreme_centroid(radius, 2, False, 0.04) + extreme_centroid(ulna, 2, False, 0.04)) / 2
+    knee = (extreme_centroid(femur, 2, False, 0.05) + extreme_centroid(tibia, 2, True, 0.05)) / 2
+    ankle = extreme_centroid(tibia, 2, False, 0.04)
+
+    metacarpal3 = _side_object("Third metacarpal bone", side)
+    knuckle = extreme_centroid(metacarpal3, 2, False, 0.08)
+    fingertip = farthest_vertex(_side_object("Distal phalanx of third finger of hand", side), knuckle)
+    metacarpal1 = _side_object("First metacarpal bone", side)
+    thumb_base = extreme_centroid(metacarpal1, 2, True, 0.08)
+    thumb_tip = farthest_vertex(_side_object("Distal phalanx of first finger of hand", side), thumb_base)
+
+    metatarsal3 = _side_object("Third metatarsal bone", side)
+    ball = extreme_centroid(metatarsal3, 1, False, 0.08)  # l'avant du pied est -y
+    toe_tip = farthest_vertex(_side_object("Distal phalanx of third finger of foot", side), ball)
+
+    sternal_end = extreme_centroid(clavicle, 0, side == "r", 0.08)
+    acromial_end = extreme_centroid(clavicle, 0, side == "l", 0.08)
+
+    return {
+        "hip": hip, "knee": knee, "ankle": ankle, "ball": ball, "toe_tip": toe_tip,
+        "shoulder": shoulder, "elbow": elbow, "wrist": wrist, "knuckle": knuckle,
+        "fingertip": fingertip, "thumb_base": thumb_base, "thumb_tip": thumb_tip,
+        "sternal_end": sternal_end, "acromial_end": acromial_end,
+    }
+
+
+def bone_positions() -> dict:
+    """{os: (tête, queue)} en coordonnées monde de Blender."""
+    left = joint_positions("l")
+    right = joint_positions("r")
+    t1 = world_vertices(mesh_object("Vertebra T1"))
+    atlas = world_vertices(mesh_object("Atlas (C1)"))
+    skull = world_vertices(mesh_object("Frontal bone")) + world_vertices(mesh_object("Occipital bone"))
+
+    # Colonne : verticale, dans le plan médian, à la profondeur des corps vertébraux.
+    spine_y = _centroid(t1).y
+    hip_height = (left["hip"].z + right["hip"].z) / 2
+    pelvis = Vector((0.0, spine_y, hip_height))
+    c7 = Vector((0.0, spine_y, _centroid(t1).z))
+    skull_base = Vector((0.0, spine_y, _centroid(atlas).z))
+    skull_top = Vector((0.0, spine_y, max(p.z for p in skull)))
+
+    positions = {
+        "root": (pelvis, pelvis + Vector((0.0, 0.0, 0.02))),
+        "spine": (pelvis, c7),
+        "neck": (c7, skull_base),
+        "head": (skull_base, skull_top),
+    }
+    for prefix, joints in (("L", left), ("R", right)):
+        positions[f"{prefix}_clavicle"] = (joints["sternal_end"], joints["acromial_end"])
+        positions[f"{prefix}_upper_arm"] = (joints["shoulder"], joints["elbow"])
+        positions[f"{prefix}_forearm"] = (joints["elbow"], joints["wrist"])
+        positions[f"{prefix}_hand"] = (joints["wrist"], joints["knuckle"])
+        positions[f"{prefix}_fingers"] = (joints["knuckle"], joints["fingertip"])
+        positions[f"{prefix}_thumb"] = (joints["thumb_base"], joints["thumb_tip"])
+        positions[f"{prefix}_thigh"] = (joints["hip"], joints["knee"])
+        positions[f"{prefix}_shin"] = (joints["knee"], joints["ankle"])
+        positions[f"{prefix}_foot"] = (joints["ankle"], joints["ball"])
+        positions[f"{prefix}_toes"] = (joints["ball"], joints["toe_tip"])
+    return positions
+
+
+def _objects_for_side(base_name: str, side: str) -> list:
+    """Objets maillage d'un muscle pour un côté ('l' ou 'r'). Les variantes `.el/.er/.ol/.or`
+    (vue éclatée, contour) sont ignorées. Si le côté demandé manque mais que l'autre existe, on
+    accepte l'objet sans suffixe (cas d'un côté mal nommé dans la source)."""
+    found = [
+        obj for obj in bpy.data.objects
+        if obj.type == "MESH" and obj.name == f"{base_name}.{side}"
+    ]
+    if found:
+        return found
+    other = "r" if side == "l" else "l"
+    if any(obj.type == "MESH" and obj.name == f"{base_name}.{other}" for obj in bpy.data.objects):
+        return [obj for obj in bpy.data.objects if obj.type == "MESH" and obj.name == base_name]
+    return []
+
+
+def resolve_muscles() -> list:
+    """Retourne une liste de dicts {object, chain, region, side} pour tous les muscles de MUSCLES.
+    Lève RuntimeError si un muscle est introuvable : jamais de sous-ensemble silencieux."""
+    resolved = []
+    missing = []
+    for base_name, chain_template, region in MUSCLES:
+        check_chain(base_name, chain_template)
+        total = 0
+        for side in ("l", "r"):
+            objects = _objects_for_side(base_name, side)
+            prefix = side.upper()
+            chain = [
+                bone if bone in CENTRAL_BONES else f"{prefix}_{bone}" for bone in chain_template
+            ]
+            for obj in objects:
+                resolved.append(
+                    {"object": obj, "chain": chain, "region": region, "side": side, "base": base_name}
+                )
+            total += len(objects)
+        if total == 0:
+            missing.append(base_name)
+    if missing:
+        raise RuntimeError(f"Muscles introuvables (essayé .l, .r et sans suffixe) : {missing}")
+    return resolved

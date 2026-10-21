@@ -1,124 +1,79 @@
-# Export du rig musculaire (Tranche 3)
+# Export du rig musculaire du corps complet
 
-Génère `web/public/muscle-rig.glb` à partir des maillages Z-Anatomy. Étape
-manuelle, exécutée une fois (ou à chaque changement du sous-ensemble de
-muscles ou de la hiérarchie d'os) — pas embarquée dans l'application.
+Génère `web/public/muscle-rig.glb` à partir des maillages Z-Anatomy : un squelette de **24 os** et
+environ **360 muscles** (tout le corps : tête, cou, tronc, épaules, bras, mains, hanches, jambes,
+pieds). Étape manuelle, exécutée une fois (ou à chaque changement de la liste des muscles ou de la
+hiérarchie d'os), pas embarquée dans l'application. Conception : voir
+`docs/superpowers/specs/2026-10-22-avatar-corps-complet-design.md`.
 
 ## 1. Télécharger la source Z-Anatomy
 
-Le fichier source (`Startup.blend`, ~293 Mo) n'est PAS commité au dépôt.
+Le fichier source (`Startup.blend`, ~300 Mo) n'est PAS commité au dépôt. Il est dans l'archive
+`Z-Anatomy.zip` (~87 Mo) du dépôt https://github.com/Z-Anatomy/The-blend :
 
 ```bash
-curl -L -o /tmp/Z-Anatomy.zip \
-  https://github.com/Z-Anatomy/The-blend/raw/master/Z-Anatomy.zip
-unzip -o /tmp/Z-Anatomy.zip -d /tmp/z-anatomy
-# Fichier attendu : /tmp/z-anatomy/Startup.blend
+git clone --depth 1 https://github.com/Z-Anatomy/the-blend /tmp/the-blend
+unzip -o /tmp/the-blend/Z-Anatomy.zip -d /tmp/z-anatomy
+# Fichier attendu : /tmp/z-anatomy/Z-Anatomy/Startup.blend
 ```
 
-Si ce lien a changé (nom de branche, chemin du zip), vérifier
-https://github.com/Z-Anatomy/The-blend avant de lancer la commande.
+Blender 4.2 LTS suffit (testé avec 4.2.3 : https://download.blender.org/release/Blender4.2/).
 
 ## 2. Exporter le rig
 
 ```bash
 blender --background --python-exit-code 1 --python tools/blender/export_muscle_rig.py -- \
-  /tmp/z-anatomy/Startup.blend \
+  /tmp/z-anatomy/Z-Anatomy/Startup.blend \
   web/public/muscle-rig.glb
 ```
 
-`--python-exit-code 1` est nécessaire : sans lui, `blender --background` avale les
-exceptions Python (y compris `AssertionError`/`RuntimeError`) et quitte avec le
-code 0 même quand le script a échoué avant la fin — le script contient ses
-propres garde-fous (`assert obj.data.users == 1`, `RuntimeError` de
-`rig_spec.resolve_muscle_objects`/`resolve_skeletal_landmarks` si un muscle ou
-un repère squelettique attendu est introuvable) qui doivent pouvoir faire
-échouer un pipeline CI/script shell en amont.
+`--python-exit-code 1` est nécessaire : sans lui, `blender --background` quitte avec le code 0 même
+quand le script a échoué. Compter **5 à 15 minutes**, sans sortie pendant le calcul des poids.
 
-Sortie normale d'un run réussi (ne pas confondre avec un échec) : le script
-imprime deux lignes `ATTENTION :`, attendues et sans conséquence sur la
-validité du rig —
+Ce que fait le script :
 
-- `ATTENTION : 1 objet(s) exclu(s) de l'export (géométrie dégénérée, 0 face
-  — voir is_degenerate_mesh) : ['Erector spinae.j']` — le seul objet
-  "Erector spinae" du fichier source est un stub cassé (2 sommets, 0 face),
-  exclu avant l'export plutôt que laissé à l'exportateur glTF (qui le
-  remplacerait silencieusement par un icosphère). D'où 54 muscles exportés,
-  pas 55.
-- `ATTENTION : repli poids rigide appliqué (Bone Heat Weighting sans
-  solution) pour N objet(s) : [...]` — le solveur de diffusion de chaleur de
-  Blender échoue de façon non déterministe sur 1 à 3 des 28 muscles
-  upper_arm/forearm (les seuls qui passent encore par Automatic Weights)
-  selon l'exécution ; les 26 muscles tronc/cou/cuisse (dont "Descending part
-  of trapezius muscle", "Sternocleidomastoid muscle" et, depuis la
-  correction de spec du 2026-09-21, tous les muscles de cuisse — "Rectus
-  femoris muscle", "Vastus lateralis muscle", etc.) ne passent plus jamais
-  par ce solveur du tout (poids rigide déterministe systématique, voir
-  `export_muscle_rig.apply_rigid_weight`) et ne peuvent donc plus
-  structurellement déclencher ce repli. Le script applique alors un
-  rattachement rigide (poids 1.0) à l'os logique déjà connu — le muscle reste
-  skinné à 100 %, juste sans diffusion de chaleur pour ces quelques objets.
-  La liste exacte peut varier d'un run à l'autre.
+- **Os.** Les 24 os (`rig_spec.BONE_ORDER`, même ordre que `web/app/pose3dSkeleton.ts`) sont placés
+  d'après les vrais os de Z-Anatomy (tête du fémur, condyles, malléoles, métacarpes, phalanges...). Les
+  positions sont imprimées dans le journal : les relire après toute modification.
+- **Muscles.** `rig_spec.MUSCLES` liste chaque muscle avec sa chaîne d'os et sa région. Un nom
+  introuvable fait échouer le script en les listant tous. Les variantes `.el/.er/.ol/.or` (vue
+  éclatée, contours) sont ignorées. Exclus : visage, yeux, langue, larynx, pharynx, oreille, plancher
+  pelvien, muscles intercostaux (très lourds), fascias et tendons.
+- **Poids de peau, sans Automatic Weights** (le solveur de Blender était non déterministe). Pour
+  chaque sommet : une zone de fondu autour de chaque articulation de la chaîne, mesurée le long de
+  l'axe de l'os distal (`BLEND_HALF_WIDTH`), sauf à l'épaule où elle dépend de la distance à
+  l'humérus (`PROXIMITY_JOINTS`) : un plan entraînerait avec le bras tout le grand dorsal et les
+  pectoraux, qui couvrent le tronc. Un muscle à un seul os est rigide à 100 %.
+- **Simplification.** Chaque muscle est ramené à 1 500 sommets au plus (`MAX_VERTICES_PER_MUSCLE`),
+  pour tenir dans 25 Mo.
+- **Matériau.** Un matériau simple partagé : les matériaux de Z-Anatomy font échouer l'export glTF
+  pour certains muscles, et l'application recolore de toute façon chaque muscle.
+- **Région et côté.** Chaque muscle porte sa région et son côté (`region`, `side`) comme propriété
+  personnalisée, exportée dans les `extras` glTF et lue par `muscleSegments.ts` (`userData`).
 
-**Quel muscle passe par quel chemin de poids** (voir `rig_spec.RIGID_WEIGHT_BONE_KEYS`
-et la correction de spec du 2026-09-21 dans
-`docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md`) :
-Automatic Weights (heat-diffusion) est utilisé UNIQUEMENT pour les muscles
-`upper_arm`/`forearm` (28 objets, 2 côtés) — le seul cas réellement
-bi-articulaire de ce squelette à 9 os (coude entre `L_upper_arm` et
-`L_forearm`, et son symétrique droit). Tous les autres muscles — tronc,
-cou (`rig_spec.TRUNK_NECK_MUSCLES`, 14 objets) et cuisse
-(`rig_spec.LIMB_MUSCLES["thigh"]`, 12 objets, depuis le 2026-09-21) — passent
-par le poids rigide déterministe (`apply_rigid_weight`), jamais par
-Automatic Weights, parce qu'aucun d'eux ne traverse une seconde articulation
-représentée dans ce squelette (pas d'os "jambe" sous la cuisse, pas de
-second os sous le tronc/cou).
-
-Avant `parent_set(ARMATURE_AUTO)`, le script dédoublonne aussi tout
-datablock mesh partagé entre plusieurs objets exportés (`obj.data.copy()`
-si `obj.data.users > 1`) : Z-Anatomy lie certains objets `.l`/`.r` au même
-datablock (duplicata liés, miroir par la matrice d'objet), et les poids de
-vertex vivant dans le datablock, un partage non corrigé fait que Automatic
-Weights écrase les poids d'un côté par ceux de l'autre pour toute la paire
-— voir la correction du 2026-09-20 dans
-`docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md`.
+Sortie normale : la liste des 24 os avec leurs positions, puis `N muscles, M sommets après
+simplification.` et `Export terminé`. Le message `Error: Not freed memory blocks` à la toute fin de
+Blender est sans conséquence.
 
 ## 3. Valider le fichier exporté
 
 ```bash
-blender --background --python-exit-code 1 --python tools/blender/validate_muscle_rig.py -- \
-  web/public/muscle-rig.glb
+cd web && npx vitest run app/muscleRigInvariants.test.ts
 ```
 
-`--python-exit-code 1` est nécessaire ici aussi et pour la même raison qu'à
-l'étape 2 : sans lui, un `assert` qui échoue dans ce script quitte quand même
-avec le code 0 (comportement `--background` de Blender), ce qui rendrait
-cette étape invisible à un pipeline CI/script shell qui teste le code de
-sortie — vérifié empiriquement (exit 0 sans le flag sur un `.glb` invalide,
-exit 1 avec le flag).
-
-Sortie attendue (exacte) : `OK: 9 os, 54 maillages skinnés, binding
-gauche/droite cohérent, poids rigide déterministe exact sur 26 objet(s)
-(tronc/cou : 14, cuisse : 12 — couverture vérifiée), Automatic Weights
-(upper_arm/forearm) sur 28 objet(s).` Le compte de maillages est une valeur
-EXACTE (54), pas un plancher — voir `EXPECTED_MESH_COUNT` dans
-`validate_muscle_rig.py`. Les comptes de 14 objets tronc/cou et 12 objets
-cuisse sont eux aussi des valeurs EXACTES, dérivées (pas codées en dur) et
-re-vérifiées chacune par une assertion de couverture séparée — voir
-`EXPECTED_TRUNK_NECK_OBJECT_COUNT` et `EXPECTED_THIGH_OBJECT_COUNT` dans
-`validate_muscle_rig.py`.
-Le validateur vérifie aussi qu'aucun objet exporté ne partage son datablock
-mesh avec un autre, et que l'os dominant de chaque objet `.l`/`.r` est bien
-de son propre côté (ou un os non latéralisé — tronc/cou/racine). Toute
-erreur (os manquant, maillage non skinné, datablock partagé, binding
-gauche/droite incohérent, compte de maillages différent de 54, couverture du
-contrôle tronc/cou ou cuisse incorrecte) fait échouer le script (`assert`,
-code de sortie différent de 0 GRÂCE À `--python-exit-code 1` ci-dessus) — ne
-pas committer le `.glb` si cette étape échoue.
+Le test charge le vrai `.glb` et vérifie : nombre exact de muscles (à mettre à jour dans le test si
+la liste change), taille inférieure à 25 Mo, 24 os aux noms attendus, région et côté de chaque muscle,
+toutes les régions présentes des deux côtés, poids de peau de somme 1 sur chaque sommet, côté déclaré
+cohérent avec l'os dominant et avec la position du muscle (gauche en +x). Ne pas committer le `.glb` si
+ce test échoue.
 
 ## 4. Vérification visuelle
 
-Ouvrir `web/public/muscle-rig.glb` dans un viewer glTF (ex.
-https://gltf-viewer.donmccurdy.com/, ou Blender) : vérifier l'absence de
-déformation aberrante ou de bavure de poids visible aux jointures avant de
-committer. Corriger manuellement dans Blender si besoin (repeindre les poids
-des muscles concernés), ré-exporter, puis relancer l'étape 3.
+```bash
+cd web && npm run dev                      # dans un terminal
+node scripts/snapshot-exercise.mjs --definition ../exercises/<exercice>.json --out /tmp/vue
+```
+
+Ouvrir les images produites (une par pose clé) : chercher les étirements aberrants de muscles aux
+articulations (épaule, hanche, poignet, cheville). Corriger `BLEND_HALF_WIDTH` ou `PROXIMITY_JOINTS`
+dans `rig_spec.py`, ré-exporter, relancer l'étape 3.
