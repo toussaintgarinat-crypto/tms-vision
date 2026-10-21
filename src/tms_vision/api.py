@@ -23,6 +23,8 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from tms_vision import bilan, recurrence, storage
+from tms_vision.load import bounds, parse_load
+from tms_vision.rescore import rescore_frames, summarize_for_load
 from tms_vision.capsules import Capsule, compute_worst_zone, recommend_capsule
 from tms_vision.pipeline import analyze_video, generate_run_id
 from tms_vision.pose3d_export import build_pose3d_payload
@@ -145,7 +147,7 @@ async def _analyze_and_build_response(
 async def create_analysis(
     file: UploadFile = File(...),
     side: Literal["left", "right"] = Form(...),
-    load_kg: float = Form(..., ge=0),
+    load_kg: float = Form(0.0, ge=0),
     wrist_twist: Literal["normal", "extreme"] = Form(...),
     worker_label: str | None = Form(None, max_length=200),
     poste_label: str | None = Form(None, max_length=200),
@@ -213,7 +215,7 @@ async def upload_chunk(upload_id: str, index: int, file: UploadFile = File(...))
 async def complete_upload(
     upload_id: str,
     side: Literal["left", "right"] = Form(...),
-    load_kg: float = Form(..., ge=0),
+    load_kg: float = Form(0.0, ge=0),
     wrist_twist: Literal["normal", "extreme"] = Form(...),
     worker_label: str | None = Form(None, max_length=200),
     poste_label: str | None = Form(None, max_length=200),
@@ -485,3 +487,54 @@ async def get_bilan_recurrence(bilan_id: str) -> dict:
             "recurrence": recurrence.compute_recurrence(frames or [], thresholds),
         })
     return bilan.project_bilan(record["workday_hours"], items)
+
+
+class LoadUpdate(BaseModel):
+    kind: Literal["none", "exact", "range"]
+    kg: float | None = None
+    kg_min: float | None = None
+    kg_max: float | None = None
+
+
+def _score_summary(summary: dict) -> dict:
+    return {"max_score": summary["max_score"], "average_score": summary["average_score"]}
+
+
+@app.put("/analyses/{analysis_id}/load")
+async def update_analysis_load(analysis_id: str, body: LoadUpdate) -> dict:
+    """Saisie du poids manipulé après l'analyse (la vidéo ne peut pas le
+    deviner). Recalcule les scores à partir des sous-scores déjà persistés,
+    sans relancer la pose. Une fourchette est calculée aux deux bornes : les
+    valeurs stockées sont celles du cas défavorable (borne haute), l'intervalle
+    est conservé dans load.score_range."""
+    frames = storage.get_frame_scores(analysis_id)
+    if frames is None:
+        raise HTTPException(status_code=404, detail="Analyse introuvable.")
+
+    try:
+        load = parse_load(body.kind, body.kg, body.kg_min, body.kg_max)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    low_kg, high_kg = bounds(load)
+    high_summary = summarize_for_load(frames, high_kg)
+    score_range = None
+    if low_kg != high_kg:
+        score_range = {
+            "low": _score_summary(summarize_for_load(frames, low_kg)),
+            "high": _score_summary(high_summary),
+        }
+
+    try:
+        storage.update_load(
+            analysis_id,
+            load={"kind": load.kind, "kg": load.kg, "kg_min": load.kg_min, "kg_max": load.kg_max},
+            effective_load_kg=high_kg,
+            frame_scores=rescore_frames(frames, high_kg),
+            summary=high_summary,
+            score_range=score_range,
+        )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Analyse introuvable.") from error
+
+    return storage.get_analysis(analysis_id)

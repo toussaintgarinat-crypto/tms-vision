@@ -838,3 +838,158 @@ def test_bilan_recurrence_of_empty_bilan(tmp_path, monkeypatch):
 
     assert body["undocumented_hours"] == 9.0
     assert body["analyses"] == []
+
+
+def _scored_analysis(analysis_id, load_kg=0.0, muscle_use=1, posture_angles=None):
+    """Analyse cohérente : lignes et résumé produits par le vrai moteur RULA au poids
+    d'origine, de sorte que compute_rula_score serve d'oracle indépendant au recalcul."""
+    from tms_vision.angles import JointAngles
+    from tms_vision.export import FrameRecord, ResultsExporter
+    from tms_vision.rula.scoring import compute_rula_score
+
+    angles = posture_angles or JointAngles(
+        neck_flexion_deg=5.0, neck_twisted=False, neck_side_bending=False,
+        trunk_flexion_deg=1.0, trunk_twisted=False, trunk_side_bending=False,
+        upper_arm_flexion_deg=10.0, upper_arm_abducted=False, upper_arm_shoulder_raised=False,
+        lower_arm_angle_deg=90.0, lower_arm_across_midline=False,
+        wrist_flexion_deg=0.5, wrist_bent_from_midline=False, arm_supported=False,
+    )
+    exporter = ResultsExporter()
+    for index in range(3):
+        score = compute_rula_score(angles, wrist_twist=1, load_kg=load_kg, muscle_use_score=muscle_use)
+        exporter.add_frame(FrameRecord(index, float(index), True, angles, score))
+    rows = exporter.rows()
+    for row in rows:
+        for zone in ("neck", "trunk", "upper_arm", "lower_arm"):
+            row[f"{zone}_segment_action_level"] = "acceptable"
+    storage.save_analysis(
+        analysis_id=analysis_id, created_at=datetime.now(timezone.utc), side="right",
+        load_kg=load_kg, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=exporter.summary(), video_bytes=b"x", pose3d_json="[]", frame_rows=rows,
+    )
+    return angles
+
+
+def _oracle_max_score(angles, load_kg, muscle_use=1):
+    from tms_vision.rula.scoring import compute_rula_score
+
+    return compute_rula_score(
+        angles, wrist_twist=1, load_kg=load_kg, muscle_use_score=muscle_use
+    ).final_score
+
+
+def test_put_exact_load_recomputes_scores_like_the_scoring_engine(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    angles = _scored_analysis("w-1", load_kg=0.0)
+    client = TestClient(app)
+
+    response = client.put("/analyses/w-1/load", json={"kind": "exact", "kg": 15})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["max_score"] == _oracle_max_score(angles, 15.0)
+    assert body["max_score"] > _oracle_max_score(angles, 0.0)
+    assert body["load_kg"] == 15.0
+    assert body["load"]["kind"] == "exact"
+    assert body["load"]["kg"] == 15.0
+    assert body["load"]["original_load_kg"] == 0.0
+    assert body["load"]["score_range"] is None
+    assert client.get("/analyses/w-1").json()["max_score"] == body["max_score"]
+
+
+def test_put_range_straddling_a_threshold_stores_worst_case_and_the_interval(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    angles = _scored_analysis("w-1", load_kg=0.0)
+    low_expected = _oracle_max_score(angles, 8.0)
+    high_expected = _oracle_max_score(angles, 12.0)
+    assert low_expected < high_expected  # precondition : la fourchette change vraiment le score
+    client = TestClient(app)
+
+    body = client.put(
+        "/analyses/w-1/load", json={"kind": "range", "kg_min": 8, "kg_max": 12}
+    ).json()
+
+    assert body["max_score"] == high_expected
+    assert body["load_kg"] == 12.0
+    assert body["load"]["kind"] == "range"
+    assert (body["load"]["kg_min"], body["load"]["kg_max"]) == (8.0, 12.0)
+    assert body["load"]["score_range"]["low"]["max_score"] == low_expected
+    assert body["load"]["score_range"]["high"]["max_score"] == high_expected
+
+
+def test_put_range_within_one_threshold_band_has_equal_low_and_high_scores(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _scored_analysis("w-1", load_kg=0.0)
+    client = TestClient(app)
+
+    body = client.put(
+        "/analyses/w-1/load", json={"kind": "range", "kg_min": 3, "kg_max": 8}
+    ).json()
+
+    score_range = body["load"]["score_range"]
+    assert score_range["low"]["max_score"] == score_range["high"]["max_score"]
+
+
+def test_put_none_resets_to_zero_kg_and_is_idempotent(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    angles = _scored_analysis("w-1", load_kg=20.0)
+    client = TestClient(app)
+
+    first = client.put("/analyses/w-1/load", json={"kind": "none"}).json()
+    second = client.put("/analyses/w-1/load", json={"kind": "none"}).json()
+
+    assert first == second
+    assert first["load_kg"] == 0.0
+    assert first["load"]["kind"] == "none"
+    assert first["max_score"] == _oracle_max_score(angles, 0.0)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"kind": "range", "kg_min": 12, "kg_max": 8},
+        {"kind": "exact", "kg": -1},
+        {"kind": "exact"},
+        {"kind": "range", "kg_min": 5},
+        {"kind": "exact", "kg": 600},
+        {"kind": "none", "kg": 5},
+        {"kind": "unknown"},
+    ],
+)
+def test_put_load_rejects_invalid_payloads_without_changing_anything(tmp_path, monkeypatch, payload):
+    _patch_db(tmp_path, monkeypatch)
+    _scored_analysis("w-1", load_kg=0.0)
+    client = TestClient(app)
+    before = client.get("/analyses/w-1").json()
+
+    response = client.put("/analyses/w-1/load", json=payload)
+
+    assert response.status_code == 422
+    assert client.get("/analyses/w-1").json() == before
+
+
+def test_put_load_unknown_analysis_returns_404(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    assert client.put("/analyses/nope/load", json={"kind": "exact", "kg": 5}).status_code == 404
+
+
+def test_put_load_422_message_is_readable(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _scored_analysis("w-1")
+    client = TestClient(app)
+
+    response = client.put("/analyses/w-1/load", json={"kind": "range", "kg_min": 12, "kg_max": 8})
+
+    assert isinstance(response.json()["detail"], str)
+    assert "borne" in response.json()["detail"]
+
+
+def test_load_kg_is_optional_when_creating_an_analysis():
+    schemas = app.openapi()["components"]["schemas"]
+    for name, schema in schemas.items():
+        if name.startswith("Body_create_analysis") or name.startswith("Body_complete_upload"):
+            assert "load_kg" in schema["properties"], name
+            assert "load_kg" not in schema.get("required", []), name
+            assert "side" in schema["required"], name
