@@ -8,14 +8,15 @@ import {
   Exercise,
   PoseAngles,
   activeInstruction,
-  anglesToLandmarks,
+  applyPoseToSkeleton,
   boneDirections,
+  captureRestPose,
   samplePose,
 } from "./exercisePose";
+import { MuscleModel, prepareMuscleModel } from "./muscleModel";
 import { resolveMeshBoneKey } from "./muscleSegments";
-import { applyFrameToSkeleton, BONE_ORDER, buildSkeleton } from "./pose3dSkeleton";
+import { BONE_ORDER, BoneKey } from "./pose3dSkeleton";
 
-const EPS = 1e-6;
 
 function expectDirection(actual: THREE.Vector3, x: number, y: number, z: number) {
   expect(actual.x).toBeCloseTo(x, 6);
@@ -251,7 +252,9 @@ describe("activeInstruction", () => {
   });
 });
 
-const POSES_TO_ROUND_TRIP: Record<string, PoseAngles> = {
+const UP_BONES: readonly string[] = ["spine", "neck"];
+
+const POSES_TO_CHECK: Record<string, PoseAngles> = {
   neutral: {},
   neck_tilt: { neck: { lateral: 35 } },
   trunk_forward: { spine: { flexion: 40 } },
@@ -273,40 +276,136 @@ const POSES_TO_ROUND_TRIP: Record<string, PoseAngles> = {
   },
 };
 
-describe("anglesToLandmarks, de bout en bout avec le squelette", () => {
-  for (const [name, angles] of Object.entries(POSES_TO_ROUND_TRIP)) {
-    it(`reproduit les directions d'os attendues pour la pose « ${name} »`, () => {
-      const { bones } = buildSkeleton();
+describe("applyPoseToSkeleton sur le vrai squelette (web/public/muscle-rig.glb)", () => {
+  let model: MuscleModel;
+  let rest: ReturnType<typeof captureRestPose>;
+  let restPositions: Record<BoneKey, THREE.Vector3>;
 
-      applyFrameToSkeleton(bones, anglesToLandmarks(angles), {});
-      bones.root.updateMatrixWorld(true);
+  const worldQuaternion = (bone: THREE.Bone) => bone.getWorldQuaternion(new THREE.Quaternion());
+  const worldPosition = (bone: THREE.Bone) => bone.getWorldPosition(new THREE.Vector3());
+
+  // Centre (monde) des maillages dont l'os dominant est `boneKey`, squelette à jour.
+  function centreOf(boneKey: BoneKey): THREE.Vector3 {
+    model.scene.updateMatrixWorld(true);
+    const centre = new THREE.Vector3();
+    let count = 0;
+    model.meshes.forEach((mesh) => {
+      if (resolveMeshBoneKey(mesh) !== boneKey) return;
+      mesh.skeleton.update();
+      mesh.computeBoundingBox();
+      centre.add(mesh.boundingBox!.clone().applyMatrix4(mesh.matrixWorld).getCenter(new THREE.Vector3()));
+      count++;
+    });
+    return centre.multiplyScalar(1 / count);
+  }
+
+  function pose(angles: PoseAngles) {
+    applyPoseToSkeleton(model.bones, rest, angles);
+    model.scene.updateMatrixWorld(true);
+  }
+
+  beforeAll(async () => {
+    const buffer = fs.readFileSync(path.resolve(__dirname, "..", "public", "muscle-rig.glb"));
+    const arrayBuffer = buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength,
+    ) as ArrayBuffer;
+    const gltf = await new Promise<GLTF>((resolve, reject) => {
+      new GLTFLoader().parse(arrayBuffer, "", resolve, reject);
+    });
+    model = prepareMuscleModel(gltf.scene);
+    model.scene.updateMatrixWorld(true);
+    rest = captureRestPose(model.bones);
+    restPositions = {} as Record<BoneKey, THREE.Vector3>;
+    for (const key of BONE_ORDER) restPositions[key] = worldPosition(model.bones[key]);
+  });
+
+  it("la pose neutre reproduit exactement la pose de repos (orientations et positions)", () => {
+    pose({});
+
+    for (const key of BONE_ORDER) {
+      expect(worldQuaternion(model.bones[key]).angleTo(rest[key]), key).toBeLessThan(1e-6);
+      expect(worldPosition(model.bones[key]).distanceTo(restPositions[key]), key).toBeLessThan(1e-6);
+    }
+  });
+
+  it("garde le bras gauche en +x et le bras droit en -x en pose neutre (pas de miroir)", () => {
+    pose({});
+
+    expect(centreOf("L_upper_arm").x).toBeGreaterThan(0.1);
+    expect(centreOf("R_upper_arm").x).toBeLessThan(-0.1);
+  });
+
+  for (const [name, angles] of Object.entries(POSES_TO_CHECK)) {
+    it(`applique à chaque os la rotation attendue, parents compris : pose « ${name} »`, () => {
+      pose(angles);
 
       const expected = boneDirections(angles);
       for (const key of BONE_ORDER) {
         if (key === "root") continue;
-        const actual = new THREE.Vector3(0, 1, 0).transformDirection(bones[key].matrixWorld);
-        const want = expected[key as AngleBoneKey];
-        expect(actual.distanceTo(want), `${name}/${key}`).toBeLessThan(EPS * 10);
+        // Rotation réellement appliquée à l'os par rapport à son repos, appliquée à sa
+        // direction neutre (haut pour tronc et cou, bas pour les membres).
+        const relative = worldQuaternion(model.bones[key]).multiply(rest[key].clone().invert());
+        const neutral = new THREE.Vector3(0, UP_BONES.includes(key) ? 1 : -1, 0);
+        const actual = neutral.applyQuaternion(relative);
+
+        expect(actual.distanceTo(expected[key as AngleBoneKey]), `${name}/${key}`).toBeLessThan(1e-6);
       }
     });
   }
 
-  it("fournit tous les landmarks que le squelette lit", () => {
-    const landmarks = anglesToLandmarks({});
+  it("bras droit croisé : le coude passe devant et vers le milieu du corps ; le bras gauche ne bouge pas", () => {
+    pose({});
+    const restLeft = centreOf("L_upper_arm");
 
-    for (const name of [
-      "LEFT_HIP", "RIGHT_HIP", "LEFT_SHOULDER", "RIGHT_SHOULDER", "NOSE",
-      "LEFT_ELBOW", "RIGHT_ELBOW", "LEFT_WRIST", "RIGHT_WRIST", "LEFT_KNEE", "RIGHT_KNEE",
-    ]) {
-      expect(landmarks[name], name).toBeDefined();
-    }
+    pose({ R_upper_arm: { flexion: 90, lateral: -45 }, R_forearm: { flexion: 90, lateral: -45 } });
+
+    // Coude (origine de l'os de l'avant-bras) par rapport à l'épaule (origine de l'os du
+    // bras). Au repos le bras pend vers le bas ; ici il est à peu près à l'horizontale
+    // (le repos du modèle est légèrement écarté du corps, d'où l'écart de quelques degrés).
+    const shoulder = worldPosition(model.bones.R_upper_arm);
+    const elbow = worldPosition(model.bones.R_forearm);
+    const upperArm = elbow.clone().sub(shoulder);
+    expect(upperArm.z).toBeGreaterThan(0.1); // vers l'avant
+    expect(upperArm.x).toBeGreaterThan(0.05); // vers le milieu du corps (+x pour le bras droit)
+    expect(Math.abs(upperArm.y)).toBeLessThan(0.08); // à peu près horizontal
+    expect(centreOf("L_upper_arm").distanceTo(restLeft)).toBeLessThan(1e-6);
   });
 
-  it("place les hanches à l'origine, côté gauche en +x", () => {
-    const landmarks = anglesToLandmarks({});
+  it("inclinaison latérale positive du cou : vers la droite du sujet (-x)", () => {
+    pose({});
+    const neutral = centreOf("neck");
 
-    expect(landmarks.LEFT_HIP[0]).toBeGreaterThan(0);
-    expect(landmarks.RIGHT_HIP[0]).toBeLessThan(0);
-    expect((landmarks.LEFT_HIP[0] + landmarks.RIGHT_HIP[0]) / 2).toBeCloseTo(0, 9);
+    pose({ neck: { lateral: 35 } });
+
+    expect(centreOf("neck").x - neutral.x).toBeLessThan(-0.03);
+  });
+
+  it("flexion positive du tronc : le haut du corps passe vers l'avant (+z)", () => {
+    pose({});
+    const neck = centreOf("neck");
+    const arm = centreOf("R_upper_arm");
+
+    pose({ spine: { flexion: 40 } });
+
+    expect(centreOf("neck").z - neck.z).toBeGreaterThan(0.1);
+    expect(centreOf("R_upper_arm").z - arm.z).toBeGreaterThan(0.1);
+    expect(centreOf("R_thigh").z).toBeCloseTo(-0.009, 1);
+  });
+
+  it("coude plié, bras levé devant : l'avant-bras est au-dessus de l'épaule", () => {
+    pose({ R_upper_arm: { flexion: 90 }, R_forearm: { flexion: 180 } });
+
+    expect(centreOf("R_forearm").y).toBeGreaterThan(centreOf("R_upper_arm").y);
+  });
+
+  it("revient exactement au repos après une pose extrême (aucun état résiduel)", () => {
+    pose(POSES_TO_CHECK.everything);
+    pose({});
+
+    for (const key of BONE_ORDER) {
+      expect(worldQuaternion(model.bones[key]).angleTo(rest[key]), key).toBeLessThan(1e-6);
+      expect(worldPosition(model.bones[key]).distanceTo(restPositions[key]), key).toBeLessThan(1e-6);
+    }
   });
 });

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BONE_LENGTH, BoneKey, Pose3DLandmarks } from "./pose3dSkeleton";
+import { BONE_ORDER, BoneKey } from "./pose3dSkeleton";
 
 // Pose d'un exercice d'étirement en angles par os, convertie en pose du squelette
 // articulé de l'avatar (voir exercises/README.md et
@@ -62,21 +62,28 @@ const ANGLE_BONES: readonly AngleBoneKey[] = [
 // Composition : d'abord `lateral` autour de l'axe avant-arrière (z), puis
 // `flexion` autour de l'axe gauche-droite (x). Un bras avec flexion 90 est donc
 // à l'horizontale devant soi, et `lateral` l'en écarte dans le plan horizontal.
-function directionFor(bone: AngleBoneKey, angles: BoneAngles | undefined): THREE.Vector3 {
+function rotationFor(bone: AngleBoneKey, angles: BoneAngles | undefined): THREE.Quaternion {
   const isUp = UP_BONES.has(bone);
   const flexion = THREE.MathUtils.degToRad(angles?.flexion ?? 0);
   const lateral = THREE.MathUtils.degToRad(angles?.lateral ?? 0);
 
-  return new THREE.Vector3(0, isUp ? 1 : -1, 0)
-    .applyAxisAngle(AXIS_Z, RIGHT_BONES.has(bone) ? -lateral : lateral)
-    .applyAxisAngle(AXIS_X, isUp ? flexion : -flexion)
-    .normalize();
+  const aroundZ = new THREE.Quaternion().setFromAxisAngle(
+    AXIS_Z,
+    RIGHT_BONES.has(bone) ? -lateral : lateral,
+  );
+  const aroundX = new THREE.Quaternion().setFromAxisAngle(AXIS_X, isUp ? flexion : -flexion);
+  // Appliqué à un vecteur : d'abord autour de z, puis autour de x.
+  return aroundX.multiply(aroundZ);
+}
+
+function neutralDirection(bone: AngleBoneKey): THREE.Vector3 {
+  return new THREE.Vector3(0, UP_BONES.has(bone) ? 1 : -1, 0);
 }
 
 export function boneDirections(angles: PoseAngles): Record<AngleBoneKey, THREE.Vector3> {
   const directions = {} as Record<AngleBoneKey, THREE.Vector3>;
   for (const bone of ANGLE_BONES) {
-    directions[bone] = directionFor(bone, angles[bone]);
+    directions[bone] = neutralDirection(bone).applyQuaternion(rotationFor(bone, angles[bone]));
   }
   return directions;
 }
@@ -125,45 +132,45 @@ export function activeInstruction(
   return found;
 }
 
-const SHOULDER_HALF_WIDTH = 0.2;
-const HIP_HALF_WIDTH = 0.1;
+export type RestPose = Record<BoneKey, THREE.Quaternion>;
 
-// Landmarks synthétiques (repère MediaPipe : y vers le bas) qui, passés à
-// `applyFrameToSkeleton`, donnent au squelette les directions de `boneDirections`.
-// C'est le MÊME chemin que l'avatar piloté par la vidéo : mêmes conventions de
-// calcul des rotations. Seules les directions comptent (les positions des os
-// viennent de la hiérarchie) ; les largeurs d'épaules et de hanches sont de simples
-// décalages latéraux.
-export function anglesToLandmarks(angles: PoseAngles): Pose3DLandmarks {
-  const d = boneDirections(angles);
-  const at = (base: THREE.Vector3, direction: THREE.Vector3, length: number) =>
-    base.clone().addScaledVector(direction, length);
-  const asLandmark = (v: THREE.Vector3): [number, number, number] => [v.x, -v.y, v.z];
+// Orientations MONDE de repos de tous les os, à capturer une fois, squelette intact.
+export function captureRestPose(bones: Record<BoneKey, THREE.Bone>): RestPose {
+  bones.root.updateWorldMatrix(true, true);
+  const rest = {} as RestPose;
+  for (const key of BONE_ORDER) {
+    rest[key] = bones[key].getWorldQuaternion(new THREE.Quaternion());
+  }
+  return rest;
+}
 
-  const hipLeft = new THREE.Vector3(HIP_HALF_WIDTH, 0, 0);
-  const hipRight = new THREE.Vector3(-HIP_HALF_WIDTH, 0, 0);
-  const shoulderMid = at(new THREE.Vector3(0, 0, 0), d.spine, BONE_LENGTH.spine);
-  const shoulderLeft = shoulderMid.clone().add(new THREE.Vector3(SHOULDER_HALF_WIDTH, 0, 0));
-  const shoulderRight = shoulderMid.clone().add(new THREE.Vector3(-SHOULDER_HALF_WIDTH, 0, 0));
-  const nose = at(shoulderMid, d.neck, BONE_LENGTH.neck);
-  const elbowLeft = at(shoulderLeft, d.L_upper_arm, BONE_LENGTH.L_upper_arm);
-  const elbowRight = at(shoulderRight, d.R_upper_arm, BONE_LENGTH.R_upper_arm);
-  const wristLeft = at(elbowLeft, d.L_forearm, BONE_LENGTH.L_forearm);
-  const wristRight = at(elbowRight, d.R_forearm, BONE_LENGTH.R_forearm);
-  const kneeLeft = at(hipLeft, d.L_thigh, BONE_LENGTH.L_thigh);
-  const kneeRight = at(hipRight, d.R_thigh, BONE_LENGTH.R_thigh);
+// Pose le squelette : l'orientation monde de chaque os est sa rotation de repos
+// composée avec la rotation de la pose (monde), donc la pose neutre redonne exactement
+// le repos, sans roulis ni miroir. Les positions viennent de la hiérarchie du squelette.
+//
+// On n'utilise PAS `applyFrameToSkeleton` (avatar piloté par la vidéo) : pour un tronc
+// vertical, `swingQuaternion` construit un repère tourné de 180° autour de l'axe
+// vertical, que les os enfants héritent ; vérifié sur le vrai muscle-rig.glb, le bras
+// gauche (+x au repos) se retrouve alors à -x et inversement. Inoffensif pour des bras
+// qui pendent, il ferait bouger le mauvais bras ici.
+export function applyPoseToSkeleton(
+  bones: Record<BoneKey, THREE.Bone>,
+  rest: RestPose,
+  angles: PoseAngles,
+): void {
+  const worldQuaternion: Partial<Record<BoneKey, THREE.Quaternion>> = {};
 
-  return {
-    LEFT_HIP: asLandmark(hipLeft),
-    RIGHT_HIP: asLandmark(hipRight),
-    LEFT_SHOULDER: asLandmark(shoulderLeft),
-    RIGHT_SHOULDER: asLandmark(shoulderRight),
-    NOSE: asLandmark(nose),
-    LEFT_ELBOW: asLandmark(elbowLeft),
-    RIGHT_ELBOW: asLandmark(elbowRight),
-    LEFT_WRIST: asLandmark(wristLeft),
-    RIGHT_WRIST: asLandmark(wristRight),
-    LEFT_KNEE: asLandmark(kneeLeft),
-    RIGHT_KNEE: asLandmark(kneeRight),
-  };
+  for (const key of BONE_ORDER) {
+    const bone = bones[key];
+    const desired =
+      key === "root"
+        ? rest.root.clone()
+        : rotationFor(key as AngleBoneKey, angles[key as AngleBoneKey]).multiply(rest[key]);
+    worldQuaternion[key] = desired;
+
+    const parentWorld =
+      (bone.parent && worldQuaternion[bone.parent.name as BoneKey]) ||
+      (bone.parent ? bone.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion());
+    bone.quaternion.copy(parentWorld.clone().invert().multiply(desired));
+  }
 }

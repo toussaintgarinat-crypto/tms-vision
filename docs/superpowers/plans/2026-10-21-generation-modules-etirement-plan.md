@@ -26,8 +26,11 @@ devDependency du frontend), `ffmpeg` (outil système), pytest, Vitest.
   commande (le dépôt a déjà `tools/blender/`).
 - **Poses en angles, pas en landmarks.** Un ostéopathe ne saisit pas 33 coordonnées MediaPipe. Une
   pose donne, par os, deux angles à partir de la posture neutre (voir « Format »). Le code les
-  convertit en landmarks synthétiques puis appelle `applyFrameToSkeleton`, **le même chemin** que
-  l'avatar piloté par la vidéo, donc avec les mêmes conventions.
+  applique directement au squelette : l'orientation monde de chaque os est sa rotation de repos
+  composée avec celle de la pose (`applyPoseToSkeleton`). **Correction en cours de route :** le plan
+  prévoyait de passer par des landmarks synthétiques et `applyFrameToSkeleton` (le chemin de l'avatar
+  piloté par la vidéo). Une mesure sur le vrai `muscle-rig.glb` a montré que ce chemin inverse
+  gauche et droite (voir `exercisePose.ts`), ce qui aurait fait bouger le mauvais bras.
 - **La définition est transmise au navigateur par le script de rendu** (pas par l'API) : la page de
   rendu n'a besoin que du serveur Next.js.
 - **Les vidéos générées ne sont pas commitées** : `data/capsules/` est déjà ignoré par `data/`.
@@ -191,8 +194,8 @@ premier `t == 0`, dernier `t <= duration_seconds` ; `instructions[].t` croissant
   {flexion?: number; lateral?: number}>>`, `boneDirections(angles: PoseAngles): Record<BoneKey,
   THREE.Vector3>` (directions monde, repère Three.js y vers le haut), `samplePose(exercise, t):
   PoseAngles` (interpolation entre poses clés, adoucie, bornée à `[0, duration]`),
-  `anglesToLandmarks(angles): Pose3DLandmarks` (landmarks synthétiques : positions = origine + direction
-  × `BONE_LENGTH`, dans le repère MediaPipe attendu par `applyFrameToSkeleton`, y vers le bas),
+  `captureRestPose(bones)` et `applyPoseToSkeleton(bones, rest, angles)` (pose le squelette : rotation
+  de repos composée avec celle de la pose, la pose neutre redonne exactement le repos),
   `activeInstruction(exercise, t): {text: string; index: number} | null`.
 
 - [ ] **Step 1: Établir les conventions par l'expérience, pas par déduction.** Écrire un petit test
