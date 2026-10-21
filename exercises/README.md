@@ -28,48 +28,77 @@ Les règles de validation sont dans `src/tms_vision/exercises.py` : un fichier i
 ```
 
 - `id` : minuscules, chiffres et tirets ; égal au nom du fichier.
-- `zone` : `neck`, `trunk`, `upper_arm` ou `lower_arm`. `target_segments` : les segments mis en
-  évidence en bleu dans la vidéo.
-- `view` : `front`, `side` ou `three_quarter` (cadrage de la caméra).
-- `poses` : chaque pose donne, par os, des angles en degrés à partir de la posture neutre. Un os absent
-  d'une pose reste à sa direction neutre. Os disponibles : `spine`, `neck`, `L_upper_arm`,
-  `L_forearm`, `R_upper_arm`, `R_forearm`, `L_thigh`, `R_thigh`. Angles : `flexion` et `lateral`,
-  entre -180 et 180.
+- `zone` : la région principale de l'exercice. `target_segments` : les régions mises en évidence en
+  bleu dans la vidéo. Régions : `neck`, `trunk`, `upper_arm`, `lower_arm` (les quatre zones RULA
+  mesurées), puis `head`, `shoulder` (ceinture scapulaire, pectoraux, rotateurs), `hand` (main et
+  doigts), `hip` (bassin, fessiers, psoas), `thigh`, `lower_leg` (mollet, jambe) et `foot`. Les
+  régions hors RULA n'ont pas de mesure : leurs exercices existent et se génèrent, mais aucun score
+  ne les recommande encore.
+- `view` : `front`, `side` ou `three_quarter` (cadrage de la caméra). Le zoom est automatique : tête
+  et cou, mains et avant-bras, pied seul sont cadrés de près ; tout le reste, corps entier.
+- `poses` : chaque pose donne, par os, jusqu'à trois angles en degrés **relatifs à l'os parent**. Un
+  os absent d'une pose, ou sans angle, reste aligné sur son parent : la tête suit le cou, la main
+  suit l'avant-bras, le pied suit la jambe.
 - `keyframes` : suite de poses à des instants `t` (secondes) strictement croissants, le premier à 0 ;
   le mouvement est interpolé de façon adoucie entre deux poses clés. Deux poses clés identiques
   d'affilée = une position tenue.
 - `instructions` : consignes datées, affichées (et dites si une voix est configurée) à l'instant `t`.
 - `duration_seconds` : entre 10 et 180.
 
+## Le squelette : 24 os
+
+Un os par segment, parent avant enfant (`root` est le bassin, sans angle) :
+
+```
+root
+├─ spine ─ neck ─ head
+│  ├─ L_clavicle ─ L_upper_arm ─ L_forearm ─ L_hand ─┬─ L_fingers
+│  │                                                  └─ L_thumb
+│  └─ R_clavicle ─ R_upper_arm ─ R_forearm ─ R_hand ─┬─ R_fingers
+│                                                     └─ R_thumb
+├─ L_thigh ─ L_shin ─ L_foot ─ L_toes
+└─ R_thigh ─ R_shin ─ R_foot ─ R_toes
+```
+
+`fingers` regroupe les quatre doigts longs, `toes` les orteils. `spine` est un seul os pour tout le
+tronc. Les angles peuvent être donnés pour tous les os sauf `root`.
+
 ## Sens des angles
 
 Mesuré sur le modèle `web/public/muscle-rig.glb` et verrouillé par `web/app/exercisePose.test.ts` :
-le côté **gauche** du modèle est +x et son **avant** est +z (face à la caméra de l'avatar). Tous les
-angles sont en degrés, **absolus** par rapport à la posture neutre (tronc et cou vers le haut, bras,
-avant-bras et cuisses vers le bas) :
+le côté **gauche** du modèle est +x et son **avant** est +z (face à la caméra de l'avatar). Les angles
+sont en degrés, entre -180 et 180, et **relatifs au parent** : `R_forearm: { flexion: 90 }` plie le coude
+de 90° quel que soit l'angle du bras, et `R_upper_arm: { flexion: 90 }` seul lève le bras avec
+l'avant-bras, la main et les doigts qui le prolongent.
 
-- `flexion` positif : l'extrémité de l'os va **vers l'avant** du corps. `flexion: 90` sur un bras = bras
-  à l'horizontale devant soi ; `flexion: 180` sur un avant-bras = avant-bras vers le haut ;
-  `flexion` négatif = vers l'arrière (extension).
-- `lateral` positif : **vers la droite du sujet** pour `spine` et `neck` (inclinaison latérale) ;
-  **écartement du corps** (abduction) pour les os pairés, avec le miroir automatique à gauche et à
-  droite : un même `lateral` positif écarte le bras gauche vers sa gauche et le bras droit vers sa
-  droite. `lateral` négatif = rapprochement du milieu du corps (adduction).
-- Les deux angles se composent ainsi : l'écartement `lateral` d'abord, puis la `flexion`. Un bras avec
-  `flexion: 90` est à l'horizontale devant soi, et `lateral` l'en écarte dans le plan horizontal :
+Trois angles : `flexion`, `lateral`, `twist`. Selon la direction de repos de l'os :
+
+| Os | `flexion` > 0 | `lateral` > 0 | `twist` > 0 |
+|---|---|---|---|
+| `spine`, `neck`, `head` (vers le haut) | vers l'avant | inclinaison vers la **droite** du sujet | rotation vers la **droite** du sujet |
+| bras, avant-bras, main, doigts, pouce, cuisse, jambe (qui pendent) | vers l'avant | écartement du corps (miroir à gauche et à droite) | rotation externe : le devant de l'os tourne vers l'extérieur |
+| `*_clavicle` (horizontale) | roulis (peu utile) | élévation de l'épaule | projection de l'épaule vers l'avant |
+| `*_foot`, `*_toes` (vers l'avant) | flexion dorsale : le bout monte | inversion (roulis du pied) | pointe vers l'extérieur |
+
+- `flexion: 90` sur un bras = bras à l'horizontale devant soi. Sur une cuisse : cuisse horizontale
+  devant soi. Un genou plié, c'est `R_shin: { flexion: -90 }` (la jambe revient vers l'arrière de la
+  cuisse). `R_forearm: { flexion: 90 }` sur un bras à l'horizontale lève l'avant-bras.
+- Composition : d'abord `twist`, puis `lateral`, puis `flexion`. Un bras avec `flexion: 90` est à
+  l'horizontale devant soi, et `lateral` l'en écarte dans le plan horizontal :
   `{ "flexion": 90, "lateral": -45 }` sur le bras droit le ramène de 45° vers le milieu du corps.
-
-Le repos du modèle a les bras très légèrement écartés du corps (environ 10 à 15°) : `flexion: 90`
-sur un bras le met donc à l'horizontale à une dizaine de degrés près. Un os absent d'une pose reste à
-sa direction neutre. Les angles décrivent la direction finale de chaque
-os (pas une rotation relative à son parent) : pour un avant-bras prolongeant un bras, donnez-lui les
-mêmes angles que le bras.
+- Le repos du modèle a les bras très légèrement écartés du corps (environ 10 à 15°) : `flexion: 90`
+  sur un bras le met donc à l'horizontale à une dizaine de degrés près.
+- Le sens de `twist` sur la main et l'avant-bras (pronation ou supination) dépend de l'orientation de
+  la paume dans le modèle au repos : le vérifier à l'œil avant de s'en servir.
 
 ## Limites du squelette
 
-L'avatar a **9 os** : tronc, cou, deux bras, deux avant-bras, deux cuisses. Il n'a ni poignet, ni
-main, ni rotation de la tête, ni omoplate. Le cou n'a qu'une direction (pas de rotation sur lui-même).
-Un exercice ne peut montrer que ce que ces os savent faire.
+Le tronc est un seul os : pas de distinction lombaire, dorsal. Les quatre doigts longs bougent
+ensemble, comme les orteils ; il n'y a pas d'articulation de la mâchoire, d'omoplate séparée de la
+clavicule ni de rotation fine de l'avant-bras (pronation, supination) autre que `twist`. Un exercice
+ne peut montrer que ce que ces os savent faire. Les muscles sont simplifiés (1 500 sommets au plus
+chacun) et leur déformation aux articulations est approximative : relire les images de chaque
+exercice (`web/scripts/snapshot-exercise.mjs`) avant de le diffuser.
 
 ## Cycle de vie d'un exercice
 
@@ -82,8 +111,8 @@ Un exercice ne peut montrer que ce que ces os savent faire.
    un humain le relit, le corrige, le déplace dans `exercises/`, passe `source` à `"human"`, puis le
    valide comme ci-dessus.
 
-Les quatre exercices livrés sont des brouillons rédigés sans expertise d'ostéopathe : ils ne
-doivent pas être présentés à un salarié comme validés.
+Les dix-sept exercices livrés (au moins un par région du corps) sont des brouillons rédigés sans
+expertise d'ostéopathe : ils ne doivent pas être présentés à un salarié comme validés.
 
 ## Générer les vidéos
 

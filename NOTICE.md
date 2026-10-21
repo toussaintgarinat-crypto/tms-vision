@@ -6,8 +6,9 @@ Ce projet inclut des maillages musculaires 3D dérivés de **Z-Anatomy**
 
 Fichier concerné : `web/public/muscle-rig.glb`, extrait et exporté par
 `tools/blender/export_muscle_rig.py` à partir de `Startup.blend` (Z-Anatomy),
-sous-ensemble d'environ 17 groupes musculaires majeurs (voir
-`docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md`).
+environ 360 muscles du corps entier, maillages simplifiés (voir
+`docs/superpowers/specs/2026-09-20-3d-posture-muscle-mesh-design.md` et
+`docs/superpowers/specs/2026-10-22-avatar-corps-complet-design.md`).
 
 Licence : Creative Commons Attribution-ShareAlike 4.0 International
 (CC BY-SA 4.0) — https://creativecommons.org/licenses/by-sa/4.0/

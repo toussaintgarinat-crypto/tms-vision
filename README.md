@@ -176,6 +176,9 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   section 10).
 - `docs/superpowers/plans/2026-10-21-generation-modules-etirement-plan.md` — le plan d'implémentation
   de la Tranche 3 (génération des vidéos d'étirement), **livrée** (voir la section 10).
+- `docs/superpowers/specs/2026-10-22-avatar-corps-complet-design.md` — la spec de la Tranche 4 :
+  avatar du corps complet (24 os, environ 360 muscles, angles relatifs, régions), **livrée** (voir
+  la section 10, « Avatar du corps complet »).
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 136 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -824,11 +827,33 @@ déjà à jour (même définition, cadence, langue et voix) est ignorée. Elles 
   réseau n'est fait sans configuration explicite. Un exercice proposé par une IA
   (`python -m tms_vision.exercises propose --zone neck`) est écrit dans `exercises/drafts/` comme
   brouillon `source: "ai"` et **n'entre jamais au catalogue** sans relecture et validation humaines.
-- **Limites.** L'avatar a 9 os : pas de poignet, de main, de rotation de la tête ni d'omoplate, donc les
-  exercices se limitent à ce que ce squelette sait montrer. Les quatre exercices livrés sont des
-  **brouillons rédigés sans expertise d'ostéopathe** : ne pas les présenter comme validés. Les
-  navigateurs doivent savoir lire le H.264 (comme pour la vidéo annotée des analyses). Les vidéos
-  contiennent des maillages CC BY-SA 4.0 : voir `NOTICE.md` avant toute diffusion.
+- **Limites.** L'avatar couvre maintenant **tout le corps** (24 os, environ 360 muscles : voir
+  « Avatar du corps complet » ci-dessous), mais le tronc reste un seul os, les doigts longs bougent
+  ensemble, et la déformation des muscles aux articulations est approximative. Les dix-sept exercices
+  livrés (au moins un par région du corps) sont des **brouillons rédigés sans expertise d'ostéopathe** :
+  ne pas les présenter comme validés. Les navigateurs doivent savoir lire le H.264 (comme pour la
+  vidéo annotée des analyses). Les vidéos contiennent des maillages CC BY-SA 4.0 : voir `NOTICE.md`
+  avant toute diffusion.
+- **Voir un exercice sans rendre la vidéo.** `node scripts/snapshot-exercise.mjs --definition
+  ../exercises/<id>.json --out /tmp/vue` (dans `web/`, serveur lancé) écrit une image par pose clé : le
+  moyen le plus rapide de vérifier un nouvel exercice.
+
+### Avatar du corps complet
+
+La Tranche 4 (`docs/superpowers/specs/2026-10-22-avatar-corps-complet-design.md`) fait passer
+l'avatar de 9 à **24 os** (tête, clavicules, mains, doigts, pouces, jambes, pieds, orteils) et de 54 à
+environ 360 muscles, de la tête aux pieds (fichier `web/public/muscle-rig.glb`, environ 20 Mo,
+reconstruit par `tools/blender/export_muscle_rig.py`).
+
+- **Exercices** : les angles sont désormais **relatifs à l'os parent**, avec un troisième angle
+  `twist` (rotation autour de l'axe de l'os). Les quatre exercices d'origine ont été migrés ; dix-sept
+  exercices couvrent les onze régions (`neck`, `trunk`, `upper_arm`, `lower_arm`, `head`, `shoulder`,
+  `hand`, `hip`, `thigh`, `lower_leg`, `foot`). Voir `exercises/README.md`.
+- **Analyse par vidéo** : inchangée. Seules les quatre zones RULA (cou, tronc, bras, avant-bras) sont
+  mesurées et colorées ; les muscles des autres régions restent gris. **Les mains, les doigts, les
+  poignets et les pieds ne sont pas encore pris en compte dans la mesure** : c'est la Tranche 5
+  (MediaPipe Hands, zones et seuils RULA correspondants, à calibrer avec l'ostéopathe). L'avatar piloté
+  par la vidéo oriente la main, le pouce, la jambe et le pied avec les points de MediaPipe Pose.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 
