@@ -1,7 +1,7 @@
 # Récurrence, projection journalière et programme d'étirements
 
 **Date** : 2026-10-21
-**Statut** : Tranche 1 livrée (bilan de poste et récurrence) ; tranches 2 et 3 à planifier
+**Statut** : Tranches 1 (bilan de poste et récurrence) et 2 (poids et programme de capsules) livrées ; tranche 3 à planifier
 
 ## Contexte
 
@@ -179,7 +179,9 @@ Remplace `recommend_capsule` / `compute_worst_zone` par une fonction de classeme
    chargées ; 1 seule si une seule zone l'est ; aucune si aucune ne l'est (réponse explicite
    « aucune recommandation », comme aujourd'hui).
 5. Pour chaque capsule : zone, rang, motif (« tronc : environ 4,2 h en posture à risque sur 9 h
-   estimées »), complété par le poids saisi (« charge manipulée : 8 à 12 kg ») quand il existe.
+   estimées »), complété par le poids saisi (« charge manipulée : 8 à 12 kg ») pour un programme
+   d'analyse seule. Le programme d'un bilan ne cite pas de poids : ses analyses peuvent en porter
+   plusieurs différents.
 
 **Constat (vérifié dans le code, Tranche 2).** Le niveau d'action par segment vient de
 `action_level(score.neck | trunk | upper_arm | lower_arm)`, c'est-à-dire des sous-scores de posture

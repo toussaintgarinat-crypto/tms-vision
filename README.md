@@ -167,10 +167,13 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 - `docs/superpowers/specs/2026-10-21-recurrence-programme-etirements-design.md` — la spec de la
   récurrence des mouvements, de la projection sur la journée, du programme de 2 à 3 capsules
   d'étirement (avec poids précis ou en fourchette), de la génération autonome des vidéos
-  d'étirement et de la correction du geste (réservée). **Tranche 1 livrée** (bilan de poste et
-  récurrence, voir la section 10).
+  d'étirement et de la correction du geste (réservée). **Tranches 1 et 2 livrées** (bilan de poste et
+  récurrence, poids et programme d'étirements, voir la section 10).
 - `docs/superpowers/plans/2026-10-21-bilan-poste-recurrence-plan.md` — le plan d'implémentation de
   la Tranche 1.
+- `docs/superpowers/plans/2026-10-21-poids-programme-capsules-plan.md` — le plan d'implémentation
+  de la Tranche 2 (poids précis ou en fourchette, programme de capsules), **livrée** (voir la
+  section 10).
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 136 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -751,6 +754,31 @@ aucune zone. Une fois les valeurs validées, passer `calibrated` à `true`.
 
 La projection est une **estimation** : elle suppose que chaque échantillon est représentatif de
 son activité, ce que seul l'opérateur peut garantir en filmant un cycle typique.
+
+### Poids et programme d'étirements
+
+La vidéo ne peut pas deviner le poids manipulé : l'opérateur le renseigne **après** l'analyse, depuis
+le bloc « Poids manipulé » du résultat (`PUT /analyses/{id}/load`). Trois formes : aucun poids, poids
+précis, ou **fourchette** (par exemple 8 à 12 kg).
+
+- Le score RULA est **recalculé sans relancer l'estimation de pose** : le poids n'intervient que dans
+  `force_load_score`, et les sous-scores de posture déjà stockés (`posture_score_a`,
+  `posture_score_b`, `muscle_use_score`) suffisent à retrouver exactement le score final.
+- Pour une fourchette, le score est calculé aux deux bornes. Si elles tombent de part et d'autre d'un
+  seuil du RULA (2 kg, 10 kg), le résultat affiche un intervalle (« 4 à 6 selon la charge »). Les
+  valeurs stockées (CSV, score moyen) portent le **cas défavorable** (borne haute).
+- **Limite** : la vidéo annotée garde le badge « RULA n » incrusté dans ses pixels avec le poids
+  de l'analyse d'origine. L'interface le signale quand le poids saisi diffère.
+- **Limite** : le poids modifie le score global mais **pas le niveau d'action par segment**, donc
+  ni l'avatar 3D ni le classement des zones. Le faire peser sur le programme demande une règle à fixer
+  avec l'ostéopathe (question ouverte dans la spec).
+
+La recommandation devient un **programme de 1 à 3 capsules** (`GET /analyses/{id}/recommendation`,
+clés `program`, avec `zone` et `capsule` conservées pour le premier élément), classées par temps cumulé
+en niveau élevé de chaque zone ; seules les zones réellement chargées sont proposées. Pour un bilan de
+poste, `GET /bilans/{id}/program` classe les zones par heures projetées sur la journée. La réponse
+porte aussi une liste `gesture_corrections`, vide pour l'instant : c'est l'emplacement réservé à la
+correction du geste.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 
