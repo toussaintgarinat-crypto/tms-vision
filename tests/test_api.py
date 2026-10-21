@@ -4,6 +4,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
 
 from tms_vision import storage
@@ -665,3 +666,175 @@ def test_get_recommendation_returns_worst_zone_and_matching_capsule(tmp_path, mo
     assert body["capsule"]["title"]
     assert body["capsule"]["description"]
     assert body["capsule"]["video_url"]
+
+
+def _save_analysis_with_frames(analysis_id, frame_rows):
+    summary = {
+        "frame_count": len(frame_rows), "detected_frame_count": len(frame_rows),
+        "max_score": 1, "average_score": 1.0, "time_by_action_level": {},
+    }
+    storage.save_analysis(
+        analysis_id=analysis_id, created_at=datetime.now(timezone.utc),
+        side="right", load_kg=0.0, wrist_twist="normal", worker_label=None, poste_label=None,
+        summary=summary, video_bytes=b"x", pose3d_json="[]", frame_rows=frame_rows,
+    )
+
+
+def _frame_row(index, timestamp, trunk_angle=None, trunk_level="acceptable"):
+    row = {field: None for field in storage.CSV_FIELDS}
+    row.update(
+        frame_index=index, timestamp_seconds=timestamp, detected=trunk_angle is not None,
+        trunk_flexion_deg=trunk_angle,
+    )
+    row["neck_segment_action_level"] = "acceptable"
+    row["trunk_segment_action_level"] = trunk_level
+    row["upper_arm_segment_action_level"] = "acceptable"
+    row["lower_arm_segment_action_level"] = "acceptable"
+    return row
+
+
+def _sawtooth_frames():
+    # Tronc 0 / 20 degres toutes les 10 s sur 60 s : 2.5 cycles, donc 2.5 cycles/min,
+    # niveau eleve sur les frames paires.
+    return [
+        _frame_row(
+            i, i * 10.0, trunk_angle=0.0 if i % 2 == 0 else 20.0,
+            trunk_level="changement_immediat" if i % 2 == 0 else "acceptable",
+        )
+        for i in range(7)
+    ]
+
+
+def test_create_bilan_uses_nine_hour_default_and_can_be_read_back(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    created = client.post("/bilans", json={"label": "Quai 3"})
+
+    assert created.status_code == 200
+    body = created.json()
+    assert body["label"] == "Quai 3"
+    assert body["workday_hours"] == 9.0
+    fetched = client.get(f"/bilans/{body['id']}")
+    assert fetched.status_code == 200
+    assert fetched.json()["items"] == []
+    assert [b["id"] for b in client.get("/bilans").json()] == [body["id"]]
+
+
+@pytest.mark.parametrize("workday_hours", [0, -1, 25])
+def test_create_bilan_rejects_invalid_workday_hours(tmp_path, monkeypatch, workday_hours):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    response = client.post("/bilans", json={"workday_hours": workday_hours})
+
+    assert response.status_code == 422
+
+
+def test_get_bilan_returns_404_for_unknown_id(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    assert client.get("/bilans/nope").status_code == 404
+    assert client.get("/bilans/nope/recurrence").status_code == 404
+
+
+def test_attach_analysis_returns_updated_bilan(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+
+    response = client.post(
+        f"/bilans/{bilan_id}/analyses",
+        json={"analysis_id": "a-1", "activity_hours": 5.0, "representative": True},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == [
+        {"analysis_id": "a-1", "activity_hours": 5.0, "representative": True}
+    ]
+
+
+def test_attach_analysis_error_statuses(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    _save_analysis_with_frames("a-2", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 8.0}).json()["id"]
+    payload = {"analysis_id": "a-1", "activity_hours": 5.0, "representative": True}
+
+    assert client.post("/bilans/nope/analyses", json=payload).status_code == 404
+    assert client.post(
+        f"/bilans/{bilan_id}/analyses", json={**payload, "analysis_id": "nope"}
+    ).status_code == 404
+    assert client.post(
+        f"/bilans/{bilan_id}/analyses", json={**payload, "activity_hours": 0}
+    ).status_code == 422
+    assert client.post(f"/bilans/{bilan_id}/analyses", json=payload).status_code == 200
+    assert client.post(f"/bilans/{bilan_id}/analyses", json=payload).status_code == 409
+    # 5 h deja documentees + 4 h > 8 h de journee.
+    too_long = {"analysis_id": "a-2", "activity_hours": 4.0, "representative": True}
+    assert client.post(f"/bilans/{bilan_id}/analyses", json=too_long).status_code == 422
+
+
+def test_get_analysis_recurrence_returns_indicators(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+
+    response = client.get("/analyses/a-1/recurrence")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sample_seconds"] == 60.0
+    assert body["thresholds_calibrated"] is False
+    trunk = body["zones"]["trunk"]
+    assert trunk["cycles"] == 2.5
+    assert trunk["cycles_per_minute"] == 2.5
+    assert trunk["assessment"] is None
+
+
+def test_get_analysis_recurrence_returns_404_for_unknown_id(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    assert client.get("/analyses/nope/recurrence").status_code == 404
+
+
+def test_bilan_recurrence_projects_only_representative_analyses(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    _save_analysis_with_frames("a-2", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 9.0}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 5.0, "representative": True})
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-2", "activity_hours": 3.0, "representative": False})
+
+    response = client.get(f"/bilans/{bilan_id}/recurrence")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["documented_hours"] == 8.0
+    assert body["undocumented_hours"] == 1.0
+    assert body["thresholds_calibrated"] is False
+    # 2.5 cycles/min * 60 * 5 h ; l'analyse non representative est exclue.
+    assert body["zones"]["trunk"]["projected_cycles"] == 750.0
+    by_id = {a["analysis_id"]: a for a in body["analyses"]}
+    assert by_id["a-1"]["included"] is True
+    assert by_id["a-2"]["included"] is False
+    # Niveau eleve sur 4 frames paires de 10 s chacune sauf la derniere (0 s) : 30 s / 60 s * 5 h.
+    assert body["zones"]["trunk"]["projected_elevated_hours"] == pytest.approx(2.5)
+
+
+def test_bilan_recurrence_of_empty_bilan(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+
+    body = client.get(f"/bilans/{bilan_id}/recurrence").json()
+
+    assert body["undocumented_hours"] == 9.0
+    assert body["analyses"] == []

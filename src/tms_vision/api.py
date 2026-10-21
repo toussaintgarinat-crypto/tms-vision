@@ -19,9 +19,10 @@ from typing import Literal
 import cv2
 from fastapi import FastAPI, File, Form, Header, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from tms_vision import storage
+from tms_vision import bilan, recurrence, storage
 from tms_vision.capsules import Capsule, compute_worst_zone, recommend_capsule
 from tms_vision.pipeline import analyze_video, generate_run_id
 from tms_vision.pose3d_export import build_pose3d_payload
@@ -399,3 +400,88 @@ async def get_analysis_recommendation(analysis_id: str) -> dict:
     zone = compute_worst_zone(frames)
     capsule = recommend_capsule(zone)
     return {"zone": zone, "capsule": _capsule_to_dict(capsule) if capsule is not None else None}
+
+
+@app.get("/analyses/{analysis_id}/recurrence")
+async def get_analysis_recurrence(analysis_id: str) -> dict:
+    frames = storage.get_frame_angles(analysis_id)
+    if frames is None:
+        raise HTTPException(status_code=404, detail="Analyse introuvable.")
+    return recurrence.compute_recurrence(frames, recurrence.load_thresholds())
+
+
+class BilanCreate(BaseModel):
+    label: str | None = None
+    workday_hours: float = Field(default=9.0, gt=0, le=24)
+
+
+class BilanAnalysisAttach(BaseModel):
+    analysis_id: str
+    activity_hours: float = Field(gt=0)
+    representative: bool
+
+
+def _get_bilan_or_404(bilan_id: str) -> dict:
+    record = storage.get_bilan(bilan_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Bilan introuvable.")
+    return record
+
+
+@app.post("/bilans")
+async def create_bilan(body: BilanCreate) -> dict:
+    bilan_id = generate_run_id()
+    storage.create_bilan(
+        bilan_id=bilan_id, created_at=datetime.now(timezone.utc),
+        label=body.label, workday_hours=body.workday_hours,
+    )
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.get("/bilans")
+async def list_bilans() -> list[dict]:
+    return storage.list_bilans()
+
+
+@app.get("/bilans/{bilan_id}")
+async def get_bilan(bilan_id: str) -> dict:
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.post("/bilans/{bilan_id}/analyses")
+async def attach_analysis_to_bilan(bilan_id: str, body: BilanAnalysisAttach) -> dict:
+    record = _get_bilan_or_404(bilan_id)
+    if storage.get_analysis(body.analysis_id) is None:
+        raise HTTPException(status_code=404, detail="Analyse introuvable.")
+    if any(item["analysis_id"] == body.analysis_id for item in record["items"]):
+        raise HTTPException(status_code=409, detail="Analyse déjà rattachée à ce bilan.")
+
+    documented_hours = sum(item["activity_hours"] for item in record["items"])
+    if documented_hours + body.activity_hours > record["workday_hours"]:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Les activités documentées dépasseraient la journée de "
+                f"{record['workday_hours']} h."
+            ),
+        )
+
+    storage.attach_analysis(
+        bilan_id=bilan_id, analysis_id=body.analysis_id,
+        activity_hours=body.activity_hours, representative=body.representative,
+    )
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.get("/bilans/{bilan_id}/recurrence")
+async def get_bilan_recurrence(bilan_id: str) -> dict:
+    record = _get_bilan_or_404(bilan_id)
+    thresholds = recurrence.load_thresholds()
+    items = []
+    for item in record["items"]:
+        frames = storage.get_frame_angles(item["analysis_id"])
+        items.append({
+            **item,
+            "recurrence": recurrence.compute_recurrence(frames or [], thresholds),
+        })
+    return bilan.project_bilan(record["workday_hours"], items)
