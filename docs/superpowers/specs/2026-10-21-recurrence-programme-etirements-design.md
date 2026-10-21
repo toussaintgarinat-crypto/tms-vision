@@ -47,7 +47,8 @@ Cette spec couvre trois parties livrables en tranches successives, plus une quat
   remplacement de la capsule unique.
 - **Le poids est une saisie de l'opérateur**, pas une mesure : la vidéo ne peut pas le deviner. Il
   est facultatif, et peut être **précis ou en fourchette**.
-- **Cas défavorable pour les recommandations** quand le poids est une fourchette.
+- **Cas défavorable pour les scores** quand le poids est une fourchette : les valeurs persistées
+  (score par frame, résumé) portent la borne haute, l'intervalle complet est conservé et affiché.
 - **Génération vidéo autonome et déterministe** à partir de l'avatar 3D existant ; l'IA n'est
   qu'un fournisseur optionnel et interchangeable, jamais câblée en dur.
 - **Correction du geste** : prévue dans le modèle de données et la structure du rapport, mais pas
@@ -169,8 +170,8 @@ colonne `load_kg` est conservée (lecture) et complétée par `load_kg_min`, `lo
 
 Remplace `recommend_capsule` / `compute_worst_zone` par une fonction de classement :
 
-1. Calculer pour chaque zone une **charge journalière** : `projected_elevated_hours`, avec en cas
-   de fourchette de poids la borne haute (cas défavorable).
+1. Calculer pour chaque zone une **charge** : `projected_elevated_hours` pour un bilan, temps cumulé
+   en niveau élevé sur l'échantillon pour une analyse seule.
 2. Écarter les zones sans temps élevé.
 3. Classer par charge décroissante ; égalité → ordre fixe `trunk > neck > upper_arm > lower_arm`
    (inchangé).
@@ -178,8 +179,21 @@ Remplace `recommend_capsule` / `compute_worst_zone` par une fonction de classeme
    chargées ; 1 seule si une seule zone l'est ; aucune si aucune ne l'est (réponse explicite
    « aucune recommandation », comme aujourd'hui).
 5. Pour chaque capsule : zone, rang, motif (« tronc : environ 4,2 h en posture à risque sur 9 h
-   estimées »), indication « calculé sur le cas défavorable » si le poids est une fourchette
-   à cheval sur un seuil.
+   estimées »), complété par le poids saisi (« charge manipulée : 8 à 12 kg ») quand il existe.
+
+**Constat (vérifié dans le code, Tranche 2).** Le niveau d'action par segment vient de
+`action_level(score.neck | trunk | upper_arm | lower_arm)`, c'est-à-dire des sous-scores de posture
+seuls : **le poids ne modifie ni ce niveau, ni donc le classement des zones**. Il modifie le score
+RULA global (`force_load_score`) et son niveau d'action. Une première version du programme ne fait
+donc pas varier le classement avec le poids ; elle l'affiche dans le motif. Faire monter le tronc et
+les épaules quand la charge est lourde demande une règle à fixer avec l'ostéopathe (seuil de poids,
+zones concernées) ; c'est une question ouverte.
+
+**Recalcul sans relancer la pose.** Le poids n'intervient que dans `force_load_score`. Les colonnes
+`posture_score_a`, `posture_score_b` et `muscle_use_score`, déjà persistées par frame, suffisent à
+recalculer `final_score` et `action_level` avec un autre poids, sans toucher à la vidéo. La vidéo
+annotée garde en revanche l'ancien badge « RULA n » (incrusté dans les pixels) : l'interface le
+signale quand le poids saisi diffère de celui de l'analyse.
 
 Limite connue conservée : `lower_arm` ne peut atteindre les niveaux élevés (plafond du sous-score
 brut à 3, voir `capsules.py`). Elle ne sera donc jamais classée tant que les seuils par segment ne
@@ -271,4 +285,5 @@ Chaque tranche aura son plan d'implémentation dans `docs/superpowers/plans/`.
 - Calibration des seuils de cycles par zone : aucun matériel disponible pour l'instant, à planifier
   avec l'ostéopathe (vidéos d'essai de gestes connus ou valeurs de référence de sa pratique).
 - Rendu des vidéos : côté navigateur ou côté Blender (à trancher à la Tranche 3).
+- Effet du poids sur le classement des zones du programme (voir le constat de la Partie B).
 - Le catalogue final de 30 à 45 exercices reste à définir par l'ostéopathe.
