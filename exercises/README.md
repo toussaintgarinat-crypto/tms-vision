@@ -41,6 +41,28 @@ Les règles de validation sont dans `src/tms_vision/exercises.py` : un fichier i
 - `instructions` : consignes datées, affichées (et dites si une voix est configurée) à l'instant `t`.
 - `duration_seconds` : entre 10 et 180.
 
+## Sens des angles
+
+Mesuré sur le modèle `web/public/muscle-rig.glb` et verrouillé par `web/app/exercisePose.test.ts` :
+le côté **gauche** du modèle est +x et son **avant** est +z (face à la caméra de l'avatar). Tous les
+angles sont en degrés, **absolus** par rapport à la posture neutre (tronc et cou vers le haut, bras,
+avant-bras et cuisses vers le bas) :
+
+- `flexion` positif : l'extrémité de l'os va **vers l'avant** du corps. `flexion: 90` sur un bras = bras
+  à l'horizontale devant soi ; `flexion: 180` sur un avant-bras = avant-bras vers le haut ;
+  `flexion` négatif = vers l'arrière (extension).
+- `lateral` positif : **vers la droite du sujet** pour `spine` et `neck` (inclinaison latérale) ;
+  **écartement du corps** (abduction) pour les os pairés, avec le miroir automatique à gauche et à
+  droite : un même `lateral` positif écarte le bras gauche vers sa gauche et le bras droit vers sa
+  droite. `lateral` négatif = rapprochement du milieu du corps (adduction).
+- Les deux angles se composent ainsi : l'écartement `lateral` d'abord, puis la `flexion`. Un bras avec
+  `flexion: 90` est à l'horizontale devant soi, et `lateral` l'en écarte dans le plan horizontal :
+  `{ "flexion": 90, "lateral": -45 }` sur le bras droit le ramène de 45° vers le milieu du corps.
+
+Un os absent d'une pose reste à sa direction neutre. Les angles décrivent la direction finale de chaque
+os (pas une rotation relative à son parent) : pour un avant-bras prolongeant un bras, donnez-lui les
+mêmes angles que le bras.
+
 ## Limites du squelette
 
 L'avatar a **9 os** : tronc, cou, deux bras, deux avant-bras, deux cuisses. Il n'a ni poignet, ni
