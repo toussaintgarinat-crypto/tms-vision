@@ -1,7 +1,7 @@
 # Récurrence, projection journalière et programme d'étirements
 
 **Date** : 2026-10-21
-**Statut** : Design à valider, implémentation à planifier
+**Statut** : Tranche 1 livrée (bilan de poste et récurrence) ; tranches 2 et 3 à planifier
 
 ## Contexte
 

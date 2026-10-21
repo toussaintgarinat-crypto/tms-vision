@@ -164,6 +164,13 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
   d'historique des analyses.
 - `docs/superpowers/plans/2026-09-22-analysis-history-dashboard-plan.md` — le plan
   d'implémentation de ce sprint.
+- `docs/superpowers/specs/2026-10-21-recurrence-programme-etirements-design.md` — la spec de la
+  récurrence des mouvements, de la projection sur la journée, du programme de 2 à 3 capsules
+  d'étirement (avec poids précis ou en fourchette), de la génération autonome des vidéos
+  d'étirement et de la correction du geste (réservée). **Tranche 1 livrée** (bilan de poste et
+  récurrence, voir la section 10).
+- `docs/superpowers/plans/2026-10-21-bilan-poste-recurrence-plan.md` — le plan d'implémentation de
+  la Tranche 1.
 - `.superpowers/sdd/progress.md` — le journal complet des cycles (10 tâches + 4 revues pour le PoC ; 3 tâches + revue finale multi-passes pour la tranche capture web ; 5 tâches + revue finale pour l'upload par chunks ; 7 tâches pour la tranche 1 de l'avatar 3D), avec les décisions prises à chaque point d'arbitrage.
 - Le code lui-même : `src/tms_vision/` (backend Python, 10 modules dont `pipeline.py`/`api.py`/`pose3d_export.py`, 136 tests dans `tests/`) et `web/` (frontend Next.js, avec `PostureAvatar3D.tsx` pour le rendu 3D).
 
@@ -718,6 +725,32 @@ Le lien « Historique » en haut de la page d'accueil ouvre `/historique` : list
 analyses déjà enregistrées, filtrable par salarié, poste et période (depuis/jusqu'à). Cliquer sur
 « Voir » ouvre le détail complet d'une analyse passée (`/historique/{id}`), avec le même rendu
 (vidéo annotée, avatar 3D, résumé, recommandation) que juste après l'avoir produite.
+
+### Bilan de poste et récurrence
+
+Une vidéo de 30 s à 3 min est un **échantillon** d'un cycle de travail que le salarié répète toute
+la journée. Un **bilan de poste** (`/bilans`, lien « Bilans de poste » en haut de la page d'accueil)
+regroupe plusieurs analyses d'un même poste. Pour chaque vidéo rattachée, l'opérateur saisit :
+
+- la **durée de cette activité dans la journée** (par exemple 5 h de manutention, 3 h de saisie) ;
+- une **confirmation** que la séquence est représentative de cette activité. Une vidéo non
+  confirmée apparaît avec ses mesures brutes mais est exclue de la projection.
+
+Le rapport (`GET /bilans/{id}/recurrence`) mesure par zone (cou, tronc, épaule/bras,
+avant-bras/coude) le nombre de cycles de mouvement, la fréquence, la durée moyenne d'un cycle et la
+plus longue plage statique, puis les **projette sur la journée** en pondérant chaque vidéo par sa
+durée d'activité. La part de journée non couverte par les vidéos est affichée. Les mesures d'une
+analyse seule sont disponibles via `GET /analyses/{id}/recurrence`.
+
+Les seuils de détection sont **calibrables par zone** dans `src/tms_vision/recurrence_thresholds.json`
+(`min_prominence_deg`, `static_variation_deg`, `repetitive_cycles_per_minute`, `static_seconds`). Le
+fichier est livré avec `"calibrated": false` : l'amplitude (10°) et la variation statique (15°) sont
+les valeurs provisoires du PoC, et les deux seuils d'interprétation sont vides. Tant que la
+calibration avec l'ostéopathe n'est pas faite, le rapport affiche « seuils non calibrés » et ne classe
+aucune zone. Une fois les valeurs validées, passer `calibrated` à `true`.
+
+La projection est une **estimation** : elle suppose que chaque échantillon est représentatif de
+son activité, ce que seul l'opérateur peut garantir en filmant un cycle typique.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 
