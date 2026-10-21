@@ -5,7 +5,10 @@ Module pur, sans dépendance à DuckDB : il calcule uniquement à partir des
 lignes de frame que storage.get_frame_segments() a déjà lues."""
 from dataclasses import dataclass
 
-ZONES = ["neck", "trunk", "upper_arm", "lower_arm"]
+from tms_vision.exercises import ZONES as _EXERCISE_ZONES
+from tms_vision.exercises import load_catalog
+
+ZONES = list(_EXERCISE_ZONES)
 ZONE_PRIORITY = ["trunk", "neck", "upper_arm", "lower_arm"]
 # lower_arm ne peut structurellement jamais atteindre ces niveaux : son sous-score
 # RULA brut est plafonné à 3 (classify_lower_arm, rula/scoring.py) alors que
@@ -29,43 +32,29 @@ class Capsule:
     # "stretch" aujourd'hui ; la future correction du geste utilisera "gesture"
     # (voir la Partie D de docs/superpowers/specs/2026-10-21-recurrence-programme-etirements-design.md).
     kind: str = "stretch"
+    id: str = ""
+    # "draft" : exercice rédigé mais pas encore relu par l'ostéopathe ; "validated"
+    # une fois `validated_by` / `validated_on` renseignés dans sa définition.
+    status: str = "draft"
 
 
-CAPSULES: list[Capsule] = [
-    Capsule(
-        zone="neck",
-        title="Étirements cervicaux",
-        description=(
-            "3 étirements pour décompresser les cervicales après une posture tête baissée "
-            "prolongée."
-        ),
-        video_url="https://example.com/capsules/neck-stretch.mp4",
-    ),
-    Capsule(
-        zone="trunk",
-        title="Mobilisation lombaire",
-        description=(
-            "Exercices doux de mobilisation du bas du dos après une posture penchée en avant."
-        ),
-        video_url="https://example.com/capsules/trunk-mobility.mp4",
-    ),
-    Capsule(
-        zone="upper_arm",
-        title="Étirement des épaules",
-        description=(
-            "Étirement des épaules après un travail prolongé bras levés ou écartés du corps."
-        ),
-        video_url="https://example.com/capsules/shoulder-stretch.mp4",
-    ),
-    Capsule(
-        zone="lower_arm",
-        title="Étirement de l'avant-bras et du coude",
-        description=(
-            "Étirement de l'avant-bras après une flexion répétée ou prolongée du coude."
-        ),
-        video_url="https://example.com/capsules/forearm-stretch.mp4",
-    ),
-]
+def capsule_from_exercise(exercise: dict) -> Capsule:
+    return Capsule(
+        zone=exercise["zone"],
+        title=exercise["title"],
+        description=exercise["description"],
+        # URL stable de la vidéo générée (voir capsule_build.py) ; le fichier peut
+        # ne pas exister encore : l'API le signale par `video_available`.
+        video_url=f"/capsules/{exercise['id']}/video",
+        kind="stretch",
+        id=exercise["id"],
+        status=exercise["status"],
+    )
+
+
+# Catalogue construit depuis exercises/*.json (voir exercises.py) : plus de liste
+# écrite à la main ni d'URL factice.
+CAPSULES: list[Capsule] = [capsule_from_exercise(exercise) for exercise in load_catalog()]
 
 
 def _segment_column(zone: str) -> str:
@@ -137,8 +126,10 @@ def recommend_capsule(zone: str | None) -> Capsule | None:
 
 def capsule_to_dict(capsule: Capsule) -> dict:
     return {
+        "id": capsule.id,
         "zone": capsule.zone,
         "kind": capsule.kind,
+        "status": capsule.status,
         "title": capsule.title,
         "description": capsule.description,
         "video_url": capsule.video_url,

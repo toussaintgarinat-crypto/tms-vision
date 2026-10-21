@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from tms_vision import bilan, recurrence, storage
+from tms_vision import bilan, exercises, recurrence, storage
 from tms_vision.load import bounds, parse_load
 from tms_vision.program import build_analysis_program, build_bilan_program
 from tms_vision.rescore import rescore_frames, summarize_for_load
@@ -553,3 +553,27 @@ async def update_analysis_load(analysis_id: str, body: LoadUpdate) -> dict:
         raise HTTPException(status_code=404, detail="Analyse introuvable.") from error
 
     return storage.get_analysis(analysis_id)
+
+
+_EXERCISE_SUMMARY_KEYS = (
+    "id", "zone", "title", "description", "status", "source", "view", "target_segments",
+    "duration_seconds",
+)
+
+
+@app.get("/exercises")
+async def list_exercises() -> list[dict]:
+    return [
+        {key: exercise[key] for key in _EXERCISE_SUMMARY_KEYS}
+        for exercise in exercises.load_catalog()
+    ]
+
+
+@app.get("/exercises/{exercise_id}")
+async def get_exercise(exercise_id: str) -> dict:
+    # L'id n'est jamais utilisé pour construire un chemin : on le cherche dans le
+    # catalogue déjà chargé (pas de traversée de répertoire possible).
+    for exercise in exercises.load_catalog():
+        if exercise["id"] == exercise_id:
+            return exercise
+    raise HTTPException(status_code=404, detail="Exercice introuvable.")

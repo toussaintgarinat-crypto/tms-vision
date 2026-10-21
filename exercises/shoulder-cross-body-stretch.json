@@ -1,0 +1,90 @@
+{
+  "id": "shoulder-cross-body-stretch",
+  "zone": "upper_arm",
+  "title": "Étirement des épaules",
+  "description": "Étirement des épaules après un travail prolongé bras levés ou écartés du corps.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "right_cross": {
+      "R_upper_arm": {
+        "flexion": 90,
+        "lateral": -45
+      },
+      "R_forearm": {
+        "flexion": 90,
+        "lateral": -45
+      }
+    },
+    "left_cross": {
+      "L_upper_arm": {
+        "flexion": 90,
+        "lateral": -45
+      },
+      "L_forearm": {
+        "flexion": 90,
+        "lateral": -45
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "right_cross"
+    },
+    {
+      "t": 20,
+      "pose": "right_cross"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 30,
+      "pose": "left_cross"
+    },
+    {
+      "t": 45,
+      "pose": "left_cross"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, le dos droit."
+    },
+    {
+      "t": 5,
+      "text": "Amenez le bras droit tendu devant la poitrine, en le croisant vers la gauche."
+    },
+    {
+      "t": 25,
+      "text": "Relâchez le bras."
+    },
+    {
+      "t": 30,
+      "text": "Faites de même avec le bras gauche vers la droite."
+    },
+    {
+      "t": 50,
+      "text": "Relâchez et laissez retomber les épaules."
+    }
+  ],
+  "duration_seconds": 50
+}

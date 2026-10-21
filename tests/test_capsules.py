@@ -167,10 +167,35 @@ def test_every_catalog_capsule_is_a_stretch_for_now():
     assert {capsule.kind for capsule in CAPSULES} == {"stretch"}
 
 
-def test_capsule_to_dict_exposes_kind_and_content():
+def test_capsule_to_dict_exposes_identity_kind_status_and_content():
     capsule = recommend_capsule("trunk")
 
     assert capsule_to_dict(capsule) == {
-        "zone": "trunk", "kind": "stretch", "title": capsule.title,
-        "description": capsule.description, "video_url": capsule.video_url,
+        "id": capsule.id, "zone": "trunk", "kind": "stretch", "status": "draft",
+        "title": capsule.title, "description": capsule.description,
+        "video_url": capsule.video_url,
     }
+    assert capsule.id == "trunk-lumbar-mobility"
+
+
+def test_catalog_is_built_from_the_exercise_files():
+    from tms_vision.exercises import load_catalog
+
+    assert [capsule.id for capsule in CAPSULES] == [e["id"] for e in load_catalog()]
+    for capsule, exercise in zip(CAPSULES, load_catalog()):
+        assert capsule.zone == exercise["zone"]
+        assert capsule.title == exercise["title"]
+        assert capsule.description == exercise["description"]
+        assert capsule.status == exercise["status"]
+        assert capsule.video_url == f"/capsules/{capsule.id}/video"
+
+
+def test_zones_come_from_the_exercise_module():
+    from tms_vision.exercises import ZONES as EXERCISE_ZONES
+
+    assert ZONES == list(EXERCISE_ZONES)
+    assert sorted(ZONE_PRIORITY) == sorted(ZONES)
+
+
+def test_no_capsule_exposes_a_placeholder_url():
+    assert all("example.com" not in capsule.video_url for capsule in CAPSULES)

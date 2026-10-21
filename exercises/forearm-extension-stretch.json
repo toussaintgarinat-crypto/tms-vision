@@ -1,0 +1,122 @@
+{
+  "id": "forearm-extension-stretch",
+  "zone": "lower_arm",
+  "title": "Étirement de l'avant-bras et du coude",
+  "description": "Étirement de l'avant-bras après une flexion répétée ou prolongée du coude.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "right_bent": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "R_forearm": {
+        "flexion": 180
+      }
+    },
+    "right_straight": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "R_forearm": {
+        "flexion": 90
+      }
+    },
+    "left_bent": {
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 180
+      }
+    },
+    "left_straight": {
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 90
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "right_bent"
+    },
+    {
+      "t": 6,
+      "pose": "right_straight"
+    },
+    {
+      "t": 16,
+      "pose": "right_straight"
+    },
+    {
+      "t": 19,
+      "pose": "right_bent"
+    },
+    {
+      "t": 22,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "left_bent"
+    },
+    {
+      "t": 28,
+      "pose": "left_straight"
+    },
+    {
+      "t": 38,
+      "pose": "left_straight"
+    },
+    {
+      "t": 41,
+      "pose": "left_bent"
+    },
+    {
+      "t": 44,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, le dos droit."
+    },
+    {
+      "t": 3,
+      "text": "Levez le bras droit devant vous, le coude plié."
+    },
+    {
+      "t": 6,
+      "text": "Tendez lentement le bras jusqu'à sentir un étirement sans douleur."
+    },
+    {
+      "t": 16,
+      "text": "Maintenez en respirant calmement."
+    },
+    {
+      "t": 19,
+      "text": "Pliez doucement le coude puis relâchez."
+    },
+    {
+      "t": 25,
+      "text": "Faites de même avec le bras gauche."
+    }
+  ],
+  "duration_seconds": 45
+}

@@ -1,0 +1,92 @@
+{
+  "id": "trunk-lumbar-mobility",
+  "zone": "trunk",
+  "title": "Mobilisation lombaire",
+  "description": "Exercices doux de mobilisation du bas du dos après une posture penchée en avant.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "lean_forward": {
+      "spine": {
+        "flexion": 40
+      }
+    },
+    "extend_back": {
+      "spine": {
+        "flexion": -15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "lean_forward"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 15,
+      "pose": "extend_back"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "lean_forward"
+    },
+    {
+      "t": 30,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "extend_back"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, les pieds écartés à la largeur des hanches, les mains sur le bas du dos."
+    },
+    {
+      "t": 5,
+      "text": "Penchez doucement le buste vers l'avant, sans forcer."
+    },
+    {
+      "t": 10,
+      "text": "Revenez à la verticale."
+    },
+    {
+      "t": 15,
+      "text": "Cambrez légèrement le dos vers l'arrière, les mains en soutien."
+    },
+    {
+      "t": 25,
+      "text": "Répétez le mouvement lentement, en respirant."
+    },
+    {
+      "t": 40,
+      "text": "Terminez en vous redressant et en relâchant les épaules."
+    }
+  ],
+  "duration_seconds": 40
+}

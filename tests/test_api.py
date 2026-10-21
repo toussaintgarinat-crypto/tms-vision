@@ -1136,3 +1136,41 @@ def test_bilan_program_of_empty_bilan_and_unknown_bilan(tmp_path, monkeypatch):
 
     assert client.get(f"/bilans/{bilan_id}/program").json()["program"] == []
     assert client.get("/bilans/nope/program").status_code == 404
+
+
+def test_list_exercises_returns_the_catalog_without_the_heavy_fields(tmp_path, monkeypatch):
+    client = TestClient(app)
+
+    response = client.get("/exercises")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [e["id"] for e in body] == sorted(e["id"] for e in body)
+    assert {e["zone"] for e in body} == {"neck", "trunk", "upper_arm", "lower_arm"}
+    for exercise in body:
+        assert exercise["status"] == "draft"
+        assert exercise["duration_seconds"] > 0
+        assert "poses" not in exercise
+        assert "keyframes" not in exercise
+        assert "instructions" not in exercise
+
+
+def test_get_exercise_returns_the_full_definition(tmp_path, monkeypatch):
+    client = TestClient(app)
+
+    response = client.get("/exercises/neck-lateral-stretch")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == "neck-lateral-stretch"
+    assert body["poses"]["neutral"] == {}
+    assert body["keyframes"][0] == {"t": 0, "pose": "neutral"}
+    assert body["instructions"][0]["text"]
+
+
+def test_get_exercise_returns_404_for_unknown_or_malicious_ids(tmp_path, monkeypatch):
+    client = TestClient(app)
+
+    assert client.get("/exercises/unknown").status_code == 404
+    assert client.get("/exercises/..%2Fsecret").status_code == 404
+    assert client.get("/exercises/drafts").status_code == 404
