@@ -1,9 +1,17 @@
+import { DRAFT_BADGE_TEXT, capsuleVideoSrc } from "./programFormat";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 export type ProgramCapsule = {
+  id: string;
   zone: string;
   kind: string;
+  status: "draft" | "validated";
   title: string;
   description: string;
   video_url: string;
+  // Vrai quand la vidéo a été générée (python -m tms_vision.capsule_build).
+  video_available?: boolean;
 };
 
 export type ProgramItem = {
@@ -35,16 +43,32 @@ export function ProgramList({
             Programme d&apos;étirements ({program.length} capsule{program.length > 1 ? "s" : ""})
           </h3>
           <ol className="mt-2 flex flex-col gap-3">
-            {program.map((item) => (
-              <li key={item.zone} className="flex gap-3">
-                <span className="font-semibold">{item.rank}.</span>
-                <div>
-                  <p className="font-medium">{item.capsule.title}</p>
-                  <p className="text-sm text-gray-700">{item.capsule.description}</p>
-                  <p className="text-xs text-gray-600">{item.reason}</p>
-                </div>
-              </li>
-            ))}
+            {program.map((item) => {
+              const videoSrc = capsuleVideoSrc(item.capsule, API_URL);
+              return (
+                <li key={item.zone} className="flex gap-3">
+                  <span className="font-semibold">{item.rank}.</span>
+                  <div>
+                    <p className="font-medium">{item.capsule.title}</p>
+                    {item.capsule.status === "draft" && (
+                      <p className="mt-1 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                        {DRAFT_BADGE_TEXT}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-700">{item.capsule.description}</p>
+                    <p className="text-xs text-gray-600">{item.reason}</p>
+                    {videoSrc && (
+                      <video
+                        controls
+                        preload="metadata"
+                        src={videoSrc}
+                        className="mt-2 w-full max-w-sm rounded bg-black"
+                      />
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ol>
         </div>
       )}
