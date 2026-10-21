@@ -21,13 +21,15 @@ analyses existantes ne sont pas modifiées : toutes les données de récurrence 
   (Partie A uniquement ; les parties B, C, D sont d'autres tranches).
 - 4 zones seulement : `neck`, `trunk`, `upper_arm`, `lower_arm`, avec les colonnes d'angle
   `neck_flexion_deg`, `trunk_flexion_deg`, `upper_arm_flexion_deg`, `lower_arm_angle_deg`.
-- **Aucun seuil d'interprétation de la répétition n'est codé en dur.** Les seuils par zone vivent
-  dans un fichier de configuration dont les valeurs sont `null`. Tant qu'ils sont `null`, le
-  rapport donne les chiffres bruts et la mention « seuils non calibrés », sans classer aucune
-  zone.
-- Le **plancher de bruit** de détection d'un cycle (amplitude minimale pour compter un changement
-  de direction) est une constante technique, distincte des seuils d'interprétation ci-dessus. Elle
-  réutilise la valeur du PoC (`REPETITION_MIN_PROMINENCE_DEG`, 10°).
+- **Aucun seuil n'est codé en dur dans `recurrence.py`.** Tous vivent par zone dans
+  `recurrence_thresholds.json` : `min_prominence_deg` (amplitude minimale d'un cycle) et
+  `static_variation_deg` (variation maximale d'une plage statique) avec les valeurs du PoC
+  (10° et 15°) comme point de départ provisoire, `repetitive_cycles_per_minute` et
+  `static_seconds` (interprétation) à `null`. Le fichier porte `"calibrated": false` tant que
+  l'ostéopathe n'a pas validé les valeurs.
+- Tant que `calibrated` est faux, le rapport donne les chiffres bruts et la mention « seuils non
+  calibrés ». Il ne classe aucune zone, ce que les seuils d'interprétation vides interdisent de
+  toute façon.
 - Le score RULA et `detect_muscle_use` **ne changent pas de comportement** : les helpers de
   `rula/scoring.py` sont seulement rendus réutilisables, avec des valeurs par défaut identiques.
 - Une analyse non confirmée représentative est listée avec ses chiffres bruts mais **exclue** des
@@ -107,14 +109,14 @@ analyses existantes ne sont pas modifiées : toutes les données de récurrence 
 
 **Interfaces:**
 - Produces: `recurrence.ZONE_ANGLE_COLUMN: dict[str, str]`, `recurrence.load_thresholds(path=None) -> dict`
-  (lit `recurrence_thresholds.json`, renvoie `{zone: {"repetitive_cycles_per_minute": float | None, "static_seconds": float | None}}`),
+  (lit `recurrence_thresholds.json`, renvoie `{"calibrated": bool, "zones": {zone: {"min_prominence_deg": float, "static_variation_deg": float, "repetitive_cycles_per_minute": float | None, "static_seconds": float | None}}}`),
   `recurrence.compute_recurrence(frames: list[dict], thresholds: dict) -> dict`.
 - `compute_recurrence` retourne :
 
 ```python
 {
   "sample_seconds": float,          # frames[-1].timestamp - frames[0].timestamp (1.0 si une frame, 0.0 si aucune)
-  "thresholds_calibrated": bool,    # True seulement si TOUS les seuils des 4 zones sont non nuls
+  "thresholds_calibrated": bool,    # reprend le drapeau "calibrated" du fichier de seuils
   "zones": {
     "<zone>": {
       "cycles": float,                  # changements de direction / 2
@@ -128,7 +130,9 @@ analyses existantes ne sont pas modifiées : toutes les données de récurrence 
 }
 ```
 
-`recurrence_thresholds.json` livré avec les 4 zones et leurs deux seuils à `null`.
+`recurrence_thresholds.json` livré avec `"calibrated": false`, les 4 zones à 10° / 15° pour
+`min_prominence_deg` / `static_variation_deg`, et `repetitive_cycles_per_minute` /
+`static_seconds` à `null`.
 
 - [ ] **Step 1: Écrire les tests qui échouent** dans `tests/test_recurrence.py` :
   - série en dents de scie (amplitude 20°, 6 changements de direction sur 60 s) → `cycles == 3`,
@@ -138,16 +142,20 @@ analyses existantes ne sont pas modifiées : toutes les données de récurrence 
   - frames avec `detected=False` ou angle `None` ignorées pour l'historique d'angle mais comptées
     dans `sample_seconds` ;
   - `elevated_seconds` : mêmes cas que `compute_worst_zone` (niveaux élevés cumulés par zone) ;
-  - seuils tous `None` → `assessment is None` partout et `thresholds_calibrated is False` ;
+  - seuils d'interprétation `None` → `assessment is None` partout ; fichier livré →
+    `thresholds_calibrated is False` ;
   - seuil `repetitive_cycles_per_minute = 2.0` avec 3.0 mesurés → `"repetitive"` ; avec 1.0 mesuré
     → `"not_repetitive"` ;
-  - `load_thresholds()` sur le fichier livré → 4 zones, toutes valeurs `None`.
+  - `min_prominence_deg` propre à chaque zone : la même série (amplitude 8°) donne 0 cycle avec
+    10° et des cycles avec 5° ; idem pour `static_variation_deg` ;
+  - `load_thresholds()` sur le fichier livré → `calibrated` faux, 4 zones, 10° / 15° et seuils
+    d'interprétation `None`.
 - [ ] **Step 2:** Lancer `python -m pytest tests/test_recurrence.py` : échec attendu.
 - [ ] **Step 3:** Implémenter. Historique par zone = `[(timestamp, angle)]` des frames détectées avec
-  angle non nul. Cycles via `count_direction_changes(history)` (plancher de bruit par défaut) / 2 ;
-  statisme via `longest_static_span_seconds(history)` ; durée élevée via `frame_durations(frames)`
-  et `ELEVATED_LEVELS` de `capsules.py`. Aucune valeur de seuil dans le code Python : seule la
-  comparaison à la valeur lue dans le JSON.
+  angle non nul. Cycles via `count_direction_changes(history, min_prominence_deg=...)` / 2 ;
+  statisme via `longest_static_span_seconds(history, variation_deg=...)` ; les deux paramètres
+  viennent de la zone dans le JSON. Durée élevée via `frame_durations(frames)` et
+  `ELEVATED_LEVELS` de `capsules.py`. Aucune valeur de seuil dans le code Python.
 - [ ] **Step 4:** Tests au vert.
 - [ ] **Step 5:** Commit `feat: calcule les indicateurs de récurrence par zone`.
 
@@ -318,4 +326,5 @@ avec `sample_seconds < SHORT_SAMPLE_SECONDS` reçoit un avertissement d'échanti
 - Génération des vidéos d'étirement et fournisseurs IA (Tranche 3).
 - Correction du geste (Partie D, structure prévue en Tranche 2).
 - Calibration des seuils de cycles avec l'ostéopathe : le fichier de configuration attend ses
-  valeurs, aucune n'est inventée ici.
+  valeurs. Les 10° et 15° de départ sont ceux du PoC, provisoires (`calibrated: false`) ; les
+  seuils d'interprétation restent vides.

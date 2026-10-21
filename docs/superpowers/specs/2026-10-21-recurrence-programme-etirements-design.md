@@ -76,7 +76,7 @@ frame) :
 
 | Indicateur | Définition |
 |---|---|
-| `cycles` | Nombre de cycles de mouvement détectés (2 changements de direction d'amplitude >= `REPETITION_MIN_PROMINENCE_DEG`) |
+| `cycles` | Nombre de cycles de mouvement détectés (2 changements de direction d'amplitude >= `min_prominence_deg` de la zone) |
 | `cycles_per_minute` | `cycles` / durée de la vidéo en minutes |
 | `mean_cycle_seconds` | Durée moyenne d'un cycle (`None` si aucun cycle) |
 | `longest_static_seconds` | Plus longue plage contiguë sous `STATIC_VARIATION_THRESHOLD_DEG` |
@@ -102,13 +102,25 @@ confirmées sont listées avec leurs chiffres bruts et exclues des sommes.
 
 ### Seuils de cycles : non calibrés
 
-Les seuils de détection d'un cycle (amplitude minimale, fréquence jugée répétitive) seront
-calibrés plus tard avec l'ostéopathe, **par zone**. Ils sont lus depuis un fichier de configuration
-dont les valeurs sont vides au départ. Tant qu'ils sont vides :
+Tous les seuils sont calibrables **par zone** dans un fichier de configuration
+(`recurrence_thresholds.json`), avec l'ostéopathe, plus tard :
+
+| Paramètre | Rôle | Valeur de départ |
+|---|---|---|
+| `min_prominence_deg` | Amplitude minimale d'un changement de direction pour compter dans un cycle (filtre le bruit de détection) | 10° (valeur du PoC), **provisoire** |
+| `static_variation_deg` | Variation maximale d'angle pour qu'une plage soit dite statique | 15° (valeur du PoC), **provisoire** |
+| `repetitive_cycles_per_minute` | Fréquence à partir de laquelle la zone est jugée répétitive | vide (`null`) |
+| `static_seconds` | Durée statique à partir de laquelle la zone est jugée statique prolongée | vide (`null`) |
+
+Les deux premiers sont indispensables pour compter quoi que ce soit : ils reçoivent donc les
+valeurs du PoC comme point de départ, mais le fichier porte un drapeau `calibrated: false` tant
+que l'ostéopathe ne les a pas validés. Les deux derniers (interprétation) restent vides. Tant que
+`calibrated` est faux :
 
 - le rapport affiche les chiffres bruts (cycles, cycles par minute, durée moyenne, plage
   statique) et la projection, avec la mention « seuils non calibrés » ;
-- aucune zone n'est classée « répétitive » ou « acceptable » ;
+- aucune zone n'est classée « répétitive » ou « acceptable » (de toute façon impossible tant que
+  les seuils d'interprétation sont vides) ;
 - la détection de répétition existante dans `detect_muscle_use` (seuils du PoC) reste inchangée
   pour le score RULA et n'est pas réutilisée pour cette interprétation.
 
