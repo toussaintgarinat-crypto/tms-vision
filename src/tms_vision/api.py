@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from tms_vision import bilan, exercises, recurrence, storage
+from tms_vision import bilan, capsule_build, exercises, recurrence, storage
 from tms_vision.load import bounds, parse_load
 from tms_vision.program import build_analysis_program, build_bilan_program
 from tms_vision.rescore import rescore_frames, summarize_for_load
@@ -321,26 +321,16 @@ def _parse_single_byte_range(range_header: str, total_length: int) -> tuple[int,
     return start, min(end, total_length - 1)
 
 
-@app.get("/analyses/{analysis_id}/video")
-async def get_analysis_video(
-    analysis_id: str, range_header: str | None = Header(None, alias="Range")
+def _video_response(
+    video_bytes: bytes, content_disposition: str, range_header: str | None
 ) -> Response:
-    """Sert la vidéo annotée avec support des requêtes HTTP Range (RFC 7233,
-    un seul intervalle) -- nécessaire pour que <video> fonctionne de façon
-    fiable sur iOS Safari (voir skill iphone-tunnel-test), qui s'appuie sur
-    Range pour le seek et le pré-chargement progressif. L'ancienne route
-    GET /outputs/{filename} l'avait gratuitement via FileResponse ; ce n'est
-    plus le cas ici puisque le contenu vient de DuckDB (bytes en mémoire),
-    d'où ce handling explicite."""
-    video_bytes = storage.get_video_bytes(analysis_id)
-    if video_bytes is None:
-        raise HTTPException(status_code=404, detail="Analyse introuvable.")
-
+    """Réponse vidéo avec support des requêtes HTTP Range (RFC 7233, un seul
+    intervalle) -- nécessaire pour que <video> fonctionne de façon fiable sur iOS
+    Safari (voir skill iphone-tunnel-test), qui s'appuie sur Range pour le seek et
+    le pré-chargement progressif. Partagée par la vidéo annotée d'une analyse
+    (octets venant de DuckDB) et par les vidéos d'exercices générées."""
     total_length = len(video_bytes)
-    headers = {
-        "Content-Disposition": f'attachment; filename="{analysis_id}_annotated.mp4"',
-        "Accept-Ranges": "bytes",
-    }
+    headers = {"Content-Disposition": content_disposition, "Accept-Ranges": "bytes"}
 
     if range_header is not None:
         try:
@@ -365,6 +355,33 @@ async def get_analysis_video(
     return Response(content=video_bytes, media_type="video/mp4", headers=headers)
 
 
+@app.get("/analyses/{analysis_id}/video")
+async def get_analysis_video(
+    analysis_id: str, range_header: str | None = Header(None, alias="Range")
+) -> Response:
+    video_bytes = storage.get_video_bytes(analysis_id)
+    if video_bytes is None:
+        raise HTTPException(status_code=404, detail="Analyse introuvable.")
+    return _video_response(
+        video_bytes, f'attachment; filename="{analysis_id}_annotated.mp4"', range_header
+    )
+
+
+@app.get("/capsules/{capsule_id}/video")
+async def get_capsule_video(
+    capsule_id: str, range_header: str | None = Header(None, alias="Range")
+) -> Response:
+    """Vidéo générée d'un exercice du catalogue (voir capsule_build.py). L'id est
+    d'abord cherché dans le catalogue : il n'est jamais utilisé tel quel pour
+    construire un chemin (pas de traversée de répertoire possible)."""
+    if capsule_id not in {exercise["id"] for exercise in exercises.load_catalog()}:
+        raise HTTPException(status_code=404, detail="Exercice introuvable.")
+    path = capsule_build.video_path(capsule_id)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Vidéo non générée pour cet exercice.")
+    return _video_response(path.read_bytes(), f'inline; filename="{capsule_id}.mp4"', range_header)
+
+
 @app.get("/analyses/{analysis_id}/pose3d")
 async def get_analysis_pose3d(analysis_id: str) -> Response:
     pose3d_json = storage.get_pose3d_json(analysis_id)
@@ -384,6 +401,13 @@ async def get_analysis_frames_csv(analysis_id: str) -> Response:
     )
 
 
+def _annotate_program_videos(program: list[dict]) -> list[dict]:
+    """Ajoute `video_available` à la capsule de chaque élément : la vidéo générée existe-t-elle ?"""
+    for item in program:
+        item["capsule"]["video_available"] = capsule_build.video_path(item["capsule"]["id"]).is_file()
+    return program
+
+
 @app.get("/analyses/{analysis_id}/recommendation")
 async def get_analysis_recommendation(analysis_id: str) -> dict:
     analysis = storage.get_analysis(analysis_id)
@@ -391,7 +415,7 @@ async def get_analysis_recommendation(analysis_id: str) -> dict:
     if analysis is None or frames is None:
         raise HTTPException(status_code=404, detail="Analyse introuvable.")
 
-    program = build_analysis_program(frames, analysis["load"])
+    program = _annotate_program_videos(build_analysis_program(frames, analysis["load"]))
     first = program[0] if program else None
     return {
         # `zone` et `capsule` : premier élément du programme, conservés pour les
@@ -497,7 +521,7 @@ async def get_bilan_recurrence(bilan_id: str) -> dict:
 async def get_bilan_program(bilan_id: str) -> dict:
     report = _build_bilan_report(_get_bilan_or_404(bilan_id))
     return {
-        "program": build_bilan_program(report),
+        "program": _annotate_program_videos(build_bilan_program(report)),
         # Réservé à la correction du geste (Partie D de la spec), vide pour l'instant.
         "gesture_corrections": [],
         "warnings": report["warnings"],

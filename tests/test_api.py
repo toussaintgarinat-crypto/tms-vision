@@ -1174,3 +1174,133 @@ def test_get_exercise_returns_404_for_unknown_or_malicious_ids(tmp_path, monkeyp
     assert client.get("/exercises/unknown").status_code == 404
     assert client.get("/exercises/..%2Fsecret").status_code == 404
     assert client.get("/exercises/drafts").status_code == 404
+
+
+# --- Vidéos d'exercices et refactor de la réponse vidéo avec Range -----------------------
+
+VIDEO_BYTES = bytes(range(256)) * 4  # 1024 octets reconnaissables
+
+
+def _seed_capsule_video(tmp_path, monkeypatch, exercise_id="neck-lateral-stretch", content=VIDEO_BYTES):
+    from tms_vision import capsule_build
+
+    capsules_dir = tmp_path / "capsules"
+    capsules_dir.mkdir(exist_ok=True)
+    (capsules_dir / f"{exercise_id}.mp4").write_bytes(content)
+    monkeypatch.setattr(capsule_build, "CAPSULES_DIR", capsules_dir)
+    return capsules_dir
+
+
+def test_capsule_video_is_served_whole(tmp_path, monkeypatch):
+    _seed_capsule_video(tmp_path, monkeypatch)
+
+    response = TestClient(app).get("/capsules/neck-lateral-stretch/video")
+
+    assert response.status_code == 200
+    assert response.content == VIDEO_BYTES
+    assert response.headers["content-type"] == "video/mp4"
+    assert response.headers["accept-ranges"] == "bytes"
+    assert response.headers["content-disposition"].startswith("inline")
+
+
+def test_capsule_video_supports_range_requests(tmp_path, monkeypatch):
+    _seed_capsule_video(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    partial = client.get("/capsules/neck-lateral-stretch/video", headers={"Range": "bytes=10-19"})
+    suffix = client.get("/capsules/neck-lateral-stretch/video", headers={"Range": "bytes=-4"})
+    unsatisfiable = client.get(
+        "/capsules/neck-lateral-stretch/video", headers={"Range": "bytes=2000-3000"}
+    )
+
+    assert partial.status_code == 206
+    assert partial.content == VIDEO_BYTES[10:20]
+    assert partial.headers["content-range"] == f"bytes 10-19/{len(VIDEO_BYTES)}"
+    assert suffix.status_code == 206
+    assert suffix.content == VIDEO_BYTES[-4:]
+    assert unsatisfiable.status_code == 416
+    assert unsatisfiable.headers["content-range"] == f"bytes */{len(VIDEO_BYTES)}"
+
+
+def test_capsule_video_is_404_when_not_generated_yet(tmp_path, monkeypatch):
+    _seed_capsule_video(tmp_path, monkeypatch, exercise_id="trunk-lumbar-mobility")
+
+    response = TestClient(app).get("/capsules/neck-lateral-stretch/video")
+
+    assert response.status_code == 404
+    assert "non générée" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("capsule_id", ["unknown", "..%2Fsecret", "drafts", "neck-lateral-stretch.mp4"])
+def test_capsule_video_is_404_for_ids_outside_the_catalog(tmp_path, monkeypatch, capsule_id):
+    capsules_dir = _seed_capsule_video(tmp_path, monkeypatch)
+    # Un fichier existant sous un nom hors catalogue ne doit jamais être servi.
+    (capsules_dir / "unknown.mp4").write_bytes(b"secret")
+    (tmp_path / "secret.mp4").write_bytes(b"secret")
+
+    assert TestClient(app).get(f"/capsules/{capsule_id}/video").status_code == 404
+
+
+def test_analysis_video_still_supports_range_requests_after_the_refactor(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    storage.save_analysis(
+        analysis_id="v-1", created_at=datetime.now(timezone.utc), side="right", load_kg=0.0,
+        wrist_twist="normal", worker_label=None, poste_label=None,
+        summary={"frame_count": 0, "detected_frame_count": 0, "max_score": 0,
+                 "average_score": 0, "time_by_action_level": {}},
+        video_bytes=VIDEO_BYTES, pose3d_json="[]", frame_rows=[],
+    )
+    client = TestClient(app)
+
+    whole = client.get("/analyses/v-1/video")
+    partial = client.get("/analyses/v-1/video", headers={"Range": "bytes=0-9"})
+    bad = client.get("/analyses/v-1/video", headers={"Range": "bytes=9999-19999"})
+
+    assert whole.status_code == 200 and whole.content == VIDEO_BYTES
+    assert whole.headers["content-disposition"] == 'attachment; filename="v-1_annotated.mp4"'
+    assert partial.status_code == 206 and partial.content == VIDEO_BYTES[:10]
+    assert bad.status_code == 416
+    assert client.get("/analyses/nope/video").status_code == 404
+
+
+def _hot_segments_analysis(analysis_id):
+    hot = "changement_immediat"
+    rows = [_segment_row(0, 0.0, trunk=hot, neck=hot), _segment_row(1, 4.0)]
+    _save_with_segments(analysis_id, rows)
+
+
+def test_recommendation_reports_whether_each_capsule_video_exists(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _hot_segments_analysis("p-1")
+    _seed_capsule_video(tmp_path, monkeypatch, exercise_id="trunk-lumbar-mobility")
+    client = TestClient(app)
+
+    body = client.get("/analyses/p-1/recommendation").json()
+
+    by_zone = {item["zone"]: item["capsule"] for item in body["program"]}
+    assert by_zone["trunk"]["video_available"] is True
+    assert by_zone["neck"]["video_available"] is False
+    assert body["capsule"]["video_available"] is True  # premier élément = tronc
+    assert by_zone["trunk"]["video_url"] == "/capsules/trunk-lumbar-mobility/video"
+    assert by_zone["trunk"]["status"] == "draft"
+
+
+def test_bilan_program_reports_whether_each_capsule_video_exists(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    hot = "changement_immediat"
+    _save_with_segments("a-1", [
+        _segment_row(0, 0.0, neck=hot), _segment_row(1, 10.0, neck=hot), _segment_row(2, 20.0),
+    ])
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 9.0}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 4.0, "representative": True})
+
+    _seed_capsule_video(tmp_path, monkeypatch, exercise_id="trunk-lumbar-mobility")
+    without_video = client.get(f"/bilans/{bilan_id}/program").json()["program"]
+    _seed_capsule_video(tmp_path, monkeypatch, exercise_id="neck-lateral-stretch")
+    with_video = client.get(f"/bilans/{bilan_id}/program").json()["program"]
+
+    assert without_video[0]["zone"] == "neck"
+    assert without_video[0]["capsule"]["video_available"] is False
+    assert with_video[0]["capsule"]["video_available"] is True
