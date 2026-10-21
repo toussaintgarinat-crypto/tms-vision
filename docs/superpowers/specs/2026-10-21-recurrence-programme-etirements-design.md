@@ -213,8 +213,9 @@ IA**, avec des briques IA optionnelles et interchangeables.
 
 Fichier JSON par exercice, versionné dans le dépôt (`exercises/*.json`). Une pose donne, par os du
 squelette articulé, deux angles (`flexion`, `lateral`, en degrés) à partir de la posture neutre ; le
-code les convertit en landmarks synthétiques et réutilise `applyFrameToSkeleton`, donc le même chemin
-que l'avatar piloté par la vidéo. Extrait :
+code les applique au squelette : l'orientation de chaque os est sa rotation de repos composée avec
+celle de la pose. (`applyFrameToSkeleton`, le chemin de l'avatar piloté par la vidéo, n'est pas
+réutilisé : mesuré sur ce rig, il inverse gauche et droite, voir le plan.) Extrait :
 
 ```json
 {

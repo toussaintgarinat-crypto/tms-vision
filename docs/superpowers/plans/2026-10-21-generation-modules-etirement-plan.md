@@ -199,9 +199,8 @@ premier `t == 0`, dernier `t <= duration_seconds` ; `instructions[].t` croissant
   `activeInstruction(exercise, t): {text: string; index: number} | null`.
 
 - [ ] **Step 1: Établir les conventions par l'expérience, pas par déduction.** Écrire un petit test
-  d'intégration qui, pour `flexion = +60` sur `spine`, passe `anglesToLandmarks` puis
-  `applyFrameToSkeleton` (voir `pose3dSkeleton.test.ts` pour le montage d'un squelette en Node) et
-  mesure la direction monde de l'os. Déterminer, en rendant la pose (Task 4) et en la regardant, quel
+  d'intégration sur le vrai `muscle-rig.glb` (chargé comme dans `muscleRigInvariants.test.ts`) qui
+  applique une pose avec `applyPoseToSkeleton` et mesure l'orientation monde des os. Déterminer, en rendant la pose (Task 4) et en la regardant, quel
   signe correspond à « vers l'avant » et à « vers la droite du sujet », puis figer ces choix dans les
   tests. Noter le résultat dans `exercises/README.md`.
 - [ ] **Step 2:** Tests : neutre = tronc et cou vers le haut, bras et cuisses vers le bas ;
@@ -209,8 +208,9 @@ premier `t == 0`, dernier `t <= duration_seconds` ; `instructions[].t` croissant
   `lateral` des os pairés ; angle 0 pour un os absent ; `samplePose` : valeur exacte aux poses clés,
   milieu adouci entre deux poses (pas linéaire pur), maintien entre deux poses clés identiques, borné
   avant 0 et après la fin ; `activeInstruction` : aucune avant la première, la dernière après elle ;
-  **propriété de bout en bout** : pour plusieurs poses, la direction monde de chaque os après
-  `applyFrameToSkeleton` égale `boneDirections` à 1e-6 près.
+  **sur le vrai squelette** : la pose neutre redonne exactement le repos (orientations et positions),
+  gauche et droite ne sont pas inversés, et pour plusieurs poses la rotation de chaque os par rapport
+  au repos, parents compris, donne `boneDirections` à 1e-6 près.
 - [ ] **Step 3:** Vérifier l'échec, implémenter.
 - [ ] **Step 4:** `cd web && npm test && npm run lint && npx tsc --noEmit` au vert. Commit
   `feat: convertit des poses en angles en squelette animé`.

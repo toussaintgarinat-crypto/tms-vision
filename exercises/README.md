@@ -59,7 +59,9 @@ avant-bras et cuisses vers le bas) :
   `flexion: 90` est à l'horizontale devant soi, et `lateral` l'en écarte dans le plan horizontal :
   `{ "flexion": 90, "lateral": -45 }` sur le bras droit le ramène de 45° vers le milieu du corps.
 
-Un os absent d'une pose reste à sa direction neutre. Les angles décrivent la direction finale de chaque
+Le repos du modèle a les bras très légèrement écartés du corps (environ 10 à 15°) : `flexion: 90`
+sur un bras le met donc à l'horizontale à une dizaine de degrés près. Un os absent d'une pose reste à
+sa direction neutre. Les angles décrivent la direction finale de chaque
 os (pas une rotation relative à son parent) : pour un avant-bras prolongeant un bras, donnez-lui les
 mêmes angles que le bras.
 
