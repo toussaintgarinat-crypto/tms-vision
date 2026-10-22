@@ -79,9 +79,16 @@ export default function AnalysisDetailPage() {
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Analyse {id}</h1>
-        <Link href="/historique" className="text-sm text-blue-600 underline">
-          ← Retour à l&apos;historique
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {isLoaded && (
+            <Link href={`/historique/${encodeURIComponent(id)}/rapport`} className="text-sm text-blue-600 underline">
+              Compte rendu (PDF / HTML)
+            </Link>
+          )}
+          <Link href="/historique" className="text-sm text-blue-600 underline">
+            ← Retour à l&apos;historique
+          </Link>
+        </div>
       </div>
 
       {isNotFound && <p className="text-red-600">Analyse introuvable.</p>}

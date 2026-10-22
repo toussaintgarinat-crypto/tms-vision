@@ -171,9 +171,16 @@ export default function BilanDetailPage() {
         <h1 className="text-2xl font-semibold">
           {isLoaded ? (loaded.bilan.label ?? "Bilan sans libellé") : "Bilan de poste"}
         </h1>
-        <Link href="/bilans" className="text-sm text-blue-600 underline">
-          ← Retour aux bilans
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {isLoaded && (
+            <Link href={`/bilans/${encodeURIComponent(id)}/rapport`} className="text-sm text-blue-600 underline">
+              Compte rendu (PDF / HTML)
+            </Link>
+          )}
+          <Link href="/bilans" className="text-sm text-blue-600 underline">
+            ← Retour aux bilans
+          </Link>
+        </div>
       </div>
 
       {isNotFound && <p className="text-red-600">Bilan introuvable.</p>}

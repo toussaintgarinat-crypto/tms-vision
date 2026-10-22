@@ -25,6 +25,8 @@ export const BACKGROUND_COLOR = "#EEF1F4";
 export type ExerciseAvatarApi = {
   // Pose l'avatar à l'instant t de l'exercice et rend l'image, de façon synchrone.
   renderAt: (exercise: Exercise, t: number) => void;
+  // Image (JPEG, data URL) de ce qui vient d'être rendu : à appeler juste après `renderAt`.
+  snapshot: () => string;
 };
 
 // Sol : disque clair bordé d'un dégradé et ombre de contact sous les pieds, pour donner
@@ -153,11 +155,13 @@ export function ExerciseAvatar({ onReady }: { onReady: (api: ExerciseAvatarApi) 
     [model, rest, restFeetY, camera, gl, rootScene],
   );
 
+  const snapshot = useCallback(() => gl.domElement.toDataURL("image/jpeg", 0.9), [gl]);
+
   // Annonce l'API une fois le modèle chargé ET le canvas mesuré (sinon le premier
   // rendu se ferait à une taille nulle).
   useEffect(() => {
-    if (size.width > 0 && size.height > 0) onReady({ renderAt });
-  }, [renderAt, onReady, size.width, size.height]);
+    if (size.width > 0 && size.height > 0) onReady({ renderAt, snapshot });
+  }, [renderAt, snapshot, onReady, size.width, size.height]);
 
   return (
     <>

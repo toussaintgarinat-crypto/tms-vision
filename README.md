@@ -911,6 +911,22 @@ page `/bibliotheque/envoi/<jeton>` qui rejoue les exercices et affiche les notes
   encore d'authentification : la page patient n'est protégée que par son jeton aléatoire, et les routes
   du praticien sont ouvertes comme le reste de l'API.
 
+### Comptes rendus anonymes (PDF et HTML)
+
+Le bouton « Compte rendu (PDF / HTML) » de la page d'un **bilan de poste** (`/bilans/<id>/rapport`) et
+de celle d'une **analyse** (`/historique/<id>/rapport`) ouvre un compte rendu **anonyme** : ni nom de
+salarié ou de poste, ni identifiant d'analyse, ni notes libres, ni vidéo d'origine. Le libellé d'un
+bilan n'y figure que si on coche la case.
+
+- **Programme d'étirements** : au choix à l'écran, **carrousel** (une image fixe par étape de
+  l'exercice, avec sa consigne), **animation 3D** ou **vidéo** (si elle a été générée).
+- **PDF** : bouton « Enregistrer en PDF », via la fenêtre d'impression du navigateur (« Enregistrer
+  au format PDF »). Les exercices y sont toujours des carrousels, en grille d'images.
+- **HTML** : un fichier unique, images incluses, qui s'ouvre sans l'application et se transmet par mail.
+  Deux variantes : carrousels interactifs (léger) ou vidéos intégrées (plus lourd ; un exercice sans
+  vidéo générée y reste en carrousel).
+- Les images du carrousel sont rendues dans le navigateur avec le même mannequin 3D : rien à générer.
+
 ### Mains et pieds mesurés (Tranche 5)
 
 Spec : `docs/superpowers/specs/2026-10-22-mains-pieds-design.md`.
