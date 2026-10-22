@@ -524,7 +524,9 @@ async def attach_analysis_to_bilan(bilan_id: str, body: BilanAnalysisAttach) -> 
     if any(item["analysis_id"] == body.analysis_id for item in record["items"]):
         raise HTTPException(status_code=409, detail="Analyse déjà rattachée à ce bilan.")
 
-    documented_hours = sum(item["activity_hours"] for item in record["items"])
+    documented_hours = sum(item["activity_hours"] for item in record["items"]) + sum(
+        task["activity_hours"] for task in record["tasks"] if task["analysis_id"] is None
+    )
     if documented_hours + body.activity_hours > record["workday_hours"]:
         raise HTTPException(
             status_code=422,
@@ -541,6 +543,109 @@ async def attach_analysis_to_bilan(bilan_id: str, body: BilanAnalysisAttach) -> 
     return _get_bilan_or_404(bilan_id)
 
 
+ZONE_NAMES = Literal["neck", "trunk", "upper_arm", "lower_arm", "hand", "foot"]
+
+
+class TimeSlot(BaseModel):
+    start: str
+    end: str
+
+
+class BilanTaskBody(BaseModel):
+    name: str
+    zones: list[ZONE_NAMES] = Field(min_length=1)
+    activity_hours: float | None = Field(default=None, gt=0, le=24)
+    time_slots: list[TimeSlot] | None = None
+    days_per_week: float | None = Field(default=None, gt=0, le=7)
+    cycles_per_minute: float | None = Field(default=None, ge=0)
+    cycle_seconds: float | None = Field(default=None, gt=0)
+    static_seconds: float | None = Field(default=None, ge=0)
+    load_kg: float | None = Field(default=None, ge=0)
+    analysis_id: str | None = None
+    source: Literal["practitioner", "patient"] = "practitioner"
+    notes: str | None = None
+
+
+def _validated_task(record: dict, body: BilanTaskBody, *, exclude_task_id: str | None) -> dict:
+    """Valide une fiche et renvoie les champs à stocker. HTTPException 422 sinon."""
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Le nom de la tâche est obligatoire.")
+    zones = list(dict.fromkeys(body.zones))
+
+    slots = [slot.model_dump() for slot in body.time_slots] if body.time_slots else None
+    linked_item = next(
+        (item for item in record["items"] if item["analysis_id"] == body.analysis_id), None
+    )
+    if body.analysis_id is not None and linked_item is None:
+        raise HTTPException(
+            status_code=422, detail="L'analyse à compléter n'est pas rattachée à ce bilan."
+        )
+    try:
+        if slots is not None:
+            hours = bilan.slots_hours(slots)
+        elif body.activity_hours is not None:
+            hours = body.activity_hours
+        elif linked_item is not None:
+            hours = linked_item["activity_hours"]
+        else:
+            raise ValueError("Indiquez la durée de la tâche ou ses plages horaires.")
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    # Une fiche liée à une vidéo reprend sa durée : elle n'ajoute rien à la journée.
+    if linked_item is None:
+        documented = sum(item["activity_hours"] for item in record["items"]) + sum(
+            task["activity_hours"] for task in record["tasks"]
+            if task["id"] != exclude_task_id and task["analysis_id"] is None
+        )
+        if documented + hours > record["workday_hours"] + 1e-9:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Les activités documentées dépasseraient la journée de "
+                    f"{record['workday_hours']} h."
+                ),
+            )
+    return {
+        "name": name, "zones": zones, "activity_hours": hours, "time_slots": slots,
+        "days_per_week": body.days_per_week, "cycles_per_minute": body.cycles_per_minute,
+        "cycle_seconds": body.cycle_seconds, "static_seconds": body.static_seconds,
+        "load_kg": body.load_kg, "analysis_id": body.analysis_id, "source": body.source,
+        "notes": body.notes.strip() if body.notes and body.notes.strip() else None,
+    }
+
+
+@app.post("/bilans/{bilan_id}/tasks")
+async def create_bilan_task(bilan_id: str, body: BilanTaskBody) -> dict:
+    record = _get_bilan_or_404(bilan_id)
+    task = _validated_task(record, body, exclude_task_id=None)
+    storage.create_bilan_task(
+        task_id=generate_run_id(), bilan_id=bilan_id,
+        created_at=datetime.now(timezone.utc), task=task,
+    )
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.put("/bilans/{bilan_id}/tasks/{task_id}")
+async def update_bilan_task(bilan_id: str, task_id: str, body: BilanTaskBody) -> dict:
+    record = _get_bilan_or_404(bilan_id)
+    if not any(task["id"] == task_id for task in record["tasks"]):
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+    task = _validated_task(record, body, exclude_task_id=task_id)
+    storage.update_bilan_task(task_id=task_id, bilan_id=bilan_id, task=task)
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.delete("/bilans/{bilan_id}/tasks/{task_id}")
+async def delete_bilan_task(bilan_id: str, task_id: str) -> dict:
+    record = _get_bilan_or_404(bilan_id)
+    if not any(task["id"] == task_id for task in record["tasks"]):
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+    storage.delete_bilan_task(task_id=task_id, bilan_id=bilan_id)
+    return _get_bilan_or_404(bilan_id)
+
+
 def _build_bilan_report(record: dict) -> dict:
     thresholds = recurrence.load_thresholds()
     items = []
@@ -550,7 +655,7 @@ def _build_bilan_report(record: dict) -> dict:
             **item,
             "recurrence": recurrence.compute_recurrence(frames or [], thresholds),
         })
-    return bilan.project_bilan(record["workday_hours"], items)
+    return bilan.project_bilan(record["workday_hours"], items, record["tasks"])
 
 
 @app.get("/bilans/{bilan_id}/recurrence")

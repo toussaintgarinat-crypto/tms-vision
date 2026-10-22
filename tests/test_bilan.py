@@ -139,3 +139,109 @@ def test_thresholds_calibrated_only_when_every_analysis_reports_it():
     assert project_bilan(9.0, [
         _item("a", 2.0, recurrence=calibrated), _item("b", 2.0, recurrence=uncalibrated),
     ])["thresholds_calibrated"] is False
+
+
+def _task(task_id="t1", hours=2.0, zones=("upper_arm",), cpm=10.0, analysis_id=None,
+          slots=None, source="practitioner", name="Peindre un plafond"):
+    return {
+        "id": task_id, "name": name, "zones": list(zones), "activity_hours": hours,
+        "time_slots": slots, "cycles_per_minute": cpm, "analysis_id": analysis_id,
+        "source": source,
+    }
+
+
+def test_standalone_task_adds_declared_cycles_and_counts_in_the_workday():
+    report = project_bilan(9.0, [], [_task(hours=2.0, zones=("neck", "upper_arm"), cpm=10.0)])
+
+    assert report["zones"]["upper_arm"]["projected_cycles"] == 10 * 60 * 2
+    assert report["zones"]["neck"]["projected_cycles"] == 10 * 60 * 2
+    assert report["zones"]["trunk"]["projected_cycles"] == 0.0
+    assert report["documented_hours"] == 2.0
+    assert report["undocumented_hours"] == 7.0
+    [entry] = report["tasks"]
+    assert entry["source"] == "practitioner"
+    assert any("non mesurés" in warning for warning in entry["warnings"])
+    # Sans vidéo : aucune heure en posture à risque n'est inventée.
+    assert report["zones"]["upper_arm"]["projected_elevated_hours"] == 0.0
+    assert report["warnings"] == []
+
+
+def test_standalone_task_adds_to_video_cycles():
+    items = [_item("a", 5.0, recurrence=_recurrence(trunk={"cycles_per_minute": 3.0}))]
+
+    report = project_bilan(9.0, items, [_task(hours=2.0, zones=("trunk",), cpm=1.0)])
+
+    assert report["zones"]["trunk"]["projected_cycles"] == 3 * 60 * 5 + 1 * 60 * 2
+    assert report["documented_hours"] == 7.0
+
+
+def test_task_completing_a_video_overrides_measure_but_keeps_it_visible():
+    items = [_item("a", 5.0, recurrence=_recurrence(
+        sample_seconds=180.0, trunk={"cycles_per_minute": 3.0, "elevated_seconds": 90.0},
+        neck={"cycles_per_minute": 4.0}))]
+    task = _task(hours=99.0, zones=("trunk",), cpm=8.0, analysis_id="a")
+
+    report = project_bilan(9.0, items, [task])
+
+    # La valeur saisie remplace la mesure du tronc ; le cou reste mesuré.
+    assert report["zones"]["trunk"]["projected_cycles"] == 8 * 60 * 5
+    assert report["zones"]["neck"]["projected_cycles"] == 4 * 60 * 5
+    # La durée est celle de la vidéo, comptée une seule fois ; l'élevé reste mesuré.
+    assert report["documented_hours"] == 5.0
+    assert report["zones"]["trunk"]["projected_elevated_hours"] == 2.5
+    assert report["tasks"] == []
+    [declared] = report["analyses"][0]["declared"]
+    assert declared["cycles_per_minute"] == 8.0
+    assert declared["measured_cycles_per_minute"] == {"trunk": 3.0}
+
+
+def test_declared_value_counts_even_when_the_video_is_not_representative():
+    items = [_item("a", 4.0, representative=False,
+                   recurrence=_recurrence(trunk={"cycles_per_minute": 3.0}))]
+
+    report = project_bilan(9.0, items, [_task(zones=("trunk",), cpm=2.0, analysis_id="a")])
+
+    assert report["zones"]["trunk"]["projected_cycles"] == 2 * 60 * 4
+    assert report["warnings"] == []
+
+
+def test_tasks_and_videos_together_cannot_exceed_the_workday():
+    items = [_item("a", 6.0)]
+
+    with pytest.raises(ValueError, match="dépassent la journée"):
+        project_bilan(8.0, items, [_task(hours=3.0)])
+
+
+def test_overlapping_time_slots_between_tasks_only_warn():
+    tasks = [
+        _task("t1", 2.0, slots=[{"start": "08:00", "end": "10:00"}], name="Peinture"),
+        _task("t2", 2.0, slots=[{"start": "09:00", "end": "11:00"}], name="Saisie"),
+        _task("t3", 1.0, slots=[{"start": "14:00", "end": "15:00"}], name="Rangement"),
+    ]
+
+    report = project_bilan(9.0, [], tasks)
+
+    overlaps = [w for w in report["warnings"] if "chevauchent" in w]
+    assert len(overlaps) == 1
+    assert "Peinture" in overlaps[0] and "Saisie" in overlaps[0]
+
+
+def test_task_without_zone_or_frequency_contributes_nothing_and_says_so():
+    report = project_bilan(9.0, [], [_task(zones=(), cpm=None)])
+
+    assert all(v["projected_cycles"] == 0.0 for v in report["zones"].values())
+    assert any("non renseignées" in w for w in report["tasks"][0]["warnings"])
+    assert any("aucune projection" in w for w in report["warnings"])
+
+
+def test_slots_hours_sums_slots_and_rejects_bad_ones():
+    from tms_vision.bilan import slots_hours
+
+    assert slots_hours([{"start": "08:00", "end": "12:00"},
+                        {"start": "13:30", "end": "17:00"}]) == 7.5
+    with pytest.raises(ValueError):
+        slots_hours([{"start": "10:00", "end": "09:00"}])
+    with pytest.raises(ValueError):
+        slots_hours([{"start": "8h", "end": "9h"}])
+    with pytest.raises(ValueError, match="chevauchent"):
+        slots_hours([{"start": "08:00", "end": "10:00"}, {"start": "09:00", "end": "11:00"}])

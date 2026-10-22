@@ -25,8 +25,30 @@ export type AnalysisRecurrence = {
   zones: Record<Zone, ZoneRecurrence>;
 };
 
+export type BilanReportDeclared = {
+  task_id: string;
+  name: string;
+  source: "practitioner" | "patient";
+  zones: Zone[];
+  cycles_per_minute: number | null;
+  measured_cycles_per_minute: Partial<Record<Zone, number | null>>;
+};
+
+export type BilanReportTask = {
+  task_id: string;
+  name: string;
+  source: "practitioner" | "patient";
+  zones: Zone[];
+  activity_hours: number;
+  time_slots: { start: string; end: string }[] | null;
+  cycles_per_minute: number | null;
+  warnings: string[];
+};
+
 export type BilanReportAnalysis = {
   analysis_id: string;
+  source: "measured";
+  declared: BilanReportDeclared[];
   activity_hours: number;
   representative: boolean;
   included: boolean;
@@ -42,6 +64,7 @@ export type BilanReport = {
   thresholds_calibrated: boolean;
   zones: Record<Zone, { projected_cycles: number; projected_elevated_hours: number }>;
   analyses: BilanReportAnalysis[];
+  tasks: BilanReportTask[];
   warnings: string[];
 };
 
@@ -51,10 +74,27 @@ export type BilanItem = {
   representative: boolean;
 };
 
+export type BilanTask = {
+  id: string;
+  name: string;
+  zones: Zone[];
+  activity_hours: number;
+  time_slots: { start: string; end: string }[] | null;
+  days_per_week: number | null;
+  cycles_per_minute: number | null;
+  cycle_seconds: number | null;
+  static_seconds: number | null;
+  load_kg: number | null;
+  analysis_id: string | null;
+  source: "practitioner" | "patient";
+  notes: string | null;
+};
+
 export type StoredBilan = {
   id: string;
   created_at: string;
   label: string | null;
   workday_hours: number;
   items?: BilanItem[];
+  tasks?: BilanTask[];
 };

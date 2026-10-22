@@ -41,7 +41,7 @@ def test_connect_creates_both_tables(tmp_path, monkeypatch):
         conn.close()
 
     assert {
-        "analyses", "analysis_frames", "bilans", "bilan_analyses", "analysis_loads",
+        "analyses", "analysis_frames", "bilans", "bilan_analyses", "bilan_tasks", "analysis_loads",
     } <= table_names
 
 
@@ -360,7 +360,7 @@ def test_create_bilan_then_get_bilan_round_trips(tmp_path, monkeypatch):
 
     assert bilan == {
         "id": "b-1", "created_at": "2026-10-21T08:30:00+00:00", "label": "Quai 3",
-        "workday_hours": 9.0, "items": [],
+        "workday_hours": 9.0, "items": [], "tasks": [],
     }
 
 
@@ -663,3 +663,67 @@ def test_connect_adds_hand_and_foot_columns_to_a_database_created_before_they_ex
 
     assert {"ankle_flexion_deg", "finger_curl_deg", "hand_segment_action_level",
             "foot_segment_action_level"} <= columns
+
+
+def _bilan_with_analysis(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    _save_minimal_analysis("a-1")
+    storage.create_bilan(
+        bilan_id="b-1", created_at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        label=None, workday_hours=9.0,
+    )
+    storage.attach_analysis(bilan_id="b-1", analysis_id="a-1", activity_hours=5.0, representative=True)
+
+
+def _task_fields(**overrides):
+    fields = {
+        "name": "Peindre un plafond", "zones": ["neck", "upper_arm"], "activity_hours": 2.0,
+        "time_slots": [{"start": "08:00", "end": "10:00"}], "days_per_week": 5.0,
+        "cycles_per_minute": 12.0, "cycle_seconds": 5.0, "static_seconds": 30.0,
+        "load_kg": 2.0, "analysis_id": None, "source": "practitioner", "notes": "bras levés",
+    }
+    return {**fields, **overrides}
+
+
+def test_bilan_task_create_read_update_delete(tmp_path, monkeypatch):
+    _bilan_with_analysis(tmp_path, monkeypatch)
+    when = datetime(2026, 10, 22, 9, 0, tzinfo=timezone.utc)
+
+    storage.create_bilan_task(task_id="t-1", bilan_id="b-1", created_at=when, task=_task_fields())
+
+    [task] = storage.get_bilan("b-1")["tasks"]
+    assert task == {
+        "id": "t-1", "bilan_id": "b-1", "created_at": "2026-10-22T09:00:00+00:00",
+        **_task_fields(),
+    }
+
+    storage.update_bilan_task(
+        task_id="t-1", bilan_id="b-1",
+        task=_task_fields(name="Saisie", time_slots=None, cycles_per_minute=None,
+                          analysis_id="a-1"),
+    )
+    [updated] = storage.list_bilan_tasks("b-1")
+    assert updated["name"] == "Saisie"
+    assert updated["time_slots"] is None
+    assert updated["cycles_per_minute"] is None
+    assert updated["analysis_id"] == "a-1"
+
+    storage.delete_bilan_task(task_id="t-1", bilan_id="b-1")
+    assert storage.list_bilan_tasks("b-1") == []
+
+
+def test_bilan_task_rejects_unknown_bilan_task_and_foreign_analysis(tmp_path, monkeypatch):
+    _bilan_with_analysis(tmp_path, monkeypatch)
+    when = datetime(2026, 10, 22, tzinfo=timezone.utc)
+
+    with pytest.raises(KeyError):
+        storage.create_bilan_task(task_id="t", bilan_id="nope", created_at=when, task=_task_fields())
+    with pytest.raises(ValueError):
+        storage.create_bilan_task(
+            task_id="t", bilan_id="b-1", created_at=when,
+            task=_task_fields(analysis_id="inconnue"),
+        )
+    with pytest.raises(KeyError):
+        storage.update_bilan_task(task_id="nope", bilan_id="b-1", task=_task_fields())
+    with pytest.raises(KeyError):
+        storage.delete_bilan_task(task_id="nope", bilan_id="b-1")

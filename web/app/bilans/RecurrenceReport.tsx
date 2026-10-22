@@ -1,4 +1,5 @@
 import { formatCycles, formatHours, formatSampleDuration } from "./recurrenceFormat";
+import { SOURCE_LABELS } from "./taskForm";
 import { BilanReport, ZONES, ZONE_LABELS } from "./types";
 
 const ASSESSMENT_LABELS = {
@@ -8,6 +9,7 @@ const ASSESSMENT_LABELS = {
 
 export function RecurrenceReport({ report }: { report: BilanReport }) {
   const includedAnalyses = report.analyses.filter((analysis) => analysis.included);
+  const hasTasks = report.tasks.length > 0 || report.analyses.some((a) => a.declared.length > 0);
   const includedSampleSeconds = includedAnalyses.reduce(
     (total, analysis) => total + analysis.sample_seconds,
     0,
@@ -39,14 +41,22 @@ export function RecurrenceReport({ report }: { report: BilanReport }) {
         .
       </p>
 
-      {includedAnalyses.length > 0 && (
+      {(includedAnalyses.length > 0 || hasTasks) && (
         <>
-          <p className="text-sm text-gray-600">
-            Estimation basée sur des échantillons de {formatSampleDuration(includedSampleSeconds)} au
-            total ({includedAnalyses.length} vidéo{includedAnalyses.length > 1 ? "s" : ""}{" "}
-            confirmée{includedAnalyses.length > 1 ? "s" : ""} représentative
-            {includedAnalyses.length > 1 ? "s" : ""}).
-          </p>
+          {includedAnalyses.length > 0 && (
+            <p className="text-sm text-gray-600">
+              Estimation basée sur des échantillons de {formatSampleDuration(includedSampleSeconds)}{" "}
+              au total ({includedAnalyses.length} vidéo{includedAnalyses.length > 1 ? "s" : ""}{" "}
+              confirmée{includedAnalyses.length > 1 ? "s" : ""} représentative
+              {includedAnalyses.length > 1 ? "s" : ""}).
+            </p>
+          )}
+          {hasTasks && (
+            <p className="text-sm text-gray-600">
+              Les cycles incluent les répétitions saisies ; les tâches sans vidéo n&apos;ont ni
+              score RULA ni temps en posture à risque mesurés.
+            </p>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
@@ -73,6 +83,36 @@ export function RecurrenceReport({ report }: { report: BilanReport }) {
         </>
       )}
 
+      {report.tasks.length > 0 && (
+        <>
+          <h3 className="text-lg font-semibold">Tâches saisies (sans vidéo)</h3>
+          <ul className="flex flex-col gap-3">
+            {report.tasks.map((task) => (
+              <li key={task.task_id} className="rounded border p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">{task.name}</span>
+                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs">
+                    {SOURCE_LABELS[task.source]}
+                  </span>
+                </div>
+                <p className="text-gray-700">
+                  {task.zones.map((zone) => ZONE_LABELS[zone]).join(", ")} ·{" "}
+                  {formatHours(task.activity_hours)} ·{" "}
+                  {task.cycles_per_minute === null
+                    ? "répétitions non renseignées"
+                    : `${task.cycles_per_minute.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} cycles/min`}
+                </p>
+                {task.warnings.map((warning) => (
+                  <p key={warning} className="mt-1 text-amber-800">
+                    {warning}
+                  </p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <h3 className="text-lg font-semibold">Vidéos du bilan</h3>
       {report.analyses.length === 0 && (
         <p className="text-gray-600">Aucune vidéo rattachée à ce bilan.</p>
@@ -92,6 +132,22 @@ export function RecurrenceReport({ report }: { report: BilanReport }) {
                 {formatSampleDuration(analysis.sample_seconds)}
               </span>
             </div>
+            {analysis.declared.map((declared) => (
+              <p key={declared.task_id} className="mt-1 rounded bg-blue-50 p-2 text-blue-900">
+                « {declared.name} » ({SOURCE_LABELS[declared.source]}) remplace la mesure pour :{" "}
+                {declared.zones
+                  .map((zone) => {
+                    const measured = declared.measured_cycles_per_minute[zone];
+                    const format = (value: number | null | undefined) =>
+                      value == null
+                        ? "—"
+                        : value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+                    return `${ZONE_LABELS[zone]} (déclaré : ${format(declared.cycles_per_minute)}/min · mesuré : ${format(measured)}/min)`;
+                  })
+                  .join(" ; ")}
+                .
+              </p>
+            ))}
             {!analysis.included && (
               <p className="mt-1 text-gray-600">
                 Non confirmée représentative : exclue de la projection, mesures brutes
