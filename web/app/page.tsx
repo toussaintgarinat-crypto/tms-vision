@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { AnalysisResult, AnalysisSummary } from "./AnalysisResult";
 import { Side } from "./PostureAvatar3D";
+import { pickVideoFile } from "./videoDrop";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const MAX_RECORDING_MS = 30_000;
@@ -33,6 +34,7 @@ export default function Home() {
   const [cameraReady, setCameraReady] = useState(false);
   const [mode, setMode] = useState<"camera" | "upload" | null>(null);
   const [recording, setRecording] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [side, setSide] = useState<Side>("right");
   const [loadKg, setLoadKg] = useState("0");
@@ -69,18 +71,34 @@ export default function Home() {
     }
   }
 
-  function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (file.size === 0) {
-      setError("Le fichier sélectionné est vide.");
+  function acceptVideo(files: ArrayLike<File> | null | undefined) {
+    const picked = pickVideoFile(files);
+    if (picked.file === null) {
+      setError(picked.error);
       return;
     }
     setError(null);
     setResult(null);
     setMode("upload");
-    setRecordedFile(file);
+    setRecordedFile(picked.file);
+  }
+
+  function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    event.target.value = "";
+    if (files.length === 0) return;
+    acceptVideo(files);
+  }
+
+  // Glisser-déposer : actif seulement quand on peut changer de vidéo (ni caméra ouverte, ni
+  // enregistrement, ni analyse en cours).
+  const canDropVideo = !cameraReady && !recording && !analyzing;
+
+  function handleDrop(event: React.DragEvent) {
+    event.preventDefault();
+    setDragging(false);
+    if (!canDropVideo) return;
+    acceptVideo(event.dataTransfer.files);
   }
 
   function startRecording() {
@@ -298,30 +316,40 @@ export default function Home() {
         onChange={handleFileSelected}
       />
 
+      {canDropVideo && (
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") fileInputRef.current?.click();
+          }}
+          className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border-2 border-dashed p-6 text-center text-sm ${
+            dragging ? "border-blue-600 bg-blue-50 text-blue-900" : "border-gray-400"
+          }`}
+        >
+          <span className="font-medium">
+            {dragging ? "Déposez la vidéo ici" : "Glissez-déposez une vidéo ici"}
+          </span>
+          <span className={dragging ? "text-blue-900" : "text-gray-600"}>
+            ou cliquez pour choisir un fichier
+          </span>
+          {mode === "upload" && recordedFile && (
+            <span className="mt-2 text-gray-600">Fichier sélectionné : {recordedFile.name}</span>
+          )}
+        </div>
+      )}
+
       {mode === null && (
         <div className="flex gap-2">
           <button onClick={startCamera} className="rounded bg-black px-4 py-2 text-white">
             Démarrer la caméra
-          </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="rounded border border-black px-4 py-2"
-          >
-            Importer une vidéo
-          </button>
-        </div>
-      )}
-
-      {mode === "upload" && !recording && (
-        <div className="flex flex-col gap-1">
-          {recordedFile && (
-            <p className="text-sm text-gray-600">Fichier sélectionné : {recordedFile.name}</p>
-          )}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="self-start text-sm text-blue-600 underline"
-          >
-            Changer de vidéo
           </button>
         </div>
       )}
