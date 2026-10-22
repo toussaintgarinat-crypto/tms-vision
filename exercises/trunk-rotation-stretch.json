@@ -15,12 +15,12 @@
     "neutral": {},
     "turn_right": {
       "spine": {
-        "twist": 30
+        "twist": 45
       }
     },
     "turn_left": {
       "spine": {
-        "twist": -30
+        "twist": -45
       }
     }
   },
