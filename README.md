@@ -695,6 +695,27 @@ réelle** : avant de s'appuyer sur ce PoC pour une évaluation ergonomique réel
 projet doit relancer la commande `--source webcam` (ou une vidéo filmant une personne) et
 vérifier visuellement le squelette superposé et la cohérence des scores RULA obtenus.
 
+### Risque connu : encodeur H.264 hors du Mac
+
+La vidéo annotée est écrite par `cv2.VideoWriter` en H.264 (`avc1`), seul format que les navigateurs
+lisent. Les paquets OpenCV Linux n'embarquent en général pas d'encodeur H.264 (licences) : sur un
+serveur Linux, le writer ne s'ouvre pas (`Could not find encoder for codec_id=27`) et l'analyse produit
+une **vidéo vide**, sans erreur visible. C'est la cause des 4 tests qui échouent dans l'environnement
+Linux de développement (`test_api.py` x2, `test_pipeline.py` x2). En local sur Mac, OpenCV utilise
+l'encodeur du système : rien à faire tant que le projet reste local.
+
+**À traiter avant tout déploiement ailleurs qu'en local.** Solution proposée (non faite) :
+
+1. Dans `pipeline.analyze_video`, tester `writer.isOpened()` ; en cas d'échec, lever une erreur claire
+   au lieu de produire une vidéo vide.
+2. Écrire alors la vidéo annotée en `mp4v` dans le fichier temporaire, puis la transcoder en H.264 avec
+   le binaire `ffmpeg` (`libx264`, `-pix_fmt yuv420p`, `-movflags +faststart`). `ffmpeg` est déjà requis
+   pour les vidéos d'étirement, donc aucune dépendance nouvelle.
+3. Installer `ffmpeg` avec `libx264` sur le serveur (paquet système) et vérifier la lecture dans un vrai
+   navigateur, ce qui n'a jamais été fait.
+
+Les tests passeront alors aussi sous Linux.
+
 ## 10. Lancer la capture web (Phase 2)
 
 Deux serveurs à démarrer en parallèle, dans deux terminaux séparés.
