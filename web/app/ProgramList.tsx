@@ -1,11 +1,8 @@
 import Link from "next/link";
+import { useState } from "react";
 
-import {
-  DRAFT_BADGE_TEXT,
-  NO_PROGRAM_TEXT,
-  VIDEO_MISSING_TEXT,
-  capsuleVideoSrc,
-} from "./programFormat";
+import { LiveExercise } from "./LiveExercise";
+import { DRAFT_BADGE_TEXT, NO_PROGRAM_TEXT, capsuleVideoSrc } from "./programFormat";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -40,6 +37,9 @@ export function ProgramList({
   program: ProgramItem[];
   gestureCorrections?: GestureCorrection[];
 }) {
+  // Un seul mannequin 3D ouvert à la fois : les navigateurs limitent les contextes WebGL.
+  const [openId, setOpenId] = useState<string | null>(null);
+
   if (program.length === 0 && gestureCorrections.length === 0) {
     return (
       <p className="rounded border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900">
@@ -73,9 +73,14 @@ export function ProgramList({
                     )}
                     <p className="text-sm text-gray-700">{item.capsule.description}</p>
                     <p className="text-xs text-gray-600">{item.reason}</p>
-                    {!videoSrc && (
-                      <p className="mt-2 text-xs text-amber-800">{VIDEO_MISSING_TEXT}</p>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setOpenId(openId === item.capsule.id ? null : item.capsule.id)}
+                      className="mt-2 rounded border border-blue-600 px-2 py-1 text-xs text-blue-800"
+                    >
+                      {openId === item.capsule.id ? "Masquer l'exercice" : "▶ Voir l'exercice"}
+                    </button>
+                    {openId === item.capsule.id && <LiveExercise exerciseId={item.capsule.id} />}
                     {videoSrc && (
                       <video
                         controls

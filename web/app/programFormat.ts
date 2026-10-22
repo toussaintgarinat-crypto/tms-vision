@@ -15,6 +15,3 @@ export const NO_PROGRAM_TEXT =
   "Aucun étirement proposé : sur cet échantillon, aucune zone n'atteint un niveau de posture à " +
   "risque (investigation et changement bientôt, ou plus). Les exercices restent consultables " +
   "dans la bibliothèque.";
-
-export const VIDEO_MISSING_TEXT =
-  "Vidéo pas encore générée sur cet ordinateur (commande : python -m tms_vision.capsule_build --all).";
