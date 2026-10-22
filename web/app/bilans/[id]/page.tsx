@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { GestureCorrection, ProgramItem, ProgramList } from "../../ProgramList";
 import { RecurrenceReport } from "../RecurrenceReport";
 import { formatHours } from "../recurrenceFormat";
+import { TaskSection } from "../TaskSection";
 import { BilanReport, StoredBilan } from "../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -245,6 +246,14 @@ export default function BilanDetailPage() {
               {submitError && <p className="mt-2 text-red-600">{submitError}</p>}
             </div>
           </form>
+
+          <TaskSection
+            bilanId={id}
+            workdayHours={loaded.bilan.workday_hours}
+            items={loaded.bilan.items ?? []}
+            tasks={loaded.bilan.tasks ?? []}
+            onChanged={() => setReloadToken((token) => token + 1)}
+          />
 
           <RecurrenceReport report={loaded.report} />
 

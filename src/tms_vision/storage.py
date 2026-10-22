@@ -90,6 +90,26 @@ CREATE TABLE IF NOT EXISTS bilan_analyses (
 )
 """
 
+CREATE_BILAN_TASKS_TABLE = """
+CREATE TABLE IF NOT EXISTS bilan_tasks (
+    id VARCHAR PRIMARY KEY,
+    bilan_id VARCHAR NOT NULL REFERENCES bilans(id),
+    created_at TIMESTAMP NOT NULL,
+    name VARCHAR NOT NULL,
+    zones_json VARCHAR NOT NULL,
+    activity_hours DOUBLE NOT NULL,
+    time_slots_json VARCHAR,
+    days_per_week DOUBLE,
+    cycles_per_minute DOUBLE,
+    cycle_seconds DOUBLE,
+    static_seconds DOUBLE,
+    load_kg DOUBLE,
+    analysis_id VARCHAR,
+    source VARCHAR NOT NULL,
+    notes VARCHAR
+)
+"""
+
 CREATE_ANALYSIS_LOADS_TABLE = """
 CREATE TABLE IF NOT EXISTS analysis_loads (
     analysis_id VARCHAR PRIMARY KEY REFERENCES analyses(id),
@@ -154,6 +174,7 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_ANALYSIS_FRAMES_TABLE)
     conn.execute(CREATE_BILANS_TABLE)
     conn.execute(CREATE_BILAN_ANALYSES_TABLE)
+    conn.execute(CREATE_BILAN_TASKS_TABLE)
     conn.execute(CREATE_ANALYSIS_LOADS_TABLE)
     conn.execute(CREATE_LIBRARY_SHARES_TABLE)
     # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
@@ -490,7 +511,125 @@ def get_bilan(bilan_id: str) -> dict | None:
     record["items"] = [
         {"analysis_id": a, "activity_hours": h, "representative": r} for a, h, r in item_rows
     ]
+    record["tasks"] = list_bilan_tasks(bilan_id)
     return record
+
+
+_TASK_FIELDS = [
+    "name", "zones", "activity_hours", "time_slots", "days_per_week", "cycles_per_minute",
+    "cycle_seconds", "static_seconds", "load_kg", "analysis_id", "source", "notes",
+]
+_TASK_SELECT = (
+    "id, bilan_id, created_at, name, zones_json, activity_hours, time_slots_json, "
+    "days_per_week, cycles_per_minute, cycle_seconds, static_seconds, load_kg, "
+    "analysis_id, source, notes"
+)
+
+
+def _task_record(row) -> dict:
+    (task_id, bilan_id, created_at, name, zones_json, activity_hours, time_slots_json,
+     days_per_week, cycles_per_minute, cycle_seconds, static_seconds, load_kg,
+     analysis_id, source, notes) = row
+    return {
+        "id": task_id, "bilan_id": bilan_id,
+        "created_at": _attach_utc(created_at).isoformat(),
+        "name": name, "zones": json.loads(zones_json),
+        "activity_hours": activity_hours,
+        "time_slots": json.loads(time_slots_json) if time_slots_json is not None else None,
+        "days_per_week": days_per_week, "cycles_per_minute": cycles_per_minute,
+        "cycle_seconds": cycle_seconds, "static_seconds": static_seconds,
+        "load_kg": load_kg, "analysis_id": analysis_id, "source": source, "notes": notes,
+    }
+
+
+def _check_task_analysis(conn, bilan_id: str, analysis_id: str | None) -> None:
+    """ValueError si la fiche prétend compléter une analyse absente de ce bilan."""
+    if analysis_id is None:
+        return
+    attached = conn.execute(
+        "SELECT 1 FROM bilan_analyses WHERE bilan_id = ? AND analysis_id = ?",
+        [bilan_id, analysis_id],
+    ).fetchone()
+    if attached is None:
+        raise ValueError(f"analysis {analysis_id} is not attached to bilan {bilan_id}")
+
+
+def _task_values(task: dict) -> list:
+    slots = task.get("time_slots")
+    return [
+        task["name"], json.dumps(task["zones"]), task["activity_hours"],
+        json.dumps(slots) if slots is not None else None,
+        task.get("days_per_week"), task.get("cycles_per_minute"), task.get("cycle_seconds"),
+        task.get("static_seconds"), task.get("load_kg"), task.get("analysis_id"),
+        task["source"], task.get("notes"),
+    ]
+
+
+def list_bilan_tasks(bilan_id: str) -> list[dict]:
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            f"SELECT {_TASK_SELECT} FROM bilan_tasks WHERE bilan_id = ? ORDER BY created_at, id",
+            [bilan_id],
+        ).fetchall()
+    finally:
+        conn.close()
+    return [_task_record(row) for row in rows]
+
+
+def create_bilan_task(*, task_id: str, bilan_id: str, created_at: datetime, task: dict) -> None:
+    """Ajoute une fiche d'activité. KeyError si le bilan est inconnu, ValueError si
+    `analysis_id` n'est pas rattachée à ce bilan. `task` : champs de _TASK_FIELDS."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilans WHERE id = ?", [bilan_id]).fetchone() is None:
+            raise KeyError(f"bilan {bilan_id}")
+        _check_task_analysis(conn, bilan_id, task.get("analysis_id"))
+        conn.execute(
+            "INSERT INTO bilan_tasks (id, bilan_id, created_at, name, zones_json, "
+            "activity_hours, time_slots_json, days_per_week, cycles_per_minute, "
+            "cycle_seconds, static_seconds, load_kg, analysis_id, source, notes) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [task_id, bilan_id, _to_naive_utc(created_at), *_task_values(task)],
+        )
+    finally:
+        conn.close()
+
+
+def update_bilan_task(*, task_id: str, bilan_id: str, task: dict) -> None:
+    """Remplace les champs d'une fiche. KeyError si la fiche n'existe pas dans ce
+    bilan, ValueError si `analysis_id` n'est pas rattachée à ce bilan."""
+    conn = _connect()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM bilan_tasks WHERE id = ? AND bilan_id = ?", [task_id, bilan_id]
+        ).fetchone()
+        if exists is None:
+            raise KeyError(f"task {task_id}")
+        _check_task_analysis(conn, bilan_id, task.get("analysis_id"))
+        conn.execute(
+            "UPDATE bilan_tasks SET name = ?, zones_json = ?, activity_hours = ?, "
+            "time_slots_json = ?, days_per_week = ?, cycles_per_minute = ?, "
+            "cycle_seconds = ?, static_seconds = ?, load_kg = ?, analysis_id = ?, "
+            "source = ?, notes = ? WHERE id = ? AND bilan_id = ?",
+            [*_task_values(task), task_id, bilan_id],
+        )
+    finally:
+        conn.close()
+
+
+def delete_bilan_task(*, task_id: str, bilan_id: str) -> None:
+    """KeyError si la fiche n'existe pas dans ce bilan."""
+    conn = _connect()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM bilan_tasks WHERE id = ? AND bilan_id = ?", [task_id, bilan_id]
+        ).fetchone()
+        if exists is None:
+            raise KeyError(f"task {task_id}")
+        conn.execute("DELETE FROM bilan_tasks WHERE id = ? AND bilan_id = ?", [task_id, bilan_id])
+    finally:
+        conn.close()
 
 
 def list_bilans() -> list[dict]:

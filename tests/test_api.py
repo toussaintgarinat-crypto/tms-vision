@@ -1305,3 +1305,110 @@ def test_bilan_program_reports_whether_each_capsule_video_exists(tmp_path, monke
     assert without_video[0]["zone"] == "neck"
     assert without_video[0]["capsule"]["video_available"] is False
     assert with_video[0]["capsule"]["video_available"] is True
+
+
+def _task_payload(**overrides):
+    return {"name": "Peindre un plafond", "zones": ["upper_arm"], "activity_hours": 2.0,
+            "cycles_per_minute": 10.0, **overrides}
+
+
+def test_task_routes_create_update_delete_and_report(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 8.0}).json()["id"]
+
+    created = client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload())
+
+    assert created.status_code == 200
+    [task] = created.json()["tasks"]
+    assert task["name"] == "Peindre un plafond"
+    assert task["source"] == "practitioner"
+    report = client.get(f"/bilans/{bilan_id}/recurrence").json()
+    assert report["zones"]["upper_arm"]["projected_cycles"] == 10 * 60 * 2
+    assert report["documented_hours"] == 2.0
+    assert report["tasks"][0]["name"] == "Peindre un plafond"
+
+    updated = client.put(f"/bilans/{bilan_id}/tasks/{task['id']}",
+                         json=_task_payload(cycles_per_minute=5.0))
+    assert updated.status_code == 200
+    assert client.get(f"/bilans/{bilan_id}/recurrence").json()[
+        "zones"]["upper_arm"]["projected_cycles"] == 5 * 60 * 2
+
+    deleted = client.delete(f"/bilans/{bilan_id}/tasks/{task['id']}")
+    assert deleted.status_code == 200
+    assert deleted.json()["tasks"] == []
+
+
+def test_task_hours_are_derived_from_time_slots(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+    payload = _task_payload(activity_hours=None, time_slots=[
+        {"start": "08:00", "end": "12:00"}, {"start": "13:00", "end": "14:30"}])
+
+    task = client.post(f"/bilans/{bilan_id}/tasks", json=payload).json()["tasks"][0]
+
+    assert task["activity_hours"] == 5.5
+
+
+def test_task_validation_errors(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 8.0}).json()["id"]
+    url = f"/bilans/{bilan_id}/tasks"
+
+    assert client.post("/bilans/nope/tasks", json=_task_payload()).status_code == 404
+    assert client.put(f"{url}/nope", json=_task_payload()).status_code == 404
+    assert client.delete(f"{url}/nope").status_code == 404
+
+    invalid = [
+        _task_payload(name="   "),
+        _task_payload(zones=[]),
+        _task_payload(zones=["genou"]),
+        _task_payload(activity_hours=0),
+        _task_payload(activity_hours=25),
+        _task_payload(cycles_per_minute=-1),
+        _task_payload(activity_hours=None),
+        _task_payload(activity_hours=None, time_slots=[{"start": "10:00", "end": "09:00"}]),
+        _task_payload(activity_hours=None, time_slots=[{"start": "8h", "end": "9h"}]),
+        _task_payload(analysis_id="inconnue"),
+        _task_payload(activity_hours=9.0),
+    ]
+    for payload in invalid:
+        assert client.post(url, json=payload).status_code == 422, payload
+
+    french = client.post(url, json=_task_payload(name=" ")).json()["detail"]
+    assert french == "Le nom de la tâche est obligatoire."
+
+
+def test_task_completing_a_video_overrides_its_measure(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 9.0}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 5.0, "representative": True})
+
+    response = client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload(
+        zones=["trunk"], activity_hours=None, cycles_per_minute=8.0, analysis_id="a-1"))
+
+    assert response.status_code == 200
+    report = client.get(f"/bilans/{bilan_id}/recurrence").json()
+    assert report["zones"]["trunk"]["projected_cycles"] == 8 * 60 * 5
+    assert report["documented_hours"] == 5.0
+    [entry] = report["analyses"]
+    assert entry["declared"][0]["measured_cycles_per_minute"]["trunk"] == 2.5
+
+
+def test_attaching_a_video_counts_standalone_tasks_in_the_workday(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 8.0}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload(activity_hours=4.0))
+
+    too_long = client.post(f"/bilans/{bilan_id}/analyses",
+                           json={"analysis_id": "a-1", "activity_hours": 5.0,
+                                 "representative": True})
+
+    assert too_long.status_code == 422
