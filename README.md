@@ -892,6 +892,25 @@ reconstruit par `tools/blender/export_muscle_rig.py`).
   main et le pied de la Tranche 5, voir ci-dessous) ; les autres régions restent grises. L'avatar piloté
   par la vidéo oriente la main, le pouce, la jambe et le pied avec les points de MediaPipe Pose.
 
+### Bibliothèque d'exercices pour le praticien
+
+Page `/bibliotheque` : le praticien clique sur la zone douloureuse du schéma du corps (face ou dos),
+choisit la pathologie, parcourt dans un carrousel les exercices joués par le mannequin 3D, coche ceux
+à envoyer, ajoute une note par exercice, puis envoie au patient. Le patient reçoit un lien vers une
+page `/bibliotheque/envoi/<jeton>` qui rejoue les exercices et affiche les notes.
+
+- Le rattachement zone → pathologie → exercices est dans `library/body_map.json` (validé au
+  chargement par `src/tms_vision/library.py` : un exercice inconnu fait échouer le chargement). C'est
+  un **brouillon à relire par un professionnel de santé** ; les exercices eux-mêmes restent au statut
+  `draft` tant que personne ne les a validés.
+- L'envoi d'email est un point d'extension (`src/tms_vision/mailer.py`) : sans configuration,
+  l'envoi est enregistré et le praticien copie le lien à transmettre. Pour brancher un service,
+  écrire une classe qui hérite de `Mailer` et lancer l'API avec `TMS_MAILER=module.chemin:Classe`
+  (et `TMS_PUBLIC_WEB_URL=https://…` pour le lien contenu dans l'email).
+- Routes : `GET /library`, `POST /library/shares`, `GET /library/shares/{jeton}`. Il n'y a pas
+  encore d'authentification : la page patient n'est protégée que par son jeton aléatoire, et les routes
+  du praticien sont ouvertes comme le reste de l'API.
+
 ### Mains et pieds mesurés (Tranche 5)
 
 Spec : `docs/superpowers/specs/2026-10-22-mains-pieds-design.md`.
