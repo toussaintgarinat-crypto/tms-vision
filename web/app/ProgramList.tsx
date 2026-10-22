@@ -1,4 +1,11 @@
-import { DRAFT_BADGE_TEXT, capsuleVideoSrc } from "./programFormat";
+import Link from "next/link";
+
+import {
+  DRAFT_BADGE_TEXT,
+  NO_PROGRAM_TEXT,
+  VIDEO_MISSING_TEXT,
+  capsuleVideoSrc,
+} from "./programFormat";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -33,7 +40,16 @@ export function ProgramList({
   program: ProgramItem[];
   gestureCorrections?: GestureCorrection[];
 }) {
-  if (program.length === 0 && gestureCorrections.length === 0) return null;
+  if (program.length === 0 && gestureCorrections.length === 0) {
+    return (
+      <p className="rounded border border-gray-300 bg-gray-50 p-3 text-sm text-gray-700">
+        {NO_PROGRAM_TEXT}{" "}
+        <Link href="/bibliotheque" className="text-blue-600 underline">
+          Ouvrir la bibliothèque
+        </Link>
+      </p>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -57,6 +73,9 @@ export function ProgramList({
                     )}
                     <p className="text-sm text-gray-700">{item.capsule.description}</p>
                     <p className="text-xs text-gray-600">{item.reason}</p>
+                    {!videoSrc && (
+                      <p className="mt-2 text-xs text-amber-800">{VIDEO_MISSING_TEXT}</p>
+                    )}
                     {videoSrc && (
                       <video
                         controls
