@@ -5,8 +5,8 @@ describe("framingFor", () => {
   it("cadre le corps entier par défaut et pour les grandes régions", () => {
     for (const regions of [["trunk"], ["upper_arm"], ["thigh", "hip"], ["lower_leg"], ["shoulder"]]) {
       const framing = framingFor({ target_segments: regions as never });
-      expect(framing.distance, regions.join()).toBeGreaterThan(3.5);
-      expect(framing.target.y).toBeCloseTo(1.0, 6);
+      expect(framing.distance, regions.join()).toBeGreaterThan(3.2);
+      expect(framing.target.y).toBeCloseTo(0.8, 6);
     }
   });
 
@@ -22,7 +22,7 @@ describe("framingFor", () => {
   });
 
   it("revient au corps entier dès qu'une grande région est ciblée avec une petite", () => {
-    expect(framingFor({ target_segments: ["hand", "trunk"] }).distance).toBeGreaterThan(3.5);
+    expect(framingFor({ target_segments: ["hand", "trunk"] }).distance).toBeGreaterThan(3.2);
     expect(framingFor({ target_segments: ["hand", "lower_arm"] }).distance).toBeLessThan(3);
   });
 });

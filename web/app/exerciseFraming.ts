@@ -3,11 +3,11 @@ import type { Exercise } from "./exercisePose";
 
 // Cadrage de la caméra d'une vidéo d'exercice. Mesuré sur le vrai muscle-rig.glb (corps complet) :
 // le corps s'étend de y = 0 (pieds) à y = 1,70 (sommet du crâne), x de -0,36 à 0,36 (mains).
-// Le titre occupe le haut de l'image et la consigne le bas : le corps entier doit tenir entre les
-// deux, avec un peu de place au-dessus pour un bras levé.
+// Le titre occupe le haut de l'image (jusqu'à ~85 px sur 640) et la consigne le bas (à partir de
+// ~535 px) : le corps entier, des pieds (~520 px) au crâne (~95 px), tient entre les deux.
 export type Framing = { target: THREE.Vector3; distance: number };
 
-const FULL_BODY: Framing = { target: new THREE.Vector3(0, 1.0, 0), distance: 3.9 };
+const FULL_BODY: Framing = { target: new THREE.Vector3(0, 0.8, 0), distance: 3.5 };
 // Zooms pour les exercices dont la cible est petite : sans eux, une main ne ferait que 40 pixels.
 const HEAD: Framing = { target: new THREE.Vector3(0, 1.5, 0), distance: 1.7 };
 const HANDS: Framing = { target: new THREE.Vector3(0, 1.2, 0.1), distance: 2.6 };

@@ -132,11 +132,11 @@ export default function RenderPage() {
                 position: "absolute",
                 left: 20,
                 right: 20,
-                bottom: 40,
-                padding: "10px 14px",
+                bottom: 30,
+                padding: "8px 14px",
                 borderRadius: 8,
                 background: "rgba(255, 255, 255, 0.88)",
-                fontSize: 21,
+                fontSize: 20,
                 lineHeight: 1.3,
               }}
             >
@@ -149,7 +149,7 @@ export default function RenderPage() {
               position: "absolute",
               left: 20,
               right: 20,
-              bottom: 12,
+              bottom: 8,
               fontSize: 11,
               color: "#4B5563",
             }}
