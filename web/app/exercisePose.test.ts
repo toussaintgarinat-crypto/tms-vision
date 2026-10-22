@@ -15,6 +15,7 @@ import {
   neutralDirection,
   rotationFor,
   samplePose,
+  withBasePose,
 } from "./exercisePose";
 import { MuscleModel, prepareMuscleModel } from "./muscleModel";
 import { resolveMeshRouting } from "./muscleSegments";
@@ -535,5 +536,29 @@ describe("applyPoseToSkeleton sur le vrai squelette (web/public/muscle-rig.glb)"
       expect(rotationAngle(worldQuaternion(model.bones[key]), rest[key]), key).toBeLessThan(1e-5);
       expect(worldPosition(model.bones[key]).distanceTo(restPositions[key]), key).toBeLessThan(1e-5);
     }
+  });
+});
+
+describe("withBasePose", () => {
+  it("leaves a standing pose unchanged", () => {
+    const pose = { neck: { lateral: 30 } };
+    expect(withBasePose(undefined, pose)).toEqual(pose);
+    expect(withBasePose("standing", pose)).toEqual(pose);
+    expect(withBasePose("lying", pose)).toEqual(pose);
+  });
+
+  it("starts a seated pose from the sitting position and adds the exercise angles", () => {
+    const seated = withBasePose("seated", { neck: { lateral: 30 }, R_shin: { flexion: 90 } });
+    expect(seated.neck).toEqual({ lateral: 30 });
+    expect(seated.R_thigh).toEqual({ flexion: 90, lateral: 0, twist: 0 });
+    expect(seated.L_shin).toEqual({ flexion: -90, lateral: 0, twist: 0 });
+    // Genou tendu : -90 (assis) + 90 (exercice) = 0, jambe dans le prolongement de la cuisse.
+    expect(seated.R_shin?.flexion).toBe(0);
+  });
+
+  it("puts the thighs horizontal and the shins vertical when seated", () => {
+    const directions = boneDirections(withBasePose("seated", {}));
+    expect(directions.R_thigh.z).toBeCloseTo(1, 5);
+    expect(directions.R_shin.y).toBeCloseTo(-1, 5);
   });
 });

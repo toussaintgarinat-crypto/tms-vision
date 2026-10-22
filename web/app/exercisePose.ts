@@ -32,8 +32,20 @@ export type Region = (typeof REGIONS)[number];
 // Ancien nom, conservé pour les modules qui parlent de « zone ».
 export type Zone = Region;
 
+// Position du corps : debout (par défaut), assis (cuisses à l'horizontale, jambes pendantes) ou
+// allongé sur le dos. Les angles d'un exercice assis ou allongé s'ajoutent à la pose de base de
+// sa position (voir basePoseFor) ; l'allongé couche en plus tout le mannequin (ExerciseAvatar).
+export const POSITIONS = ["standing", "seated", "lying"] as const;
+export type Position = (typeof POSITIONS)[number];
+export const POSITION_LABELS: Record<Position, string> = {
+  standing: "Debout",
+  seated: "Assis",
+  lying: "Allongé",
+};
+
 export type Exercise = {
   id: string;
+  position?: Position;
   zone: Zone;
   title: string;
   description: string;
@@ -151,6 +163,37 @@ export function boneDirections(angles: PoseAngles): Record<AngleBoneKey, THREE.V
     directions[bone] = neutralDirection(bone).applyQuaternion(delta[bone]);
   }
   return directions;
+}
+
+// Pose de base d'une position, en angles relatifs (comme une pose d'exercice). Assis : cuisses
+// à l'horizontale devant soi, jambes à la verticale (genoux à 90°). Debout et allongé : aucune.
+const SEATED_BASE: PoseAngles = {
+  L_thigh: { flexion: 90 },
+  R_thigh: { flexion: 90 },
+  L_shin: { flexion: -90 },
+  R_shin: { flexion: -90 },
+};
+
+export function basePoseFor(position: Position | undefined): PoseAngles {
+  return position === "seated" ? SEATED_BASE : {};
+}
+
+// Ajoute, os par os et angle par angle, les angles de la pose à ceux de la pose de base de la
+// position : un exercice assis décrit son mouvement à partir de la position assise.
+export function withBasePose(position: Position | undefined, pose: PoseAngles): PoseAngles {
+  const base = basePoseFor(position);
+  const result: PoseAngles = { ...pose };
+  for (const bone of ANGLE_BONES) {
+    const b = base[bone];
+    if (!b) continue;
+    const a = pose[bone] ?? {};
+    result[bone] = {
+      flexion: (a.flexion ?? 0) + (b.flexion ?? 0),
+      lateral: (a.lateral ?? 0) + (b.lateral ?? 0),
+      twist: (a.twist ?? 0) + (b.twist ?? 0),
+    };
+  }
+  return result;
 }
 
 function smoothstep(u: number): number {

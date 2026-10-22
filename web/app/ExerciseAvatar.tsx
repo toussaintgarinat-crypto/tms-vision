@@ -2,9 +2,17 @@
 
 import { useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { Exercise, applyPoseToSkeleton, captureRestPose, samplePose } from "./exercisePose";
+import {
+  Exercise,
+  Position,
+  applyPoseToSkeleton,
+  captureRestPose,
+  samplePose,
+  withBasePose,
+} from "./exercisePose";
+import { BoneKey } from "./pose3dSkeleton";
 import { cameraPosition, framingFor } from "./exerciseFraming";
 import { MUSCLE_RIG_URL, prepareMuscleModel } from "./muscleModel";
 
@@ -57,16 +65,77 @@ function Floor() {
   );
 }
 
+// Os dont la hauteur donne le contact avec le sol (assis) ou avec le tapis (allongé).
+const FEET: BoneKey[] = ["L_foot", "R_foot", "L_toes", "R_toes"];
+
+function lowestY(bones: Record<BoneKey, THREE.Bone>, keys: BoneKey[]): number {
+  const point = new THREE.Vector3();
+  return Math.min(...keys.map((key) => bones[key].getWorldPosition(point).y));
+}
+
+// Demi-épaisseur du corps : les os sont au milieu du corps, le dos repose sur le tapis.
+const LYING_HALF_THICKNESS = 0.1;
+const MAT_THICKNESS = 0.03;
+const SEAT_HEIGHT_BELOW_PELVIS = 0.1;
+// Décalage qui centre le corps couché (pieds en z = 0 avant décalage, tête à -1,7) sur l origine.
+const LYING_CENTER_Z = 0.85;
+
+// Place le mannequin selon la position, une fois la pose appliquée ; renvoie de combien il est
+// descendu (assis), pour le cadrage. Debout : aucune transformation, rendu identique à celui d'avant
+// l'ajout des positions. Assis : les pieds restent au sol, le mannequin descend d'autant que les
+// cuisses horizontales ont baissé le bassin. Allongé : couché sur le dos (l'avant +z devient le haut,
+// la tête part vers -z), posé sur le tapis puis centré sur l'origine.
+function placeBody(
+  scene: THREE.Object3D,
+  bones: Record<BoneKey, THREE.Bone>,
+  position: Position,
+  restFeetY: number,
+): number {
+  scene.rotation.set(0, 0, 0);
+  scene.position.set(0, 0, 0);
+  let drop = 0;
+  if (position === "seated") {
+    scene.updateMatrixWorld(true);
+    drop = restFeetY - lowestY(bones, FEET);
+    scene.position.set(0, -drop, 0);
+  } else if (position === "lying") {
+    scene.rotation.set(-Math.PI / 2, 0, 0);
+    scene.updateMatrixWorld(true);
+    const lift = LYING_HALF_THICKNESS + MAT_THICKNESS - lowestY(bones, Object.keys(bones) as BoneKey[]);
+    scene.position.set(0, lift, LYING_CENTER_Z);
+  }
+  scene.updateMatrixWorld(true);
+  return drop;
+}
+
 export function ExerciseAvatar({ onReady }: { onReady: (api: ExerciseAvatarApi) => void }) {
   const gltf = useGLTF(MUSCLE_RIG_URL);
   const model = useMemo(() => prepareMuscleModel(gltf.scene), [gltf]);
   // Orientations de repos, capturées une fois sur le squelette intact (avant toute pose).
   const rest = useMemo(() => captureRestPose(model.bones), [model]);
   const { gl, scene: rootScene, camera, size } = useThree();
+  const seatRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.Mesh>(null);
+  // Hauteur des pieds au repos (debout, mannequin intact) : référence du contact avec le sol.
+  const restFeetY = useMemo(() => {
+    model.scene.updateMatrixWorld(true);
+    return lowestY(model.bones, FEET);
+  }, [model]);
 
   const renderAt = useCallback(
     (exercise: Exercise, t: number) => {
-      applyPoseToSkeleton(model.bones, rest, samplePose(exercise, t));
+      const position = exercise.position ?? "standing";
+      applyPoseToSkeleton(model.bones, rest, withBasePose(position, samplePose(exercise, t)));
+      const drop = placeBody(model.scene, model.bones, position, restFeetY);
+
+      if (seatRef.current) {
+        seatRef.current.visible = position === "seated";
+        if (position === "seated") {
+          const pelvis = model.bones.root.getWorldPosition(new THREE.Vector3());
+          seatRef.current.position.set(pelvis.x, pelvis.y - SEAT_HEIGHT_BELOW_PELVIS - 0.02, pelvis.z);
+        }
+      }
+      if (matRef.current) matRef.current.visible = position === "lying";
 
       const targets = new Set<string>(exercise.target_segments);
       model.routing.forEach((routing, index) => {
@@ -74,14 +143,14 @@ export function ExerciseAvatar({ onReady }: { onReady: (api: ExerciseAvatarApi) 
         model.materials[index].color.set(highlighted ? TARGET_COLOR : NEUTRAL_COLOR);
       });
 
-      const framing = framingFor(exercise);
+      const framing = framingFor(exercise, drop);
       camera.position.copy(cameraPosition(exercise.view, framing));
       camera.lookAt(framing.target);
       (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
 
       gl.render(rootScene, camera);
     },
-    [model, rest, camera, gl, rootScene],
+    [model, rest, restFeetY, camera, gl, rootScene],
   );
 
   // Annonce l'API une fois le modèle chargé ET le canvas mesuré (sinon le premier
@@ -99,6 +168,15 @@ export function ExerciseAvatar({ onReady }: { onReady: (api: ExerciseAvatarApi) 
       <directionalLight position={[-3, 1, 3]} intensity={0.6} />
       <hemisphereLight args={["#ffffff", "#aab4c0", 0.5]} />
       <Floor />
+      {/* Tabouret pour l'assis, tapis pour l'allongé : visibles selon la position (renderAt). */}
+      <mesh ref={seatRef} visible={false}>
+        <boxGeometry args={[0.5, 0.04, 0.42]} />
+        <meshStandardMaterial color="#B8C2CE" />
+      </mesh>
+      <mesh ref={matRef} visible={false} position={[0, MAT_THICKNESS / 2, 0]}>
+        <boxGeometry args={[0.75, MAT_THICKNESS, 2.1]} />
+        <meshStandardMaterial color="#B8C2CE" />
+      </mesh>
       <primitive object={model.scene} />
     </>
   );

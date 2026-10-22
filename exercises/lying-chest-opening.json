@@ -1,0 +1,75 @@
+{
+  "id": "lying-chest-opening",
+  "zone": "shoulder",
+  "title": "Ouverture de la poitrine, allongé",
+  "description": "Bras écartés en croix sur le sol, pour ouvrir la poitrine et détendre les épaules.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "front",
+  "target_segments": [
+    "shoulder"
+  ],
+  "poses": {
+    "neutral": {},
+    "cross": {
+      "R_upper_arm": {
+        "lateral": 90
+      },
+      "L_upper_arm": {
+        "lateral": 90
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 9,
+      "pose": "cross"
+    },
+    {
+      "t": 24,
+      "pose": "cross"
+    },
+    {
+      "t": 30,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les bras le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Écartez les bras en croix, paumes vers le plafond."
+    },
+    {
+      "t": 9,
+      "text": "Laissez la poitrine s'ouvrir en respirant calmement."
+    },
+    {
+      "t": 24,
+      "text": "Ramenez les bras le long du corps."
+    },
+    {
+      "t": 30,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 33
+}

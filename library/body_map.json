@@ -11,9 +11,12 @@
           "label": "Cervicalgie posturale (tête baissée prolongée)",
           "exercises": [
             "neck-lateral-stretch",
+            "seated-neck-lateral-stretch",
             "neck-rotation-stretch",
+            "seated-neck-rotation-stretch",
             "head-chin-tuck",
-            "neck-flexion-stretch"
+            "neck-flexion-stretch",
+            "seated-neck-flexion-stretch"
           ]
         },
         {
@@ -21,9 +24,11 @@
           "label": "Raideur cervicale (rotation, extension)",
           "exercises": [
             "neck-rotation-stretch",
+            "seated-neck-rotation-stretch",
             "neck-extension-gentle",
             "head-chin-tuck",
-            "neck-flexion-stretch"
+            "neck-flexion-stretch",
+            "seated-neck-flexion-stretch"
           ]
         },
         {
@@ -31,6 +36,7 @@
           "label": "Céphalée de tension d'origine cervicale",
           "exercises": [
             "neck-lateral-stretch",
+            "seated-neck-lateral-stretch",
             "head-chin-tuck",
             "shoulder-shrug-release",
             "levator-scapulae-stretch",
@@ -44,7 +50,9 @@
             "neck-scalene-stretch",
             "levator-scapulae-stretch",
             "neck-lateral-stretch",
-            "neck-rotation-stretch"
+            "seated-neck-lateral-stretch",
+            "neck-rotation-stretch",
+            "seated-neck-rotation-stretch"
           ]
         }
       ]
@@ -61,7 +69,8 @@
             "shoulder-blade-squeeze",
             "shoulder-rolls",
             "levator-scapulae-stretch",
-            "neck-lateral-stretch"
+            "neck-lateral-stretch",
+            "seated-neck-lateral-stretch"
           ]
         },
         {
@@ -69,9 +78,11 @@
           "label": "Épaules enroulées, gêne sous-acromiale",
           "exercises": [
             "chest-opening-stretch",
+            "lying-chest-opening",
             "chest-hands-behind-stretch",
             "shoulder-blade-squeeze",
             "shoulder-cross-body-stretch",
+            "seated-shoulder-cross-body-stretch",
             "shoulder-rolls"
           ]
         },
@@ -80,6 +91,7 @@
           "label": "Raideur postérieure de l'épaule",
           "exercises": [
             "shoulder-cross-body-stretch",
+            "seated-shoulder-cross-body-stretch",
             "shoulder-pendulum"
           ]
         },
@@ -89,8 +101,11 @@
           "exercises": [
             "shoulder-pendulum",
             "shoulder-arm-elevation",
+            "seated-shoulder-arm-elevation",
+            "lying-arms-overhead-stretch",
             "shoulder-external-rotation",
-            "shoulder-cross-body-stretch"
+            "shoulder-cross-body-stretch",
+            "seated-shoulder-cross-body-stretch"
           ]
         },
         {
@@ -99,7 +114,9 @@
           "exercises": [
             "shoulder-pendulum",
             "shoulder-external-rotation",
-            "shoulder-arm-elevation"
+            "shoulder-arm-elevation",
+            "seated-shoulder-arm-elevation",
+            "lying-arms-overhead-stretch"
           ]
         }
       ]
@@ -113,6 +130,7 @@
           "label": "Épicondylite (tennis elbow)",
           "exercises": [
             "forearm-extension-stretch",
+            "seated-forearm-extension-stretch",
             "forearm-rotation",
             "elbow-flexion-extension"
           ]
@@ -122,6 +140,7 @@
           "label": "Épitrochléite (coude du golfeur)",
           "exercises": [
             "wrist-flexor-stretch",
+            "seated-wrist-flexor-stretch",
             "forearm-rotation",
             "elbow-flexion-extension"
           ]
@@ -131,7 +150,9 @@
           "label": "Tension de l'avant-bras (travail répétitif)",
           "exercises": [
             "forearm-extension-stretch",
+            "seated-forearm-extension-stretch",
             "wrist-flexor-stretch",
+            "seated-wrist-flexor-stretch",
             "forearm-rotation"
           ]
         },
@@ -163,6 +184,7 @@
           "label": "Tensions évoquant un canal carpien",
           "exercises": [
             "wrist-flexor-stretch",
+            "seated-wrist-flexor-stretch",
             "finger-extension-stretch",
             "wrist-circles",
             "thumb-mobility"
@@ -173,6 +195,7 @@
           "label": "Tendinite des extenseurs du poignet",
           "exercises": [
             "forearm-extension-stretch",
+            "seated-forearm-extension-stretch",
             "finger-extension-stretch",
             "wrist-circles"
           ]
@@ -183,7 +206,9 @@
           "exercises": [
             "wrist-circles",
             "wrist-flexor-stretch",
-            "forearm-extension-stretch"
+            "seated-wrist-flexor-stretch",
+            "forearm-extension-stretch",
+            "seated-forearm-extension-stretch"
           ]
         },
         {
@@ -213,10 +238,14 @@
           "label": "Dorsalgie posturale",
           "exercises": [
             "chest-opening-stretch",
+            "lying-chest-opening",
             "shoulder-blade-squeeze",
             "trunk-rotation-stretch",
+            "seated-trunk-rotation-stretch",
+            "lying-lumbar-twist",
             "thoracic-rotation-crossed-arms",
-            "round-hollow-back"
+            "round-hollow-back",
+            "seated-round-hollow-back"
           ]
         },
         {
@@ -226,7 +255,9 @@
             "thoracic-rotation-crossed-arms",
             "thoracic-extension-hands-back",
             "trunk-side-bend",
-            "round-hollow-back"
+            "seated-trunk-side-bend",
+            "round-hollow-back",
+            "seated-round-hollow-back"
           ]
         }
       ]
@@ -241,9 +272,14 @@
           "exercises": [
             "trunk-lumbar-mobility",
             "trunk-rotation-stretch",
+            "seated-trunk-rotation-stretch",
+            "lying-lumbar-twist",
             "hip-flexor-stretch",
+            "lying-single-knee-to-chest",
             "round-hollow-back",
-            "knee-to-chest"
+            "seated-round-hollow-back",
+            "knee-to-chest",
+            "lying-knee-to-chest"
           ]
         },
         {
@@ -251,10 +287,13 @@
           "label": "Lombalgie liée à la position assise prolongée",
           "exercises": [
             "hip-flexor-stretch",
+            "lying-single-knee-to-chest",
             "hamstring-stretch",
+            "lying-hamstring-stretch",
             "trunk-lumbar-mobility",
             "thoracic-extension-hands-back",
-            "knee-to-chest"
+            "knee-to-chest",
+            "lying-knee-to-chest"
           ]
         },
         {
@@ -263,8 +302,11 @@
           "exercises": [
             "forward-hang-relax",
             "round-hollow-back",
+            "seated-round-hollow-back",
             "trunk-side-bend",
-            "knee-to-chest"
+            "seated-trunk-side-bend",
+            "knee-to-chest",
+            "lying-knee-to-chest"
           ]
         }
       ]
@@ -278,6 +320,7 @@
           "label": "Tension des fléchisseurs de hanche (psoas)",
           "exercises": [
             "hip-flexor-stretch",
+            "lying-single-knee-to-chest",
             "trunk-lumbar-mobility"
           ]
         },
@@ -286,6 +329,7 @@
           "label": "Tension des fessiers",
           "exercises": [
             "knee-to-chest",
+            "lying-knee-to-chest",
             "leg-swing-hip-mobility"
           ]
         },
@@ -295,7 +339,8 @@
           "exercises": [
             "leg-swing-hip-mobility",
             "hip-abduction-standing",
-            "knee-to-chest"
+            "knee-to-chest",
+            "lying-knee-to-chest"
           ]
         },
         {
@@ -317,6 +362,7 @@
           "label": "Tension des ischio-jambiers",
           "exercises": [
             "hamstring-stretch",
+            "lying-hamstring-stretch",
             "leg-swing-hip-mobility",
             "forward-hang-relax"
           ]
@@ -326,7 +372,8 @@
           "label": "Tension du quadriceps",
           "exercises": [
             "quadriceps-standing-stretch",
-            "knee-extension-standing"
+            "knee-extension-standing",
+            "seated-knee-extension"
           ]
         },
         {
@@ -349,7 +396,9 @@
           "exercises": [
             "quadriceps-standing-stretch",
             "hamstring-stretch",
-            "knee-extension-standing"
+            "lying-hamstring-stretch",
+            "knee-extension-standing",
+            "seated-knee-extension"
           ]
         },
         {
@@ -357,6 +406,7 @@
           "label": "Raideur du genou",
           "exercises": [
             "knee-extension-standing",
+            "seated-knee-extension",
             "leg-swing-hip-mobility"
           ]
         }
@@ -371,7 +421,8 @@
           "label": "Tension du mollet, tendon d'Achille",
           "exercises": [
             "calf-stretch",
-            "ankle-mobility"
+            "ankle-mobility",
+            "lying-ankle-pumps"
           ]
         },
         {
@@ -393,6 +444,7 @@
           "label": "Raideur de cheville (après entorse)",
           "exercises": [
             "ankle-mobility",
+            "lying-ankle-pumps",
             "ankle-circles",
             "calf-stretch"
           ]
@@ -403,7 +455,8 @@
           "exercises": [
             "toe-lift",
             "ankle-circles",
-            "ankle-mobility"
+            "ankle-mobility",
+            "lying-ankle-pumps"
           ]
         }
       ]

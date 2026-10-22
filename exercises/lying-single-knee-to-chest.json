@@ -1,0 +1,131 @@
+{
+  "id": "lying-single-knee-to-chest",
+  "zone": "hip",
+  "title": "Un genou à la poitrine, allongé",
+  "description": "Ramener un genou vers la poitrine en gardant l'autre jambe allongée pour étirer le devant de la hanche de la jambe tendue.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_thigh": {
+        "flexion": 115
+      },
+      "R_shin": {
+        "flexion": -120
+      },
+      "R_upper_arm": {
+        "flexion": 45
+      },
+      "L_upper_arm": {
+        "flexion": 45
+      },
+      "R_forearm": {
+        "flexion": 80
+      },
+      "L_forearm": {
+        "flexion": 80
+      }
+    },
+    "left": {
+      "L_thigh": {
+        "flexion": 115
+      },
+      "L_shin": {
+        "flexion": -120
+      },
+      "R_upper_arm": {
+        "flexion": 45
+      },
+      "L_upper_arm": {
+        "flexion": 45
+      },
+      "R_forearm": {
+        "flexion": 80
+      },
+      "L_forearm": {
+        "flexion": 80
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "right"
+    },
+    {
+      "t": 20,
+      "pose": "right"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "left"
+    },
+    {
+      "t": 45,
+      "pose": "left"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    },
+    {
+      "t": 53,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Ramenez le genou droit vers la poitrine, la jambe gauche reste allongée au sol."
+    },
+    {
+      "t": 8,
+      "text": "Respirez : l'étirement se sent devant la hanche gauche."
+    },
+    {
+      "t": 20,
+      "text": "Relâchez, puis changez de jambe."
+    },
+    {
+      "t": 28,
+      "text": "Ramenez le genou gauche vers la poitrine."
+    },
+    {
+      "t": 33,
+      "text": "Respirez calmement, sans forcer."
+    },
+    {
+      "t": 50,
+      "text": "Relâchez les jambes."
+    }
+  ],
+  "duration_seconds": 53
+}

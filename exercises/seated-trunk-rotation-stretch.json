@@ -1,0 +1,81 @@
+{
+  "id": "seated-trunk-rotation-stretch",
+  "zone": "trunk",
+  "title": "Rotation du tronc, assis",
+  "description": "Torsion douce du haut du corps depuis la chaise pour assouplir le dos.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "turn_right": {
+      "spine": {
+        "twist": 45
+      }
+    },
+    "turn_left": {
+      "spine": {
+        "twist": -45
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "turn_right"
+    },
+    {
+      "t": 15,
+      "pose": "turn_right"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "turn_left"
+    },
+    {
+      "t": 35,
+      "pose": "turn_left"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, le bassin bien posé sur l'assise."
+    },
+    {
+      "t": 5,
+      "text": "Tournez le haut du corps vers la droite, le bassin reste face à vous."
+    },
+    {
+      "t": 15,
+      "text": "Revenez au centre."
+    },
+    {
+      "t": 25,
+      "text": "Tournez vers la gauche."
+    },
+    {
+      "t": 35,
+      "text": "Revenez au centre et relâchez."
+    }
+  ],
+  "duration_seconds": 45
+}

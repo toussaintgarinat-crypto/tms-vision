@@ -1,0 +1,131 @@
+{
+  "id": "lying-hamstring-stretch",
+  "zone": "thigh",
+  "title": "Étirement des ischio-jambiers, allongé",
+  "description": "Jambe tendue levée vers le plafond, tenue par les mains, pour étirer l'arrière de la cuisse sans solliciter le dos.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_thigh": {
+        "flexion": 80
+      },
+      "R_foot": {
+        "flexion": 20
+      },
+      "R_upper_arm": {
+        "flexion": 95
+      },
+      "L_upper_arm": {
+        "flexion": 95
+      },
+      "R_forearm": {
+        "flexion": 20
+      },
+      "L_forearm": {
+        "flexion": 20
+      }
+    },
+    "left": {
+      "L_thigh": {
+        "flexion": 80
+      },
+      "L_foot": {
+        "flexion": 20
+      },
+      "R_upper_arm": {
+        "flexion": 95
+      },
+      "L_upper_arm": {
+        "flexion": 95
+      },
+      "R_forearm": {
+        "flexion": 20
+      },
+      "L_forearm": {
+        "flexion": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "right"
+    },
+    {
+      "t": 22,
+      "pose": "right"
+    },
+    {
+      "t": 27,
+      "pose": "neutral"
+    },
+    {
+      "t": 30,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "left"
+    },
+    {
+      "t": 49,
+      "pose": "left"
+    },
+    {
+      "t": 54,
+      "pose": "neutral"
+    },
+    {
+      "t": 57,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Levez la jambe droite tendue vers le plafond et tenez-la derrière la cuisse."
+    },
+    {
+      "t": 8,
+      "text": "Gardez en respirant, sans douleur, le bas du dos posé au sol."
+    },
+    {
+      "t": 22,
+      "text": "Reposez la jambe, puis changez de côté."
+    },
+    {
+      "t": 30,
+      "text": "Levez la jambe gauche tendue."
+    },
+    {
+      "t": 35,
+      "text": "Gardez en respirant calmement."
+    },
+    {
+      "t": 54,
+      "text": "Reposez la jambe et relâchez."
+    }
+  ],
+  "duration_seconds": 57
+}

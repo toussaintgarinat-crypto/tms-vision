@@ -13,8 +13,22 @@ const HEAD: Framing = { target: new THREE.Vector3(0, 1.5, 0), distance: 1.7 };
 const HANDS: Framing = { target: new THREE.Vector3(0, 1.2, 0.1), distance: 2.6 };
 const FEET: Framing = { target: new THREE.Vector3(0, 0.7, 0.25), distance: 3.0 };
 
-export function framingFor(exercise: Pick<Exercise, "target_segments">): Framing {
-  const regions = exercise.target_segments;
+// Allongé sur le dos : le corps est horizontal (tête vers -z, pieds vers +z, voir ExerciseAvatar),
+// centré sur l'origine et d'environ 1,70 m de long. Pas de zoom : tout le corps, de profil.
+const LYING: Framing = { target: new THREE.Vector3(0, 0.3, 0), distance: 3.4 };
+
+// `drop` : de combien le mannequin est descendu (assis), pour garder le cadrage sur lui.
+export function framingFor(
+  exercise: Pick<Exercise, "target_segments" | "position">,
+  drop = 0,
+): Framing {
+  if (exercise.position === "lying") return LYING;
+  const framing = standingFraming(exercise.target_segments);
+  if (drop === 0) return framing;
+  return { target: framing.target.clone().add(new THREE.Vector3(0, -drop, 0)), distance: framing.distance };
+}
+
+function standingFraming(regions: Exercise["target_segments"]): Framing {
   const only = (...allowed: string[]) => regions.every((region) => allowed.includes(region));
   if (only("head", "neck")) return HEAD;
   if (only("hand", "lower_arm")) return HANDS;

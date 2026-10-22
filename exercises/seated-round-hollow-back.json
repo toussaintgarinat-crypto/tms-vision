@@ -1,0 +1,163 @@
+{
+  "id": "seated-round-hollow-back",
+  "zone": "trunk",
+  "title": "Dos rond, dos creux, assis",
+  "description": "Mobilisation du dos en alternant dos rond et dos creux, assis sur la chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "a": {
+      "spine": {
+        "flexion": 32
+      },
+      "neck": {
+        "flexion": 12
+      },
+      "R_upper_arm": {
+        "flexion": 45
+      },
+      "L_upper_arm": {
+        "flexion": 45
+      }
+    },
+    "b": {
+      "spine": {
+        "flexion": -18
+      },
+      "neck": {
+        "flexion": -8
+      },
+      "R_upper_arm": {
+        "flexion": -8
+      },
+      "L_upper_arm": {
+        "flexion": -8
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 6,
+      "pose": "a"
+    },
+    {
+      "t": 7,
+      "pose": "a"
+    },
+    {
+      "t": 10,
+      "pose": "b"
+    },
+    {
+      "t": 11,
+      "pose": "b"
+    },
+    {
+      "t": 14,
+      "pose": "a"
+    },
+    {
+      "t": 15,
+      "pose": "a"
+    },
+    {
+      "t": 18,
+      "pose": "b"
+    },
+    {
+      "t": 19,
+      "pose": "b"
+    },
+    {
+      "t": 22,
+      "pose": "a"
+    },
+    {
+      "t": 23,
+      "pose": "a"
+    },
+    {
+      "t": 26,
+      "pose": "b"
+    },
+    {
+      "t": 27,
+      "pose": "b"
+    },
+    {
+      "t": 30,
+      "pose": "a"
+    },
+    {
+      "t": 31,
+      "pose": "a"
+    },
+    {
+      "t": 34,
+      "pose": "b"
+    },
+    {
+      "t": 35,
+      "pose": "b"
+    },
+    {
+      "t": 38,
+      "pose": "a"
+    },
+    {
+      "t": 39,
+      "pose": "a"
+    },
+    {
+      "t": 42,
+      "pose": "b"
+    },
+    {
+      "t": 43,
+      "pose": "b"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    },
+    {
+      "t": 49,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les mains sur les cuisses."
+    },
+    {
+      "t": 3,
+      "text": "Arrondissez le dos en rentrant le ventre et le menton."
+    },
+    {
+      "t": 7,
+      "text": "Creusez doucement le dos en regardant devant vous."
+    },
+    {
+      "t": 43,
+      "text": "Redressez-vous et relâchez."
+    }
+  ],
+  "duration_seconds": 52
+}

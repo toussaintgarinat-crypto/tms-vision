@@ -34,6 +34,11 @@ ANGLE_KEYS = ("flexion", "lateral", "twist")
 STATUSES = ("draft", "validated")
 SOURCES = ("human", "ai")
 VIEWS = ("front", "side", "three_quarter")
+# Position du corps. Facultatif : un exercice sans `position` est debout. Les angles d'un exercice
+# assis s'ajoutent à la position assise (cuisses horizontales, genoux à 90°) ; un exercice allongé
+# est couché sur le dos (voir exercises/README.md).
+POSITIONS = ("standing", "seated", "lying")
+DEFAULT_POSITION = "standing"
 
 MIN_DURATION_SECONDS = 10
 MAX_DURATION_SECONDS = 180
@@ -43,6 +48,7 @@ REQUIRED_KEYS = (
     "id", "zone", "title", "description", "status", "source", "validated_by", "validated_on",
     "view", "target_segments", "poses", "keyframes", "instructions", "duration_seconds",
 )
+OPTIONAL_KEYS = ("position",)
 _ID_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
@@ -137,7 +143,7 @@ def validate_exercise(
         if key not in data:
             _fail(key, "champ obligatoire manquant.")
     for key in data:
-        if key not in REQUIRED_KEYS:
+        if key not in REQUIRED_KEYS and key not in OPTIONAL_KEYS:
             _fail(key, "champ inconnu (faute de frappe ?).")
 
     if not isinstance(data["id"], str) or not _ID_PATTERN.match(data["id"]):
@@ -149,6 +155,8 @@ def validate_exercise(
     _check_choice(data, "status", STATUSES)
     _check_choice(data, "source", SOURCES)
     _check_choice(data, "view", VIEWS)
+    if "position" in data:
+        _check_choice(data, "position", POSITIONS)
     _check_text(data, "title")
     _check_text(data, "description")
 

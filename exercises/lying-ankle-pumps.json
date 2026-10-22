@@ -1,0 +1,119 @@
+{
+  "id": "lying-ankle-pumps",
+  "zone": "foot",
+  "title": "Pompes de cheville, allongé",
+  "description": "Pointer puis ramener les pieds vers soi, allongé, pour activer la circulation et assouplir les chevilles.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "pointed": {
+      "R_foot": {
+        "flexion": -40
+      },
+      "L_foot": {
+        "flexion": -40
+      },
+      "R_toes": {
+        "flexion": -20
+      },
+      "L_toes": {
+        "flexion": -20
+      }
+    },
+    "flexed": {
+      "R_foot": {
+        "flexion": 25
+      },
+      "L_foot": {
+        "flexion": 25
+      },
+      "R_toes": {
+        "flexion": 15
+      },
+      "L_toes": {
+        "flexion": 15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "pointed"
+    },
+    {
+      "t": 11,
+      "pose": "flexed"
+    },
+    {
+      "t": 15,
+      "pose": "pointed"
+    },
+    {
+      "t": 19,
+      "pose": "flexed"
+    },
+    {
+      "t": 23,
+      "pose": "pointed"
+    },
+    {
+      "t": 27,
+      "pose": "flexed"
+    },
+    {
+      "t": 31,
+      "pose": "pointed"
+    },
+    {
+      "t": 35,
+      "pose": "flexed"
+    },
+    {
+      "t": 39,
+      "pose": "neutral"
+    },
+    {
+      "t": 42,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Pointez les pieds vers l'avant, orteils tendus."
+    },
+    {
+      "t": 7,
+      "text": "Ramenez les orteils vers vous."
+    },
+    {
+      "t": 15,
+      "text": "Continuez lentement, en respirant."
+    },
+    {
+      "t": 39,
+      "text": "Relâchez les pieds."
+    }
+  ],
+  "duration_seconds": 42
+}

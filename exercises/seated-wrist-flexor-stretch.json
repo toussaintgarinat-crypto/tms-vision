@@ -1,0 +1,118 @@
+{
+  "id": "seated-wrist-flexor-stretch",
+  "zone": "hand",
+  "title": "Étirement des fléchisseurs du poignet, assis",
+  "description": "Étirement du poignet et de l'avant-bras après un travail au clavier ou à la souris.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "hand",
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "arm_forward": {
+      "R_upper_arm": {
+        "flexion": 90
+      }
+    },
+    "stretch": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "flexion": -70
+      }
+    },
+    "stretch_left": {
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "L_hand": {
+        "flexion": -70
+      }
+    },
+    "arm_forward_left": {
+      "L_upper_arm": {
+        "flexion": 90
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "arm_forward"
+    },
+    {
+      "t": 8,
+      "pose": "stretch"
+    },
+    {
+      "t": 20,
+      "pose": "stretch"
+    },
+    {
+      "t": 24,
+      "pose": "arm_forward"
+    },
+    {
+      "t": 27,
+      "pose": "neutral"
+    },
+    {
+      "t": 31,
+      "pose": "arm_forward_left"
+    },
+    {
+      "t": 35,
+      "pose": "stretch_left"
+    },
+    {
+      "t": 47,
+      "pose": "stretch_left"
+    },
+    {
+      "t": 51,
+      "pose": "arm_forward_left"
+    },
+    {
+      "t": 54,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les épaules relâchées."
+    },
+    {
+      "t": 4,
+      "text": "Tendez le bras droit devant vous, paume vers le haut."
+    },
+    {
+      "t": 8,
+      "text": "Avec l'autre main, tirez doucement les doigts vers vous."
+    },
+    {
+      "t": 20,
+      "text": "Relâchez, secouez la main."
+    },
+    {
+      "t": 31,
+      "text": "Recommencez avec le bras gauche."
+    },
+    {
+      "t": 47,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 60
+}

@@ -376,3 +376,19 @@ def test_cli_requires_a_known_command_and_zone(capsys):
 class CliProvider(ExerciseProvider):
     def propose(self, zone, constraints):
         return {**_valid(), "id": "neck-cli"}
+
+
+def test_position_is_optional_and_must_be_known():
+    data = _valid()
+    validate_exercise(data)  # sans `position` : debout par défaut
+    for position in ("standing", "seated", "lying"):
+        validate_exercise({**data, "position": position})
+    with pytest.raises(ValueError, match="position"):
+        validate_exercise({**data, "position": "accroupi"})
+
+
+def test_shipped_exercises_declare_a_known_position_and_include_seated_and_lying_ones():
+    positions = {
+        exercise.get("position", exercises.DEFAULT_POSITION) for exercise in load_catalog()
+    }
+    assert positions == {"standing", "seated", "lying"}

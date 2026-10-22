@@ -1,0 +1,115 @@
+{
+  "id": "seated-knee-extension",
+  "zone": "thigh",
+  "title": "Extension des genoux, assis",
+  "description": "Tendre une jambe puis l'autre depuis la chaise pour activer les cuisses et la circulation après une longue position assise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_shin": {
+        "flexion": 90
+      },
+      "R_foot": {
+        "flexion": 15
+      }
+    },
+    "left": {
+      "L_shin": {
+        "flexion": 90
+      },
+      "L_foot": {
+        "flexion": 15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "right"
+    },
+    {
+      "t": 12,
+      "pose": "right"
+    },
+    {
+      "t": 16,
+      "pose": "neutral"
+    },
+    {
+      "t": 20,
+      "pose": "left"
+    },
+    {
+      "t": 28,
+      "pose": "left"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    },
+    {
+      "t": 36,
+      "pose": "right"
+    },
+    {
+      "t": 42,
+      "pose": "right"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    },
+    {
+      "t": 50,
+      "pose": "left"
+    },
+    {
+      "t": 56,
+      "pose": "left"
+    },
+    {
+      "t": 60,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol."
+    },
+    {
+      "t": 4,
+      "text": "Tendez la jambe droite devant vous, orteils vers le haut."
+    },
+    {
+      "t": 12,
+      "text": "Reposez le pied, puis changez de jambe."
+    },
+    {
+      "t": 20,
+      "text": "Tendez la jambe gauche devant vous."
+    },
+    {
+      "t": 32,
+      "text": "Recommencez doucement avec chaque jambe."
+    },
+    {
+      "t": 56,
+      "text": "Reposez le pied et relâchez."
+    }
+  ],
+  "duration_seconds": 60
+}

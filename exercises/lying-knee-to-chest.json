@@ -1,0 +1,94 @@
+{
+  "id": "lying-knee-to-chest",
+  "zone": "hip",
+  "title": "Genoux à la poitrine, allongé",
+  "description": "Ramener les deux genoux vers la poitrine pour détendre le bas du dos et les hanches.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "hug": {
+      "R_thigh": {
+        "flexion": 115
+      },
+      "L_thigh": {
+        "flexion": 115
+      },
+      "R_shin": {
+        "flexion": -115
+      },
+      "L_shin": {
+        "flexion": -115
+      },
+      "R_upper_arm": {
+        "flexion": 45
+      },
+      "L_upper_arm": {
+        "flexion": 45
+      },
+      "R_forearm": {
+        "flexion": 80
+      },
+      "L_forearm": {
+        "flexion": 80
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 9,
+      "pose": "hug"
+    },
+    {
+      "t": 24,
+      "pose": "hug"
+    },
+    {
+      "t": 30,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Ramenez les deux genoux vers la poitrine et entourez-les de vos mains."
+    },
+    {
+      "t": 9,
+      "text": "Respirez calmement, le bas du dos reste posé au sol."
+    },
+    {
+      "t": 24,
+      "text": "Relâchez et allongez les jambes."
+    },
+    {
+      "t": 30,
+      "text": "Détendez-vous quelques secondes."
+    }
+  ],
+  "duration_seconds": 33
+}

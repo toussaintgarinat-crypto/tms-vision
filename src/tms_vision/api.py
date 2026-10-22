@@ -758,7 +758,10 @@ _EXERCISE_SUMMARY_KEYS = (
 @app.get("/exercises")
 async def list_exercises() -> list[dict]:
     return [
-        {key: exercise[key] for key in _EXERCISE_SUMMARY_KEYS}
+        {
+            **{key: exercise[key] for key in _EXERCISE_SUMMARY_KEYS},
+            "position": exercise.get("position", exercises.DEFAULT_POSITION),
+        }
         for exercise in exercises.load_catalog()
     ]
 

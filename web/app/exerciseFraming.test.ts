@@ -43,3 +43,23 @@ describe("cameraPosition", () => {
     expect(three.z).toBeGreaterThan(0);
   });
 });
+
+describe("framing by position", () => {
+  it("keeps the standing framing unchanged", () => {
+    const standing = framingFor({ target_segments: ["trunk"] });
+    expect(framingFor({ target_segments: ["trunk"], position: "standing" })).toEqual(standing);
+  });
+
+  it("lowers the target of a seated exercise by the drop of the body", () => {
+    const standing = framingFor({ target_segments: ["trunk"] });
+    const seated = framingFor({ target_segments: ["trunk"], position: "seated" }, 0.4);
+    expect(seated.target.y).toBeCloseTo(standing.target.y - 0.4);
+    expect(seated.distance).toBe(standing.distance);
+  });
+
+  it("frames the whole horizontal body for a lying exercise, whatever the target", () => {
+    const lying = framingFor({ target_segments: ["foot"], position: "lying" });
+    expect(lying.target.y).toBeLessThan(0.5);
+    expect(lying.distance).toBeGreaterThan(3);
+  });
+});

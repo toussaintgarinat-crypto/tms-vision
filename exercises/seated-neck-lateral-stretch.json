@@ -1,0 +1,81 @@
+{
+  "id": "seated-neck-lateral-stretch",
+  "zone": "neck",
+  "title": "Inclinaisons du cou, assis",
+  "description": "Étirement latéral du cou à faire au bureau, sans se lever.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "tilt_right": {
+      "neck": {
+        "lateral": 35
+      }
+    },
+    "tilt_left": {
+      "neck": {
+        "lateral": -35
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "tilt_right"
+    },
+    {
+      "t": 15,
+      "pose": "tilt_right"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "tilt_left"
+    },
+    {
+      "t": 35,
+      "pose": "tilt_left"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les épaules relâchées."
+    },
+    {
+      "t": 5,
+      "text": "Inclinez doucement la tête vers l'épaule droite, sans lever l'épaule."
+    },
+    {
+      "t": 20,
+      "text": "Revenez lentement au centre en respirant calmement."
+    },
+    {
+      "t": 25,
+      "text": "Inclinez maintenant la tête vers l'épaule gauche."
+    },
+    {
+      "t": 40,
+      "text": "Revenez au centre et relâchez la nuque."
+    }
+  ],
+  "duration_seconds": 45
+}

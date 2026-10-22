@@ -1,0 +1,151 @@
+{
+  "id": "lying-lumbar-twist",
+  "zone": "trunk",
+  "title": "Torsion du bas du dos, allongé",
+  "description": "Genoux fléchis, laisser tomber les deux genoux d'un côté puis de l'autre, épaules au sol, pour assouplir le bas du dos.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "bent": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_upper_arm": {
+        "lateral": 80
+      },
+      "L_upper_arm": {
+        "lateral": 80
+      }
+    },
+    "right": {
+      "R_thigh": {
+        "flexion": 60,
+        "lateral": 40
+      },
+      "L_thigh": {
+        "flexion": 60,
+        "lateral": -40
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_upper_arm": {
+        "lateral": 80
+      },
+      "L_upper_arm": {
+        "lateral": 80
+      }
+    },
+    "left": {
+      "R_thigh": {
+        "flexion": 60,
+        "lateral": -40
+      },
+      "L_thigh": {
+        "flexion": 60,
+        "lateral": 40
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_upper_arm": {
+        "lateral": 80
+      },
+      "L_upper_arm": {
+        "lateral": 80
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "bent"
+    },
+    {
+      "t": 9,
+      "pose": "right"
+    },
+    {
+      "t": 21,
+      "pose": "right"
+    },
+    {
+      "t": 26,
+      "pose": "bent"
+    },
+    {
+      "t": 31,
+      "pose": "left"
+    },
+    {
+      "t": 43,
+      "pose": "left"
+    },
+    {
+      "t": 48,
+      "pose": "bent"
+    },
+    {
+      "t": 52,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis."
+    },
+    {
+      "t": 4,
+      "text": "Fléchissez les genoux, les pieds à plat, les bras écartés au sol."
+    },
+    {
+      "t": 9,
+      "text": "Laissez tomber doucement les deux genoux vers la droite, les épaules restent au sol."
+    },
+    {
+      "t": 21,
+      "text": "Revenez au centre."
+    },
+    {
+      "t": 31,
+      "text": "Laissez tomber les genoux vers la gauche."
+    },
+    {
+      "t": 43,
+      "text": "Revenez au centre."
+    },
+    {
+      "t": 48,
+      "text": "Allongez les jambes et relâchez."
+    }
+  ],
+  "duration_seconds": 52
+}

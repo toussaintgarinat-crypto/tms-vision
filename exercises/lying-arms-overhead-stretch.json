@@ -1,0 +1,79 @@
+{
+  "id": "lying-arms-overhead-stretch",
+  "zone": "shoulder",
+  "title": "Bras au-dessus de la tête, allongé",
+  "description": "Étirement des épaules et du dos : les bras tendus au-dessus de la tête, allongé sur le dos.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "stretch": {
+      "R_upper_arm": {
+        "flexion": 170
+      },
+      "L_upper_arm": {
+        "flexion": 170
+      },
+      "spine": {
+        "flexion": -6
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 10,
+      "pose": "stretch"
+    },
+    {
+      "t": 25,
+      "pose": "stretch"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les bras le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Levez lentement les deux bras au-dessus de la tête, jusqu'au sol."
+    },
+    {
+      "t": 10,
+      "text": "Allongez-vous en respirant calmement, sans cambrer le bas du dos."
+    },
+    {
+      "t": 25,
+      "text": "Ramenez les bras le long du corps."
+    },
+    {
+      "t": 32,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 35
+}

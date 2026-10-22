@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent, ReactNode } from "react";
-import type { Exercise } from "../exercisePose";
+import { POSITION_LABELS, type Exercise } from "../exercisePose";
 import { ExercisePlayer } from "./ExercisePlayer";
 
 type Props = {
@@ -54,6 +54,11 @@ export function ExerciseCarousel({ exercises, index, onIndexChange, footer }: Pr
       </div>
 
       <h2 className="text-lg font-semibold">{exercise.title}</h2>
+      {exercise.position && exercise.position !== "standing" && (
+        <span className="mr-2 mt-1 inline-block rounded bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-950">
+          {POSITION_LABELS[exercise.position]}
+        </span>
+      )}
       {exercise.status === "draft" && (
         <span className="mt-1 inline-block rounded bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-950">
           Brouillon — à valider par un professionnel de santé

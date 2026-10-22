@@ -34,6 +34,8 @@ Les règles de validation sont dans `src/tms_vision/exercises.py` : un fichier i
   doigts), `hip` (bassin, fessiers, psoas), `thigh`, `lower_leg` (mollet, jambe) et `foot`. Les
   régions hors RULA n'ont pas de mesure : leurs exercices existent et se génèrent, mais aucun score
   ne les recommande encore.
+- `position` (facultatif) : `standing` (debout, par défaut), `seated` (assis) ou `lying` (allongé sur
+  le dos). Voir « Positions » plus bas.
 - `view` : `front`, `side` ou `three_quarter` (cadrage de la caméra). Le zoom est automatique : tête
   et cou, mains et avant-bras, pied seul sont cadrés de près ; tout le reste, corps entier.
 - `poses` : chaque pose donne, par os, jusqu'à trois angles en degrés **relatifs à l'os parent**. Un
@@ -44,6 +46,24 @@ Les règles de validation sont dans `src/tms_vision/exercises.py` : un fichier i
   d'affilée = une position tenue.
 - `instructions` : consignes datées, affichées (et dites si une voix est configurée) à l'instant `t`.
 - `duration_seconds` : entre 10 et 180.
+
+## Positions
+
+Sans `position`, l'exercice est debout et rien ne change. Les angles d'un exercice assis ou allongé
+décrivent **le mouvement à partir de sa position**, pas une pose absolue :
+
+- **`seated`** : le mannequin part assis, cuisses à l'horizontale devant lui et genoux à 90°
+  (`flexion: 90` sur les cuisses, `-90` sur les jambes). Les angles de l'exercice s'**ajoutent** à
+  ceux-là : pour tendre un genou, `R_shin: { flexion: 90 }` (−90 + 90 = jambe dans le prolongement
+  de la cuisse). Le mannequin descend pour garder les pieds au sol et un tabouret apparaît sous le
+  bassin. Les exercices du haut du corps n'ont rien à ajouter.
+- **`lying`** : tout le mannequin est couché sur le dos sur un tapis, la tête vers la gauche de
+  l'image en vue de profil. Les angles restent relatifs au corps comme debout : `flexion: 90` sur une
+  cuisse la lève vers le plafond, `flexion: 170` sur un bras le porte au-dessus de la tête, `lateral: 90`
+  l'écarte en croix. Les vues `side` et `three_quarter` montrent le corps en long ; `front` se place du
+  côté des pieds.
+- Le bassin (`root`) ne bouge pas : pas de pont fessier, pas de bascule du bassin, pas de position sur le
+  ventre ni sur le côté.
 
 ## Le squelette : 24 os
 
@@ -111,7 +131,7 @@ exercice (`web/scripts/snapshot-exercise.mjs`) avant de le diffuser.
    un humain le relit, le corrige, le déplace dans `exercises/`, passe `source` à `"human"`, puis le
    valide comme ci-dessus.
 
-Les quarante-cinq exercices livrés (au moins un par région du corps) sont des brouillons rédigés
+Les soixante-trois exercices livrés (au moins un par région du corps, dont onze assis et sept allongés) sont des brouillons rédigés
 sans expertise d'ostéopathe : ils ne doivent pas être présentés à un salarié ou à un patient comme
 validés. Ceux ajoutés pour la bibliothèque du praticien (voir `library/body_map.json`) ne changent pas
 le programme d'étirements des salariés : l'exercice recommandé pour chaque zone mesurée est fixé par
