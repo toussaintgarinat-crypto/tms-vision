@@ -1460,3 +1460,24 @@ def test_frequency_for_an_unchecked_zone_is_rejected(tmp_path, monkeypatch):
     negative = client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload(
         zones=["neck"], zone_cycles_per_minute={"neck": -1.0}))
     assert negative.status_code == 422
+
+
+def test_bilan_program_is_seated_for_a_seated_workstation_and_says_so(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 9.0}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 5.0, "representative": True})
+
+    before = client.get(f"/bilans/{bilan_id}/program").json()
+    assert before["position"] is None and before["position_note"] is None
+    assert before["program"][0]["capsule"]["id"] == "trunk-lumbar-mobility"
+
+    client.post(f"/bilans/{bilan_id}/tasks",
+                json=_task_payload(workstation="Assis devant écran", activity_hours=3.0))
+    after = client.get(f"/bilans/{bilan_id}/program").json()
+
+    assert after["position"] == "seated"
+    assert "assis" in after["position_note"]
+    assert after["program"][0]["capsule"]["id"] == "seated-round-hollow-back"

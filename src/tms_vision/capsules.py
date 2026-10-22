@@ -128,10 +128,24 @@ PROGRAM_CAPSULE_BY_ZONE = {
 }
 
 
-def recommend_capsule(zone: str | None) -> Capsule | None:
+# Équivalents assis des exercices du programme, pour un poste de travail assis (voir
+# bilan.preferred_position). Pas d'entrée pour `foot` : « ankle-mobility » se fait déjà assis.
+SEATED_CAPSULE_BY_ZONE = {
+    "neck": "seated-neck-lateral-stretch",
+    "trunk": "seated-round-hollow-back",
+    "upper_arm": "seated-shoulder-cross-body-stretch",
+    "lower_arm": "seated-forearm-extension-stretch",
+    "hand": "seated-wrist-flexor-stretch",
+}
+
+
+def recommend_capsule(zone: str | None, position: str | None = None) -> Capsule | None:
+    """Exercice du programme pour une zone. `position="seated"` : son équivalent assis quand il existe."""
     if zone is None:
         return None
     preferred = PROGRAM_CAPSULE_BY_ZONE.get(zone)
+    if position == "seated":
+        preferred = SEATED_CAPSULE_BY_ZONE.get(zone, preferred)
     for capsule in CAPSULES:
         if capsule.id == preferred:
             return capsule

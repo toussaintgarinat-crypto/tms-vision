@@ -207,3 +207,23 @@ def project_bilan(workday_hours: float, items: list[dict], tasks: list[dict] | N
         "tasks": task_entries,
         "warnings": warnings,
     }
+
+
+# Postes de travail (liste à choix de web/app/bilans/taskForm.ts, brouillon à valider) où l'on
+# est assis : le programme d'étirements propose alors des exercices faisables assis.
+SEATED_WORKSTATIONS = ("Assis devant écran", "Conduite")
+
+
+def preferred_position(tasks: list[dict]) -> str | None:
+    """`"seated"` quand au moins la moitié des heures des tâches qui indiquent un poste de travail
+    se passent à un poste assis, sinon None (programme habituel). Les tâches sans poste de travail
+    renseigné, ou avec un poste « Autre », ne comptent pas : sans information, on ne change rien."""
+    with_workstation = [task for task in tasks if task.get("workstation")]
+    total = sum(task["activity_hours"] for task in with_workstation)
+    if total <= 0:
+        return None
+    seated = sum(
+        task["activity_hours"] for task in with_workstation
+        if task["workstation"] in SEATED_WORKSTATIONS
+    )
+    return "seated" if seated * 2 >= total else None

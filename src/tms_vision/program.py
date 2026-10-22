@@ -56,10 +56,12 @@ def describe_load(load: dict | None) -> str | None:
     return f"{_format_kg(load['kg_min'])} à {_format_kg(load['kg_max'])} kg"
 
 
-def _build_program(load_by_zone: dict[str, float], reason_for) -> list[dict]:
+def _build_program(
+    load_by_zone: dict[str, float], reason_for, position: str | None = None
+) -> list[dict]:
     program = []
     for zone, load in rank_zones(load_by_zone):
-        capsule = recommend_capsule(zone)
+        capsule = recommend_capsule(zone, position)
         if capsule is None:
             continue
         program.append({
@@ -87,9 +89,10 @@ def build_analysis_program(frames: list[dict], load: dict | None) -> list[dict]:
     return _build_program(elevated_seconds_by_zone(frames), reason_for)
 
 
-def build_bilan_program(report: dict) -> list[dict]:
+def build_bilan_program(report: dict, position: str | None = None) -> list[dict]:
     """Programme d'un bilan de poste : charge = heures projetées en niveau
-    élevé sur la journée. `report` : sortie de bilan.project_bilan()."""
+    élevé sur la journée. `report` : sortie de bilan.project_bilan().
+    `position` : voir bilan.preferred_position."""
     workday = format_hours(report["workday_hours"])
     load_by_zone = {
         zone: values["projected_elevated_hours"] for zone, values in report["zones"].items()
@@ -101,4 +104,4 @@ def build_bilan_program(report: dict) -> list[dict]:
             f"sur {workday} estimées."
         )
 
-    return _build_program(load_by_zone, reason_for)
+    return _build_program(load_by_zone, reason_for, position)

@@ -285,3 +285,29 @@ def test_declared_frequency_per_zone_overrides_only_those_zones_of_a_video():
     assert report["zones"]["neck"]["projected_cycles"] == 6 * 60 * 4
     # Pas de valeur saisie pour l'avant-bras : la mesure est conservée.
     assert report["zones"]["lower_arm"]["projected_cycles"] == 2 * 60 * 4
+
+
+def _workstation_task(workstation, hours):
+    return {"id": "t", "name": "x", "zones": [], "activity_hours": hours,
+            "workstation": workstation}
+
+
+def test_preferred_position_is_seated_when_half_the_hours_or_more_are_at_a_seated_workstation():
+    from tms_vision.bilan import preferred_position
+
+    assert preferred_position([_workstation_task("Assis devant écran", 4.0)]) == "seated"
+    tasks = [_workstation_task("Conduite", 3.0), _workstation_task("Marche et déplacements", 3.0)]
+    assert preferred_position(tasks) == "seated"  # moitié exactement
+    tasks = [_workstation_task("Assis devant écran", 2.0), _workstation_task("Conduite", 1.0),
+             _workstation_task("Manutention et port de charges", 6.0)]
+    assert preferred_position(tasks) is None
+
+
+def test_preferred_position_ignores_tasks_without_a_workstation_and_changes_nothing_by_default():
+    from tms_vision.bilan import preferred_position
+
+    assert preferred_position([]) is None
+    assert preferred_position([_workstation_task(None, 5.0), _workstation_task("", 2.0)]) is None
+    mixed = [_workstation_task(None, 8.0), _workstation_task("Assis devant écran", 1.0)]
+    assert preferred_position(mixed) == "seated"
+    assert preferred_position([_workstation_task("Chariot élévateur", 4.0)]) is None

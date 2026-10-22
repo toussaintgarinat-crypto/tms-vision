@@ -132,3 +132,17 @@ def test_hand_and_foot_can_be_recommended_with_their_own_labels():
     assert program[0]["capsule"]["zone"] == "hand"
     assert program[0]["reason"].startswith("Main / poignet : 12 s")
     assert program[1]["reason"].startswith("Pied / cheville : 2 s")
+
+
+def test_bilan_program_uses_seated_exercises_for_a_seated_workstation_and_keeps_the_ranking():
+    report = _report(trunk=4.2, upper_arm=1.5, neck=0.5)
+
+    standard = build_bilan_program(report)
+    seated = build_bilan_program(report, "seated")
+
+    assert [item["zone"] for item in seated] == [item["zone"] for item in standard]
+    assert [item["capsule"]["id"] for item in seated] == [
+        "seated-round-hollow-back", "seated-shoulder-cross-body-stretch", "seated-neck-lateral-stretch",
+    ]
+    assert [item["capsule"]["id"] for item in standard] != [item["capsule"]["id"] for item in seated]
+    assert [item["reason"] for item in seated] == [item["reason"] for item in standard]

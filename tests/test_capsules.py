@@ -212,3 +212,20 @@ def test_zones_come_from_the_exercise_module():
 
 def test_no_capsule_exposes_a_placeholder_url():
     assert all("example.com" not in capsule.video_url for capsule in CAPSULES)
+
+
+def test_seated_program_capsules_exist_are_seated_and_match_their_zone():
+    from tms_vision.capsules import CAPSULES, PROGRAM_CAPSULE_BY_ZONE, SEATED_CAPSULE_BY_ZONE
+    from tms_vision.exercises import load_catalog
+
+    positions = {e["id"]: e.get("position", "standing") for e in load_catalog()}
+    assert set(SEATED_CAPSULE_BY_ZONE) <= set(PROGRAM_CAPSULE_BY_ZONE)
+    for zone, capsule_id in SEATED_CAPSULE_BY_ZONE.items():
+        assert positions[capsule_id] == "seated"
+        assert recommend_capsule(zone, "seated").id == capsule_id
+        assert recommend_capsule(zone, "seated").zone == zone
+    # Sans position, ou sans équivalent assis (pied), le programme habituel.
+    for zone, capsule_id in PROGRAM_CAPSULE_BY_ZONE.items():
+        assert recommend_capsule(zone).id == capsule_id
+    assert recommend_capsule("foot", "seated").id == PROGRAM_CAPSULE_BY_ZONE["foot"]
+    assert {c.id for c in CAPSULES} >= set(SEATED_CAPSULE_BY_ZONE.values())

@@ -24,6 +24,8 @@ type BilanProgram = {
   program: ProgramItem[];
   gesture_corrections: GestureCorrection[];
   warnings: string[];
+  position?: "seated" | null;
+  position_note?: string | null;
 };
 
 type LoadedBilan = { id: string; bilan: StoredBilan; report: BilanReport; program: BilanProgram };
@@ -260,6 +262,9 @@ export default function BilanDetailPage() {
           {(loaded.program.program.length > 0 || loaded.program.gesture_corrections.length > 0) && (
             <section className="flex flex-col gap-3">
               <h2 className="text-xl font-semibold">Programme d&apos;étirements du poste</h2>
+              {loaded.program.position_note && (
+                <p className="text-sm text-gray-600">{loaded.program.position_note}</p>
+              )}
               <ProgramList
                 program={loaded.program.program}
                 gestureCorrections={loaded.program.gesture_corrections}

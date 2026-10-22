@@ -689,9 +689,17 @@ async def get_bilan_recurrence(bilan_id: str) -> dict:
 
 @app.get("/bilans/{bilan_id}/program")
 async def get_bilan_program(bilan_id: str) -> dict:
-    report = _build_bilan_report(_get_bilan_or_404(bilan_id))
+    record = _get_bilan_or_404(bilan_id)
+    report = _build_bilan_report(record)
+    position = bilan.preferred_position(record["tasks"])
     return {
-        "program": _annotate_program_videos(build_bilan_program(report)),
+        "program": _annotate_program_videos(build_bilan_program(report, position)),
+        "position": position,
+        "position_note": (
+            "Poste de travail assis (d'après les tâches saisies) : exercices proposés assis "
+            "quand ils existent."
+            if position == "seated" else None
+        ),
         # Réservé à la correction du geste (Partie D de la spec), vide pour l'instant.
         "gesture_corrections": [],
         "warnings": report["warnings"],
