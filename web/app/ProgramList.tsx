@@ -42,7 +42,7 @@ export function ProgramList({
 }) {
   if (program.length === 0 && gestureCorrections.length === 0) {
     return (
-      <p className="rounded border border-gray-300 bg-gray-50 p-3 text-sm text-gray-700">
+      <p className="rounded border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900">
         {NO_PROGRAM_TEXT}{" "}
         <Link href="/bibliotheque" className="text-blue-600 underline">
           Ouvrir la bibliothèque
@@ -54,7 +54,7 @@ export function ProgramList({
   return (
     <div className="flex flex-col gap-3">
       {program.length > 0 && (
-        <div className="rounded border border-blue-200 bg-blue-50 p-3">
+        <div className="rounded border border-blue-200 bg-blue-50 p-3 text-gray-900">
           <h3 className="text-sm font-semibold">
             Programme d&apos;étirements ({program.length} capsule{program.length > 1 ? "s" : ""})
           </h3>
@@ -93,7 +93,7 @@ export function ProgramList({
       )}
 
       {gestureCorrections.length > 0 && (
-        <div className="rounded border border-green-200 bg-green-50 p-3">
+        <div className="rounded border border-green-200 bg-green-50 p-3 text-gray-900">
           <h3 className="text-sm font-semibold">Correction du geste</h3>
           <ul className="mt-2 flex flex-col gap-2">
             {gestureCorrections.map((correction, index) => (

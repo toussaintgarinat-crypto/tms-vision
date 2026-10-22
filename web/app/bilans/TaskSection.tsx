@@ -204,7 +204,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
             <span>
               Vidéo <span className="text-gray-600">{item.analysis_id}</span>
               {tasks.filter((task) => task.analysis_id === item.analysis_id).map((task) => (
-                <span key={task.id} className="ml-2 rounded bg-blue-50 px-2 py-0.5 text-xs">
+                <span key={task.id} className="ml-2 rounded bg-blue-50 px-2 py-0.5 text-xs text-gray-900">
                   complétée par « {task.name} »
                 </span>
               ))}
@@ -219,7 +219,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-medium">{task.name}</span>
               <span className="flex items-center gap-2">
-                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs">
+                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-900">
                   {SOURCE_LABELS[task.source]}
                 </span>
                 <button

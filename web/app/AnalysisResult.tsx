@@ -167,7 +167,7 @@ export function AnalysisResult({
         />
       )}
       {currentRecommendation && !currentRecommendation.program && currentRecommendation.capsule && (
-        <div className="rounded border border-blue-200 bg-blue-50 p-3">
+        <div className="rounded border border-blue-200 bg-blue-50 p-3 text-gray-900">
           <p className="text-sm font-semibold">
             Recommandation : zone{" "}
             {ZONE_LABELS[currentRecommendation.zone ?? ""] ?? currentRecommendation.zone}

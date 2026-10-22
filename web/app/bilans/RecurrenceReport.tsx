@@ -91,7 +91,7 @@ export function RecurrenceReport({ report }: { report: BilanReport }) {
               <li key={task.task_id} className="rounded border p-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">{task.name}</span>
-                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs">
+                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-900">
                     {SOURCE_LABELS[task.source]}
                   </span>
                 </div>
