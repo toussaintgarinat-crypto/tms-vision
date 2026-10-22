@@ -108,13 +108,11 @@ def project_bilan(workday_hours: float, items: list[dict], tasks: list[dict] | N
         declared_by_zone: dict[str, float] = {}
         declared = []
         for task in linked_tasks.get(item["analysis_id"], []):
-            task_cpm = task.get("cycles_per_minute")
-            if task_cpm is not None:
-                for zone in task["zones"]:
-                    declared_by_zone[zone] = task_cpm
+            task_cycles = task.get("zone_cycles") or {}
+            declared_by_zone.update(task_cycles)
             declared.append({
                 "task_id": task["id"], "name": task["name"], "source": task["source"],
-                "zones": task["zones"], "cycles_per_minute": task_cpm,
+                "zones": task["zones"], "zone_cycles": task_cycles,
                 "measured_cycles_per_minute": {
                     zone: recurrence["zones"][zone]["cycles_per_minute"]
                     for zone in task["zones"]
@@ -152,28 +150,33 @@ def project_bilan(workday_hours: float, items: list[dict], tasks: list[dict] | N
 
     task_entries = []
     for task in standalone_tasks:
-        task_cpm = task.get("cycles_per_minute")
+        task_cycles = task.get("zone_cycles") or {}
         task_warnings = []
-        if task_cpm is None:
+        missing = [zone for zone in task["zones"] if zone not in task_cycles]
+        if len(missing) == len(task["zones"]):
             task_warnings.append(
                 "Répétitions non renseignées : aucun cycle n'est compté pour cette tâche."
             )
-        else:
-            for zone in task["zones"]:
-                zones[zone]["projected_cycles"] += task_cpm * 60.0 * task["activity_hours"]
+        elif missing:
+            task_warnings.append(
+                "Répétitions non renseignées pour : " + ", ".join(missing) + "."
+            )
+        for zone in task["zones"]:
+            if zone in task_cycles:
+                zones[zone]["projected_cycles"] += task_cycles[zone] * 60.0 * task["activity_hours"]
         task_warnings.append(
             "Sans vidéo : score RULA et temps en posture à risque non mesurés."
         )
         task_entries.append({
             "task_id": task["id"], "name": task["name"], "source": task["source"],
             "zones": task["zones"], "activity_hours": task["activity_hours"],
-            "time_slots": task.get("time_slots"), "cycles_per_minute": task_cpm,
+            "time_slots": task.get("time_slots"), "zone_cycles": task_cycles,
             "warnings": task_warnings,
         })
 
     warnings = []
     contributes = any(
-        entry["cycles_per_minute"] is not None and entry["zones"] for entry in task_entries
+        entry["zone_cycles"] for entry in task_entries
     ) or any(
         entry["declared"] for entry in analyses
     )

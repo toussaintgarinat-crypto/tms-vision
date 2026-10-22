@@ -679,8 +679,9 @@ def _task_fields(**overrides):
     fields = {
         "name": "Peindre un plafond", "zones": ["neck", "upper_arm"], "activity_hours": 2.0,
         "time_slots": [{"start": "08:00", "end": "10:00"}], "days_per_week": 5.0,
-        "cycles_per_minute": 12.0, "cycle_seconds": 5.0, "static_seconds": 30.0,
+        "zone_cycles": {"neck": 6.0, "upper_arm": 12.0}, "cycle_seconds": 5.0, "static_seconds": 30.0,
         "load_kg": 2.0, "analysis_id": None, "source": "practitioner", "notes": "bras levés",
+        "workstation": "Bras au-dessus des épaules", "breaks": "Déjeuner seulement",
     }
     return {**fields, **overrides}
 
@@ -699,13 +700,13 @@ def test_bilan_task_create_read_update_delete(tmp_path, monkeypatch):
 
     storage.update_bilan_task(
         task_id="t-1", bilan_id="b-1",
-        task=_task_fields(name="Saisie", time_slots=None, cycles_per_minute=None,
+        task=_task_fields(name="Saisie", time_slots=None, zone_cycles={},
                           analysis_id="a-1"),
     )
     [updated] = storage.list_bilan_tasks("b-1")
     assert updated["name"] == "Saisie"
     assert updated["time_slots"] is None
-    assert updated["cycles_per_minute"] is None
+    assert updated["zone_cycles"] == {}
     assert updated["analysis_id"] == "a-1"
 
     storage.delete_bilan_task(task_id="t-1", bilan_id="b-1")
@@ -727,3 +728,22 @@ def test_bilan_task_rejects_unknown_bilan_task_and_foreign_analysis(tmp_path, mo
         storage.update_bilan_task(task_id="nope", bilan_id="b-1", task=_task_fields())
     with pytest.raises(KeyError):
         storage.delete_bilan_task(task_id="nope", bilan_id="b-1")
+
+
+def test_legacy_task_with_a_single_frequency_is_read_as_one_value_per_zone(tmp_path, monkeypatch):
+    _bilan_with_analysis(tmp_path, monkeypatch)
+    conn = storage._connect()
+    try:
+        conn.execute(
+            "INSERT INTO bilan_tasks (id, bilan_id, created_at, name, zones_json, "
+            "activity_hours, cycles_per_minute, source) VALUES "
+            "('old', 'b-1', TIMESTAMP '2026-10-22 09:00:00', 'Ancienne', "
+            "'[\"neck\", \"trunk\"]', 2.0, 7.0, 'practitioner')"
+        )
+    finally:
+        conn.close()
+
+    [task] = storage.list_bilan_tasks("b-1")
+
+    assert task["zone_cycles"] == {"neck": 7.0, "trunk": 7.0}
+    assert task["workstation"] is None

@@ -1,3 +1,5 @@
+import { ZONE_LABELS, ZONES, Zone } from "./types";
+
 export type FrequencyUnit = "minute" | "hour" | "day";
 
 export const FREQUENCY_UNIT_LABELS: Record<FrequencyUnit, string> = {
@@ -54,3 +56,43 @@ export const SOURCE_LABELS = {
   patient: "Déclaré par le patient",
 } as const;
 export type Source = keyof typeof SOURCE_LABELS;
+
+export function formatZoneCycles(zoneCycles: Partial<Record<Zone, number>>): string {
+  const parts = ZONES.filter((zone) => zoneCycles[zone] !== undefined).map(
+    (zone) =>
+      `${ZONE_LABELS[zone]} : ${(zoneCycles[zone] as number).toLocaleString("fr-FR", {
+        maximumFractionDigits: 2,
+      })}/min`,
+  );
+  return parts.length > 0 ? parts.join(" · ") : "répétitions non renseignées";
+}
+
+export const OTHER_OPTION = "Autre";
+
+// BROUILLON (draft) : listes « 20 % des cas qui font 80 % » à faire valider par
+// l'ostéopathe. Informatives : elles n'entrent pas dans la projection.
+export const WORKSTATION_OPTIONS = [
+  "Assis devant écran",
+  "Debout statique (caisse, atelier)",
+  "Manutention et port de charges",
+  "Bras au-dessus des épaules (peinture, plafond)",
+  "Conduite",
+  "Geste répétitif en production",
+  "Penché (soins, nettoyage)",
+  "Marche et déplacements",
+] as const;
+
+export const BREAK_OPTIONS = [
+  "Aucune pause",
+  "Déjeuner seulement",
+  "Pauses courtes toutes les 2 h",
+  "Micro-pauses fréquentes",
+  "Rotation de poste",
+] as const;
+
+/** Valeur à envoyer pour une liste à choix + « Autre » : null si rien n'est choisi. */
+export function choiceValue(choice: string, otherText: string): string | null {
+  if (choice === "") return null;
+  if (choice === OTHER_OPTION) return otherText.trim() === "" ? null : otherText.trim();
+  return choice;
+}

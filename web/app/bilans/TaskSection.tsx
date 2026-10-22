@@ -4,11 +4,16 @@ import { FormEvent, useState } from "react";
 
 import { formatHours } from "./recurrenceFormat";
 import {
+  BREAK_OPTIONS,
   FREQUENCY_UNIT_LABELS,
   FrequencyUnit,
+  OTHER_OPTION,
   SOURCE_LABELS,
   TimeSlot,
+  WORKSTATION_OPTIONS,
+  choiceValue,
   formatSlots,
+  formatZoneCycles,
   slotsTotalHours,
   toCyclesPerMinute,
 } from "./taskForm";
@@ -46,7 +51,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
   const [useSlots, setUseSlots] = useState(false);
   const [slots, setSlots] = useState<TimeSlot[]>([{ start: "", end: "" }]);
   const [hours, setHours] = useState("");
-  const [frequency, setFrequency] = useState("");
+  const [frequencies, setFrequencies] = useState<Partial<Record<Zone, string>>>({});
   const [unit, setUnit] = useState<FrequencyUnit>("minute");
   const [cycleSeconds, setCycleSeconds] = useState("");
   const [staticSeconds, setStaticSeconds] = useState("");
@@ -54,6 +59,10 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
   const [daysPerWeek, setDaysPerWeek] = useState("");
   const [notes, setNotes] = useState("");
   const [analysisId, setAnalysisId] = useState("");
+  const [workstation, setWorkstation] = useState("");
+  const [workstationOther, setWorkstationOther] = useState("");
+  const [breaks, setBreaks] = useState("");
+  const [breaksOther, setBreaksOther] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,14 +102,18 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
       return setError("Indiquez la durée de la tâche ou ses plages horaires.");
     }
 
-    let cyclesPerMinute: number | null = null;
-    const frequencyValue = optionalNumber(frequency);
-    if (frequencyValue !== null) {
-      const linkedHours = items.find((item) => item.analysis_id === analysisId)?.activity_hours;
-      cyclesPerMinute = toCyclesPerMinute(frequencyValue, unit, activityHours ?? linkedHours ?? null);
-      if (cyclesPerMinute === null) {
-        return setError("Répétitions invalides (valeur positive, et durée connue si « par jour »).");
+    const linkedHours = items.find((item) => item.analysis_id === analysisId)?.activity_hours;
+    const zoneCycles: Partial<Record<Zone, number>> = {};
+    for (const zone of zones) {
+      const frequencyValue = optionalNumber(frequencies[zone] ?? "");
+      if (frequencyValue === null) continue;
+      const perMinute = toCyclesPerMinute(frequencyValue, unit, activityHours ?? linkedHours ?? null);
+      if (perMinute === null) {
+        return setError(
+          `Répétitions invalides pour « ${ZONE_LABELS[zone]} » (valeur positive, et durée connue si « par jour »).`,
+        );
       }
+      zoneCycles[zone] = perMinute;
     }
 
     const cycle = optionalNumber(cycleSeconds);
@@ -122,7 +135,9 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
           zones,
           activity_hours: useSlots ? null : activityHours,
           time_slots: timeSlots,
-          cycles_per_minute: cyclesPerMinute,
+          zone_cycles_per_minute: zoneCycles,
+          workstation: choiceValue(workstation, workstationOther),
+          breaks: choiceValue(breaks, breaksOther),
           cycle_seconds: cycle,
           static_seconds: held,
           load_kg: load,
@@ -141,7 +156,11 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
       setUseSlots(false);
       setSlots([{ start: "", end: "" }]);
       setHours("");
-      setFrequency("");
+      setFrequencies({});
+      setWorkstation("");
+      setWorkstationOther("");
+      setBreaks("");
+      setBreaksOther("");
       setCycleSeconds("");
       setStaticSeconds("");
       setLoadKg("");
@@ -214,11 +233,15 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
             <span className="text-gray-700">
               {task.zones.map((zone) => ZONE_LABELS[zone]).join(", ")} · {formatHours(task.activity_hours)}
               {task.time_slots && <> ({formatSlots(task.time_slots)})</>}
-              {task.cycles_per_minute !== null && (
-                <> · {task.cycles_per_minute.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} cycles/min</>
-              )}
+              {" · "}
+              {formatZoneCycles(task.zone_cycles)}
               {task.analysis_id && <> · complète la vidéo {task.analysis_id}</>}
             </span>
+            {(task.workstation || task.breaks) && (
+              <span className="text-gray-600">
+                {[task.workstation, task.breaks].filter(Boolean).join(" · ")}
+              </span>
+            )}
             {task.notes && <span className="text-gray-600">{task.notes}</span>}
           </li>
         ))}
@@ -287,17 +310,26 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
           )}
         </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Répétitions
-          <div className="flex gap-2">
-            <input type="number" min="0" step="any" value={frequency} onChange={(e) => setFrequency(e.target.value)} className={`${input} w-28`} />
-            <select value={unit} onChange={(e) => setUnit(e.target.value as FrequencyUnit)} className={input}>
-              {(Object.keys(FREQUENCY_UNIT_LABELS) as FrequencyUnit[]).map((key) => (
-                <option key={key} value={key}>{FREQUENCY_UNIT_LABELS[key]}</option>
-              ))}
-            </select>
-          </div>
-        </label>
+        <fieldset className="flex flex-col gap-2 text-sm sm:col-span-2">
+          <legend className="mb-1">Répétitions (une valeur par zone cochée)</legend>
+          <select value={unit} onChange={(e) => setUnit(e.target.value as FrequencyUnit)} className={`${input} self-start`} aria-label="Unité des répétitions">
+            {(Object.keys(FREQUENCY_UNIT_LABELS) as FrequencyUnit[]).map((key) => (
+              <option key={key} value={key}>{FREQUENCY_UNIT_LABELS[key]}</option>
+            ))}
+          </select>
+          {zones.length === 0 && <span className="text-gray-500">Cochez d&apos;abord les zones concernées.</span>}
+          {ZONES.filter((zone) => zones.includes(zone)).map((zone) => (
+            <label key={zone} className="flex items-center gap-2">
+              <span className="w-44">{ZONE_LABELS[zone]}</span>
+              <input
+                type="number" min="0" step="any"
+                value={frequencies[zone] ?? ""}
+                onChange={(e) => setFrequencies((current) => ({ ...current, [zone]: e.target.value }))}
+                className={`${input} w-28`}
+              />
+            </label>
+          ))}
+        </fieldset>
         <label className="flex flex-col gap-1 text-sm">
           Durée d&apos;un cycle (secondes)
           <input type="number" min="0" step="any" value={cycleSeconds} onChange={(e) => setCycleSeconds(e.target.value)} className={input} />
@@ -325,8 +357,34 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
             ))}
           </select>
           <span className="text-xs text-gray-500">
-            Les répétitions saisies remplacent la mesure de la vidéo pour les zones cochées.
+            Les répétitions saisies remplacent la mesure de la vidéo pour les zones où une valeur est donnée.
           </span>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Poste de travail
+          <select value={workstation} onChange={(e) => setWorkstation(e.target.value)} className={input}>
+            <option value="">— Non précisé —</option>
+            {WORKSTATION_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+            <option value={OTHER_OPTION}>{OTHER_OPTION}…</option>
+          </select>
+          {workstation === OTHER_OPTION && (
+            <input value={workstationOther} onChange={(e) => setWorkstationOther(e.target.value)} className={input} aria-label="Poste de travail (précision)" />
+          )}
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Pauses
+          <select value={breaks} onChange={(e) => setBreaks(e.target.value)} className={input}>
+            <option value="">— Non précisé —</option>
+            {BREAK_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+            <option value={OTHER_OPTION}>{OTHER_OPTION}…</option>
+          </select>
+          {breaks === OTHER_OPTION && (
+            <input value={breaksOther} onChange={(e) => setBreaksOther(e.target.value)} className={input} aria-label="Pauses (précision)" />
+          )}
         </label>
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           Notes

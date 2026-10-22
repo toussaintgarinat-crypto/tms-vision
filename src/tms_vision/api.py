@@ -557,6 +557,9 @@ class BilanTaskBody(BaseModel):
     activity_hours: float | None = Field(default=None, gt=0, le=24)
     time_slots: list[TimeSlot] | None = None
     days_per_week: float | None = Field(default=None, gt=0, le=7)
+    # Fréquence propre à chaque zone ; `cycles_per_minute` : raccourci appliqué aux
+    # zones cochées qui n'ont pas de valeur propre.
+    zone_cycles_per_minute: dict[ZONE_NAMES, float] | None = None
     cycles_per_minute: float | None = Field(default=None, ge=0)
     cycle_seconds: float | None = Field(default=None, gt=0)
     static_seconds: float | None = Field(default=None, ge=0)
@@ -564,6 +567,12 @@ class BilanTaskBody(BaseModel):
     analysis_id: str | None = None
     source: Literal["practitioner", "patient"] = "practitioner"
     notes: str | None = None
+    workstation: str | None = Field(default=None, max_length=200)
+    breaks: str | None = Field(default=None, max_length=200)
+
+
+def _clean_text(text: str | None) -> str | None:
+    return text.strip() if text and text.strip() else None
 
 
 def _validated_task(record: dict, body: BilanTaskBody, *, exclude_task_id: str | None) -> dict:
@@ -607,12 +616,27 @@ def _validated_task(record: dict, body: BilanTaskBody, *, exclude_task_id: str |
                     f"{record['workday_hours']} h."
                 ),
             )
+    zone_cycles = {}
+    for zone, value in (body.zone_cycles_per_minute or {}).items():
+        if zone not in zones:
+            raise HTTPException(
+                status_code=422,
+                detail="Une fréquence est donnée pour une zone qui n'est pas cochée.",
+            )
+        if value < 0:
+            raise HTTPException(status_code=422, detail="Les répétitions doivent être positives.")
+        zone_cycles[zone] = value
+    if body.cycles_per_minute is not None:
+        for zone in zones:
+            zone_cycles.setdefault(zone, body.cycles_per_minute)
+
     return {
         "name": name, "zones": zones, "activity_hours": hours, "time_slots": slots,
-        "days_per_week": body.days_per_week, "cycles_per_minute": body.cycles_per_minute,
+        "days_per_week": body.days_per_week, "zone_cycles": zone_cycles,
+        "workstation": _clean_text(body.workstation), "breaks": _clean_text(body.breaks),
         "cycle_seconds": body.cycle_seconds, "static_seconds": body.static_seconds,
         "load_kg": body.load_kg, "analysis_id": body.analysis_id, "source": body.source,
-        "notes": body.notes.strip() if body.notes and body.notes.strip() else None,
+        "notes": _clean_text(body.notes),
     }
 
 

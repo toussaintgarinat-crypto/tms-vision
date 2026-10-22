@@ -30,7 +30,7 @@ export type BilanReportDeclared = {
   name: string;
   source: "practitioner" | "patient";
   zones: Zone[];
-  cycles_per_minute: number | null;
+  zone_cycles: Partial<Record<Zone, number>>;
   measured_cycles_per_minute: Partial<Record<Zone, number | null>>;
 };
 
@@ -41,7 +41,7 @@ export type BilanReportTask = {
   zones: Zone[];
   activity_hours: number;
   time_slots: { start: string; end: string }[] | null;
-  cycles_per_minute: number | null;
+  zone_cycles: Partial<Record<Zone, number>>;
   warnings: string[];
 };
 
@@ -81,13 +81,15 @@ export type BilanTask = {
   activity_hours: number;
   time_slots: { start: string; end: string }[] | null;
   days_per_week: number | null;
-  cycles_per_minute: number | null;
+  zone_cycles: Partial<Record<Zone, number>>;
   cycle_seconds: number | null;
   static_seconds: number | null;
   load_kg: number | null;
   analysis_id: string | null;
   source: "practitioner" | "patient";
   notes: string | null;
+  workstation: string | null;
+  breaks: string | null;
 };
 
 export type StoredBilan = {

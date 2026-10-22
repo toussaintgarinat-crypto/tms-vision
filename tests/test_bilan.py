@@ -145,7 +145,8 @@ def _task(task_id="t1", hours=2.0, zones=("upper_arm",), cpm=10.0, analysis_id=N
           slots=None, source="practitioner", name="Peindre un plafond"):
     return {
         "id": task_id, "name": name, "zones": list(zones), "activity_hours": hours,
-        "time_slots": slots, "cycles_per_minute": cpm, "analysis_id": analysis_id,
+        "time_slots": slots, "analysis_id": analysis_id,
+        "zone_cycles": {} if cpm is None else {zone: cpm for zone in zones},
         "source": source,
     }
 
@@ -191,7 +192,7 @@ def test_task_completing_a_video_overrides_measure_but_keeps_it_visible():
     assert report["zones"]["trunk"]["projected_elevated_hours"] == 2.5
     assert report["tasks"] == []
     [declared] = report["analyses"][0]["declared"]
-    assert declared["cycles_per_minute"] == 8.0
+    assert declared["zone_cycles"] == {"trunk": 8.0}
     assert declared["measured_cycles_per_minute"] == {"trunk": 3.0}
 
 
@@ -245,3 +246,42 @@ def test_slots_hours_sums_slots_and_rejects_bad_ones():
         slots_hours([{"start": "8h", "end": "9h"}])
     with pytest.raises(ValueError, match="chevauchent"):
         slots_hours([{"start": "08:00", "end": "10:00"}, {"start": "09:00", "end": "11:00"}])
+
+
+def test_task_can_declare_a_different_frequency_per_zone():
+    task = _task(hours=2.0, zones=("neck", "lower_arm"), cpm=None)
+    task["zone_cycles"] = {"neck": 6.0, "lower_arm": 20.0}
+
+    report = project_bilan(9.0, [], [task])
+
+    assert report["zones"]["neck"]["projected_cycles"] == 6 * 60 * 2
+    assert report["zones"]["lower_arm"]["projected_cycles"] == 20 * 60 * 2
+    # Une seule tâche : la durée n'est comptée qu'une fois.
+    assert report["documented_hours"] == 2.0
+    assert report["tasks"][0]["warnings"] == [
+        "Sans vidéo : score RULA et temps en posture à risque non mesurés."
+    ]
+
+
+def test_zone_without_frequency_is_reported_and_others_still_count():
+    task = _task(hours=1.0, zones=("neck", "hand"), cpm=None)
+    task["zone_cycles"] = {"neck": 5.0}
+
+    report = project_bilan(9.0, [], [task])
+
+    assert report["zones"]["neck"]["projected_cycles"] == 5 * 60
+    assert report["zones"]["hand"]["projected_cycles"] == 0.0
+    assert any("pour : hand" in w for w in report["tasks"][0]["warnings"])
+
+
+def test_declared_frequency_per_zone_overrides_only_those_zones_of_a_video():
+    items = [_item("a", 4.0, recurrence=_recurrence(
+        neck={"cycles_per_minute": 1.0}, lower_arm={"cycles_per_minute": 2.0}))]
+    task = _task(zones=("neck", "lower_arm"), cpm=None, analysis_id="a")
+    task["zone_cycles"] = {"neck": 6.0}
+
+    report = project_bilan(9.0, items, [task])
+
+    assert report["zones"]["neck"]["projected_cycles"] == 6 * 60 * 4
+    # Pas de valeur saisie pour l'avant-bras : la mesure est conservée.
+    assert report["zones"]["lower_arm"]["projected_cycles"] == 2 * 60 * 4

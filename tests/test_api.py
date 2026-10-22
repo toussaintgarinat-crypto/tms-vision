@@ -1412,3 +1412,51 @@ def test_attaching_a_video_counts_standalone_tasks_in_the_workday(tmp_path, monk
                                  "representative": True})
 
     assert too_long.status_code == 422
+
+
+def test_task_accepts_a_frequency_per_zone_and_workstation_fields(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 8.0}).json()["id"]
+    payload = _task_payload(
+        zones=["neck", "lower_arm"], cycles_per_minute=None,
+        zone_cycles_per_minute={"neck": 6.0, "lower_arm": 20.0},
+        workstation=" Assis devant écran ", breaks="Pauses courtes toutes les 2 h",
+    )
+
+    [task] = client.post(f"/bilans/{bilan_id}/tasks", json=payload).json()["tasks"]
+
+    assert task["zone_cycles"] == {"neck": 6.0, "lower_arm": 20.0}
+    assert task["workstation"] == "Assis devant écran"
+    assert task["breaks"] == "Pauses courtes toutes les 2 h"
+    report = client.get(f"/bilans/{bilan_id}/recurrence").json()
+    assert report["zones"]["neck"]["projected_cycles"] == 6 * 60 * 2
+    assert report["zones"]["lower_arm"]["projected_cycles"] == 20 * 60 * 2
+    assert report["documented_hours"] == 2.0
+
+
+def test_shortcut_frequency_fills_only_zones_without_their_own_value(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+    payload = _task_payload(zones=["neck", "hand"], cycles_per_minute=3.0,
+                            zone_cycles_per_minute={"neck": 9.0})
+
+    [task] = client.post(f"/bilans/{bilan_id}/tasks", json=payload).json()["tasks"]
+
+    assert task["zone_cycles"] == {"neck": 9.0, "hand": 3.0}
+
+
+def test_frequency_for_an_unchecked_zone_is_rejected(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+
+    response = client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload(
+        zones=["neck"], zone_cycles_per_minute={"foot": 2.0}))
+
+    assert response.status_code == 422
+    assert "pas cochée" in response.json()["detail"]
+    negative = client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload(
+        zones=["neck"], zone_cycles_per_minute={"neck": -1.0}))
+    assert negative.status_code == 422

@@ -1,5 +1,5 @@
 import { formatCycles, formatHours, formatSampleDuration } from "./recurrenceFormat";
-import { SOURCE_LABELS } from "./taskForm";
+import { SOURCE_LABELS, formatZoneCycles } from "./taskForm";
 import { BilanReport, ZONES, ZONE_LABELS } from "./types";
 
 const ASSESSMENT_LABELS = {
@@ -98,9 +98,7 @@ export function RecurrenceReport({ report }: { report: BilanReport }) {
                 <p className="text-gray-700">
                   {task.zones.map((zone) => ZONE_LABELS[zone]).join(", ")} ·{" "}
                   {formatHours(task.activity_hours)} ·{" "}
-                  {task.cycles_per_minute === null
-                    ? "répétitions non renseignées"
-                    : `${task.cycles_per_minute.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} cycles/min`}
+                  {formatZoneCycles(task.zone_cycles)}
                 </p>
                 {task.warnings.map((warning) => (
                   <p key={warning} className="mt-1 text-amber-800">
@@ -136,13 +134,14 @@ export function RecurrenceReport({ report }: { report: BilanReport }) {
               <p key={declared.task_id} className="mt-1 rounded bg-blue-50 p-2 text-blue-900">
                 « {declared.name} » ({SOURCE_LABELS[declared.source]}) remplace la mesure pour :{" "}
                 {declared.zones
+                  .filter((zone) => declared.zone_cycles[zone] !== undefined)
                   .map((zone) => {
                     const measured = declared.measured_cycles_per_minute[zone];
                     const format = (value: number | null | undefined) =>
                       value == null
                         ? "—"
                         : value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
-                    return `${ZONE_LABELS[zone]} (déclaré : ${format(declared.cycles_per_minute)}/min · mesuré : ${format(measured)}/min)`;
+                    return `${ZONE_LABELS[zone]} (déclaré : ${format(declared.zone_cycles[zone])}/min · mesuré : ${format(measured)}/min)`;
                   })
                   .join(" ; ")}
                 .

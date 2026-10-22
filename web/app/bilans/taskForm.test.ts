@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { formatSlots, slotsTotalHours, toCyclesPerMinute } from "./taskForm";
+import {
+  choiceValue,
+  formatSlots,
+  formatZoneCycles,
+  slotsTotalHours,
+  toCyclesPerMinute,
+} from "./taskForm";
 
 describe("toCyclesPerMinute", () => {
   it("keeps per-minute values", () => {
@@ -49,5 +55,26 @@ describe("formatSlots", () => {
     expect(formatSlots([{ start: "08:00", end: "12:00" }, { start: "14:00", end: "15:00" }])).toBe(
       "08:00–12:00, 14:00–15:00",
     );
+  });
+});
+
+describe("formatZoneCycles", () => {
+  it("lists zones in body order with their own frequency", () => {
+    expect(formatZoneCycles({ lower_arm: 20, neck: 6 })).toBe(
+      "Cou : 6/min · Avant-bras / coude : 20/min",
+    );
+  });
+
+  it("says when nothing is filled in", () => {
+    expect(formatZoneCycles({})).toBe("répétitions non renseignées");
+  });
+});
+
+describe("choiceValue", () => {
+  it("returns the listed choice, the free text for Autre, or null", () => {
+    expect(choiceValue("Conduite", "")).toBe("Conduite");
+    expect(choiceValue("Autre", "  Chariot élévateur ")).toBe("Chariot élévateur");
+    expect(choiceValue("Autre", " ")).toBeNull();
+    expect(choiceValue("", "x")).toBeNull();
   });
 });

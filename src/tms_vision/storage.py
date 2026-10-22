@@ -106,9 +106,21 @@ CREATE TABLE IF NOT EXISTS bilan_tasks (
     load_kg DOUBLE,
     analysis_id VARCHAR,
     source VARCHAR NOT NULL,
-    notes VARCHAR
+    notes VARCHAR,
+    zone_cycles_json VARCHAR,
+    workstation VARCHAR,
+    breaks VARCHAR
 )
 """
+
+# Colonnes ajoutées après la première version de bilan_tasks. `cycles_per_minute`
+# (une fréquence pour toutes les zones) n'est plus écrite : lue seulement pour les
+# anciennes lignes, voir _task_record.
+_BILAN_TASKS_LATER_COLUMNS = [
+    ("zone_cycles_json", "VARCHAR"),
+    ("workstation", "VARCHAR"),
+    ("breaks", "VARCHAR"),
+]
 
 CREATE_ANALYSIS_LOADS_TABLE = """
 CREATE TABLE IF NOT EXISTS analysis_loads (
@@ -177,6 +189,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_BILAN_TASKS_TABLE)
     conn.execute(CREATE_ANALYSIS_LOADS_TABLE)
     conn.execute(CREATE_LIBRARY_SHARES_TABLE)
+    for column, column_type in _BILAN_TASKS_LATER_COLUMNS:
+        conn.execute(f"ALTER TABLE bilan_tasks ADD COLUMN IF NOT EXISTS {column} {column_type}")
     # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
     for column, column_type in _TRANCHE_5_COLUMNS:
         conn.execute(f"ALTER TABLE analysis_frames ADD COLUMN IF NOT EXISTS {column} {column_type}")
@@ -516,29 +530,38 @@ def get_bilan(bilan_id: str) -> dict | None:
 
 
 _TASK_FIELDS = [
-    "name", "zones", "activity_hours", "time_slots", "days_per_week", "cycles_per_minute",
+    "name", "zones", "activity_hours", "time_slots", "days_per_week", "zone_cycles",
     "cycle_seconds", "static_seconds", "load_kg", "analysis_id", "source", "notes",
+    "workstation", "breaks",
 ]
 _TASK_SELECT = (
     "id, bilan_id, created_at, name, zones_json, activity_hours, time_slots_json, "
     "days_per_week, cycles_per_minute, cycle_seconds, static_seconds, load_kg, "
-    "analysis_id, source, notes"
+    "analysis_id, source, notes, zone_cycles_json, workstation, breaks"
 )
 
 
 def _task_record(row) -> dict:
     (task_id, bilan_id, created_at, name, zones_json, activity_hours, time_slots_json,
      days_per_week, cycles_per_minute, cycle_seconds, static_seconds, load_kg,
-     analysis_id, source, notes) = row
+     analysis_id, source, notes, zone_cycles_json, workstation, breaks) = row
+    zones = json.loads(zones_json)
+    if zone_cycles_json is not None:
+        zone_cycles = json.loads(zone_cycles_json)
+    elif cycles_per_minute is not None:
+        zone_cycles = {zone: cycles_per_minute for zone in zones}
+    else:
+        zone_cycles = {}
     return {
         "id": task_id, "bilan_id": bilan_id,
         "created_at": _attach_utc(created_at).isoformat(),
-        "name": name, "zones": json.loads(zones_json),
+        "name": name, "zones": zones,
         "activity_hours": activity_hours,
         "time_slots": json.loads(time_slots_json) if time_slots_json is not None else None,
-        "days_per_week": days_per_week, "cycles_per_minute": cycles_per_minute,
+        "days_per_week": days_per_week, "zone_cycles": zone_cycles,
         "cycle_seconds": cycle_seconds, "static_seconds": static_seconds,
         "load_kg": load_kg, "analysis_id": analysis_id, "source": source, "notes": notes,
+        "workstation": workstation, "breaks": breaks,
     }
 
 
@@ -559,9 +582,10 @@ def _task_values(task: dict) -> list:
     return [
         task["name"], json.dumps(task["zones"]), task["activity_hours"],
         json.dumps(slots) if slots is not None else None,
-        task.get("days_per_week"), task.get("cycles_per_minute"), task.get("cycle_seconds"),
+        task.get("days_per_week"), None, task.get("cycle_seconds"),
         task.get("static_seconds"), task.get("load_kg"), task.get("analysis_id"),
         task["source"], task.get("notes"),
+        json.dumps(task.get("zone_cycles") or {}), task.get("workstation"), task.get("breaks"),
     ]
 
 
@@ -588,8 +612,9 @@ def create_bilan_task(*, task_id: str, bilan_id: str, created_at: datetime, task
         conn.execute(
             "INSERT INTO bilan_tasks (id, bilan_id, created_at, name, zones_json, "
             "activity_hours, time_slots_json, days_per_week, cycles_per_minute, "
-            "cycle_seconds, static_seconds, load_kg, analysis_id, source, notes) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "cycle_seconds, static_seconds, load_kg, analysis_id, source, notes, "
+            "zone_cycles_json, workstation, breaks) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [task_id, bilan_id, _to_naive_utc(created_at), *_task_values(task)],
         )
     finally:
@@ -611,7 +636,8 @@ def update_bilan_task(*, task_id: str, bilan_id: str, task: dict) -> None:
             "UPDATE bilan_tasks SET name = ?, zones_json = ?, activity_hours = ?, "
             "time_slots_json = ?, days_per_week = ?, cycles_per_minute = ?, "
             "cycle_seconds = ?, static_seconds = ?, load_kg = ?, analysis_id = ?, "
-            "source = ?, notes = ? WHERE id = ? AND bilan_id = ?",
+            "source = ?, notes = ?, zone_cycles_json = ?, workstation = ?, breaks = ? "
+            "WHERE id = ? AND bilan_id = ?",
             [*_task_values(task), task_id, bilan_id],
         )
     finally:
