@@ -8,3 +8,4 @@ outputs/
 .playwright-mcp/
 .superpowers/
 data/
+.tms-run/

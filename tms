@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+# Commande unique du projet : installe la solution depuis un clone du dépôt, puis la lance.
+#
+#   ./tms setup              installe tout (Python, site web, ffmpeg, Chromium) et vérifie
+#   ./tms start              lance l'API (port 8000) et le site web (port 3000)
+#   ./tms stop               arrête ce que « start » a lancé
+#   ./tms capsules [options] génère les vidéos d'étirement (ex. --id neck-lateral-stretch)
+#   ./tms test               lance les tests Python et web
+#   ./tms doctor             vérifie l'installation sans rien modifier
+#
+# « setup » est relançable sans risque : ce qui est déjà en place est laissé tel quel.
+# Options de setup : --no-system (n'installe aucun paquet du système, signale seulement ce qui manque).
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+VENV="$ROOT/venv"
+RUN_DIR="$ROOT/.tms-run"
+API_PORT="${TMS_API_PORT:-8000}"
+WEB_PORT="${TMS_WEB_PORT:-3000}"
+
+if [ -t 1 ]; then GREEN=$'\033[32m'; RED=$'\033[31m'; YELLOW=$'\033[33m'; BOLD=$'\033[1m'; RESET=$'\033[0m'; else GREEN=; RED=; YELLOW=; BOLD=; RESET=; fi
+ok()   { echo "${GREEN}✔${RESET} $*"; }
+warn() { echo "${YELLOW}!${RESET} $*"; }
+fail() { echo "${RED}✘${RESET} $*"; }
+step() { echo; echo "${BOLD}== $* ==${RESET}"; }
+die()  { fail "$*"; exit 1; }
+
+PROBLEMS=0
+problem() { fail "$*"; PROBLEMS=$((PROBLEMS + 1)); }
+
+# --- Python -----------------------------------------------------------------------------------
+# mediapipe (plafonné sous 0.10.30, voir requirements.txt) n'est publié que pour Python 3.9 à 3.12 ;
+# le projet vise la 3.11 (.python-version).
+find_python() {
+  local candidate
+  for candidate in python3.11 python3.12 python3.10 python3; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      if "$candidate" -c 'import sys; sys.exit(0 if (3, 10) <= sys.version_info[:2] <= (3, 12) else 1)' 2>/dev/null; then
+        echo "$candidate"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+# --- Paquets du système -----------------------------------------------------------------------
+SUDO=""
+if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then SUDO="sudo"; fi
+
+system_install() {  # system_install <paquet brew> <paquet apt>
+  [ "${NO_SYSTEM:-0}" = "1" ] && return 1
+  if command -v brew >/dev/null 2>&1; then
+    brew install "$1"
+  elif command -v apt-get >/dev/null 2>&1; then
+    $SUDO apt-get update -qq && $SUDO apt-get install -y "$2"
+  else
+    return 1
+  fi
+}
+
+# La sortie est d'abord capturée : « grep -q » ferme le tube dès qu'il trouve, ffmpeg reçoit SIGPIPE et
+# « pipefail » ferait alors échouer le test à tort.
+has_libx264() { local encoders; encoders="$(ffmpeg -hide_banner -encoders 2>/dev/null)"; [[ "$encoders" == *libx264* ]]; }
+
+# --- setup ------------------------------------------------------------------------------------
+cmd_setup() {
+  for arg in "$@"; do
+    case "$arg" in
+      --no-system) NO_SYSTEM=1 ;;
+      *) die "Option inconnue pour setup : $arg" ;;
+    esac
+  done
+
+  step "Python"
+  local py
+  if ! py="$(find_python)"; then
+    warn "Python 3.10 à 3.12 introuvable (3.11 recommandé) : tentative d'installation."
+    system_install python@3.11 python3.11 || true
+    py="$(find_python)" || die "Python 3.11 est requis (mediapipe n'existe pas pour 3.13 et plus). Installez-le puis relancez ./tms setup."
+  fi
+  ok "$("$py" --version) ($py)"
+
+  if [ ! -x "$VENV/bin/python" ]; then
+    "$py" -m venv "$VENV" || die "Création de l'environnement virtuel impossible (sous Debian/Ubuntu : paquet python3-venv)."
+    ok "Environnement virtuel créé dans venv/"
+  else
+    ok "Environnement virtuel déjà présent"
+  fi
+  "$VENV/bin/python" -m pip install --quiet --upgrade pip || warn "Mise à jour de pip impossible (on continue)."
+  "$VENV/bin/python" -m pip install --quiet -r requirements.txt || die "Installation de requirements.txt échouée."
+  ok "Dépendances Python installées"
+
+  step "Node.js et site web"
+  if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+    warn "Node.js introuvable : tentative d'installation."
+    system_install node nodejs || true
+    command -v npm >/dev/null 2>&1 || die "Node.js 20 ou plus est requis (https://nodejs.org). Installez-le puis relancez ./tms setup."
+  fi
+  local node_major
+  node_major="$(node -p 'process.versions.node.split(".")[0]')"
+  [ "$node_major" -ge 20 ] || die "Node.js $node_major trouvé, 20 ou plus est requis."
+  ok "Node.js $(node --version)"
+  (cd web && npm install --no-audit --no-fund) || die "npm install a échoué dans web/."
+  ok "Dépendances du site installées"
+
+  step "ffmpeg (vidéos d'étirement)"
+  if command -v ffmpeg >/dev/null 2>&1 && has_libx264; then
+    ok "ffmpeg avec libx264"
+  else
+    warn "ffmpeg (avec libx264) introuvable : tentative d'installation."
+    system_install ffmpeg ffmpeg || true
+    if command -v ffmpeg >/dev/null 2>&1 && has_libx264; then ok "ffmpeg installé"; else
+      problem "ffmpeg avec libx264 manque : installez-le (macOS : brew install ffmpeg ; Debian/Ubuntu : sudo apt install ffmpeg)."
+    fi
+  fi
+
+  step "Chromium (rendu des vidéos)"
+  if [ -n "${CHROMIUM_PATH:-}" ] && [ -x "$CHROMIUM_PATH" ]; then
+    ok "Chromium fourni par CHROMIUM_PATH ($CHROMIUM_PATH)"
+  elif (cd web && node -e 'const {chromium}=require("playwright-core"); process.exit(require("fs").existsSync(chromium.executablePath())?0:1)' 2>/dev/null); then
+    ok "Chromium déjà installé pour Playwright"
+  else
+    warn "Chromium absent : téléchargement par Playwright (environ 150 Mo)."
+    if (cd web && npx --no-install playwright-core install chromium); then ok "Chromium installé"; else
+      problem "Chromium n'a pas pu être installé : lancez « cd web && npx playwright-core install chromium » ou définissez CHROMIUM_PATH."
+    fi
+  fi
+
+  step "Données"
+  mkdir -p data
+  [ -f web/public/muscle-rig.glb ] && ok "Modèle musculaire présent" || problem "web/public/muscle-rig.glb manque (clone incomplet ?)."
+
+  echo
+  if [ "$PROBLEMS" -eq 0 ]; then
+    echo "${GREEN}${BOLD}Installation terminée.${RESET} Lancez ${BOLD}./tms start${RESET} puis ouvrez http://localhost:$WEB_PORT"
+  else
+    echo "${YELLOW}${BOLD}Installation incomplète : $PROBLEMS point(s) à corriger (voir ci-dessus).${RESET} Relancez ./tms setup ensuite."
+    exit 1
+  fi
+}
+
+# --- doctor -----------------------------------------------------------------------------------
+cmd_doctor() {
+  step "Vérification"
+  find_python >/dev/null && ok "Python compatible : $(find_python)" || problem "Python 3.10 à 3.12 introuvable."
+  [ -x "$VENV/bin/python" ] && ok "Environnement virtuel présent" || problem "Environnement virtuel absent (./tms setup)."
+  if [ -x "$VENV/bin/python" ]; then
+    PYTHONPATH=src "$VENV/bin/python" -c 'import tms_vision.api, mediapipe, cv2' 2>/dev/null \
+      && ok "Paquets Python importables" || problem "Paquets Python incomplets (./tms setup)."
+  fi
+  command -v node >/dev/null 2>&1 && ok "Node.js $(node --version)" || problem "Node.js absent."
+  [ -d web/node_modules ] && ok "Dépendances du site présentes" || problem "web/node_modules absent (./tms setup)."
+  command -v ffmpeg >/dev/null 2>&1 && has_libx264 && ok "ffmpeg avec libx264" || problem "ffmpeg avec libx264 absent."
+  if [ -n "${CHROMIUM_PATH:-}" ] && [ -x "$CHROMIUM_PATH" ]; then ok "Chromium (CHROMIUM_PATH)";
+  elif [ -d web/node_modules/playwright-core ] && (cd web && node -e 'const {chromium}=require("playwright-core"); process.exit(require("fs").existsSync(chromium.executablePath())?0:1)' 2>/dev/null); then ok "Chromium (Playwright)";
+  else problem "Chromium absent."; fi
+  [ -f web/public/muscle-rig.glb ] && ok "Modèle musculaire présent" || problem "muscle-rig.glb absent."
+  [ "$PROBLEMS" -eq 0 ] || { echo; echo "$PROBLEMS point(s) à corriger : lancez ./tms setup."; exit 1; }
+  echo; ok "Tout est en place."
+}
+
+# --- start / stop -----------------------------------------------------------------------------
+port_in_use() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+
+wait_for() {  # wait_for <url> <secondes>
+  local waited=0
+  until curl -fsS -o /dev/null "$1" 2>/dev/null; do
+    sleep 1; waited=$((waited + 1))
+    if [ "$waited" -ge "$2" ]; then return 1; fi
+  done
+  return 0
+}
+
+cmd_start() {
+  [ -x "$VENV/bin/python" ] && [ -d web/node_modules ] || die "Projet non installé : lancez d'abord ./tms setup."
+  mkdir -p "$RUN_DIR"
+  if port_in_use "$API_PORT" || port_in_use "$WEB_PORT"; then
+    die "Le port $API_PORT ou $WEB_PORT est déjà utilisé (déjà lancé ? ./tms stop)."
+  fi
+
+  PYTHONPATH=src setsid nohup "$VENV/bin/uvicorn" tms_vision.api:app --port "$API_PORT" \
+    > "$RUN_DIR/api.log" 2>&1 < /dev/null &
+  echo $! > "$RUN_DIR/api.pid"
+  # « exec » : le sous-shell devient le processus lancé, son PID (et son groupe) est donc celui de npm.
+  (cd web && NEXT_PUBLIC_API_URL="http://localhost:$API_PORT" exec setsid nohup npm run dev -- --port "$WEB_PORT" \
+    > "$RUN_DIR/web.log" 2>&1 < /dev/null) &
+  echo $! > "$RUN_DIR/web.pid"
+
+  wait_for "http://localhost:$API_PORT/docs" 60 && ok "API prête : http://localhost:$API_PORT" \
+    || die "L'API ne répond pas (voir .tms-run/api.log)."
+  wait_for "http://localhost:$WEB_PORT" 90 && ok "Site prêt : http://localhost:$WEB_PORT" \
+    || die "Le site ne répond pas (voir .tms-run/web.log)."
+  echo "Arrêt : ./tms stop    Journaux : .tms-run/"
+}
+
+cmd_stop() {
+  local name pid
+  for name in api web; do
+    if [ -f "$RUN_DIR/$name.pid" ]; then
+      pid="$(cat "$RUN_DIR/$name.pid")"
+      # Le processus lancé par setsid est chef de son groupe : on arrête tout le groupe.
+      kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
+      local waited=0
+      while kill -0 -- "-$pid" 2>/dev/null && [ "$waited" -lt 15 ]; do sleep 1; waited=$((waited + 1)); done
+      kill -KILL -- "-$pid" 2>/dev/null || true
+      rm -f "$RUN_DIR/$name.pid"
+      ok "$name arrêté"
+    fi
+  done
+}
+
+# --- capsules / test --------------------------------------------------------------------------
+cmd_capsules() {
+  [ -x "$VENV/bin/python" ] || die "Projet non installé : lancez d'abord ./tms setup."
+  local started_here=0
+  if ! curl -fsS -o /dev/null "http://localhost:$WEB_PORT/render/ping" 2>/dev/null; then
+    echo "Le site n'est pas lancé : démarrage pour le rendu."
+    cmd_start || exit 1
+    started_here=1
+  fi
+  local args=("$@")
+  [ "${#args[@]}" -gt 0 ] || args=(--all)
+  PYTHONPATH=src TMS_RENDER_BASE_URL="http://localhost:$WEB_PORT" "$VENV/bin/python" -m tms_vision.capsule_build "${args[@]}"
+  local code=$?
+  [ "$started_here" = "1" ] && cmd_stop
+  exit "$code"
+}
+
+cmd_test() {
+  [ -x "$VENV/bin/python" ] || die "Projet non installé : lancez d'abord ./tms setup."
+  local code=0
+  PYTHONPATH=src "$VENV/bin/python" -m pytest -q || code=1
+  (cd web && npm test --silent) || code=1
+  exit "$code"
+}
+
+case "${1:-}" in
+  setup)    shift; cmd_setup "$@" ;;
+  start)    cmd_start ;;
+  stop)     cmd_stop ;;
+  capsules) shift; cmd_capsules "$@" ;;
+  test)     cmd_test ;;
+  doctor)   cmd_doctor ;;
+  ""|-h|--help|help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) die "Commande inconnue : $1 (essayez ./tms help)" ;;
+esac

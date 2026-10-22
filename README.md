@@ -1,5 +1,23 @@
 # Plateforme de Vision par Ordinateur pour la Prévention des TMS et l'Ergonomie au Travail
 
+## Installation en une commande
+
+Depuis un clone du dépôt :
+
+```bash
+./tms setup      # installe Python (venv), le site web, ffmpeg et Chromium, puis vérifie
+./tms start      # lance l'API (8000) et le site (3000) : http://localhost:3000
+./tms capsules   # génère les vidéos d'étirement (ex. ./tms capsules --id neck-lateral-stretch)
+./tms test       # tests Python et web
+./tms doctor     # vérifie l'installation sans rien modifier
+./tms stop       # arrête les serveurs
+```
+
+`setup` est relançable sans risque. Il installe ffmpeg et Node.js avec Homebrew (macOS) ou apt
+(Debian/Ubuntu) si besoin ; `./tms setup --no-system` signale seulement ce qui manque. Python 3.10 à
+3.12 est requis (3.11 recommandé : mediapipe n'existe pas au-delà). Les ports se changent avec
+`TMS_API_PORT` et `TMS_WEB_PORT`. Les journaux des serveurs sont dans `.tms-run/`.
+
 ## 1. Synthèse Exécutive
 
 Le projet vise à associer la Vision par Ordinateur (Computer Vision) et l'expertise biomécanique d'un ostéopathe pour créer une solution globale d'analyse ergonomique, de prévention des Troubles Musculo-Squelettiques (TMS) et d'optimisation de la gestuelle au travail.
