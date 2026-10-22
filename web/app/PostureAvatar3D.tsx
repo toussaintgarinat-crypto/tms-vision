@@ -162,6 +162,8 @@ function Rig({
     trunk: DEFAULT_COLOR,
     upper_arm: DEFAULT_COLOR,
     lower_arm: DEFAULT_COLOR,
+    hand: DEFAULT_COLOR,
+    foot: DEFAULT_COLOR,
   });
   const hasDetectedOnceRef = useRef(false);
 

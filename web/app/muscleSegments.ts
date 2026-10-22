@@ -2,9 +2,18 @@ import * as THREE from "three";
 import { BoneKey } from "./pose3dSkeleton";
 import type { Region } from "./exercisePose";
 
-export type RulaSegment = "neck" | "trunk" | "upper_arm" | "lower_arm";
+// Zones mesurées par la vidéo : les quatre zones RULA, plus la main et le pied (Tranche 5, notés hors
+// RULA, voir src/tms_vision/extremities.py).
+export type RulaSegment = "neck" | "trunk" | "upper_arm" | "lower_arm" | "hand" | "foot";
 
-export const RULA_SEGMENTS: readonly RulaSegment[] = ["neck", "trunk", "upper_arm", "lower_arm"];
+export const RULA_SEGMENTS: readonly RulaSegment[] = [
+  "neck",
+  "trunk",
+  "upper_arm",
+  "lower_arm",
+  "hand",
+  "foot",
+];
 
 // Repli quand un maillage ne porte pas sa région dans le fichier 3D (anciens fichiers) : l'os qui
 // domine ses poids de peau donne la région. Le fichier actuel porte la région de chaque muscle

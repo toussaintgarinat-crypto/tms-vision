@@ -21,6 +21,8 @@ def _frame_row(**overrides):
     row["trunk_segment_action_level"] = "investigation_recommandee"
     row["upper_arm_segment_action_level"] = "acceptable"
     row["lower_arm_segment_action_level"] = "acceptable"
+    row["hand_segment_action_level"] = "investigation_recommandee"
+    row["foot_segment_action_level"] = None
     return row
 
 
@@ -630,3 +632,34 @@ def test_update_load_rolls_back_frame_updates_when_the_summary_write_fails(tmp_p
         assert values["force_load_score"] == "0"
     assert storage.get_analysis("load-1")["load"]["original_load_kg"] == 0.0
     assert storage.get_analysis("load-1")["load"]["kind"] == "exact"
+
+
+def test_connect_adds_hand_and_foot_columns_to_a_database_created_before_they_existed(
+    tmp_path, monkeypatch
+):
+    import duckdb
+
+    db_path = tmp_path / "old.duckdb"
+    monkeypatch.setattr(storage, "DB_PATH", db_path)
+    old = duckdb.connect(str(db_path))
+    old_schema = storage.CREATE_ANALYSIS_FRAMES_TABLE
+    for column in ("ankle_flexion_deg DOUBLE,", "finger_curl_deg DOUBLE,",
+                   "hand_segment_action_level VARCHAR,", "foot_segment_action_level VARCHAR,"):
+        old_schema = old_schema.replace(column, "")
+    old.execute(storage.CREATE_ANALYSES_TABLE)
+    old.execute(old_schema)
+    old.close()
+
+    conn = storage._connect()
+    try:
+        columns = {
+            row[0]
+            for row in conn.execute(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'analysis_frames'"
+            ).fetchall()
+        }
+    finally:
+        conn.close()
+
+    assert {"ankle_flexion_deg", "finger_curl_deg", "hand_segment_action_level",
+            "foot_segment_action_level"} <= columns

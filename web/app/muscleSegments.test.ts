@@ -119,6 +119,6 @@ describe("resolveMeshBoneKey / resolveMeshRouting", () => {
   it("une région du membre prend le côté déclaré par le fichier 3D", () => {
     const mesh = buildSingleVertexMesh("spine");
     mesh.userData = { region: "hand", side: "r" };
-    expect(resolveMeshRouting(mesh)).toEqual({ region: "hand", segment: null, side: "right" });
+    expect(resolveMeshRouting(mesh)).toEqual({ region: "hand", segment: "hand", side: "right" });
   });
 });

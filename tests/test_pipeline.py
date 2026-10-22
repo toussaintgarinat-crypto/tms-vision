@@ -290,7 +290,11 @@ def test_analyze_video_pose3d_payload_key_set_varies_per_frame_when_landmark_occ
         assert entry["landmarks"] is not None
         assert entry["action_level"] is not None
         assert entry["segment_action_levels"] is not None
-        assert set(entry["segment_action_levels"].keys()) == {"neck", "trunk", "upper_arm", "lower_arm"}
+        # Les quatre zones RULA sont toujours là ; main et pied seulement quand ils sont mesurés.
+        assert {"neck", "trunk", "upper_arm", "lower_arm"} <= set(entry["segment_action_levels"].keys())
+        assert set(entry["segment_action_levels"].keys()) <= {
+            "neck", "trunk", "upper_arm", "lower_arm", "hand", "foot"
+        }
         valid_levels = {
             "acceptable",
             "investigation_recommandee",
@@ -327,3 +331,42 @@ def test_analyze_video_pose3d_payload_key_set_varies_per_frame_when_landmark_occ
 def test_analyze_video_raises_on_missing_file():
     with pytest.raises(FileNotFoundError):
         analyze_video(source="does-not-exist.mp4", side="right", load_kg=0.0, wrist_twist="normal")
+
+
+def test_analyze_video_scores_hand_and_foot_when_they_are_measured(tmp_path, monkeypatch):
+    """Poignet fléchi + doigts repliés + cheville tendue -> niveaux main et pied dans les lignes
+    et dans la charge utile 3D ; sans main détectée, la main ne repose que sur le poignet."""
+    from tms_vision import pipeline
+    from tms_vision.hand_estimation import HandEstimator
+
+    landmarks = {
+        "LEFT_SHOULDER": Landmark(0.45, 0.30, 0.0, 1.0), "RIGHT_SHOULDER": Landmark(0.55, 0.30, 0.0, 1.0),
+        "LEFT_HIP": Landmark(0.45, 0.60, 0.0, 1.0), "RIGHT_HIP": Landmark(0.55, 0.60, 0.0, 1.0),
+        "NOSE": Landmark(0.55, 0.20, 0.0, 1.0), "RIGHT_EAR": Landmark(0.52, 0.21, 0.0, 1.0),
+        "RIGHT_ELBOW": Landmark(0.56, 0.45, 0.0, 1.0), "RIGHT_WRIST": Landmark(0.56, 0.60, 0.0, 1.0),
+        # Index nettement dévié de l'axe de l'avant-bras : poignet fléchi.
+        "RIGHT_INDEX": Landmark(0.66, 0.66, 0.0, 1.0),
+    }
+    # Points « monde » : jambe verticale, pied pointant fortement vers le bas.
+    world = {
+        "RIGHT_KNEE": Landmark(0.0, 0.0, 0.0, 1.0), "RIGHT_ANKLE": Landmark(0.0, 0.4, 0.0, 1.0),
+        "RIGHT_HEEL": Landmark(0.0, 0.42, 0.0, 1.0), "RIGHT_FOOT_INDEX": Landmark(0.05, 0.62, 0.0, 1.0),
+    }
+    monkeypatch.setattr(
+        PoseEstimator, "process",
+        lambda self, image_bgr: PoseResult(landmarks=landmarks, world_landmarks=world),
+    )
+    monkeypatch.setattr(HandEstimator, "finger_curl", lambda self, image, wrist: 110.0)
+
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+    result = analyze_video(source=str(video_path), side="right", load_kg=0.0, wrist_twist="normal")
+
+    row = result.frame_rows[0]
+    assert row["finger_curl_deg"] == 110.0
+    assert row["ankle_flexion_deg"] > 20
+    assert row["hand_segment_action_level"] == "investigation_et_changement_bientot"
+    assert row["foot_segment_action_level"] == "investigation_et_changement_bientot"
+    segments = pipeline.build_pose3d_payload(result.pose3d_records)[0]["segment_action_levels"]
+    assert segments["hand"] == row["hand_segment_action_level"]
+    assert segments["foot"] == row["foot_segment_action_level"]

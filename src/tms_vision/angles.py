@@ -43,6 +43,9 @@ class JointAngles:
     wrist_flexion_deg: float
     wrist_bent_from_midline: bool
     arm_supported: bool
+    # Tranche 5 : mesurés hors RULA (voir extremities.py) ; None quand non visibles.
+    ankle_flexion_deg: float | None = None
+    finger_curl_deg: float | None = None
 
 
 def _xy(landmark: Landmark) -> np.ndarray:
@@ -77,6 +80,26 @@ def _fold_to_half_range(angle_deg: float) -> float:
     if angle_deg <= -90.0:
         return angle_deg + 180.0
     return angle_deg
+
+
+def compute_ankle_flexion(world_landmarks: dict[str, Landmark], side: str) -> float | None:
+    """Écart de la cheville à la position neutre (jambe et pied à angle droit), en degrés.
+    Positif : pointe du pied vers le bas (flexion plantaire) ; négatif : pointe relevée
+    (flexion dorsale). `None` si genou, cheville, talon ou pointe du pied ne sont pas visibles.
+
+    Contrairement aux autres angles de ce module, il se calcule en 3D sur les points « monde » de
+    MediaPipe (en mètres) : un angle de cheville en image 2D dépend trop de l'angle de prise de
+    vue (mesuré sur une vraie vidéo : environ 58° constants en 2D contre environ 10° en 3D pour un
+    pied à plat). L'axe du pied est talon -> orteils."""
+    prefix = side.upper()
+    names = [f"{prefix}_KNEE", f"{prefix}_ANKLE", f"{prefix}_HEEL", f"{prefix}_FOOT_INDEX"]
+    if any(name not in world_landmarks for name in names):
+        return None
+    knee, ankle, heel, toes = (
+        np.array([world_landmarks[n].x, world_landmarks[n].y, world_landmarks[n].z]) for n in names
+    )
+    # Angle entre la jambe (cheville -> genou) et le pied : 90° au neutre, plus grand = pointe tendue.
+    return _angle_between(knee - ankle, toes - heel) - 90.0
 
 
 REQUIRED_COMMON = ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_HIP", "RIGHT_HIP", "NOSE"]

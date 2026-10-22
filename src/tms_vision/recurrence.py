@@ -25,6 +25,8 @@ ZONE_ANGLE_COLUMN = {
     "trunk": "trunk_flexion_deg",
     "upper_arm": "upper_arm_flexion_deg",
     "lower_arm": "lower_arm_angle_deg",
+    "hand": "wrist_flexion_deg",
+    "foot": "ankle_flexion_deg",
 }
 
 

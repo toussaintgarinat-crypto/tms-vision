@@ -33,6 +33,8 @@ const ZONE_LABELS: Record<string, string> = {
   trunk: "tronc",
   upper_arm: "bras",
   lower_arm: "avant-bras",
+  hand: "main",
+  foot: "pied",
 };
 
 type AnalysisResultProps = {

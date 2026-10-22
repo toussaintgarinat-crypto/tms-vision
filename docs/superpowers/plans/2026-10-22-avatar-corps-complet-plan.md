@@ -33,7 +33,7 @@ dépend du fichier 3D), puis le code web, puis le format et le contenu des exerc
 
 `README.md`, `exercises/README.md`, `tools/blender/README.md`, `NOTICE.md`.
 
-## Suite : Tranche 5 (non commencée)
+## Suite : Tranche 5 (faite)
 
-Mesure des mains et des pieds par vidéo (MediaPipe Hands, nouvelles zones et seuils RULA à calibrer
-avec l'ostéopathe), puis programme d'étirements qui recommande aussi les nouvelles régions.
+Mains et pieds mesurés par vidéo : voir `docs/superpowers/specs/2026-10-22-mains-pieds-design.md`.
+Il reste à calibrer les seuils avec l'ostéopathe.

@@ -20,6 +20,8 @@ def _frame(frame_index, timestamp_seconds, **levels):
         "trunk_segment_action_level": None,
         "upper_arm_segment_action_level": None,
         "lower_arm_segment_action_level": None,
+        "hand_segment_action_level": None,
+        "foot_segment_action_level": None,
     }
     for zone, level in levels.items():
         row[f"{zone}_segment_action_level"] = level
@@ -128,7 +130,9 @@ def test_elevated_seconds_by_zone_accumulates_only_elevated_levels():
 
     seconds = elevated_seconds_by_zone(frames)
 
-    assert seconds == {"neck": 0.0, "trunk": 5.0, "upper_arm": 0.0, "lower_arm": 0.0}
+    assert seconds == {
+        "neck": 0.0, "trunk": 5.0, "upper_arm": 0.0, "lower_arm": 0.0, "hand": 0.0, "foot": 0.0,
+    }
 
 
 def test_compute_worst_zone_still_agrees_with_elevated_seconds_by_zone():

@@ -14,6 +14,7 @@ def _frame(index, timestamp, **levels):
         "frame_index": index, "timestamp_seconds": timestamp,
         "neck_segment_action_level": None, "trunk_segment_action_level": None,
         "upper_arm_segment_action_level": None, "lower_arm_segment_action_level": None,
+        "hand_segment_action_level": None, "foot_segment_action_level": None,
     }
     for zone, level in levels.items():
         row[f"{zone}_segment_action_level"] = level
@@ -118,3 +119,16 @@ def test_bilan_program_ranks_zones_by_projected_hours():
 
 def test_bilan_program_is_empty_without_any_projected_risk():
     assert build_bilan_program(_report()) == []
+
+
+def test_hand_and_foot_can_be_recommended_with_their_own_labels():
+    frames = [
+        _frame(0, 0.0, hand="investigation_et_changement_bientot"),
+        _frame(1, 10.0, hand="investigation_et_changement_bientot", foot="investigation_et_changement_bientot"),
+        _frame(2, 12.0),
+    ]
+    program = build_analysis_program(frames, None)
+    assert [item["zone"] for item in program] == ["hand", "foot"]
+    assert program[0]["capsule"]["zone"] == "hand"
+    assert program[0]["reason"].startswith("Main / poignet : 12 s")
+    assert program[1]["reason"].startswith("Pied / cheville : 2 s")

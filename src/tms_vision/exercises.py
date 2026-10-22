@@ -22,8 +22,8 @@ EXERCISES_DIR = Path(__file__).resolve().parents[2] / "exercises"
 # classe. Les régions ajoutées avec le corps complet (tête, épaule, main, hanche, cuisse, jambe,
 # pied) n'ont pas de mesure ; leurs exercices existent au catalogue et se génèrent, mais aucun
 # score ne les recommande encore.
-ZONES = ("neck", "trunk", "upper_arm", "lower_arm")
-REGIONS = ZONES + ("head", "shoulder", "hand", "hip", "thigh", "lower_leg", "foot")
+ZONES = ("neck", "trunk", "upper_arm", "lower_arm", "hand", "foot")
+REGIONS = ZONES + ("head", "shoulder", "hip", "thigh", "lower_leg")
 _SIDED_BONES = (
     "clavicle", "upper_arm", "forearm", "hand", "fingers", "thumb", "thigh", "shin", "foot", "toes",
 )

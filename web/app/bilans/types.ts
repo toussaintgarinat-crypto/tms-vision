@@ -1,4 +1,4 @@
-export const ZONES = ["neck", "trunk", "upper_arm", "lower_arm"] as const;
+export const ZONES = ["neck", "trunk", "upper_arm", "lower_arm", "hand", "foot"] as const;
 export type Zone = (typeof ZONES)[number];
 
 export const ZONE_LABELS: Record<Zone, string> = {
@@ -6,6 +6,8 @@ export const ZONE_LABELS: Record<Zone, string> = {
   trunk: "Tronc",
   upper_arm: "Épaule / bras",
   lower_arm: "Avant-bras / coude",
+  hand: "Main / poignet",
+  foot: "Pied / cheville",
 };
 
 export type ZoneRecurrence = {

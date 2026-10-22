@@ -17,6 +17,8 @@ ZONE_LABELS = {
     "trunk": "Tronc",
     "upper_arm": "Épaule / bras",
     "lower_arm": "Avant-bras / coude",
+    "hand": "Main / poignet",
+    "foot": "Pied / cheville",
 }
 
 

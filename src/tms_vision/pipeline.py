@@ -11,15 +11,19 @@ import secrets
 import sys
 import tempfile
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import cv2
 
 from tms_vision.capture import FrameSource
 from tms_vision.face_blur import FaceAnonymizer, default_face_detector
+from tms_vision.extremities import (
+    classify_foot, classify_hand, extremity_action_level, load_extremity_thresholds,
+)
+from tms_vision.hand_estimation import HandEstimator
 from tms_vision.pose_estimation import PoseEstimator
-from tms_vision.angles import compute_joint_angles
+from tms_vision.angles import compute_ankle_flexion, compute_joint_angles
 from tms_vision.rula.scoring import action_level, compute_rula_score, detect_muscle_use
 from tms_vision.overlay import draw_overlay
 from tms_vision.export import FrameRecord, ResultsExporter
@@ -75,6 +79,8 @@ def analyze_video(
 
     frame_source = FrameSource(source)
     estimator = PoseEstimator()
+    hand_estimator = HandEstimator()
+    extremity_thresholds = load_extremity_thresholds()
 
     frames = []
     try:
@@ -88,6 +94,7 @@ def analyze_video(
     if not frames:
         print("Aucune frame capturée, rien à analyser.", file=sys.stderr)
         estimator.close()
+        hand_estimator.close()
         return AnalysisResult(empty=True)
 
     per_frame_angles = []
@@ -102,6 +109,17 @@ def analyze_video(
             angles = compute_joint_angles(
                 pose_result.landmarks, side=side, shoulder_baseline_y=shoulder_y_baseline.value
             )
+            if angles is not None:
+                angles = replace(
+                    angles,
+                    ankle_flexion_deg=(
+                        compute_ankle_flexion(pose_result.world_landmarks, side)
+                        if pose_result.world_landmarks is not None else None
+                    ),
+                    finger_curl_deg=hand_estimator.finger_curl(
+                        frame.image, pose_result.landmarks.get(f"{side.upper()}_WRIST")
+                    ),
+                )
             current_shoulder = pose_result.landmarks.get(shoulder_key)
             if current_shoulder is not None:
                 shoulder_y_baseline.update(current_shoulder.y)
@@ -111,6 +129,7 @@ def analyze_video(
             posture_load_history.append((frame.timestamp_seconds, posture_load))
 
     estimator.close()
+    hand_estimator.close()
 
     muscle_use_score = 1 if detect_muscle_use(posture_load_history) else 0
 
@@ -155,6 +174,17 @@ def analyze_video(
                         "upper_arm": action_level(score.upper_arm),
                         "lower_arm": action_level(score.lower_arm),
                     }
+                    # Mains et pieds : hors RULA, absents quand rien n'est mesuré (jamais de
+                    # couleur pour une donnée non mesurée).
+                    for zone, extremity_score in (
+                        ("hand", classify_hand(
+                            angles.wrist_flexion_deg, angles.finger_curl_deg, extremity_thresholds
+                        )),
+                        ("foot", classify_foot(angles.ankle_flexion_deg, extremity_thresholds)),
+                    ):
+                        level = extremity_action_level(zone, extremity_score, extremity_thresholds)
+                        if level is not None:
+                            segment_action_levels[zone] = level
                 image = (
                     anonymizer.anonymize(frame.image, pose_result.landmarks)
                     if anonymizer is not None else frame.image
@@ -202,6 +232,8 @@ def analyze_video(
         row["trunk_segment_action_level"] = segments.get("trunk")
         row["upper_arm_segment_action_level"] = segments.get("upper_arm")
         row["lower_arm_segment_action_level"] = segments.get("lower_arm")
+        row["hand_segment_action_level"] = segments.get("hand")
+        row["foot_segment_action_level"] = segments.get("foot")
 
     return AnalysisResult(
         empty=False,

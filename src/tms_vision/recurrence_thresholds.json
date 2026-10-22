@@ -24,6 +24,18 @@
       "static_variation_deg": 15.0,
       "repetitive_cycles_per_minute": null,
       "static_seconds": null
+    },
+    "hand": {
+      "min_prominence_deg": 10.0,
+      "static_variation_deg": 15.0,
+      "repetitive_cycles_per_minute": null,
+      "static_seconds": null
+    },
+    "foot": {
+      "min_prominence_deg": 10.0,
+      "static_variation_deg": 15.0,
+      "repetitive_cycles_per_minute": null,
+      "static_seconds": null
     }
   }
 }

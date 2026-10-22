@@ -9,7 +9,7 @@ from tms_vision.exercises import ZONES as _EXERCISE_ZONES
 from tms_vision.exercises import load_catalog
 
 ZONES = list(_EXERCISE_ZONES)
-ZONE_PRIORITY = ["trunk", "neck", "upper_arm", "lower_arm"]
+ZONE_PRIORITY = ["trunk", "neck", "upper_arm", "lower_arm", "hand", "foot"]
 # lower_arm ne peut structurellement jamais atteindre ces niveaux : son sous-score
 # RULA brut est plafonné à 3 (classify_lower_arm, rula/scoring.py) alors que
 # action_level() n'entre dans ELEVATED_LEVELS qu'à partir de 5 -- même racine que

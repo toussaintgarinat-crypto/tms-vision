@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS analysis_frames (
     upper_arm_flexion_deg DOUBLE,
     lower_arm_angle_deg DOUBLE,
     wrist_flexion_deg DOUBLE,
+    ankle_flexion_deg DOUBLE,
+    finger_curl_deg DOUBLE,
     upper_arm INTEGER,
     lower_arm INTEGER,
     wrist INTEGER,
@@ -62,6 +64,8 @@ CREATE TABLE IF NOT EXISTS analysis_frames (
     trunk_segment_action_level VARCHAR,
     upper_arm_segment_action_level VARCHAR,
     lower_arm_segment_action_level VARCHAR,
+    hand_segment_action_level VARCHAR,
+    foot_segment_action_level VARCHAR,
     PRIMARY KEY (analysis_id, frame_index)
 )
 """
@@ -123,6 +127,14 @@ def _attach_utc(value: datetime) -> datetime:
     return value.replace(tzinfo=timezone.utc)
 
 
+_TRANCHE_5_COLUMNS = [
+    ("ankle_flexion_deg", "DOUBLE"),
+    ("finger_curl_deg", "DOUBLE"),
+    ("hand_segment_action_level", "VARCHAR"),
+    ("foot_segment_action_level", "VARCHAR"),
+]
+
+
 def _connect() -> "duckdb.DuckDBPyConnection":
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(DB_PATH))
@@ -131,6 +143,9 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_BILANS_TABLE)
     conn.execute(CREATE_BILAN_ANALYSES_TABLE)
     conn.execute(CREATE_ANALYSIS_LOADS_TABLE)
+    # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
+    for column, column_type in _TRANCHE_5_COLUMNS:
+        conn.execute(f"ALTER TABLE analysis_frames ADD COLUMN IF NOT EXISTS {column} {column_type}")
     return conn
 
 
@@ -139,12 +154,16 @@ SEGMENT_COLUMNS = [
     "trunk_segment_action_level",
     "upper_arm_segment_action_level",
     "lower_arm_segment_action_level",
+    "hand_segment_action_level",
+    "foot_segment_action_level",
 ]
 ANGLE_COLUMNS = [
     "neck_flexion_deg",
     "trunk_flexion_deg",
     "upper_arm_flexion_deg",
     "lower_arm_angle_deg",
+    "wrist_flexion_deg",
+    "ankle_flexion_deg",
 ]
 FRAME_VALUE_COLUMNS = CSV_FIELDS + SEGMENT_COLUMNS
 

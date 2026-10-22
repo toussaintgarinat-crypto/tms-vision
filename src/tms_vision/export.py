@@ -13,7 +13,7 @@ from tms_vision.rula.scoring import RulaScore
 CSV_FIELDS = [
     "frame_index", "timestamp_seconds", "detected",
     "neck_flexion_deg", "trunk_flexion_deg", "upper_arm_flexion_deg",
-    "lower_arm_angle_deg", "wrist_flexion_deg",
+    "lower_arm_angle_deg", "wrist_flexion_deg", "ankle_flexion_deg", "finger_curl_deg",
     "upper_arm", "lower_arm", "wrist", "wrist_twist", "posture_score_a",
     "neck", "trunk", "legs", "posture_score_b",
     "muscle_use_score", "force_load_score", "final_score", "action_level",
@@ -47,6 +47,8 @@ class ResultsExporter:
             row["upper_arm_flexion_deg"] = record.angles.upper_arm_flexion_deg
             row["lower_arm_angle_deg"] = record.angles.lower_arm_angle_deg
             row["wrist_flexion_deg"] = record.angles.wrist_flexion_deg
+            row["ankle_flexion_deg"] = record.angles.ankle_flexion_deg
+            row["finger_curl_deg"] = record.angles.finger_curl_deg
         if record.score is not None:
             row["upper_arm"] = record.score.upper_arm
             row["lower_arm"] = record.score.lower_arm

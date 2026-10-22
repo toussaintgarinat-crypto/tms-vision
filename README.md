@@ -849,11 +849,27 @@ reconstruit par `tools/blender/export_muscle_rig.py`).
   `twist` (rotation autour de l'axe de l'os). Les quatre exercices d'origine ont été migrés ; dix-sept
   exercices couvrent les onze régions (`neck`, `trunk`, `upper_arm`, `lower_arm`, `head`, `shoulder`,
   `hand`, `hip`, `thigh`, `lower_leg`, `foot`). Voir `exercises/README.md`.
-- **Analyse par vidéo** : inchangée. Seules les quatre zones RULA (cou, tronc, bras, avant-bras) sont
-  mesurées et colorées ; les muscles des autres régions restent gris. **Les mains, les doigts, les
-  poignets et les pieds ne sont pas encore pris en compte dans la mesure** : c'est la Tranche 5
-  (MediaPipe Hands, zones et seuils RULA correspondants, à calibrer avec l'ostéopathe). L'avatar piloté
+- **Analyse par vidéo** : six zones sont mesurées et colorées (cou, tronc, bras, avant-bras, plus la
+  main et le pied de la Tranche 5, voir ci-dessous) ; les autres régions restent grises. L'avatar piloté
   par la vidéo oriente la main, le pouce, la jambe et le pied avec les points de MediaPipe Pose.
+
+### Mains et pieds mesurés (Tranche 5)
+
+Spec : `docs/superpowers/specs/2026-10-22-mains-pieds-design.md`.
+
+- **Main** : le pire de la flexion du poignet (échelle RULA) et de la flexion des doigts (MediaPipe
+  Hands, main la plus proche du poignet détecté par Pose).
+- **Pied** : écart de la cheville à l'angle droit, en 3D (points « monde » de MediaPipe Pose).
+- **Hors RULA** : ces notes (1 à 3) ne changent ni le score RULA final ni le recalcul au poids ; elles
+  alimentent les niveaux par segment, la couleur de l'avatar, la récurrence et le programme
+  d'étirements (`hand` et `foot` rejoignent le classement).
+- **Seuils** : `src/tms_vision/extremity_thresholds.json` (`"calibrated": false`). Ce sont des points de
+  départ à valider avec l'ostéopathe : sur une vidéo de peintre, la main sort « changement bientôt »
+  dans 117 images sur 227, ce qui n'est pas encore une mesure fiable.
+- **Anciennes analyses** : la base est complétée au premier lancement ; leurs images n'ont ni main ni
+  pied.
+- **Limites** : doigts non mesurés quand aucune main n'est trouvée ; poignet en 2D donc sensible à
+  l'angle de prise de vue ; pieds souvent hors champ pour un poste assis.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 

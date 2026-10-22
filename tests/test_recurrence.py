@@ -28,10 +28,14 @@ def _frame(index, timestamp, detected=True, **values):
         "trunk_flexion_deg": None,
         "upper_arm_flexion_deg": None,
         "lower_arm_angle_deg": None,
+        "wrist_flexion_deg": None,
+        "ankle_flexion_deg": None,
         "neck_segment_action_level": None,
         "trunk_segment_action_level": None,
         "upper_arm_segment_action_level": None,
         "lower_arm_segment_action_level": None,
+        "hand_segment_action_level": None,
+        "foot_segment_action_level": None,
     }
     row.update(values)
     return row
