@@ -173,6 +173,16 @@ wait_for() {  # wait_for <url> <secondes>
   return 0
 }
 
+# Lance une commande détachée du terminal, dans sa propre session : son PID est alors celui du chef
+# de son groupe, ce qui permet à « stop » d'arrêter tout le groupe. `setsid` n'existe pas sous
+# macOS : on le remplace par os.setsid() de Python (même effet, même PID, puis exec de la commande).
+detached() {
+  if command -v setsid >/dev/null 2>&1; then
+    exec setsid nohup "$@"
+  fi
+  exec "$VENV/bin/python" -c 'import os, sys; os.setsid(); os.execvp(sys.argv[1], sys.argv[1:])' nohup "$@"
+}
+
 cmd_start() {
   [ -x "$VENV/bin/python" ] && [ -d web/node_modules ] || die "Projet non installé : lancez d'abord ./tms setup."
   mkdir -p "$RUN_DIR"
@@ -180,11 +190,11 @@ cmd_start() {
     die "Le port $API_PORT ou $WEB_PORT est déjà utilisé (déjà lancé ? ./tms stop)."
   fi
 
-  PYTHONPATH=src setsid nohup "$VENV/bin/uvicorn" tms_vision.api:app --port "$API_PORT" \
+  detached env PYTHONPATH=src "$VENV/bin/uvicorn" tms_vision.api:app --port "$API_PORT" \
     > "$RUN_DIR/api.log" 2>&1 < /dev/null &
   echo $! > "$RUN_DIR/api.pid"
   # « exec » : le sous-shell devient le processus lancé, son PID (et son groupe) est donc celui de npm.
-  (cd web && NEXT_PUBLIC_API_URL="http://localhost:$API_PORT" exec setsid nohup npm run dev -- --port "$WEB_PORT" \
+  (cd web && NEXT_PUBLIC_API_URL="http://localhost:$API_PORT" detached npm run dev -- --port "$WEB_PORT" \
     > "$RUN_DIR/web.log" 2>&1 < /dev/null) &
   echo $! > "$RUN_DIR/web.pid"
 
@@ -200,7 +210,7 @@ cmd_stop() {
   for name in api web; do
     if [ -f "$RUN_DIR/$name.pid" ]; then
       pid="$(cat "$RUN_DIR/$name.pid")"
-      # Le processus lancé par setsid est chef de son groupe : on arrête tout le groupe.
+      # Le processus lancé par « detached » est chef de son groupe : on arrête tout le groupe.
       kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
       local waited=0
       while kill -0 -- "-$pid" 2>/dev/null && [ "$waited" -lt 15 ]; do sleep 1; waited=$((waited + 1)); done
