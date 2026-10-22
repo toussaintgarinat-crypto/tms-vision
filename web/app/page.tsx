@@ -267,14 +267,17 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <h1 className="text-2xl font-semibold">TMS Vision — Vérification RULA</h1>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
           <Link href="/historique" className="text-sm text-blue-600 underline">
             Historique
           </Link>
           <Link href="/bilans" className="text-sm text-blue-600 underline">
             Bilans de poste
+          </Link>
+          <Link href="/bibliotheque" className="text-sm text-blue-600 underline">
+            Bibliothèque d&apos;exercices
           </Link>
         </div>
       </div>
