@@ -1,0 +1,195 @@
+{
+  "id": "wrist-circles",
+  "zone": "hand",
+  "title": "Cercles du poignet",
+  "description": "Petits cercles lents des poignets pour entretenir leur mobilité et les décontracter.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "hand",
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "fwd": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      }
+    },
+    "flex": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "flexion": 50
+      },
+      "L_hand": {
+        "flexion": 50
+      }
+    },
+    "rad": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "lateral": 25
+      },
+      "L_hand": {
+        "lateral": 25
+      }
+    },
+    "ext": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "flexion": -50
+      },
+      "L_hand": {
+        "flexion": -50
+      }
+    },
+    "uln": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "lateral": -25
+      },
+      "L_hand": {
+        "lateral": -25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "fwd"
+    },
+    {
+      "t": 8,
+      "pose": "fwd"
+    },
+    {
+      "t": 10,
+      "pose": "flex"
+    },
+    {
+      "t": 12,
+      "pose": "rad"
+    },
+    {
+      "t": 14,
+      "pose": "ext"
+    },
+    {
+      "t": 16,
+      "pose": "uln"
+    },
+    {
+      "t": 18,
+      "pose": "flex"
+    },
+    {
+      "t": 20,
+      "pose": "rad"
+    },
+    {
+      "t": 22,
+      "pose": "ext"
+    },
+    {
+      "t": 24,
+      "pose": "uln"
+    },
+    {
+      "t": 26,
+      "pose": "flex"
+    },
+    {
+      "t": 28,
+      "pose": "rad"
+    },
+    {
+      "t": 30,
+      "pose": "ext"
+    },
+    {
+      "t": 32,
+      "pose": "uln"
+    },
+    {
+      "t": 34,
+      "pose": "fwd"
+    },
+    {
+      "t": 35,
+      "pose": "fwd"
+    },
+    {
+      "t": 39,
+      "pose": "neutral"
+    },
+    {
+      "t": 41,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout ou assis, les épaules relâchées."
+    },
+    {
+      "t": 3,
+      "text": "Tendez les bras devant vous, les mains libres."
+    },
+    {
+      "t": 8,
+      "text": "Pliez les poignets vers le bas."
+    },
+    {
+      "t": 10,
+      "text": "Inclinez les mains vers le pouce."
+    },
+    {
+      "t": 12,
+      "text": "Relevez les mains vers le haut."
+    },
+    {
+      "t": 14,
+      "text": "Inclinez les mains vers le petit doigt."
+    },
+    {
+      "t": 35,
+      "text": "Relâchez les bras."
+    }
+  ],
+  "duration_seconds": 44
+}

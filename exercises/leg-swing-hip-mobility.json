@@ -1,0 +1,167 @@
+{
+  "id": "leg-swing-hip-mobility",
+  "zone": "hip",
+  "title": "Balancement de la jambe",
+  "description": "Balancements contrôlés de la jambe pour échauffer et assouplir la hanche.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "fwd": {
+      "R_thigh": {
+        "flexion": 45
+      }
+    },
+    "back": {
+      "R_thigh": {
+        "flexion": -20
+      }
+    },
+    "lfwd": {
+      "L_thigh": {
+        "flexion": 45
+      }
+    },
+    "lback": {
+      "L_thigh": {
+        "flexion": -20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "fwd"
+    },
+    {
+      "t": 8,
+      "pose": "back"
+    },
+    {
+      "t": 10,
+      "pose": "fwd"
+    },
+    {
+      "t": 13,
+      "pose": "back"
+    },
+    {
+      "t": 15,
+      "pose": "fwd"
+    },
+    {
+      "t": 18,
+      "pose": "back"
+    },
+    {
+      "t": 20,
+      "pose": "fwd"
+    },
+    {
+      "t": 23,
+      "pose": "back"
+    },
+    {
+      "t": 25,
+      "pose": "fwd"
+    },
+    {
+      "t": 28,
+      "pose": "back"
+    },
+    {
+      "t": 30,
+      "pose": "neutral"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "lfwd"
+    },
+    {
+      "t": 36,
+      "pose": "lback"
+    },
+    {
+      "t": 38,
+      "pose": "lfwd"
+    },
+    {
+      "t": 41,
+      "pose": "lback"
+    },
+    {
+      "t": 43,
+      "pose": "lfwd"
+    },
+    {
+      "t": 46,
+      "pose": "lback"
+    },
+    {
+      "t": 48,
+      "pose": "lfwd"
+    },
+    {
+      "t": 51,
+      "pose": "lback"
+    },
+    {
+      "t": 53,
+      "pose": "lfwd"
+    },
+    {
+      "t": 56,
+      "pose": "lback"
+    },
+    {
+      "t": 58,
+      "pose": "neutral"
+    },
+    {
+      "t": 59,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, une main appuyée sur un support, le dos droit."
+    },
+    {
+      "t": 3,
+      "text": "Balancez la jambe droite d'avant en arrière, sans à-coup."
+    },
+    {
+      "t": 28,
+      "text": "Posez le pied, puis changez de jambe."
+    },
+    {
+      "t": 31,
+      "text": "Même mouvement avec la jambe gauche."
+    },
+    {
+      "t": 56,
+      "text": "Posez le pied et relâchez."
+    }
+  ],
+  "duration_seconds": 62
+}

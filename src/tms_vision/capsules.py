@@ -115,9 +115,26 @@ def rank_zones(load_by_zone: dict[str, float], limit: int = MAX_PROGRAM_SIZE) ->
     return sorted(loaded, key=lambda item: -item[1])[:limit]
 
 
+# Exercice recommandé par le programme d'étirements pour chaque zone RULA. Le catalogue contient
+# aussi les exercices de la bibliothèque du praticien (voir library.py) : sans ce choix explicite,
+# ajouter un exercice à une zone changerait la recommandation faite aux salariés.
+PROGRAM_CAPSULE_BY_ZONE = {
+    "neck": "neck-lateral-stretch",
+    "trunk": "trunk-lumbar-mobility",
+    "upper_arm": "shoulder-cross-body-stretch",
+    "lower_arm": "forearm-extension-stretch",
+    "hand": "finger-extension-stretch",
+    "foot": "ankle-mobility",
+}
+
+
 def recommend_capsule(zone: str | None) -> Capsule | None:
     if zone is None:
         return None
+    preferred = PROGRAM_CAPSULE_BY_ZONE.get(zone)
+    for capsule in CAPSULES:
+        if capsule.id == preferred:
+            return capsule
     for capsule in CAPSULES:
         if capsule.zone == zone:
             return capsule

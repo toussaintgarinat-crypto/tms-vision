@@ -1,0 +1,95 @@
+{
+  "id": "adductor-wide-stance",
+  "zone": "hip",
+  "title": "Étirement des adducteurs",
+  "description": "Jambes écartées pour étirer l'intérieur des cuisses.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "target": {
+      "R_thigh": {
+        "lateral": 22
+      },
+      "L_thigh": {
+        "lateral": 22
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 41,
+      "pose": "target"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    },
+    {
+      "t": 49,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, les jambes très écartées, les pieds à plat."
+    },
+    {
+      "t": 3,
+      "text": "Gardez le dos droit et faites glisser le poids du corps doucement d'un pied à l'autre."
+    },
+    {
+      "t": 8,
+      "text": "Respirez : l'étirement se sent à l'intérieur des cuisses."
+    },
+    {
+      "t": 26,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 31,
+      "text": "Respirez : l'étirement se sent à l'intérieur des cuisses."
+    },
+    {
+      "t": 41,
+      "text": "Rapprochez les pieds et relâchez."
+    }
+  ],
+  "duration_seconds": 52
+}

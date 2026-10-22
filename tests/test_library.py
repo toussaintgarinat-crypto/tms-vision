@@ -37,6 +37,12 @@ def test_shipped_library_is_valid_and_covers_known_exercises():
     assert data["status"] == "draft"
 
 
+def test_every_catalog_exercise_is_reachable_from_the_library():
+    data = library.load_library()
+    used = {e for z in data["zones"] for p in z["pathologies"] for e in p["exercises"]}
+    assert IDS - used == set()
+
+
 def test_validate_accepts_minimal_library():
     library.validate_library(_valid(), IDS)
 

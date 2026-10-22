@@ -1,0 +1,154 @@
+{
+  "id": "toe-lift",
+  "zone": "foot",
+  "title": "Relevé des orteils",
+  "description": "Relevés d'orteils talon au sol pour assouplir le pied et réveiller le tibial antérieur.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "toes_up": {
+      "R_toes": {
+        "flexion": 38
+      },
+      "L_toes": {
+        "flexion": 38
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "toes_up"
+    },
+    {
+      "t": 6,
+      "pose": "toes_up"
+    },
+    {
+      "t": 8,
+      "pose": "neutral"
+    },
+    {
+      "t": 9,
+      "pose": "neutral"
+    },
+    {
+      "t": 11,
+      "pose": "toes_up"
+    },
+    {
+      "t": 12,
+      "pose": "toes_up"
+    },
+    {
+      "t": 14,
+      "pose": "neutral"
+    },
+    {
+      "t": 15,
+      "pose": "neutral"
+    },
+    {
+      "t": 17,
+      "pose": "toes_up"
+    },
+    {
+      "t": 18,
+      "pose": "toes_up"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 21,
+      "pose": "neutral"
+    },
+    {
+      "t": 23,
+      "pose": "toes_up"
+    },
+    {
+      "t": 24,
+      "pose": "toes_up"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    },
+    {
+      "t": 27,
+      "pose": "neutral"
+    },
+    {
+      "t": 29,
+      "pose": "toes_up"
+    },
+    {
+      "t": 30,
+      "pose": "toes_up"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "toes_up"
+    },
+    {
+      "t": 36,
+      "pose": "toes_up"
+    },
+    {
+      "t": 38,
+      "pose": "neutral"
+    },
+    {
+      "t": 39,
+      "pose": "neutral"
+    },
+    {
+      "t": 41,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, pieds nus ou en chaussures souples, les pieds à plat."
+    },
+    {
+      "t": 3,
+      "text": "Relevez les orteils en gardant le talon au sol."
+    },
+    {
+      "t": 6,
+      "text": "Reposez-les doucement."
+    },
+    {
+      "t": 39,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 44
+}

@@ -1,0 +1,243 @@
+{
+  "id": "knee-extension-standing",
+  "zone": "thigh",
+  "title": "Extension du genou (debout)",
+  "description": "Jambe tendue lentement, genou levé, pour mobiliser le genou et activer le quadriceps.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "thigh",
+    "lower_leg"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      }
+    },
+    "r_ext": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -3
+      }
+    },
+    "lup": {
+      "L_thigh": {
+        "flexion": 60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "l_ext": {
+      "L_thigh": {
+        "flexion": 60
+      },
+      "L_shin": {
+        "flexion": -3
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "up"
+    },
+    {
+      "t": 8,
+      "pose": "up"
+    },
+    {
+      "t": 11,
+      "pose": "r_ext"
+    },
+    {
+      "t": 13,
+      "pose": "r_ext"
+    },
+    {
+      "t": 16,
+      "pose": "up"
+    },
+    {
+      "t": 19,
+      "pose": "r_ext"
+    },
+    {
+      "t": 21,
+      "pose": "r_ext"
+    },
+    {
+      "t": 24,
+      "pose": "up"
+    },
+    {
+      "t": 27,
+      "pose": "r_ext"
+    },
+    {
+      "t": 29,
+      "pose": "r_ext"
+    },
+    {
+      "t": 32,
+      "pose": "up"
+    },
+    {
+      "t": 35,
+      "pose": "r_ext"
+    },
+    {
+      "t": 37,
+      "pose": "r_ext"
+    },
+    {
+      "t": 40,
+      "pose": "up"
+    },
+    {
+      "t": 43,
+      "pose": "r_ext"
+    },
+    {
+      "t": 45,
+      "pose": "r_ext"
+    },
+    {
+      "t": 48,
+      "pose": "up"
+    },
+    {
+      "t": 52,
+      "pose": "neutral"
+    },
+    {
+      "t": 54,
+      "pose": "neutral"
+    },
+    {
+      "t": 58,
+      "pose": "lup"
+    },
+    {
+      "t": 59,
+      "pose": "lup"
+    },
+    {
+      "t": 62,
+      "pose": "l_ext"
+    },
+    {
+      "t": 64,
+      "pose": "l_ext"
+    },
+    {
+      "t": 67,
+      "pose": "lup"
+    },
+    {
+      "t": 70,
+      "pose": "l_ext"
+    },
+    {
+      "t": 72,
+      "pose": "l_ext"
+    },
+    {
+      "t": 75,
+      "pose": "lup"
+    },
+    {
+      "t": 78,
+      "pose": "l_ext"
+    },
+    {
+      "t": 80,
+      "pose": "l_ext"
+    },
+    {
+      "t": 83,
+      "pose": "lup"
+    },
+    {
+      "t": 86,
+      "pose": "l_ext"
+    },
+    {
+      "t": 88,
+      "pose": "l_ext"
+    },
+    {
+      "t": 91,
+      "pose": "lup"
+    },
+    {
+      "t": 94,
+      "pose": "l_ext"
+    },
+    {
+      "t": 96,
+      "pose": "l_ext"
+    },
+    {
+      "t": 99,
+      "pose": "lup"
+    },
+    {
+      "t": 103,
+      "pose": "neutral"
+    },
+    {
+      "t": 105,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, une main appuyée sur un support, le dos droit."
+    },
+    {
+      "t": 3,
+      "text": "Levez le genou droit, le pied sous le genou."
+    },
+    {
+      "t": 8,
+      "text": "Tendez lentement la jambe droite, puis repliez-la."
+    },
+    {
+      "t": 48,
+      "text": "Reposez le pied, puis changez de jambe."
+    },
+    {
+      "t": 54,
+      "text": "Levez le genou gauche."
+    },
+    {
+      "t": 59,
+      "text": "Même mouvement avec la jambe gauche."
+    },
+    {
+      "t": 99,
+      "text": "Reposez le pied et relâchez."
+    }
+  ],
+  "duration_seconds": 108
+}

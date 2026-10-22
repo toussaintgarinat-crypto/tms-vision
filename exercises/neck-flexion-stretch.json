@@ -1,0 +1,94 @@
+{
+  "id": "neck-flexion-stretch",
+  "zone": "neck",
+  "title": "Étirement de la nuque (menton vers la poitrine)",
+  "description": "Flexion douce du cou pour détendre les muscles de la nuque après une posture prolongée.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "target": {
+      "neck": {
+        "flexion": 28
+      },
+      "head": {
+        "flexion": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 41,
+      "pose": "target"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    },
+    {
+      "t": 49,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis ou debout, le dos droit, le regard devant vous."
+    },
+    {
+      "t": 3,
+      "text": "Laissez doucement tomber le menton vers la poitrine."
+    },
+    {
+      "t": 8,
+      "text": "Respirez calmement et sentez l'étirement à l'arrière du cou, sans forcer."
+    },
+    {
+      "t": 26,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 31,
+      "text": "Respirez calmement et sentez l'étirement à l'arrière du cou, sans forcer."
+    },
+    {
+      "t": 41,
+      "text": "Redressez lentement la tête et relâchez les épaules."
+    }
+  ],
+  "duration_seconds": 52
+}

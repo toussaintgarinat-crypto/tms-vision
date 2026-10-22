@@ -93,11 +93,11 @@ def test_zones_and_zone_priority_contain_the_same_members():
     assert set(ZONES) == set(ZONE_PRIORITY)
 
 
-def test_recommend_capsule_returns_first_catalog_entry_for_the_zone():
+def test_recommend_capsule_returns_the_program_capsule_of_the_zone():
     capsule = recommend_capsule("neck")
     assert capsule is not None
     assert capsule.zone == "neck"
-    assert capsule == next(c for c in CAPSULES if c.zone == "neck")
+    assert capsule in CAPSULES
 
 
 def test_recommend_capsule_returns_none_for_none_zone():
@@ -180,6 +180,15 @@ def test_capsule_to_dict_exposes_identity_kind_status_and_content():
         "video_url": capsule.video_url,
     }
     assert capsule.id == "trunk-lumbar-mobility"
+
+
+def test_program_recommendation_does_not_follow_the_library_exercises():
+    from tms_vision.capsules import PROGRAM_CAPSULE_BY_ZONE
+
+    assert set(PROGRAM_CAPSULE_BY_ZONE) == set(ZONES)
+    for zone, capsule_id in PROGRAM_CAPSULE_BY_ZONE.items():
+        assert recommend_capsule(zone).id == capsule_id
+        assert recommend_capsule(zone).zone == zone
 
 
 def test_catalog_is_built_from_the_exercise_files():

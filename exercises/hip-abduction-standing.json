@@ -1,0 +1,196 @@
+{
+  "id": "hip-abduction-standing",
+  "zone": "hip",
+  "title": "Écart de la jambe sur le côté",
+  "description": "Levées latérales lentes de la jambe pour mobiliser et renforcer la hanche.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "r_out": {
+      "R_thigh": {
+        "lateral": 32
+      },
+      "R_foot": {
+        "flexion": 0
+      }
+    },
+    "l_out": {
+      "L_thigh": {
+        "lateral": 32
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 6,
+      "pose": "r_out"
+    },
+    {
+      "t": 7,
+      "pose": "r_out"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 13,
+      "pose": "r_out"
+    },
+    {
+      "t": 14,
+      "pose": "r_out"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 20,
+      "pose": "r_out"
+    },
+    {
+      "t": 21,
+      "pose": "r_out"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 27,
+      "pose": "r_out"
+    },
+    {
+      "t": 28,
+      "pose": "r_out"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    },
+    {
+      "t": 34,
+      "pose": "r_out"
+    },
+    {
+      "t": 35,
+      "pose": "r_out"
+    },
+    {
+      "t": 38,
+      "pose": "neutral"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    },
+    {
+      "t": 43,
+      "pose": "l_out"
+    },
+    {
+      "t": 44,
+      "pose": "l_out"
+    },
+    {
+      "t": 47,
+      "pose": "neutral"
+    },
+    {
+      "t": 50,
+      "pose": "l_out"
+    },
+    {
+      "t": 51,
+      "pose": "l_out"
+    },
+    {
+      "t": 54,
+      "pose": "neutral"
+    },
+    {
+      "t": 57,
+      "pose": "l_out"
+    },
+    {
+      "t": 58,
+      "pose": "l_out"
+    },
+    {
+      "t": 61,
+      "pose": "neutral"
+    },
+    {
+      "t": 64,
+      "pose": "l_out"
+    },
+    {
+      "t": 65,
+      "pose": "l_out"
+    },
+    {
+      "t": 68,
+      "pose": "neutral"
+    },
+    {
+      "t": 71,
+      "pose": "l_out"
+    },
+    {
+      "t": 72,
+      "pose": "l_out"
+    },
+    {
+      "t": 75,
+      "pose": "neutral"
+    },
+    {
+      "t": 77,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, une main appuyée sur un support, le dos droit."
+    },
+    {
+      "t": 3,
+      "text": "Écartez lentement la jambe droite sur le côté, sans pencher le buste."
+    },
+    {
+      "t": 7,
+      "text": "Ramenez-la sans à-coup."
+    },
+    {
+      "t": 38,
+      "text": "Changez de jambe."
+    },
+    {
+      "t": 40,
+      "text": "Même mouvement avec la jambe gauche."
+    },
+    {
+      "t": 75,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 80
+}

@@ -1,0 +1,221 @@
+{
+  "id": "shoulder-pendulum",
+  "zone": "shoulder",
+  "title": "Pendule de l'épaule",
+  "description": "Balancements passifs du bras pendant pour mobiliser l'épaule sans la contracter.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "hang": {
+      "spine": {
+        "flexion": 50
+      },
+      "neck": {
+        "flexion": 5
+      },
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "L_upper_arm": {
+        "flexion": 50
+      }
+    },
+    "r_fwd": {
+      "spine": {
+        "flexion": 50
+      },
+      "neck": {
+        "flexion": 5
+      },
+      "R_upper_arm": {
+        "flexion": 75
+      },
+      "L_upper_arm": {
+        "flexion": 50
+      }
+    },
+    "r_back": {
+      "spine": {
+        "flexion": 50
+      },
+      "neck": {
+        "flexion": 5
+      },
+      "R_upper_arm": {
+        "flexion": 25
+      },
+      "L_upper_arm": {
+        "flexion": 50
+      }
+    },
+    "l_fwd": {
+      "spine": {
+        "flexion": 50
+      },
+      "neck": {
+        "flexion": 5
+      },
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "L_upper_arm": {
+        "flexion": 75
+      }
+    },
+    "l_back": {
+      "spine": {
+        "flexion": 50
+      },
+      "neck": {
+        "flexion": 5
+      },
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "L_upper_arm": {
+        "flexion": 25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "hang"
+    },
+    {
+      "t": 9,
+      "pose": "hang"
+    },
+    {
+      "t": 12,
+      "pose": "r_fwd"
+    },
+    {
+      "t": 15,
+      "pose": "r_back"
+    },
+    {
+      "t": 18,
+      "pose": "r_fwd"
+    },
+    {
+      "t": 21,
+      "pose": "r_back"
+    },
+    {
+      "t": 24,
+      "pose": "r_fwd"
+    },
+    {
+      "t": 27,
+      "pose": "r_back"
+    },
+    {
+      "t": 30,
+      "pose": "r_fwd"
+    },
+    {
+      "t": 33,
+      "pose": "r_back"
+    },
+    {
+      "t": 36,
+      "pose": "hang"
+    },
+    {
+      "t": 38,
+      "pose": "hang"
+    },
+    {
+      "t": 41,
+      "pose": "l_fwd"
+    },
+    {
+      "t": 44,
+      "pose": "l_back"
+    },
+    {
+      "t": 47,
+      "pose": "l_fwd"
+    },
+    {
+      "t": 50,
+      "pose": "l_back"
+    },
+    {
+      "t": 53,
+      "pose": "l_fwd"
+    },
+    {
+      "t": 56,
+      "pose": "l_back"
+    },
+    {
+      "t": 59,
+      "pose": "l_fwd"
+    },
+    {
+      "t": 62,
+      "pose": "l_back"
+    },
+    {
+      "t": 65,
+      "pose": "hang"
+    },
+    {
+      "t": 66,
+      "pose": "hang"
+    },
+    {
+      "t": 71,
+      "pose": "neutral"
+    },
+    {
+      "t": 73,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, penché en avant, une main appuyée sur un support, un bras qui pend."
+    },
+    {
+      "t": 3,
+      "text": "Laissez pendre le bras droit, complètement relâché."
+    },
+    {
+      "t": 9,
+      "text": "Faites de petits balancements avant-arrière avec le poids du bras."
+    },
+    {
+      "t": 33,
+      "text": "Arrêtez le mouvement, puis changez de bras."
+    },
+    {
+      "t": 38,
+      "text": "Même chose avec le bras gauche."
+    },
+    {
+      "t": 66,
+      "text": "Redressez-vous doucement."
+    }
+  ],
+  "duration_seconds": 76
+}

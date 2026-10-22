@@ -1,0 +1,125 @@
+{
+  "id": "tibialis-anterior-stretch",
+  "zone": "lower_leg",
+  "title": "Étirement du tibial antérieur",
+  "description": "Dessus du pied posé au sol pour étirer l'avant de la jambe, sollicité en marchant et en conduisant.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "lower_leg",
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_thigh": {
+        "flexion": -14
+      },
+      "R_shin": {
+        "flexion": -22
+      },
+      "R_foot": {
+        "flexion": -55
+      },
+      "L_thigh": {
+        "flexion": 8
+      },
+      "L_shin": {
+        "flexion": -8
+      }
+    },
+    "left": {
+      "L_thigh": {
+        "flexion": -14
+      },
+      "L_shin": {
+        "flexion": -22
+      },
+      "L_foot": {
+        "flexion": -55
+      },
+      "R_thigh": {
+        "flexion": 8
+      },
+      "R_shin": {
+        "flexion": -8
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "right"
+    },
+    {
+      "t": 20,
+      "pose": "right"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "left"
+    },
+    {
+      "t": 45,
+      "pose": "left"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    },
+    {
+      "t": 53,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, une main appuyée sur un support."
+    },
+    {
+      "t": 3,
+      "text": "Reculez le pied droit et posez le dessus des orteils au sol, le genou fléchi."
+    },
+    {
+      "t": 8,
+      "text": "Poussez doucement le genou vers l'avant : l'étirement se sent devant la jambe."
+    },
+    {
+      "t": 20,
+      "text": "Relâchez, puis changez de jambe."
+    },
+    {
+      "t": 28,
+      "text": "Reculez le pied gauche et posez le dessus des orteils au sol."
+    },
+    {
+      "t": 33,
+      "text": "Poussez doucement le genou vers l'avant : l'étirement se sent devant la jambe."
+    },
+    {
+      "t": 45,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 56
+}

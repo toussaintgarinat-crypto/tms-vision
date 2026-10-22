@@ -1,0 +1,180 @@
+{
+  "id": "thumb-mobility",
+  "zone": "hand",
+  "title": "Mobilité du pouce",
+  "description": "Ouverture et repli du pouce pour assouplir sa base, sollicitée par les gestes répétitifs.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "raised": {
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "L_upper_arm": {
+        "flexion": 40
+      },
+      "R_forearm": {
+        "flexion": 60
+      },
+      "L_forearm": {
+        "flexion": 60
+      }
+    },
+    "thumb_out": {
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "L_upper_arm": {
+        "flexion": 40
+      },
+      "R_forearm": {
+        "flexion": 60
+      },
+      "L_forearm": {
+        "flexion": 60
+      },
+      "R_thumb": {
+        "lateral": 40
+      },
+      "L_thumb": {
+        "lateral": 40
+      }
+    },
+    "thumb_fold": {
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "L_upper_arm": {
+        "flexion": 40
+      },
+      "R_forearm": {
+        "flexion": 60
+      },
+      "L_forearm": {
+        "flexion": 60
+      },
+      "R_thumb": {
+        "flexion": 45
+      },
+      "L_thumb": {
+        "flexion": 45
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "raised"
+    },
+    {
+      "t": 8,
+      "pose": "raised"
+    },
+    {
+      "t": 11,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 12,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 15,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 16,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 19,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 20,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 23,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 24,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 27,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 28,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 31,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 32,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 35,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 36,
+      "pose": "thumb_out"
+    },
+    {
+      "t": 39,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 40,
+      "pose": "thumb_fold"
+    },
+    {
+      "t": 44,
+      "pose": "neutral"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout ou assis, les avant-bras devant vous, les mains détendues."
+    },
+    {
+      "t": 8,
+      "text": "Écartez les pouces au maximum, sans forcer."
+    },
+    {
+      "t": 12,
+      "text": "Repliez les pouces dans la paume."
+    },
+    {
+      "t": 40,
+      "text": "Relâchez les mains."
+    }
+  ],
+  "duration_seconds": 49
+}

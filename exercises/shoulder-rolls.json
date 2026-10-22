@@ -1,0 +1,162 @@
+{
+  "id": "shoulder-rolls",
+  "zone": "shoulder",
+  "title": "Rotation des épaules",
+  "description": "Grands cercles lents des épaules pour relâcher les trapèzes et la ceinture scapulaire.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_clavicle": {
+        "lateral": 12
+      },
+      "L_clavicle": {
+        "lateral": 12
+      }
+    },
+    "back": {
+      "R_clavicle": {
+        "lateral": 6,
+        "twist": -14
+      },
+      "L_clavicle": {
+        "lateral": 6,
+        "twist": -14
+      }
+    },
+    "down": {
+      "R_clavicle": {
+        "lateral": -4,
+        "twist": -4
+      },
+      "L_clavicle": {
+        "lateral": -4,
+        "twist": -4
+      }
+    },
+    "front": {
+      "R_clavicle": {
+        "twist": 12
+      },
+      "L_clavicle": {
+        "twist": 12
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 7,
+      "pose": "back"
+    },
+    {
+      "t": 9,
+      "pose": "down"
+    },
+    {
+      "t": 11,
+      "pose": "front"
+    },
+    {
+      "t": 13,
+      "pose": "up"
+    },
+    {
+      "t": 15,
+      "pose": "back"
+    },
+    {
+      "t": 17,
+      "pose": "down"
+    },
+    {
+      "t": 19,
+      "pose": "front"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 23,
+      "pose": "back"
+    },
+    {
+      "t": 25,
+      "pose": "down"
+    },
+    {
+      "t": 27,
+      "pose": "front"
+    },
+    {
+      "t": 29,
+      "pose": "up"
+    },
+    {
+      "t": 31,
+      "pose": "back"
+    },
+    {
+      "t": 33,
+      "pose": "down"
+    },
+    {
+      "t": 35,
+      "pose": "front"
+    },
+    {
+      "t": 38,
+      "pose": "neutral"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout ou assis, les bras relâchés le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Montez les épaules vers les oreilles."
+    },
+    {
+      "t": 5,
+      "text": "Roulez-les vers l'arrière."
+    },
+    {
+      "t": 7,
+      "text": "Descendez-les bien bas."
+    },
+    {
+      "t": 9,
+      "text": "Ramenez-les vers l'avant."
+    },
+    {
+      "t": 35,
+      "text": "Relâchez complètement les épaules."
+    }
+  ],
+  "duration_seconds": 43
+}

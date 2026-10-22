@@ -1,0 +1,106 @@
+{
+  "id": "chest-hands-behind-stretch",
+  "zone": "shoulder",
+  "title": "Ouverture de la poitrine, bras derrière le dos",
+  "description": "Bras tendus derrière le dos pour étirer les pectoraux et l'avant de l'épaule.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "target": {
+      "R_upper_arm": {
+        "flexion": -48,
+        "lateral": 8
+      },
+      "L_upper_arm": {
+        "flexion": -48,
+        "lateral": 8
+      },
+      "R_clavicle": {
+        "twist": -12
+      },
+      "L_clavicle": {
+        "twist": -12
+      },
+      "spine": {
+        "flexion": -4
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 41,
+      "pose": "target"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    },
+    {
+      "t": 49,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, le dos droit, les mains jointes derrière le dos si possible."
+    },
+    {
+      "t": 3,
+      "text": "Reculez les bras derrière vous et ouvrez la poitrine."
+    },
+    {
+      "t": 8,
+      "text": "Gardez le menton rentré et respirez, sans cambrer le bas du dos."
+    },
+    {
+      "t": 26,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 31,
+      "text": "Gardez le menton rentré et respirez, sans cambrer le bas du dos."
+    },
+    {
+      "t": 41,
+      "text": "Relâchez les bras le long du corps."
+    }
+  ],
+  "duration_seconds": 52
+}
