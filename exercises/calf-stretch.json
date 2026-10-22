@@ -15,16 +15,25 @@
     "neutral": {},
     "stretch": {
       "L_thigh": {
-        "flexion": 30
+        "flexion": 35
       },
       "L_shin": {
-        "flexion": -30
+        "flexion": -45
       },
       "R_thigh": {
-        "flexion": -22
+        "flexion": -28
       },
       "R_foot": {
-        "flexion": 20
+        "flexion": 28
+      },
+      "spine": {
+        "flexion": 8
+      },
+      "L_upper_arm": {
+        "flexion": 85
+      },
+      "R_upper_arm": {
+        "flexion": 85
       }
     }
   },
@@ -53,7 +62,7 @@
     },
     {
       "t": 5,
-      "text": "Reculez une jambe, talon au sol, genou tendu."
+      "text": "Reculez la jambe droite, talon au sol, genou tendu ; pliez la jambe avant."
     },
     {
       "t": 25,

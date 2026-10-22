@@ -2,7 +2,7 @@
   "id": "hamstring-stretch",
   "zone": "thigh",
   "title": "Étirement des ischio-jambiers",
-  "description": "Jambe tendue vers l'avant, talon posé, se pencher légèrement pour étirer l'arrière de la cuisse.",
+  "description": "Un talon posé sur une chaise ou une marche basse, jambe tendue, se pencher du haut du corps vers la jambe pour étirer l'arrière de la cuisse.",
   "status": "draft",
   "source": "human",
   "validated_by": null,
@@ -15,21 +15,27 @@
     "neutral": {},
     "leg_forward": {
       "R_thigh": {
-        "flexion": 50
+        "flexion": 55
       },
       "R_foot": {
-        "flexion": 25
+        "flexion": 15
       }
     },
     "leaning": {
       "R_thigh": {
-        "flexion": 50
+        "flexion": 55
       },
       "R_foot": {
-        "flexion": 25
+        "flexion": 15
       },
       "spine": {
-        "flexion": 18
+        "flexion": 35
+      },
+      "R_upper_arm": {
+        "flexion": 55
+      },
+      "L_upper_arm": {
+        "flexion": 55
       }
     }
   },
@@ -66,11 +72,11 @@
     },
     {
       "t": 4,
-      "text": "Posez le talon droit devant vous, jambe tendue, orteils vers le haut."
+      "text": "Posez le talon droit sur une chaise ou une marche basse, jambe tendue, orteils vers le haut."
     },
     {
       "t": 9,
-      "text": "Penchez-vous légèrement en gardant le dos droit."
+      "text": "Penchez le buste vers la jambe en gardant le dos droit, les mains glissent vers le pied."
     },
     {
       "t": 24,
