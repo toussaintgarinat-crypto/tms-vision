@@ -9,6 +9,8 @@ docs/superpowers/specs/2026-09-15-web-upload-chunked-design.md et
 docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md)."""
 import json
 import os
+import re
+import secrets
 import shutil
 import tempfile
 import time
@@ -24,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from tms_vision import bilan, capsule_build, exercises, recurrence, storage
+from tms_vision import bilan, capsule_build, exercises, library, mailer, recurrence, storage
 from tms_vision.load import bounds, parse_load
 from tms_vision.program import build_analysis_program, build_bilan_program
 from tms_vision.rescore import rescore_frames, summarize_for_load
@@ -640,3 +642,101 @@ async def get_exercise(exercise_id: str) -> dict:
         if exercise["id"] == exercise_id:
             return exercise
     raise HTTPException(status_code=404, detail="Exercice introuvable.")
+
+
+@app.get("/library")
+async def get_library() -> dict:
+    try:
+        return library.load_library()
+    except ValueError as error:
+        raise HTTPException(status_code=500, detail=f"Bibliothèque invalide : {error}") from error
+
+
+_EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MAX_SHARE_ITEMS = 30
+
+
+class LibraryShareItem(BaseModel):
+    exercise_id: str
+    note: str | None = Field(default=None, max_length=500)
+
+
+class LibraryShareCreate(BaseModel):
+    recipient_email: str = Field(max_length=254)
+    practitioner_name: str | None = Field(default=None, max_length=120)
+    message: str | None = Field(default=None, max_length=2000)
+    items: list[LibraryShareItem] = Field(min_length=1, max_length=MAX_SHARE_ITEMS)
+
+
+def _blank_to_none(value: str | None) -> str | None:
+    return value.strip() or None if value is not None else None
+
+
+@app.post("/library/shares")
+async def create_library_share(body: LibraryShareCreate) -> dict:
+    recipient = body.recipient_email.strip()
+    if not _EMAIL_PATTERN.match(recipient):
+        raise HTTPException(status_code=422, detail="Adresse email invalide.")
+
+    catalog = {exercise["id"]: exercise for exercise in exercises.load_catalog()}
+    unknown = [item.exercise_id for item in body.items if item.exercise_id not in catalog]
+    if unknown:
+        raise HTTPException(status_code=422, detail=f"Exercice introuvable : {unknown[0]}.")
+    if len({item.exercise_id for item in body.items}) != len(body.items):
+        raise HTTPException(status_code=422, detail="Exercice en double dans l'envoi.")
+
+    practitioner_name = _blank_to_none(body.practitioner_name)
+    message = _blank_to_none(body.message)
+    items = [
+        {"exercise_id": item.exercise_id, "note": _blank_to_none(item.note)}
+        for item in body.items
+    ]
+    token = secrets.token_urlsafe(16)
+    share_path = f"/bibliotheque/envoi/{token}"
+    outgoing = mailer.build_share_message(
+        to=recipient,
+        share_url=f"{mailer.public_web_url()}{share_path}",
+        practitioner_name=practitioner_name,
+        message=message,
+        exercise_titles=[catalog[item["exercise_id"]]["title"] for item in items],
+    )
+
+    try:
+        service = mailer.get_mailer()
+    except mailer.MailerError:
+        email_status = "failed"
+    else:
+        try:
+            await run_in_threadpool(service.send, outgoing)
+            email_status = "sent"
+        except mailer.MailerError:
+            email_status = "not_configured" if isinstance(service, mailer.NullMailer) else "failed"
+
+    storage.save_library_share(
+        token=token,
+        created_at=datetime.now(timezone.utc),
+        recipient_email=recipient,
+        practitioner_name=practitioner_name,
+        message=message,
+        items=items,
+        email_status=email_status,
+    )
+    return {"token": token, "share_path": share_path, "email_status": email_status}
+
+
+@app.get("/library/shares/{token}")
+async def get_library_share(token: str) -> dict:
+    share = storage.get_library_share(token)
+    if share is None:
+        raise HTTPException(status_code=404, detail="Envoi introuvable.")
+    catalog = {exercise["id"]: exercise for exercise in exercises.load_catalog()}
+    return {
+        "created_at": share["created_at"],
+        "practitioner_name": share["practitioner_name"],
+        "message": share["message"],
+        "items": [
+            {"exercise": catalog[item["exercise_id"]], "note": item["note"]}
+            for item in share["items"]
+            if item["exercise_id"] in catalog
+        ],
+    }

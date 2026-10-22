@@ -103,6 +103,18 @@ CREATE TABLE IF NOT EXISTS analysis_loads (
 )
 """
 
+CREATE_LIBRARY_SHARES_TABLE = """
+CREATE TABLE IF NOT EXISTS library_shares (
+    token VARCHAR PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    recipient_email VARCHAR NOT NULL,
+    practitioner_name VARCHAR,
+    message VARCHAR,
+    items_json VARCHAR NOT NULL,
+    email_status VARCHAR NOT NULL
+)
+"""
+
 
 def _to_naive_utc(value: datetime) -> datetime:
     """DuckDB stocke `created_at` en TIMESTAMP naïf. Note : la colonne
@@ -143,6 +155,7 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_BILANS_TABLE)
     conn.execute(CREATE_BILAN_ANALYSES_TABLE)
     conn.execute(CREATE_ANALYSIS_LOADS_TABLE)
+    conn.execute(CREATE_LIBRARY_SHARES_TABLE)
     # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
     for column, column_type in _TRANCHE_5_COLUMNS:
         conn.execute(f"ALTER TABLE analysis_frames ADD COLUMN IF NOT EXISTS {column} {column_type}")
@@ -595,3 +608,53 @@ def update_load(
             conn.commit()
     finally:
         conn.close()
+
+
+def save_library_share(
+    *,
+    token: str,
+    created_at: datetime,
+    recipient_email: str,
+    practitioner_name: str | None,
+    message: str | None,
+    items: list[dict],
+    email_status: str,
+) -> None:
+    conn = _connect()
+    try:
+        conn.execute(
+            """
+            INSERT INTO library_shares (
+                token, created_at, recipient_email, practitioner_name, message, items_json,
+                email_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                token, _to_naive_utc(created_at), recipient_email, practitioner_name, message,
+                json.dumps(items), email_status,
+            ],
+        )
+    finally:
+        conn.close()
+
+
+def get_library_share(token: str) -> dict | None:
+    conn = _connect()
+    try:
+        row = conn.execute(
+            """
+            SELECT created_at, practitioner_name, message, items_json
+            FROM library_shares WHERE token = ?
+            """,
+            [token],
+        ).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return None
+    return {
+        "created_at": _attach_utc(row[0]).isoformat(),
+        "practitioner_name": row[1],
+        "message": row[2],
+        "items": json.loads(row[3]),
+    }

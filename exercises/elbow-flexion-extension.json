@@ -1,0 +1,144 @@
+{
+  "id": "elbow-flexion-extension",
+  "zone": "lower_arm",
+  "title": "Mobilité du coude (flexion-extension)",
+  "description": "Pliés et dépliés lents des coudes pour entretenir l'amplitude de l'articulation.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "lower_arm",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "a": {
+      "R_forearm": {
+        "flexion": 125
+      },
+      "L_forearm": {
+        "flexion": 125
+      }
+    },
+    "b": {}
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 6,
+      "pose": "a"
+    },
+    {
+      "t": 7,
+      "pose": "a"
+    },
+    {
+      "t": 10,
+      "pose": "b"
+    },
+    {
+      "t": 11,
+      "pose": "b"
+    },
+    {
+      "t": 14,
+      "pose": "a"
+    },
+    {
+      "t": 15,
+      "pose": "a"
+    },
+    {
+      "t": 18,
+      "pose": "b"
+    },
+    {
+      "t": 19,
+      "pose": "b"
+    },
+    {
+      "t": 22,
+      "pose": "a"
+    },
+    {
+      "t": 23,
+      "pose": "a"
+    },
+    {
+      "t": 26,
+      "pose": "b"
+    },
+    {
+      "t": 27,
+      "pose": "b"
+    },
+    {
+      "t": 30,
+      "pose": "a"
+    },
+    {
+      "t": 31,
+      "pose": "a"
+    },
+    {
+      "t": 34,
+      "pose": "b"
+    },
+    {
+      "t": 35,
+      "pose": "b"
+    },
+    {
+      "t": 38,
+      "pose": "a"
+    },
+    {
+      "t": 39,
+      "pose": "a"
+    },
+    {
+      "t": 42,
+      "pose": "b"
+    },
+    {
+      "t": 43,
+      "pose": "b"
+    },
+    {
+      "t": 46,
+      "pose": "neutral"
+    },
+    {
+      "t": 49,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout ou assis, les bras le long du corps, les paumes vers l'avant."
+    },
+    {
+      "t": 3,
+      "text": "Pliez les coudes lentement en amenant les mains vers les épaules."
+    },
+    {
+      "t": 7,
+      "text": "Dépliez complètement les coudes, sans verrouiller."
+    },
+    {
+      "t": 43,
+      "text": "Relâchez les bras."
+    }
+  ],
+  "duration_seconds": 52
+}

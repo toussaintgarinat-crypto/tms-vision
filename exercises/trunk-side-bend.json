@@ -1,0 +1,106 @@
+{
+  "id": "trunk-side-bend",
+  "zone": "trunk",
+  "title": "Inclinaison latérale du tronc",
+  "description": "Bras levé, inclinaison sur le côté pour étirer le flanc et les muscles du dos.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "spine": {
+        "lateral": 24
+      },
+      "L_upper_arm": {
+        "lateral": 158
+      }
+    },
+    "left": {
+      "spine": {
+        "lateral": -24
+      },
+      "R_upper_arm": {
+        "lateral": 158
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "right"
+    },
+    {
+      "t": 20,
+      "pose": "right"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "left"
+    },
+    {
+      "t": 45,
+      "pose": "left"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    },
+    {
+      "t": 53,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, les pieds écartés de la largeur du bassin."
+    },
+    {
+      "t": 3,
+      "text": "Levez le bras gauche et penchez-vous doucement vers la droite."
+    },
+    {
+      "t": 8,
+      "text": "Gardez les deux pieds au sol et le buste dans le plan, sans basculer vers l'avant."
+    },
+    {
+      "t": 20,
+      "text": "Revenez au centre, puis changez de côté."
+    },
+    {
+      "t": 28,
+      "text": "Levez le bras droit et penchez-vous doucement vers la gauche."
+    },
+    {
+      "t": 33,
+      "text": "Gardez les deux pieds au sol et le buste dans le plan, sans basculer vers l'avant."
+    },
+    {
+      "t": 45,
+      "text": "Revenez au centre et relâchez les bras."
+    }
+  ],
+  "duration_seconds": 56
+}

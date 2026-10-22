@@ -1,0 +1,102 @@
+{
+  "id": "neck-scalene-stretch",
+  "zone": "neck",
+  "title": "Étirement des scalènes",
+  "description": "Inclinaison avec légère rotation opposée pour étirer les muscles latéraux du cou.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "neck": {
+        "lateral": 25,
+        "twist": -15
+      }
+    },
+    "left": {
+      "neck": {
+        "lateral": -25,
+        "twist": 15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "right"
+    },
+    {
+      "t": 20,
+      "pose": "right"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "left"
+    },
+    {
+      "t": 45,
+      "pose": "left"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    },
+    {
+      "t": 53,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis ou debout, le dos droit, les épaules relâchées."
+    },
+    {
+      "t": 3,
+      "text": "Inclinez la tête vers la droite et tournez légèrement le menton vers la gauche."
+    },
+    {
+      "t": 8,
+      "text": "Gardez les épaules basses et respirez, l'étirement se sent sur le côté du cou."
+    },
+    {
+      "t": 20,
+      "text": "Revenez au centre, puis changez de côté."
+    },
+    {
+      "t": 28,
+      "text": "Inclinez la tête vers la gauche et tournez légèrement le menton vers la droite."
+    },
+    {
+      "t": 33,
+      "text": "Gardez les épaules basses et respirez, l'étirement se sent sur le côté du cou."
+    },
+    {
+      "t": 45,
+      "text": "Revenez au centre et relâchez."
+    }
+  ],
+  "duration_seconds": 56
+}

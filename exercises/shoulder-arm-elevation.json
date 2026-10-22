@@ -1,0 +1,137 @@
+{
+  "id": "shoulder-arm-elevation",
+  "zone": "shoulder",
+  "title": "Élévation des bras",
+  "description": "Montée lente des deux bras au-dessus de la tête pour entretenir la mobilité de l'épaule.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "a": {
+      "R_upper_arm": {
+        "flexion": 160,
+        "lateral": 8
+      },
+      "L_upper_arm": {
+        "flexion": 160,
+        "lateral": 8
+      }
+    },
+    "b": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "L_upper_arm": {
+        "flexion": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "a"
+    },
+    {
+      "t": 8,
+      "pose": "a"
+    },
+    {
+      "t": 12,
+      "pose": "b"
+    },
+    {
+      "t": 13,
+      "pose": "b"
+    },
+    {
+      "t": 17,
+      "pose": "a"
+    },
+    {
+      "t": 18,
+      "pose": "a"
+    },
+    {
+      "t": 22,
+      "pose": "b"
+    },
+    {
+      "t": 23,
+      "pose": "b"
+    },
+    {
+      "t": 27,
+      "pose": "a"
+    },
+    {
+      "t": 28,
+      "pose": "a"
+    },
+    {
+      "t": 32,
+      "pose": "b"
+    },
+    {
+      "t": 33,
+      "pose": "b"
+    },
+    {
+      "t": 37,
+      "pose": "a"
+    },
+    {
+      "t": 38,
+      "pose": "a"
+    },
+    {
+      "t": 42,
+      "pose": "b"
+    },
+    {
+      "t": 43,
+      "pose": "b"
+    },
+    {
+      "t": 47,
+      "pose": "neutral"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, le dos droit, les bras le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Levez lentement les deux bras devant vous, puis au-dessus de la tête."
+    },
+    {
+      "t": 8,
+      "text": "Redescendez lentement, en gardant les épaules basses."
+    },
+    {
+      "t": 43,
+      "text": "Laissez retomber les bras."
+    }
+  ],
+  "duration_seconds": 53
+}

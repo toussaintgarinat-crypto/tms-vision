@@ -1,0 +1,112 @@
+{
+  "id": "forward-hang-relax",
+  "zone": "trunk",
+  "title": "Relâchement du dos penché en avant",
+  "description": "Enroulement lent vers l'avant, bras pendants, pour décompresser le dos.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "target": {
+      "spine": {
+        "flexion": 72
+      },
+      "neck": {
+        "flexion": 12
+      },
+      "R_upper_arm": {
+        "flexion": 72
+      },
+      "L_upper_arm": {
+        "flexion": 72
+      },
+      "R_thigh": {
+        "flexion": 8
+      },
+      "L_thigh": {
+        "flexion": 8
+      },
+      "R_shin": {
+        "flexion": -8
+      },
+      "L_shin": {
+        "flexion": -8
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 10,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "target"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "target"
+    },
+    {
+      "t": 43,
+      "pose": "target"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    },
+    {
+      "t": 53,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, les pieds écartés de la largeur du bassin, les genoux souples."
+    },
+    {
+      "t": 3,
+      "text": "Laissez le haut du corps s'enrouler vers l'avant, la tête et les bras lourds."
+    },
+    {
+      "t": 10,
+      "text": "Respirez profondément et laissez la gravité faire le travail."
+    },
+    {
+      "t": 28,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "Respirez profondément et laissez la gravité faire le travail."
+    },
+    {
+      "t": 43,
+      "text": "Remontez lentement, vertèbre par vertèbre."
+    }
+  ],
+  "duration_seconds": 56
+}

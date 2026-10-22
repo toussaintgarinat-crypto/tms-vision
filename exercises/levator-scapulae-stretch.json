@@ -1,0 +1,104 @@
+{
+  "id": "levator-scapulae-stretch",
+  "zone": "neck",
+  "title": "Étirement de l'élévateur de la scapula",
+  "description": "Rotation et flexion du cou pour étirer le muscle qui relie la nuque à l'omoplate.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "three_quarter",
+  "target_segments": [
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "neck": {
+        "flexion": 25,
+        "lateral": 18,
+        "twist": 32
+      }
+    },
+    "left": {
+      "neck": {
+        "flexion": 25,
+        "lateral": -18,
+        "twist": -32
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "right"
+    },
+    {
+      "t": 20,
+      "pose": "right"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "left"
+    },
+    {
+      "t": 45,
+      "pose": "left"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    },
+    {
+      "t": 53,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis ou debout, le dos droit, les épaules relâchées."
+    },
+    {
+      "t": 3,
+      "text": "Tournez la tête vers la droite, comme pour regarder votre aisselle, puis penchez-la."
+    },
+    {
+      "t": 8,
+      "text": "Respirez calmement : l'étirement se sent entre la nuque et l'omoplate."
+    },
+    {
+      "t": 20,
+      "text": "Revenez au centre, puis changez de côté."
+    },
+    {
+      "t": 28,
+      "text": "Tournez la tête vers la gauche, comme pour regarder votre aisselle, puis penchez-la."
+    },
+    {
+      "t": 33,
+      "text": "Respirez calmement : l'étirement se sent entre la nuque et l'omoplate."
+    },
+    {
+      "t": 45,
+      "text": "Revenez au centre et relâchez."
+    }
+  ],
+  "duration_seconds": 56
+}

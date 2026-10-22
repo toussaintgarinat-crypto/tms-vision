@@ -1,0 +1,155 @@
+{
+  "id": "ankle-circles",
+  "zone": "foot",
+  "title": "Cercles de la cheville",
+  "description": "Grands cercles lents de la cheville pour entretenir sa mobilité après une position prolongée.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "three_quarter",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "seat": {
+      "R_thigh": {
+        "flexion": 40
+      }
+    },
+    "dorsi": {
+      "R_thigh": {
+        "flexion": 40
+      },
+      "R_foot": {
+        "flexion": 25
+      }
+    },
+    "inv": {
+      "R_thigh": {
+        "flexion": 40
+      },
+      "R_foot": {
+        "lateral": 20
+      }
+    },
+    "plant": {
+      "R_thigh": {
+        "flexion": 40
+      },
+      "R_foot": {
+        "flexion": -35
+      }
+    },
+    "ev": {
+      "R_thigh": {
+        "flexion": 40
+      },
+      "R_foot": {
+        "lateral": -20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "seat"
+    },
+    {
+      "t": 8,
+      "pose": "seat"
+    },
+    {
+      "t": 10,
+      "pose": "dorsi"
+    },
+    {
+      "t": 12,
+      "pose": "inv"
+    },
+    {
+      "t": 14,
+      "pose": "plant"
+    },
+    {
+      "t": 16,
+      "pose": "ev"
+    },
+    {
+      "t": 18,
+      "pose": "dorsi"
+    },
+    {
+      "t": 20,
+      "pose": "inv"
+    },
+    {
+      "t": 22,
+      "pose": "plant"
+    },
+    {
+      "t": 24,
+      "pose": "ev"
+    },
+    {
+      "t": 26,
+      "pose": "dorsi"
+    },
+    {
+      "t": 28,
+      "pose": "inv"
+    },
+    {
+      "t": 30,
+      "pose": "plant"
+    },
+    {
+      "t": 32,
+      "pose": "ev"
+    },
+    {
+      "t": 34,
+      "pose": "seat"
+    },
+    {
+      "t": 35,
+      "pose": "seat"
+    },
+    {
+      "t": 38,
+      "pose": "neutral"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis ou debout, le dos droit."
+    },
+    {
+      "t": 3,
+      "text": "Levez le pied droit devant vous, la jambe tendue."
+    },
+    {
+      "t": 8,
+      "text": "Dessinez de grands cercles avec la pointe du pied."
+    },
+    {
+      "t": 35,
+      "text": "Reposez le pied, puis recommencez avec l'autre cheville."
+    }
+  ],
+  "duration_seconds": 43
+}

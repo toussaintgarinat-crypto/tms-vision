@@ -1,0 +1,412 @@
+{
+  "status": "draft",
+  "note": "Premier jet du rattachement zone -> pathologie -> exercices, à relire et valider par un professionnel de santé avant usage auprès de patients.",
+  "zones": [
+    {
+      "id": "neck",
+      "label": "Cou",
+      "pathologies": [
+        {
+          "id": "cervicalgie-posturale",
+          "label": "Cervicalgie posturale (tête baissée prolongée)",
+          "exercises": [
+            "neck-lateral-stretch",
+            "neck-rotation-stretch",
+            "head-chin-tuck",
+            "neck-flexion-stretch"
+          ]
+        },
+        {
+          "id": "raideur-cervicale",
+          "label": "Raideur cervicale (rotation, extension)",
+          "exercises": [
+            "neck-rotation-stretch",
+            "neck-extension-gentle",
+            "head-chin-tuck",
+            "neck-flexion-stretch"
+          ]
+        },
+        {
+          "id": "cephalee-tension-cervicale",
+          "label": "Céphalée de tension d'origine cervicale",
+          "exercises": [
+            "neck-lateral-stretch",
+            "head-chin-tuck",
+            "shoulder-shrug-release",
+            "levator-scapulae-stretch",
+            "neck-scalene-stretch"
+          ]
+        },
+        {
+          "id": "tension-laterale-cou",
+          "label": "Tension latérale du cou, cou « bloqué »",
+          "exercises": [
+            "neck-scalene-stretch",
+            "levator-scapulae-stretch",
+            "neck-lateral-stretch",
+            "neck-rotation-stretch"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shoulder",
+      "label": "Épaule",
+      "pathologies": [
+        {
+          "id": "tension-trapeze",
+          "label": "Tension du trapèze, épaules montées",
+          "exercises": [
+            "shoulder-shrug-release",
+            "shoulder-blade-squeeze",
+            "shoulder-rolls",
+            "levator-scapulae-stretch",
+            "neck-lateral-stretch"
+          ]
+        },
+        {
+          "id": "epaule-enroulee",
+          "label": "Épaules enroulées, gêne sous-acromiale",
+          "exercises": [
+            "chest-opening-stretch",
+            "chest-hands-behind-stretch",
+            "shoulder-blade-squeeze",
+            "shoulder-cross-body-stretch",
+            "shoulder-rolls"
+          ]
+        },
+        {
+          "id": "raideur-posterieure-epaule",
+          "label": "Raideur postérieure de l'épaule",
+          "exercises": [
+            "shoulder-cross-body-stretch",
+            "shoulder-pendulum"
+          ]
+        },
+        {
+          "id": "epaule-raide",
+          "label": "Épaule raide (perte d'amplitude)",
+          "exercises": [
+            "shoulder-pendulum",
+            "shoulder-arm-elevation",
+            "shoulder-external-rotation",
+            "shoulder-cross-body-stretch"
+          ]
+        },
+        {
+          "id": "reprise-mobilite-coiffe",
+          "label": "Reprise de mobilité après douleur de la coiffe",
+          "exercises": [
+            "shoulder-pendulum",
+            "shoulder-external-rotation",
+            "shoulder-arm-elevation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "elbow",
+      "label": "Coude",
+      "pathologies": [
+        {
+          "id": "epicondylite",
+          "label": "Épicondylite (tennis elbow)",
+          "exercises": [
+            "forearm-extension-stretch",
+            "forearm-rotation",
+            "elbow-flexion-extension"
+          ]
+        },
+        {
+          "id": "epitrochleite",
+          "label": "Épitrochléite (coude du golfeur)",
+          "exercises": [
+            "wrist-flexor-stretch",
+            "forearm-rotation",
+            "elbow-flexion-extension"
+          ]
+        },
+        {
+          "id": "tension-avant-bras",
+          "label": "Tension de l'avant-bras (travail répétitif)",
+          "exercises": [
+            "forearm-extension-stretch",
+            "wrist-flexor-stretch",
+            "forearm-rotation"
+          ]
+        },
+        {
+          "id": "raideur-coude",
+          "label": "Raideur du coude",
+          "exercises": [
+            "elbow-flexion-extension",
+            "biceps-stretch-arm-back",
+            "triceps-overhead-stretch"
+          ]
+        },
+        {
+          "id": "tension-bras",
+          "label": "Tension du bras (biceps, triceps)",
+          "exercises": [
+            "biceps-stretch-arm-back",
+            "triceps-overhead-stretch"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wrist_hand",
+      "label": "Poignet et main",
+      "pathologies": [
+        {
+          "id": "canal-carpien",
+          "label": "Tensions évoquant un canal carpien",
+          "exercises": [
+            "wrist-flexor-stretch",
+            "finger-extension-stretch",
+            "wrist-circles",
+            "thumb-mobility"
+          ]
+        },
+        {
+          "id": "tendinite-extenseurs",
+          "label": "Tendinite des extenseurs du poignet",
+          "exercises": [
+            "forearm-extension-stretch",
+            "finger-extension-stretch",
+            "wrist-circles"
+          ]
+        },
+        {
+          "id": "raideur-poignet",
+          "label": "Raideur du poignet",
+          "exercises": [
+            "wrist-circles",
+            "wrist-flexor-stretch",
+            "forearm-extension-stretch"
+          ]
+        },
+        {
+          "id": "raideur-doigts",
+          "label": "Raideur des doigts",
+          "exercises": [
+            "finger-extension-stretch",
+            "thumb-mobility"
+          ]
+        },
+        {
+          "id": "douleur-base-pouce",
+          "label": "Douleur de la base du pouce",
+          "exercises": [
+            "thumb-mobility",
+            "wrist-circles"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "upper_back",
+      "label": "Haut du dos",
+      "pathologies": [
+        {
+          "id": "dorsalgie-posturale",
+          "label": "Dorsalgie posturale",
+          "exercises": [
+            "chest-opening-stretch",
+            "shoulder-blade-squeeze",
+            "trunk-rotation-stretch",
+            "thoracic-rotation-crossed-arms",
+            "round-hollow-back"
+          ]
+        },
+        {
+          "id": "raideur-thoracique",
+          "label": "Raideur thoracique",
+          "exercises": [
+            "thoracic-rotation-crossed-arms",
+            "thoracic-extension-hands-back",
+            "trunk-side-bend",
+            "round-hollow-back"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lower_back",
+      "label": "Bas du dos",
+      "pathologies": [
+        {
+          "id": "lombalgie-commune",
+          "label": "Lombalgie commune, raideur lombaire",
+          "exercises": [
+            "trunk-lumbar-mobility",
+            "trunk-rotation-stretch",
+            "hip-flexor-stretch",
+            "round-hollow-back",
+            "knee-to-chest"
+          ]
+        },
+        {
+          "id": "lombalgie-position-assise",
+          "label": "Lombalgie liée à la position assise prolongée",
+          "exercises": [
+            "hip-flexor-stretch",
+            "hamstring-stretch",
+            "trunk-lumbar-mobility",
+            "thoracic-extension-hands-back",
+            "knee-to-chest"
+          ]
+        },
+        {
+          "id": "tension-lombaire-detente",
+          "label": "Tension lombaire, besoin de détente",
+          "exercises": [
+            "forward-hang-relax",
+            "round-hollow-back",
+            "trunk-side-bend",
+            "knee-to-chest"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hip",
+      "label": "Hanche et bassin",
+      "pathologies": [
+        {
+          "id": "tension-flechisseurs-hanche",
+          "label": "Tension des fléchisseurs de hanche (psoas)",
+          "exercises": [
+            "hip-flexor-stretch",
+            "trunk-lumbar-mobility"
+          ]
+        },
+        {
+          "id": "tension-fessiers",
+          "label": "Tension des fessiers",
+          "exercises": [
+            "knee-to-chest",
+            "leg-swing-hip-mobility"
+          ]
+        },
+        {
+          "id": "raideur-hanche",
+          "label": "Raideur de hanche",
+          "exercises": [
+            "leg-swing-hip-mobility",
+            "hip-abduction-standing",
+            "knee-to-chest"
+          ]
+        },
+        {
+          "id": "tension-adducteurs",
+          "label": "Tension des adducteurs",
+          "exercises": [
+            "adductor-wide-stance",
+            "hip-abduction-standing"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thigh",
+      "label": "Cuisse",
+      "pathologies": [
+        {
+          "id": "tension-ischio-jambiers",
+          "label": "Tension des ischio-jambiers",
+          "exercises": [
+            "hamstring-stretch",
+            "leg-swing-hip-mobility",
+            "forward-hang-relax"
+          ]
+        },
+        {
+          "id": "tension-quadriceps",
+          "label": "Tension du quadriceps",
+          "exercises": [
+            "quadriceps-standing-stretch",
+            "knee-extension-standing"
+          ]
+        },
+        {
+          "id": "tension-adducteurs-cuisse",
+          "label": "Tension de l'intérieur de la cuisse",
+          "exercises": [
+            "adductor-wide-stance",
+            "hip-abduction-standing"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "knee",
+      "label": "Genou",
+      "pathologies": [
+        {
+          "id": "douleur-anterieure-genou",
+          "label": "Douleur antérieure du genou (tensions musculaires associées)",
+          "exercises": [
+            "quadriceps-standing-stretch",
+            "hamstring-stretch",
+            "knee-extension-standing"
+          ]
+        },
+        {
+          "id": "raideur-genou",
+          "label": "Raideur du genou",
+          "exercises": [
+            "knee-extension-standing",
+            "leg-swing-hip-mobility"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lower_leg",
+      "label": "Mollet",
+      "pathologies": [
+        {
+          "id": "tension-mollet",
+          "label": "Tension du mollet, tendon d'Achille",
+          "exercises": [
+            "calf-stretch",
+            "ankle-mobility"
+          ]
+        },
+        {
+          "id": "douleur-face-anterieure-jambe",
+          "label": "Douleur de la face antérieure de la jambe",
+          "exercises": [
+            "tibialis-anterior-stretch",
+            "calf-stretch"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ankle_foot",
+      "label": "Cheville et pied",
+      "pathologies": [
+        {
+          "id": "raideur-cheville",
+          "label": "Raideur de cheville (après entorse)",
+          "exercises": [
+            "ankle-mobility",
+            "ankle-circles",
+            "calf-stretch"
+          ]
+        },
+        {
+          "id": "pied-raide-fatigue",
+          "label": "Pied raide ou fatigué",
+          "exercises": [
+            "toe-lift",
+            "ankle-circles",
+            "ankle-mobility"
+          ]
+        }
+      ]
+    }
+  ]
+}
