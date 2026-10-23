@@ -16,6 +16,31 @@ Deux façons d'installer, au choix :
 
 ---
 
+## 0. Raccourci : tout installer en une commande (Docker)
+
+Sur le serveur du client (Linux, avec accès à Internet) :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.sh | bash
+```
+
+Le script installe Docker s'il manque (après confirmation), récupère le code dans `~/tms-vision`,
+pose les questions utiles (adresse du site, identifiant, mot de passe, ou en génère un), crée le
+`.env`, puis construit et lance tout. Options : `bash -s -- --with-videos` (génère aussi les vidéos
+d'étirement), `--no-start` (prépare sans lancer), `--yes` (aucune question). Sans question, on peut
+tout passer par variables : `TMS_DOMAIN=tms.client.fr TMS_USER=dr TMS_PASSWORD=... bash`.
+
+**Relancer la même commande plus tard fait la mise à jour** : sauvegarde de `data/`, `git pull`,
+reconstruction. Le `.env` et `data/` ne sont jamais écrasés.
+
+Limites : le dépôt doit être **public** pour que l'adresse `raw.githubusercontent.com` réponde (sinon,
+clonez avec une clé de déploiement, voir § 1, puis lancez `./install.sh` depuis le clone). Comme pour
+les fichiers Docker, ce script a été testé avec un faux Docker, pas sur une vraie installation :
+essayez-le d'abord sur une de vos machines. Lire un script avant de l'exécuter reste une bonne
+habitude : <https://github.com/toussaintgarinat-crypto/tms-vision/blob/main/install.sh>.
+
+---
+
 ## 1. Prérequis
 
 ### Le serveur du client

@@ -21,7 +21,14 @@ Depuis un clone du dépôt :
 ## Mise en place chez un client (production)
 
 Docker (HTTPS, mot de passe, démarrage automatique, sauvegarde) ou installation directe avec
-systemd : voir [`docs/INSTALLATION-CLIENT.md`](docs/INSTALLATION-CLIENT.md). En bref :
+systemd : voir [`docs/INSTALLATION-CLIENT.md`](docs/INSTALLATION-CLIENT.md). Tout en une commande
+(relancée plus tard, elle met à jour) :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.sh | bash
+```
+
+Ou pas à pas :
 
 ```bash
 cp .env.example .env && nano .env     # adresse du site, identifiant et mot de passe haché
