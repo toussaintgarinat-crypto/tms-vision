@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent, ReactNode } from "react";
 import { POSITION_LABELS, type Exercise } from "../exercisePose";
-import { ExercisePlayer } from "./ExercisePlayer";
+import { ExerciseMedia } from "./ExerciseMedia";
 
 type Props = {
   exercises: Exercise[];
@@ -66,7 +66,7 @@ export function ExerciseCarousel({ exercises, index, onIndexChange, footer }: Pr
       )}
       <p className="mb-3 mt-2 text-sm text-zinc-600 dark:text-zinc-400">{exercise.description}</p>
 
-      <ExercisePlayer exercise={exercise} />
+      <ExerciseMedia exercise={exercise} />
 
       {footer && <div className="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-700">{footer(exercise)}</div>}
 
