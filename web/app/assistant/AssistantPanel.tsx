@@ -14,6 +14,7 @@ import {
   subscribeSettings,
 } from "./assistantSettings";
 import { ApplyResult, AssistantTaskFields, FIELD_LABELS, FilledKey } from "./taskFill";
+import { AssistantSettingsPanel } from "./AssistantSettingsPanel";
 import { useSpeech } from "./useSpeech";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -73,13 +74,19 @@ export function AssistantPanel({ values, onFields }: Props) {
     settingsRef.current = settings;
   });
 
+  const [showSettings, setShowSettings] = useState(false);
+  const [configVersion, setConfigVersion] = useState(0);
+
   useEffect(() => {
-    if (!settings.enabled || config !== null) return;
+    if (!settings.enabled) return;
     fetch(`${API_URL}/assistant/config`)
       .then((response) => (response.ok ? (response.json() as Promise<ServerConfig>) : Promise.reject()))
-      .then(setConfig)
+      .then((data) => {
+        setConfig(data);
+        setConfigError(false);
+      })
       .catch(() => setConfigError(true));
-  }, [settings.enabled, config]);
+  }, [settings.enabled, configVersion]);
 
   function update(patch: Partial<AssistantSettings>) {
     saveSettings({ ...settings, ...patch });
@@ -150,14 +157,30 @@ export function AssistantPanel({ values, onFields }: Props) {
 
   return (
     <section className="flex flex-col gap-3 rounded border border-dashed p-4 text-sm sm:col-span-2">
-      <label className="flex items-center gap-2 font-medium">
-        <input
-          type="checkbox"
-          checked={settings.enabled}
-          onChange={(event) => update({ enabled: event.target.checked })}
-        />
-        Assistant vocal (remplit la fiche à partir de ce que vous dites)
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center gap-2 font-medium">
+          <input
+            type="checkbox"
+            checked={settings.enabled}
+            onChange={(event) => update({ enabled: event.target.checked })}
+          />
+          Assistant vocal (remplit la fiche à partir de ce que vous dites)
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowSettings((open) => !open)}
+          aria-expanded={showSettings}
+          aria-label="Réglages de l'assistant"
+          title="Réglages de l'assistant (fournisseur d'IA, clé, modèle)"
+          className={`rounded border px-2 py-1 text-base leading-none ${showSettings ? "bg-gray-200 text-gray-900" : ""}`}
+        >
+          ⚙
+        </button>
+      </div>
+
+      {showSettings && (
+        <AssistantSettingsPanel onSaved={() => setConfigVersion((version) => version + 1)} />
+      )}
 
       {settings.enabled && (
         <>
@@ -166,12 +189,14 @@ export function AssistantPanel({ values, onFields }: Props) {
           )}
           {config && !config.enabled && (
             <p className="text-amber-700">
-              L&apos;assistant n&apos;est pas autorisé sur ce serveur (variable TMS_ASSISTANT=on).
+              L&apos;assistant n&apos;est pas encore configuré sur ce serveur : ouvrez la roue ⚙ pour
+              choisir un fournisseur d&apos;IA.
             </p>
           )}
           {config?.enabled && !config.llm_configured && (
             <p className="text-amber-700">
-              Aucun modèle d&apos;IA n&apos;est configuré (TMS_ASSISTANT_LLM_URL, par exemple « ollama »).
+              Aucun modèle d&apos;IA n&apos;est configuré : ouvrez la roue ⚙ (par exemple Ollama ou
+              OpenRouter).
             </p>
           )}
 

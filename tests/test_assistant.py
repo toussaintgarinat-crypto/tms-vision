@@ -1,8 +1,17 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from tms_vision import assistant
+from tms_vision import assistant, assistant_settings, storage
 from tms_vision.api import app
+
+
+@pytest.fixture(autouse=True)
+def isolated_settings(tmp_path, monkeypatch):
+    """Les réglages vont dans un dossier temporaire ; l'environnement de départ est vide."""
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.duckdb")
+    for name in ("TMS_ASSISTANT", "TMS_ASSISTANT_LLM_URL", "TMS_ASSISTANT_LLM_KEY",
+                 "TMS_ASSISTANT_MODEL", "TMS_TRANSCRIPTION_URL", "TMS_TRANSCRIPTION_KEY"):
+        monkeypatch.delenv(name, raising=False)
 
 
 def test_normalize_keeps_valid_fields_and_derives_hours_from_slots():
@@ -146,7 +155,7 @@ def test_local_presets_and_detection(monkeypatch):
 
 def test_local_preset_targets_the_host_inside_docker(monkeypatch):
     monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "ollama")
-    monkeypatch.setattr(assistant, "_in_docker", lambda: True)
+    monkeypatch.setattr(assistant_settings, "_in_docker", lambda: True)
     assert assistant.llm_base_url() == "http://host.docker.internal:11434/v1"
 
 
@@ -194,3 +203,61 @@ async def test_chat_json_reports_unreachable_server(monkeypatch):
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+def test_settings_saved_from_the_interface_enable_and_configure_the_assistant(tmp_path):
+    client = TestClient(app)
+    view = client.get("/assistant/settings").json()
+    assert view["enabled"] is False and view["provider"] == ""
+    assert {p["id"] for p in view["providers"]} >= {"ollama", "openrouter", "custom"}
+
+    view = client.put("/assistant/settings", json={
+        "enabled": True, "provider": "openrouter", "base_url": "https://openrouter.ai/api/v1",
+        "model": "mistralai/mistral-small", "api_key": "sk-secret",
+    }).json()
+    assert view["enabled"] is True and view["key_set"] is True and "sk-secret" not in str(view)
+    config = client.get("/assistant/config").json()
+    assert config["enabled"] and config["llm_configured"] and not config["llm_local"]
+    saved = assistant_settings.settings_path()
+    assert saved.stat().st_mode & 0o777 == 0o600 and "sk-secret" in saved.read_text()
+
+    # clé absente = inchangée ; chaîne vide = effacée
+    client.put("/assistant/settings", json={"model": "autre"})
+    assert assistant_settings.effective()["api_key"] == "sk-secret"
+    assert client.put("/assistant/settings", json={"api_key": ""}).json()["key_set"] is False
+
+
+def test_settings_validation(tmp_path):
+    client = TestClient(app)
+    assert client.put("/assistant/settings", json={"provider": "inconnu"}).status_code == 422
+    assert client.put("/assistant/settings", json={"base_url": "ftp://x"}).status_code == 422
+    assert client.put("/assistant/settings", json={"base_url": "ollama"}).status_code == 200
+
+
+def test_environment_off_locks_the_assistant_and_env_gives_defaults(monkeypatch):
+    client = TestClient(app)
+    client.put("/assistant/settings", json={"enabled": True, "base_url": "ollama"})
+    assert client.get("/assistant/config").json()["enabled"] is True
+    monkeypatch.setenv("TMS_ASSISTANT", "off")
+    view = client.get("/assistant/settings").json()
+    assert view["enabled"] is False and view["enabled_locked"] is True
+    monkeypatch.delenv("TMS_ASSISTANT")
+    monkeypatch.setenv("TMS_ASSISTANT_MODEL", "mistral:7b")
+    assert client.get("/assistant/settings").json()["model"] == "mistral:7b"
+
+
+def test_connection_test_reports_models_or_a_clear_failure(monkeypatch):
+    import httpx
+    client = TestClient(app)
+
+    def handler(request):
+        if "ok.test" in str(request.url):
+            return httpx.Response(200, json={"data": [{"id": "m1"}, {"id": "m2"}]})
+        raise httpx.ConnectError("refusé")
+
+    _mock_llm_server(monkeypatch, handler)
+    good = client.post("/assistant/settings/test", json={"base_url": "https://ok.test/v1"}).json()
+    assert good["ok"] and good["models"] == ["m1", "m2"]
+    bad = client.post("/assistant/settings/test", json={"base_url": "http://ko.test/v1"}).json()
+    assert not bad["ok"] and "n'a pas répondu" in bad["message"]
+    assert not client.post("/assistant/settings/test", json={}).json()["ok"]

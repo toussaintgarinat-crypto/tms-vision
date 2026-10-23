@@ -1,6 +1,7 @@
 """Assistant vocal : transforme ce que dit la personne en champs de formulaire.
 
-Option DÉSACTIVÉE par défaut (TMS_ASSISTANT=on pour l'autoriser). Il ne sauvegarde jamais :
+Option DÉSACTIVÉE par défaut ; elle s'active et se règle depuis la roue ⚙ du bandeau de l'assistant
+(assistant_settings.py), ou par TMS_ASSISTANT=on et les variables ci-dessous. Il ne sauvegarde jamais :
 il renvoie des champs que l'interface pré-remplit, l'utilisateur relit puis enregistre. Ce qui
 n'a pas été dit reste absent (jamais deviné). Chaque champ renvoyé par le modèle est revalidé ici
 avec les mêmes règles que la fiche d'activité (api.py, bilan.py).
@@ -15,13 +16,13 @@ La transcription souveraine relaie vers la brique « transcription » de Workpla
 (TMS_TRANSCRIPTION_URL, TMS_TRANSCRIPTION_KEY) ; sans elle, repli honnête (texte vide).
 """
 import json
-import os
+import re
 
 import httpx
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
-from tms_vision import bilan
+from tms_vision import assistant_settings, bilan
 
 router = APIRouter(prefix="/assistant", tags=["assistant"])
 
@@ -52,50 +53,34 @@ QUESTIONS_FR = {
 
 
 def enabled() -> bool:
-    return os.environ.get("TMS_ASSISTANT", "off").strip().lower() in {"on", "1", "true", "oui"}
-
-
-LOCAL_PRESETS = {
-    "ollama": "http://localhost:11434/v1",
-    "lmstudio": "http://localhost:1234/v1",
-    "llamacpp": "http://localhost:8080/v1",
-}
-
-
-def _in_docker() -> bool:
-    return os.path.exists("/.dockerenv")
+    return assistant_settings.effective()["enabled"]
 
 
 def llm_base_url() -> str:
-    value = os.environ.get("TMS_ASSISTANT_LLM_URL", "").strip()
-    preset = LOCAL_PRESETS.get(value.lower())
-    if preset is None:
-        return value.rstrip("/")
-    # Dans un conteneur, « localhost » est le conteneur lui-même : le serveur local est sur l'hôte.
-    return preset.replace("localhost", "host.docker.internal") if _in_docker() else preset
+    return assistant_settings.effective()["base_url_resolved"]
 
 
 def llm_is_local() -> bool:
-    value = os.environ.get("TMS_ASSISTANT_LLM_URL", "").strip().lower()
-    return value in LOCAL_PRESETS or any(
-        host in value for host in ("localhost", "127.0.0.1", "host.docker.internal")
-    )
+    return assistant_settings.effective()["local"]
 
 
 def llm_configured() -> bool:
     return bool(llm_base_url())
 
 
-def _llm_headers() -> dict:
-    key = os.environ.get("TMS_ASSISTANT_LLM_KEY", "").strip()
+def _llm_headers(config: dict | None = None) -> dict:
+    key = (config or assistant_settings.effective())["api_key"]
     return {"Authorization": f"Bearer {key}"} if key else {}
 
 
-async def list_models() -> list[str]:
+async def list_models(config: dict | None = None) -> list[str]:
     """Modèles proposés par le serveur (GET /models, standard OpenAI/Ollama/LM Studio)."""
+    config = config or assistant_settings.effective()
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(f"{llm_base_url()}/models", headers=_llm_headers())
+            response = await client.get(
+                f"{config['base_url_resolved']}/models", headers=_llm_headers(config)
+            )
             response.raise_for_status()
         return [item["id"] for item in response.json()["data"] if "id" in item]
     except (httpx.HTTPError, KeyError, TypeError, ValueError) as error:
@@ -105,7 +90,7 @@ async def list_models() -> list[str]:
 
 
 def transcription_configured() -> bool:
-    return bool(os.environ.get("TMS_TRANSCRIPTION_URL", "").strip())
+    return bool(assistant_settings.effective()["transcription_url"])
 
 
 # ── Normalisation des champs proposés par le modèle (logique pure, testée) ─────────────────────
@@ -259,9 +244,10 @@ def build_task_prompt(current: dict) -> str:
 
 async def chat_json(system: str, history: list[dict], transcript: str) -> dict:
     """Appelle la passerelle compatible OpenAI et renvoie l'objet JSON de la réponse."""
-    model = os.environ.get("TMS_ASSISTANT_MODEL", "").strip()
+    config = assistant_settings.effective()
+    model = config["model"]
     if not model:
-        models = await list_models()
+        models = await list_models(config)
         if not models:
             raise HTTPException(status_code=503, detail="Le serveur n'a aucun modèle installé.")
         model = models[0]
@@ -276,13 +262,13 @@ async def chat_json(system: str, history: list[dict], transcript: str) -> dict:
     }
     try:
         async with httpx.AsyncClient(timeout=120) as client:
-            url = f"{llm_base_url()}/chat/completions"
+            url = f"{config['base_url_resolved']}/chat/completions"
+            headers = _llm_headers(config)
             response = await client.post(
-                url, json={**payload, "response_format": {"type": "json_object"}},
-                headers=_llm_headers(),
+                url, json={**payload, "response_format": {"type": "json_object"}}, headers=headers,
             )
             if response.status_code == 400:  # certains serveurs locaux refusent response_format
-                response = await client.post(url, json=payload, headers=_llm_headers())
+                response = await client.post(url, json=payload, headers=headers)
             response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]
     except (httpx.HTTPError, KeyError, IndexError, ValueError) as error:
@@ -332,6 +318,68 @@ async def get_config() -> dict:
     }
 
 
+class SettingsBody(BaseModel):
+    enabled: bool | None = None
+    provider: str | None = Field(default=None, max_length=40)
+    base_url: str | None = Field(default=None, max_length=300)
+    model: str | None = Field(default=None, max_length=200)
+    # None = clé inchangée ; "" = clé effacée.
+    api_key: str | None = Field(default=None, max_length=500)
+    transcription_url: str | None = Field(default=None, max_length=300)
+    transcription_key: str | None = Field(default=None, max_length=500)
+
+
+def _validated_settings(body: SettingsBody) -> dict:
+    changes = body.model_dump()
+    if changes["provider"] not in (None, "") and changes["provider"] not in assistant_settings.PROVIDER_IDS:
+        raise HTTPException(status_code=422, detail="Fournisseur inconnu.")
+    for key in ("base_url", "transcription_url"):
+        value = (changes[key] or "").strip()
+        if value and not re.match(r"^(https?://\S+|ollama|lmstudio|llamacpp)$", value, re.IGNORECASE):
+            raise HTTPException(
+                status_code=422,
+                detail="L'adresse doit commencer par http:// ou https:// (ex. http://localhost:11434/v1).",
+            )
+    return changes
+
+
+@router.get("/settings")
+async def get_settings() -> dict:
+    return assistant_settings.public_view()
+
+
+@router.put("/settings")
+async def put_settings(body: SettingsBody) -> dict:
+    assistant_settings.update(_validated_settings(body))
+    return assistant_settings.public_view()
+
+
+@router.post("/settings/test")
+async def test_settings(body: SettingsBody) -> dict:
+    """Essaie la connexion avec les valeurs du formulaire (sans les enregistrer)."""
+    overrides = {k: v for k, v in _validated_settings(body).items() if v is not None}
+    if overrides.get("base_url"):
+        overrides["base_url_resolved"] = assistant_settings.resolve_url(overrides["base_url"])
+    config = assistant_settings.effective(overrides)
+    if overrides.get("base_url"):
+        config["base_url_resolved"] = overrides["base_url_resolved"]
+        config["local"] = assistant_settings.is_local_url(config["base_url_resolved"])
+    if not config["base_url_resolved"]:
+        return {"ok": False, "message": "Indiquez l'adresse du serveur.", "models": []}
+    try:
+        models = await list_models(config)
+    except HTTPException:
+        return {
+            "ok": False, "models": [],
+            "message": "Le serveur n'a pas répondu. Vérifiez l'adresse, la clé, et que le serveur tourne.",
+        }
+    return {
+        "ok": True, "models": models, "local": config["local"],
+        "message": f"Connexion réussie : {len(models)} modèle(s) disponible(s)."
+        if models else "Connexion réussie, mais aucun modèle n'est installé sur ce serveur.",
+    }
+
+
 @router.get("/models")
 async def get_models() -> dict:
     if not enabled():
@@ -372,9 +420,10 @@ async def transcribe(file: UploadFile = File(...)) -> dict:
     audio = await file.read()
     if not audio:
         raise HTTPException(status_code=422, detail="Enregistrement audio vide.")
-    base = os.environ["TMS_TRANSCRIPTION_URL"].strip().rstrip("/")
+    config = assistant_settings.effective()
+    base = assistant_settings.resolve_url(config["transcription_url"])
     headers = {}
-    key = os.environ.get("TMS_TRANSCRIPTION_KEY", "").strip()
+    key = config["transcription_key"]
     if key:
         headers["X-API-Key"] = key
     try:

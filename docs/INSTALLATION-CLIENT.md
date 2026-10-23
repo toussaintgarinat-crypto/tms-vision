@@ -390,33 +390,40 @@ utiliser WSL2 (Ubuntu) et suivre le § 6 dans la distribution, ou, plus simpleme
 L'assistant écoute le praticien et **pré-remplit** la fiche d'activité d'un bilan ; il n'enregistre
 jamais, le praticien relit les champs surlignés puis valide. Il est **éteint par défaut**.
 
-**Activer.** Dans `.env` : `TMS_ASSISTANT=on` et `TMS_ASSISTANT_LLM_URL=…` (voir ci-dessous), puis
-`docker compose up -d`. Chaque utilisateur coche ensuite « Assistant vocal » dans la fiche d'activité
-(le réglage est mémorisé dans son navigateur) et choisit : écoute (dictée du navigateur ou
-transcription souveraine), mode (dictée libre ou guidé), lecture des questions à voix haute.
+**Le régler depuis le site (sans toucher au `.env`).** Dans un bilan, section « Ajouter une tâche »,
+cocher « Assistant vocal » puis cliquer sur la roue **⚙** du bandeau :
+- *Fournisseur d'IA* : Ollama, LM Studio, llama.cpp (locaux, rien ne sort de la machine), OpenRouter,
+  OpenAI, DeepSeek (en ligne), ou « Autre serveur compatible OpenAI » (vLLM, LocalAI, Mistral, Groq…).
+  Choisir un fournisseur remplit l'adresse ; la clé n'est demandée que pour les services en ligne.
+- *Tester la connexion* liste les modèles du serveur ; *Modèle* vide = le premier du serveur.
+- *Enregistrer* active l'assistant pour tous les utilisateurs du site.
+- La clé est conservée dans `data/assistant.json` (droits 0600, sauvegardé avec `data/`), en clair
+  comme les autres secrets du `.env` : protégez le dossier `data/`. Elle n'est jamais renvoyée au
+  navigateur. Un modèle local évite d'avoir une clé à garder.
+- Chaque utilisateur choisit ensuite, dans son navigateur : l'écoute (dictée du navigateur ou
+  transcription souveraine), le mode (dictée libre ou guidé), la lecture des questions à voix haute.
+
+**Variables d'environnement (facultatif).** Elles servent de valeurs par défaut, ce qui est
+enregistré depuis le site les remplace : `TMS_ASSISTANT_LLM_URL` (adresse, ou `ollama`, `lmstudio`,
+`llamacpp`), `TMS_ASSISTANT_LLM_KEY`, `TMS_ASSISTANT_MODEL`, `TMS_TRANSCRIPTION_URL`,
+`TMS_TRANSCRIPTION_KEY`. `TMS_ASSISTANT=off` verrouille l'assistant éteint (l'interface ne peut plus
+l'activer) ; `TMS_ASSISTANT=on` l'autorise d'office.
 
 **Modèle d'IA.**
-- *Local, rien ne sort de la machine* : installer [Ollama](https://ollama.com) sur le serveur,
-  `ollama pull mistral` (ou un autre modèle capable de français), puis `TMS_ASSISTANT_LLM_URL=ollama`.
-  Sous Docker, le raccourci vise automatiquement la machine hôte. Pour LM Studio ou llama.cpp :
-  `lmstudio` ou `llamacpp`. Pour un autre serveur compatible OpenAI (vLLM, LocalAI…), son adresse
-  complète, par ex. `http://host.docker.internal:8000/v1`.
-- *En ligne* : l'adresse du service dans `TMS_ASSISTANT_LLM_URL` et sa clé dans `TMS_ASSISTANT_LLM_KEY`.
-  Le texte dicté est alors envoyé à ce service : à dire au client.
-- `TMS_ASSISTANT_MODEL` vide : le premier modèle du serveur est pris. Un petit modèle local comprend
-  moins bien qu'un grand modèle en ligne ; l'assistant n'invente rien, il laisse vide ce qu'il n'a pas
-  compris. Essayer plusieurs modèles sur des phrases réelles avant de livrer.
+- *Local* : installer [Ollama](https://ollama.com) sur le serveur, `ollama pull mistral` (ou un autre
+  modèle capable de français). Sous Docker, « localhost » est converti vers la machine hôte ; sur Mac,
+  Ollama doit écouter sur toutes les interfaces (`OLLAMA_HOST=0.0.0.0 ollama serve`).
+- *En ligne* : le texte dicté est envoyé au service choisi : à dire au client.
+- Un petit modèle local comprend moins bien qu'un grand modèle en ligne ; l'assistant n'invente rien,
+  il laisse vide ce qu'il n'a pas compris. Essayer plusieurs modèles sur des phrases réelles.
 
 **Écoute.**
 - *Dictée du navigateur* : rien à installer (Chrome, Edge, Safari). L'audio passe par le service de
   reconnaissance vocale du navigateur, souvent hébergé par son éditeur.
-- *Transcription souveraine* : `TMS_TRANSCRIPTION_URL` vers la brique « transcription » de Workplace
-  (Whisper local), avec sa clé dans `TMS_TRANSCRIPTION_KEY`. L'audio ne quitte pas vos machines.
+- *Transcription souveraine* : adresse du service dans la roue ⚙ (« Transcription souveraine »), vers
+  la brique « transcription » de Workplace (Whisper local). L'audio ne quitte pas vos machines.
 - Le micro n'est autorisé par les navigateurs qu'en **HTTPS** (ou sur `localhost`).
 
 **Confidentialité.** Les propos concernent la santé et le travail d'un salarié. L'interface rappelle
 où partent la voix et le texte ; demander au praticien de ne pas citer de nom. À mentionner dans le
 registre des traitements du client.
-
-**Vérifier.** `curl -s https://<adresse>/api/assistant/config` (avec le mot de passe) doit montrer
-`"enabled":true` et `"llm_configured":true` ; `…/api/assistant/models` liste les modèles du serveur.
