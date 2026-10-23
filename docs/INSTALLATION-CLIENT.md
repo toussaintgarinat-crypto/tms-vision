@@ -384,3 +384,39 @@ utiliser WSL2 (Ubuntu) et suivre le § 6 dans la distribution, ou, plus simpleme
 > Comme le reste, les scripts PowerShell ont été testés avec PowerShell 7 sous Linux et un faux Docker
 > (génération du `.env` sans BOM, mise à jour, sauvegarde et restauration), mais **pas sur un vrai
 > Windows avec Docker Desktop** : essayez-les sur un PC de test avant de livrer.
+
+## 12. Assistant vocal (facultatif)
+
+L'assistant écoute le praticien et **pré-remplit** la fiche d'activité d'un bilan ; il n'enregistre
+jamais, le praticien relit les champs surlignés puis valide. Il est **éteint par défaut**.
+
+**Activer.** Dans `.env` : `TMS_ASSISTANT=on` et `TMS_ASSISTANT_LLM_URL=…` (voir ci-dessous), puis
+`docker compose up -d`. Chaque utilisateur coche ensuite « Assistant vocal » dans la fiche d'activité
+(le réglage est mémorisé dans son navigateur) et choisit : écoute (dictée du navigateur ou
+transcription souveraine), mode (dictée libre ou guidé), lecture des questions à voix haute.
+
+**Modèle d'IA.**
+- *Local, rien ne sort de la machine* : installer [Ollama](https://ollama.com) sur le serveur,
+  `ollama pull mistral` (ou un autre modèle capable de français), puis `TMS_ASSISTANT_LLM_URL=ollama`.
+  Sous Docker, le raccourci vise automatiquement la machine hôte. Pour LM Studio ou llama.cpp :
+  `lmstudio` ou `llamacpp`. Pour un autre serveur compatible OpenAI (vLLM, LocalAI…), son adresse
+  complète, par ex. `http://host.docker.internal:8000/v1`.
+- *En ligne* : l'adresse du service dans `TMS_ASSISTANT_LLM_URL` et sa clé dans `TMS_ASSISTANT_LLM_KEY`.
+  Le texte dicté est alors envoyé à ce service : à dire au client.
+- `TMS_ASSISTANT_MODEL` vide : le premier modèle du serveur est pris. Un petit modèle local comprend
+  moins bien qu'un grand modèle en ligne ; l'assistant n'invente rien, il laisse vide ce qu'il n'a pas
+  compris. Essayer plusieurs modèles sur des phrases réelles avant de livrer.
+
+**Écoute.**
+- *Dictée du navigateur* : rien à installer (Chrome, Edge, Safari). L'audio passe par le service de
+  reconnaissance vocale du navigateur, souvent hébergé par son éditeur.
+- *Transcription souveraine* : `TMS_TRANSCRIPTION_URL` vers la brique « transcription » de Workplace
+  (Whisper local), avec sa clé dans `TMS_TRANSCRIPTION_KEY`. L'audio ne quitte pas vos machines.
+- Le micro n'est autorisé par les navigateurs qu'en **HTTPS** (ou sur `localhost`).
+
+**Confidentialité.** Les propos concernent la santé et le travail d'un salarié. L'interface rappelle
+où partent la voix et le texte ; demander au praticien de ne pas citer de nom. À mentionner dans le
+registre des traitements du client.
+
+**Vérifier.** `curl -s https://<adresse>/api/assistant/config` (avec le mot de passe) doit montrer
+`"enabled":true` et `"llm_configured":true` ; `…/api/assistant/models` liste les modèles du serveur.

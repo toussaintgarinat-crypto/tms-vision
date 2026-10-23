@@ -62,9 +62,17 @@ LOCAL_PRESETS = {
 }
 
 
+def _in_docker() -> bool:
+    return os.path.exists("/.dockerenv")
+
+
 def llm_base_url() -> str:
     value = os.environ.get("TMS_ASSISTANT_LLM_URL", "").strip()
-    return LOCAL_PRESETS.get(value.lower(), value).rstrip("/")
+    preset = LOCAL_PRESETS.get(value.lower())
+    if preset is None:
+        return value.rstrip("/")
+    # Dans un conteneur, « localhost » est le conteneur lui-même : le serveur local est sur l'hôte.
+    return preset.replace("localhost", "host.docker.internal") if _in_docker() else preset
 
 
 def llm_is_local() -> bool:

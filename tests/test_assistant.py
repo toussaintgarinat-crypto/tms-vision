@@ -144,6 +144,12 @@ def test_local_presets_and_detection(monkeypatch):
     assert not assistant.llm_is_local()
 
 
+def test_local_preset_targets_the_host_inside_docker(monkeypatch):
+    monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "ollama")
+    monkeypatch.setattr(assistant, "_in_docker", lambda: True)
+    assert assistant.llm_base_url() == "http://host.docker.internal:11434/v1"
+
+
 @pytest.mark.anyio
 async def test_chat_json_local_model_without_key_picks_first_model_and_retries(monkeypatch):
     import httpx

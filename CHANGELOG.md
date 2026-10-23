@@ -10,6 +10,14 @@ une version précise.
 
 ## [Non publié]
 
+### Assistant vocal (facultatif, éteint par défaut)
+- Écoute le praticien et pré-remplit la fiche d'activité (dictée libre ou questions guidées, lecture
+  à voix haute en option) ; n'enregistre jamais, les champs remplis sont surlignés pour relecture.
+- Modèle d'IA au choix : local (Ollama, LM Studio, llama.cpp…) ou en ligne ; écoute par le
+  navigateur ou transcription souveraine (Workplace). Voir `docs/INSTALLATION-CLIENT.md` § 12.
+- Nouvelles variables facultatives : `TMS_ASSISTANT`, `TMS_ASSISTANT_LLM_URL`, `TMS_ASSISTANT_LLM_KEY`,
+  `TMS_ASSISTANT_MODEL`, `TMS_TRANSCRIPTION_URL`, `TMS_TRANSCRIPTION_KEY`.
+
 ## [1.0.0] - 2026-10-23
 
 Première version livrable.
