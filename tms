@@ -2,8 +2,11 @@
 # Commande unique du projet : installe la solution depuis un clone du dépôt, puis la lance.
 #
 #   ./tms setup              installe tout (Python, site web, ffmpeg, Chromium) et vérifie
-#   ./tms start              lance l'API (port 8000) et le site web (port 3000)
+#   ./tms start              lance l'API (port 8000) et le site web (port 3000), en mode développement
+#   ./tms build              construit le site pour la production (voir .env.example)
+#   ./tms start --prod       lance l'API et le site construit (mode production, sans Docker)
 #   ./tms stop               arrête ce que « start » a lancé
+#   ./tms backup [dossier]   sauvegarde data/ (base d'analyses et vidéos) dans une archive datée
 #   ./tms capsules [options] génère les vidéos d'étirement (ex. --id neck-lateral-stretch)
 #   ./tms test               lance les tests Python et web
 #   ./tms doctor             vérifie l'installation sans rien modifier
@@ -14,6 +17,8 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
+# Configuration de l'installation : .env (voir .env.example), si présent.
+if [ -f "$ROOT/.env" ]; then set -a; . "$ROOT/.env"; set +a; fi
 VENV="$ROOT/venv"
 RUN_DIR="$ROOT/.tms-run"
 API_PORT="${TMS_API_PORT:-8000}"
@@ -183,18 +188,41 @@ detached() {
   exec "$VENV/bin/python" -c 'import os, sys; os.setsid(); os.execvp(sys.argv[1], sys.argv[1:])' nohup "$@"
 }
 
+cmd_build() {
+  [ -d web/node_modules ] || die "Projet non installé : lancez d'abord ./tms setup."
+  # L'adresse de l'API est figée dans le site à la construction : à refaire si elle change.
+  local api_url="${TMS_PUBLIC_API_URL:-http://localhost:$API_PORT}"
+  step "Construction du site (API : $api_url)"
+  (cd web && NEXT_PUBLIC_API_URL="$api_url" npm run build) || die "La construction du site a échoué."
+  ok "Site construit (web/.next). Lancez ./tms start --prod"
+}
+
 cmd_start() {
+  local prod=0 host_args=() web_cmd=(npm run dev --)
+  for arg in "$@"; do
+    case "$arg" in
+      --prod) prod=1 ;;
+      *) die "Option inconnue pour start : $arg" ;;
+    esac
+  done
   [ -x "$VENV/bin/python" ] && [ -d web/node_modules ] || die "Projet non installé : lancez d'abord ./tms setup."
+  if [ "$prod" = "1" ]; then
+    [ -f web/.next/BUILD_ID ] || die "Site non construit : lancez d'abord ./tms build."
+    # En production, on n'écoute que sur la machine (un proxy HTTPS avec mot de passe se place devant).
+    local bind="${TMS_BIND_HOST:-127.0.0.1}"
+    host_args=(--host "$bind")
+    web_cmd=(npm run start -- --hostname "$bind")
+  fi
   mkdir -p "$RUN_DIR"
   if port_in_use "$API_PORT" || port_in_use "$WEB_PORT"; then
     die "Le port $API_PORT ou $WEB_PORT est déjà utilisé (déjà lancé ? ./tms stop)."
   fi
 
-  detached env PYTHONPATH=src "$VENV/bin/uvicorn" tms_vision.api:app --port "$API_PORT" \
+  detached env PYTHONPATH=src "$VENV/bin/uvicorn" tms_vision.api:app ${host_args[@]+"${host_args[@]}"} --port "$API_PORT" \
     > "$RUN_DIR/api.log" 2>&1 < /dev/null &
   echo $! > "$RUN_DIR/api.pid"
   # « exec » : le sous-shell devient le processus lancé, son PID (et son groupe) est donc celui de npm.
-  (cd web && NEXT_PUBLIC_API_URL="http://localhost:$API_PORT" detached npm run dev -- --port "$WEB_PORT" \
+  (cd web && NEXT_PUBLIC_API_URL="http://localhost:$API_PORT" detached "${web_cmd[@]}" --port "$WEB_PORT" \
     > "$RUN_DIR/web.log" 2>&1 < /dev/null) &
   echo $! > "$RUN_DIR/web.pid"
 
@@ -248,11 +276,13 @@ cmd_test() {
 
 case "${1:-}" in
   setup)    shift; cmd_setup "$@" ;;
-  start)    cmd_start ;;
+  build)    cmd_build ;;
+  start)    shift; cmd_start "$@" ;;
+  backup)   shift; exec "$ROOT/deploy/backup.sh" "$@" ;;
   stop)     cmd_stop ;;
   capsules) shift; cmd_capsules "$@" ;;
   test)     cmd_test ;;
   doctor)   cmd_doctor ;;
-  ""|-h|--help|help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+  ""|-h|--help|help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "Commande inconnue : $1 (essayez ./tms help)" ;;
 esac

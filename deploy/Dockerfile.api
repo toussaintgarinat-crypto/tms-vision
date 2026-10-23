@@ -1,0 +1,50 @@
+# API Python (FastAPI + MediaPipe). Deux cibles :
+#   api       le serveur d'analyse (cible par défaut du service « api »)
+#   capsules  l'API + Node.js + Chromium + ffmpeg, pour générer les vidéos d'étirement
+#             (service « capsules » de docker-compose.yml, lancé à la demande)
+# Python 3.11 : mediapipe est plafonné sous 0.10.30 (voir requirements.txt).
+FROM python:3.11-slim-bookworm AS api
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/src \
+    HOME=/tmp
+
+# libgl1 et libglib2.0-0 : requis par OpenCV et MediaPipe ; ffmpeg : encodage des vidéos annotées.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg libgl1 libglib2.0-0 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src ./src
+COPY exercises ./exercises
+COPY library ./library
+
+EXPOSE 8000
+CMD ["uvicorn", "tms_vision.api:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+FROM api AS capsules
+
+# Node.js 20 (NodeSource) : le rendu des vidéos passe par web/scripts/render-exercise.mjs.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates gnupg chromium \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV CHROMIUM_PATH=/usr/bin/chromium
+
+WORKDIR /app/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/scripts ./scripts
+
+WORKDIR /app
+ENTRYPOINT ["python", "-m", "tms_vision.capsule_build"]
+CMD ["--all"]

@@ -1,0 +1,36 @@
+# Point d'entrée unique : HTTPS automatique, mot de passe, et routage site / API.
+#   TMS_SITE_ADDRESS     adresse du site (ex. tms.client.fr, ou localhost) ; voir .env.example
+#   TMS_BASIC_AUTH_USER  identifiant du praticien
+#   TMS_BASIC_AUTH_HASH  mot de passe haché (voir docs/INSTALLATION-CLIENT.md)
+
+# Routage : /api/* part vers l'API (préfixe retiré), tout le reste vers le site.
+(upstreams) {
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+{$TMS_SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	# Ce que reçoit un patient avec son lien d'email : sa page d'exercices (le jeton aléatoire de
+	# l'adresse en est la seule protection), les données de ce partage, les vidéos d'exercice et les
+	# fichiers du site. Le reste (analyses, bilans, historique) demande le mot de passe.
+	@public {
+		method GET HEAD
+		path /bibliotheque/envoi/* /api/library/shares/* /api/capsules/*/video /_next/* /favicon.ico /muscle-rig.glb
+	}
+	handle @public {
+		import upstreams
+	}
+
+	handle {
+		basic_auth {
+			{$TMS_BASIC_AUTH_USER} {$TMS_BASIC_AUTH_HASH}
+		}
+		import upstreams
+	}
+}

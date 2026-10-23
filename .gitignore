@@ -9,3 +9,5 @@ outputs/
 .superpowers/
 data/
 .tms-run/
+.env
+backups/

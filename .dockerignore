@@ -1,0 +1,15 @@
+.git
+.claude
+.pytest_cache
+__pycache__
+venv
+data
+outputs
+samples
+backups
+.tms-run
+.env
+web/node_modules
+web/.next
+docs
+tests

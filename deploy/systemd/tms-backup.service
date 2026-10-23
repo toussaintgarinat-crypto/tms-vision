@@ -1,0 +1,7 @@
+[Unit]
+Description=TMS Vision - sauvegarde de data/
+
+[Service]
+Type=oneshot
+User=tms
+ExecStart=/opt/tms-vision/deploy/backup.sh

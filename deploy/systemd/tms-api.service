@@ -1,0 +1,17 @@
+# Installation sans Docker (Linux). Voir docs/INSTALLATION-CLIENT.md, section « Sans Docker ».
+# Suppose le dépôt dans /opt/tms-vision, installé avec ./tms setup, et un utilisateur système « tms ».
+[Unit]
+Description=TMS Vision - API d'analyse
+After=network.target
+
+[Service]
+User=tms
+WorkingDirectory=/opt/tms-vision
+EnvironmentFile=/opt/tms-vision/.env
+Environment=PYTHONPATH=src
+ExecStart=/opt/tms-vision/venv/bin/uvicorn tms_vision.api:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

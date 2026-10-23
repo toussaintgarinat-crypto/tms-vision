@@ -1,0 +1,90 @@
+# Installation « production » : un seul fichier, une seule commande (docker compose up -d --build).
+# Configuration : copier .env.example en .env et le remplir. Mode d'emploi : docs/INSTALLATION-CLIENT.md
+#
+#   caddy     point d'entrée : HTTPS, mot de passe, routage       (ports 80 et 443)
+#   web       site Next.js (build de production)
+#   api       API d'analyse Python
+#   capsules  génération des vidéos d'étirement, à la demande :  docker compose run --rm capsules
+#
+# Les données (base DuckDB, vidéos d'exercice) sont dans ./data, à côté de ce fichier : c'est ce
+# dossier que sauvegarde deploy/backup.sh.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+      target: api
+    restart: unless-stopped
+    environment:
+      ALLOWED_ORIGINS: ${TMS_SITE_URL:?Renseignez TMS_SITE_URL dans .env}
+      TMS_PUBLIC_WEB_URL: ${TMS_SITE_URL}
+      TMS_MAILER: ${TMS_MAILER:-none}
+      TMS_NARRATION_PROVIDER: ${TMS_NARRATION_PROVIDER:-}
+      TMS_NARRATION_COMMAND: ${TMS_NARRATION_COMMAND:-}
+      TMS_INSTRUCTION_PROVIDER: ${TMS_INSTRUCTION_PROVIDER:-}
+      TMS_EXERCISE_PROVIDER: ${TMS_EXERCISE_PROVIDER:-}
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: /api
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    ports:
+      - "${TMS_HTTP_PORT:-80}:80"
+      - "${TMS_HTTPS_PORT:-443}:443"
+    environment:
+      TMS_SITE_ADDRESS: ${TMS_SITE_ADDRESS:-localhost}
+      TMS_BASIC_AUTH_USER: ${TMS_BASIC_AUTH_USER:?Renseignez TMS_BASIC_AUTH_USER dans .env}
+      TMS_BASIC_AUTH_HASH: ${TMS_BASIC_AUTH_HASH:?Renseignez TMS_BASIC_AUTH_HASH dans .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  capsules:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+      target: capsules
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      TMS_RENDER_BASE_URL: http://web:3000
+      TMS_NARRATION_PROVIDER: ${TMS_NARRATION_PROVIDER:-}
+      TMS_NARRATION_COMMAND: ${TMS_NARRATION_COMMAND:-}
+    shm_size: "1gb"  # Chromium plante avec les 64 Mo de /dev/shm par défaut de Docker
+    volumes:
+      - ./data:/app/data
+
+volumes:
+  caddy_data:
+  caddy_config:

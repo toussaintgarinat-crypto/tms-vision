@@ -18,6 +18,18 @@ Depuis un clone du dépôt :
 3.12 est requis (3.11 recommandé : mediapipe n'existe pas au-delà). Les ports se changent avec
 `TMS_API_PORT` et `TMS_WEB_PORT`. Les journaux des serveurs sont dans `.tms-run/`.
 
+## Mise en place chez un client (production)
+
+Docker (HTTPS, mot de passe, démarrage automatique, sauvegarde) ou installation directe avec
+systemd : voir [`docs/INSTALLATION-CLIENT.md`](docs/INSTALLATION-CLIENT.md). En bref :
+
+```bash
+cp .env.example .env && nano .env     # adresse du site, identifiant et mot de passe haché
+docker compose up -d --build          # site + API + HTTPS
+docker compose run --rm capsules      # vidéos d'étirement
+deploy/backup.sh                      # sauvegarde de data/
+```
+
 ## 1. Synthèse Exécutive
 
 Le projet vise à associer la Vision par Ordinateur (Computer Vision) et l'expertise biomécanique d'un ostéopathe pour créer une solution globale d'analyse ergonomique, de prévention des Troubles Musculo-Squelettiques (TMS) et d'optimisation de la gestuelle au travail.

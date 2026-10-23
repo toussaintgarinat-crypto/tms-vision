@@ -1,0 +1,16 @@
+# Voir tms-api.service. Le site doit avoir été construit avant : ./tms build
+[Unit]
+Description=TMS Vision - site web
+After=network.target tms-api.service
+
+[Service]
+User=tms
+WorkingDirectory=/opt/tms-vision/web
+EnvironmentFile=/opt/tms-vision/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
