@@ -123,3 +123,68 @@ def test_transcribe_placeholder_without_service(client, monkeypatch):
     monkeypatch.delenv("TMS_TRANSCRIPTION_URL", raising=False)
     response = client.post("/assistant/transcribe", files={"file": ("a.webm", b"x", "audio/webm")})
     assert response.json() == {"text": "", "backend": None, "placeholder": True}
+
+
+def _mock_llm_server(monkeypatch, handler):
+    import httpx
+    real = httpx.AsyncClient
+    monkeypatch.setattr(
+        assistant.httpx, "AsyncClient",
+        lambda **kw: real(transport=httpx.MockTransport(handler), **kw),
+    )
+
+
+def test_local_presets_and_detection(monkeypatch):
+    monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "Ollama")
+    assert assistant.llm_base_url() == "http://localhost:11434/v1" and assistant.llm_is_local()
+    monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "http://host.docker.internal:11434/v1/")
+    assert assistant.llm_base_url() == "http://host.docker.internal:11434/v1"
+    assert assistant.llm_is_local()
+    monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "https://api.exemple.com/v1")
+    assert not assistant.llm_is_local()
+
+
+@pytest.mark.anyio
+async def test_chat_json_local_model_without_key_picks_first_model_and_retries(monkeypatch):
+    import httpx
+    monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "ollama")
+    monkeypatch.delenv("TMS_ASSISTANT_MODEL", raising=False)
+    monkeypatch.delenv("TMS_ASSISTANT_LLM_KEY", raising=False)
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        if request.url.path.endswith("/models"):
+            return httpx.Response(200, json={"data": [{"id": "mistral:7b"}, {"id": "autre"}]})
+        body = request.read()
+        if b"response_format" in body:
+            return httpx.Response(400, json={"error": "non supporté"})
+        return httpx.Response(200, json={"choices": [{"message": {
+            "content": 'Voici : {"fields": {"name": "Saisie"}} merci'}}]})
+
+    _mock_llm_server(monkeypatch, handler)
+    result = await assistant.chat_json("sys", [], "texte")
+    assert result == {"fields": {"name": "Saisie"}}
+    assert all("authorization" not in r.headers for r in seen)
+    assert b"mistral:7b" in seen[-1].read()
+
+
+@pytest.mark.anyio
+async def test_chat_json_reports_unreachable_server(monkeypatch):
+    import httpx
+    from fastapi import HTTPException
+    monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "ollama")
+    monkeypatch.setenv("TMS_ASSISTANT_MODEL", "m")
+
+    def handler(request):
+        raise httpx.ConnectError("refusé")
+
+    _mock_llm_server(monkeypatch, handler)
+    with pytest.raises(HTTPException) as error:
+        await assistant.chat_json("sys", [], "texte")
+    assert error.value.status_code == 502
+
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"

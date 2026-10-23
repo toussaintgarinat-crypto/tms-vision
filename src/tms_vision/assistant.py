@@ -5,14 +5,17 @@ il renvoie des champs que l'interface pré-remplit, l'utilisateur relit puis enr
 n'a pas été dit reste absent (jamais deviné). Chaque champ renvoyé par le modèle est revalidé ici
 avec les mêmes règles que la fiche d'activité (api.py, bilan.py).
 
-Le modèle est joint par une passerelle COMPATIBLE OPENAI (cloud ou local, ex. Ollama) :
+Le modèle est joint par une passerelle COMPATIBLE OPENAI (cloud ou local) :
 TMS_ASSISTANT_LLM_URL, TMS_ASSISTANT_LLM_KEY (inutile en local), TMS_ASSISTANT_MODEL.
+Pour un modèle LOCAL (rien ne sort de la machine), TMS_ASSISTANT_LLM_URL accepte aussi un raccourci :
+« ollama », « lmstudio » ou « llamacpp » ; tout autre serveur compatible OpenAI (vLLM, LocalAI…)
+se donne par son adresse complète. Sous Docker, le serveur local tourne sur l'hôte : utiliser
+http://host.docker.internal:11434/v1 (Ollama). Modèle vide : le premier modèle du serveur est pris.
 La transcription souveraine relaie vers la brique « transcription » de Workplace
 (TMS_TRANSCRIPTION_URL, TMS_TRANSCRIPTION_KEY) ; sans elle, repli honnête (texte vide).
 """
 import json
 import os
-import re
 
 import httpx
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -52,8 +55,45 @@ def enabled() -> bool:
     return os.environ.get("TMS_ASSISTANT", "off").strip().lower() in {"on", "1", "true", "oui"}
 
 
+LOCAL_PRESETS = {
+    "ollama": "http://localhost:11434/v1",
+    "lmstudio": "http://localhost:1234/v1",
+    "llamacpp": "http://localhost:8080/v1",
+}
+
+
+def llm_base_url() -> str:
+    value = os.environ.get("TMS_ASSISTANT_LLM_URL", "").strip()
+    return LOCAL_PRESETS.get(value.lower(), value).rstrip("/")
+
+
+def llm_is_local() -> bool:
+    value = os.environ.get("TMS_ASSISTANT_LLM_URL", "").strip().lower()
+    return value in LOCAL_PRESETS or any(
+        host in value for host in ("localhost", "127.0.0.1", "host.docker.internal")
+    )
+
+
 def llm_configured() -> bool:
-    return bool(os.environ.get("TMS_ASSISTANT_LLM_URL", "").strip())
+    return bool(llm_base_url())
+
+
+def _llm_headers() -> dict:
+    key = os.environ.get("TMS_ASSISTANT_LLM_KEY", "").strip()
+    return {"Authorization": f"Bearer {key}"} if key else {}
+
+
+async def list_models() -> list[str]:
+    """Modèles proposés par le serveur (GET /models, standard OpenAI/Ollama/LM Studio)."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(f"{llm_base_url()}/models", headers=_llm_headers())
+            response.raise_for_status()
+        return [item["id"] for item in response.json()["data"] if "id" in item]
+    except (httpx.HTTPError, KeyError, TypeError, ValueError) as error:
+        raise HTTPException(
+            status_code=502, detail="Impossible de lire la liste des modèles du serveur."
+        ) from error
 
 
 def transcription_configured() -> bool:
@@ -211,15 +251,15 @@ def build_task_prompt(current: dict) -> str:
 
 async def chat_json(system: str, history: list[dict], transcript: str) -> dict:
     """Appelle la passerelle compatible OpenAI et renvoie l'objet JSON de la réponse."""
-    base = os.environ.get("TMS_ASSISTANT_LLM_URL", "").strip().rstrip("/")
-    headers = {}
-    key = os.environ.get("TMS_ASSISTANT_LLM_KEY", "").strip()
-    if key:
-        headers["Authorization"] = f"Bearer {key}"
+    model = os.environ.get("TMS_ASSISTANT_MODEL", "").strip()
+    if not model:
+        models = await list_models()
+        if not models:
+            raise HTTPException(status_code=503, detail="Le serveur n'a aucun modèle installé.")
+        model = models[0]
     payload = {
-        "model": os.environ.get("TMS_ASSISTANT_MODEL", "").strip() or "default",
+        "model": model,
         "temperature": 0,
-        "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": system},
             *history,
@@ -227,15 +267,25 @@ async def chat_json(system: str, history: list[dict], transcript: str) -> dict:
         ],
     }
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(f"{base}/chat/completions", json=payload, headers=headers)
+        async with httpx.AsyncClient(timeout=120) as client:
+            url = f"{llm_base_url()}/chat/completions"
+            response = await client.post(
+                url, json={**payload, "response_format": {"type": "json_object"}},
+                headers=_llm_headers(),
+            )
+            if response.status_code == 400:  # certains serveurs locaux refusent response_format
+                response = await client.post(url, json=payload, headers=_llm_headers())
             response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]
     except (httpx.HTTPError, KeyError, IndexError, ValueError) as error:
         raise HTTPException(
             status_code=502, detail="Le modèle de l'assistant n'a pas répondu."
         ) from error
-    content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content.strip())
+    # Un modèle local entoure parfois le JSON de texte : on isole le premier objet.
+    content = content.strip()
+    start, end = content.find("{"), content.rfind("}")
+    if start != -1 and end > start:
+        content = content[start:end + 1]
     try:
         parsed = json.loads(content)
     except ValueError as error:
@@ -269,8 +319,18 @@ async def get_config() -> dict:
     return {
         "enabled": enabled(),
         "llm_configured": llm_configured(),
+        "llm_local": llm_configured() and llm_is_local(),
         "transcription_configured": transcription_configured(),
     }
+
+
+@router.get("/models")
+async def get_models() -> dict:
+    if not enabled():
+        raise HTTPException(status_code=403, detail="L'assistant vocal n'est pas activé.")
+    if not llm_configured():
+        raise HTTPException(status_code=503, detail="Aucun modèle n'est configuré pour l'assistant.")
+    return {"models": await list_models()}
 
 
 @router.post("/extract")
