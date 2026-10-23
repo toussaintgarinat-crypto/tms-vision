@@ -2,7 +2,17 @@
 
 ## Installation en une commande
 
-Depuis un clone du dépôt :
+**Serveur ou poste client (Docker : HTTPS, mot de passe, démarrage automatique).** Sur une machine
+Linux avec accès à Internet, une seule commande installe tout, et la relancer plus tard met à jour :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.sh | bash
+```
+
+Options : `bash -s -- --with-videos` (génère aussi les vidéos d'étirement), `--no-start`, `--yes`.
+Détails, prérequis, mise à jour et sauvegarde : [`docs/INSTALLATION-CLIENT.md`](docs/INSTALLATION-CLIENT.md).
+
+**Poste de développement** (sans Docker), depuis un clone du dépôt :
 
 ```bash
 ./tms setup      # installe Python (venv), le site web, ffmpeg et Chromium, puis vérifie
