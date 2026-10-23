@@ -6,6 +6,7 @@
 #   ./tms build              construit le site pour la production (voir .env.example)
 #   ./tms start --prod       lance l'API et le site construit (mode production, sans Docker)
 #   ./tms stop               arrête ce que « start » a lancé
+#   ./tms version            affiche la version installée (et le commit)
 #   ./tms backup [dossier]   sauvegarde data/ (base d'analyses et vidéos) dans une archive datée
 #   ./tms capsules [options] génère les vidéos d'étirement (ex. --id neck-lateral-stretch)
 #   ./tms test               lance les tests Python et web
@@ -278,11 +279,12 @@ case "${1:-}" in
   setup)    shift; cmd_setup "$@" ;;
   build)    cmd_build ;;
   start)    shift; cmd_start "$@" ;;
+  version)  echo "TMS Vision $(cat "$ROOT/VERSION" 2>/dev/null || echo inconnue) ($(git -C "$ROOT" describe --tags --always --dirty 2>/dev/null || echo 'hors Git'))" ;;
   backup)   shift; exec "$ROOT/deploy/backup.sh" "$@" ;;
   stop)     cmd_stop ;;
   capsules) shift; cmd_capsules "$@" ;;
   test)     cmd_test ;;
   doctor)   cmd_doctor ;;
-  ""|-h|--help|help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
+  ""|-h|--help|help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "Commande inconnue : $1 (essayez ./tms help)" ;;
 esac

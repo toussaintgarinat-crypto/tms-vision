@@ -11,3 +11,4 @@ data/
 .tms-run/
 .env
 backups/
+.tms-updates.log

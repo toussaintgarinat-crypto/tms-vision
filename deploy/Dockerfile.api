@@ -22,6 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src ./src
 COPY exercises ./exercises
 COPY library ./library
+COPY VERSION ./VERSION
 
 EXPOSE 8000
 CMD ["uvicorn", "tms_vision.api:app", "--host", "0.0.0.0", "--port", "8000"]

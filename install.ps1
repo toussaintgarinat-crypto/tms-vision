@@ -8,7 +8,9 @@
 #     -WithVideos   génère aussi les vidéos d'étirement (long)
 #     -NoStart      prépare tout sans lancer les services
 #     -Yes          ne pose aucune question (installe Git / Docker Desktop sans demander)
-# Variables d'environnement : TMS_DIR (dossier, défaut %USERPROFILE%\tms-vision), TMS_REPO,
+#     -Version X    installe / met à jour vers la version X (ex. 1.2.0) au lieu de la dernière
+#     -Check        dit seulement si une mise à jour est disponible, sans rien modifier
+# Variables d'environnement : TMS_VERSION (comme -Version), TMS_DIR (dossier, défaut %USERPROFILE%\tms-vision), TMS_REPO,
 #   TMS_DOMAIN, TMS_USER, TMS_PASSWORD (évitent les questions), TMS_WITH_VIDEOS=1, TMS_NO_START=1, TMS_YES=1.
 #
 # Relançable sans risque : si l'installation existe déjà, c'est une MISE À JOUR (sauvegarde de data\,
@@ -16,13 +18,17 @@
 param(
     [switch]$WithVideos,
     [switch]$NoStart,
-    [switch]$Yes
+    [switch]$Yes,
+    [switch]$Check,
+    [string]$Version
 )
 
 $ErrorActionPreference = 'Stop'
 if ($env:TMS_WITH_VIDEOS -eq '1') { $WithVideos = $true }
 if ($env:TMS_NO_START -eq '1') { $NoStart = $true }
 if ($env:TMS_YES -eq '1') { $Yes = $true }
+if (-not $Version -and $env:TMS_VERSION) { $Version = $env:TMS_VERSION }
+$Target = if ($Version) { 'v' + $Version.TrimStart('v') } else { '' }   # 1.2.0 et v1.2.0 sont acceptés
 
 $Repo = if ($env:TMS_REPO) { $env:TMS_REPO } else { 'https://github.com/toussaintgarinat-crypto/tms-vision.git' }
 $Dir = if ($env:TMS_DIR) { $env:TMS_DIR } else { Join-Path $HOME 'tms-vision' }
@@ -86,20 +92,61 @@ Ok ((docker --version) -replace 'Docker version ', 'Docker ' -replace ',.*', '')
 
 # --- Code --------------------------------------------------------------------------------------
 Step 'Code'
+function Read-Version([string]$Path) {
+    $file = Join-Path $Path 'VERSION'
+    if (Test-Path $file) { return (Get-Content $file -Raw).Trim() } else { return 'inconnue' }
+}
 $Update = $false
 if (Test-Path (Join-Path $Dir '.git')) {
     $Update = $true
-    Ok "Installation existante dans $Dir : mise à jour"
+    $CurrentVersion = Read-Version $Dir
+    $CurrentCommit = (git -C $Dir rev-parse HEAD).Trim()
+    Run 'git fetch' { git -C $Dir fetch --tags --quiet origin main }
+    if ($Target) {
+        if (-not (Test-Native { git -C $Dir rev-parse -q --verify "refs/tags/$Target" })) {
+            Fail "Version $Target introuvable. Versions publiées : $((git -C $Dir tag -l 'v*') -join ' ')"
+        }
+        $Ref = "refs/tags/$Target"
+    } else {
+        $Ref = 'origin/main'
+    }
+    $NewVersion = ((git -C $Dir show "${Ref}:VERSION" 2>$null) | Out-String).Trim()
+    if (-not $NewVersion) { $NewVersion = 'inconnue' }
+    $NewCommit = (git -C $Dir rev-parse "${Ref}^{commit}").Trim()
+    Ok "Installée : version $CurrentVersion ; cible : version $NewVersion"
+    if ($Check) {
+        if ($CurrentCommit -eq $NewCommit) { Ok 'À jour.' } else {
+            Warn "Mise à jour disponible : $CurrentVersion -> $NewVersion. Nouveautés :"
+            git -C $Dir log --format='  - %s' "$CurrentCommit..$NewCommit" | Select-Object -First 20
+            Write-Host 'Pour l''appliquer : relancer cette commande sans -Check.'
+        }
+        return
+    }
+    if (git -C $Dir status --porcelain --untracked-files=no) {
+        Fail "Des fichiers du dépôt ont été modifiés dans $Dir : annulez-les (git -C $Dir status) avant la mise à jour."
+    }
     if (Test-Path (Join-Path $Dir 'data')) {
         try { & (Join-Path $Dir 'deploy\backup.ps1') } catch { Warn 'Sauvegarde impossible (on continue).' }
     }
-    Run 'git pull' { git -C $Dir pull --ff-only origin main }
+    if ($Target) {
+        Run "Passage à la version $Target" { git -C $Dir checkout --quiet $Target }
+    } else {
+        Run 'Mise à jour' { git -C $Dir checkout --quiet main }
+        Run 'Mise à jour' { git -C $Dir merge --ff-only --quiet origin/main }
+    }
+    Ok "Code en version $(Read-Version $Dir)"
 } else {
+    if ($Check) { Fail "Aucune installation dans $Dir : rien à vérifier." }
     if ((Test-Path $Dir) -and (Get-ChildItem $Dir -Force | Select-Object -First 1)) {
         Fail "$Dir existe et n'est pas vide : choisissez un autre dossier (`$env:TMS_DIR = '...')."
     }
     Run 'git clone' { git clone $Repo $Dir }
-    Ok "Code récupéré dans $Dir"
+    if ($Target) {
+        if (-not (Test-Native { git -C $Dir checkout --quiet $Target })) {
+            Fail "Version $Target introuvable. Versions publiées : $((git -C $Dir tag -l 'v*') -join ' ')"
+        }
+    }
+    Ok "Code récupéré dans $Dir (version $(Read-Version $Dir))"
 }
 Set-Location $Dir
 
@@ -169,8 +216,12 @@ if ($WithVideos) {
 }
 
 $Site = ((Get-Content '.env' | Where-Object { $_ -match '^TMS_SITE_URL=' } | Select-Object -First 1) -split '=', 2)[1]
+# Journal des versions installées sur cette machine (date | version | commit | action).
+$Now = Read-Version (Get-Location).Path
+$Action = if ($Update) { 'mise-a-jour' } else { 'installation' }
+Add-Content -Path '.tms-updates.log' -Value ("{0} | {1} | {2} | {3}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Now, (git rev-parse --short HEAD).Trim(), $Action)
 Write-Host ""
-if ($Update) { Ok 'Mise à jour terminée.' } else { Ok 'Installation terminée.' }
+if ($Update) { Ok "Mise à jour terminée : version $Now." } else { Ok "Installation terminée : version $Now." }
 Write-Host "Site : $Site"
 if (-not $WithVideos) { Write-Host "Vidéos d'étirement (à faire une fois) : cd $Dir ; docker compose run --rm capsules" }
 Write-Host "Sauvegarde : cd $Dir ; .\deploy\backup.ps1      Guide complet : $Dir\docs\INSTALLATION-CLIENT.md"

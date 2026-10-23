@@ -26,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from tms_vision import bilan, capsule_build, exercises, library, mailer, recurrence, storage
+from tms_vision import bilan, capsule_build, exercises, library, mailer, recurrence, storage, version
 from tms_vision.load import bounds, parse_load
 from tms_vision.program import build_analysis_program, build_bilan_program
 from tms_vision.rescore import rescore_frames, summarize_for_load
@@ -782,6 +782,11 @@ async def get_exercise(exercise_id: str) -> dict:
         if exercise["id"] == exercise_id:
             return exercise
     raise HTTPException(status_code=404, detail="Exercice introuvable.")
+
+
+@app.get("/version")
+async def get_version() -> dict:
+    return {"version": version.get_version()}
 
 
 @app.get("/library")

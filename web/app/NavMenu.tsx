@@ -5,11 +5,32 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { NAV_ITEMS, isActive, isMenuHidden } from "./navItems";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// Numéro de version de l'application (utile pour savoir ce qui tourne chez un client).
+function useAppVersion(): string | null {
+  const [version, setVersion] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/version`)
+      .then((response) => (response.ok ? (response.json() as Promise<{ version: string }>) : null))
+      .then((data) => {
+        if (!cancelled && data) setVersion(data.version);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return version;
+}
+
 // Barre du haut avec un menu rétractable : accès à toutes les pages sans taper l'adresse.
 export function NavMenu() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const appVersion = useAppVersion();
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +60,7 @@ export function NavMenu() {
           <span aria-hidden="true">☰</span> Menu
         </button>
         <span className="text-sm font-semibold">TMS Vision</span>
+        {appVersion && <span className="text-xs text-zinc-500" title="Version de l'application">v{appVersion}</span>}
       </header>
 
       {open && (
