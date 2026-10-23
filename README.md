@@ -9,7 +9,14 @@ Linux avec accès à Internet, une seule commande installe tout, et la relancer 
 curl -fsSL https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.sh | bash
 ```
 
-Options : `bash -s -- --with-videos` (génère aussi les vidéos d'étirement), `--no-start`, `--yes`.
+Sous **Windows 10/11** (PowerShell, avec Docker Desktop) :
+
+```powershell
+irm https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.ps1 | iex
+```
+
+Options : `bash -s -- --with-videos` (génère aussi les vidéos d'étirement), `--no-start`, `--yes`
+(PowerShell : `-WithVideos`, `-NoStart`, `-Yes`, voir le guide).
 Détails, prérequis, mise à jour et sauvegarde : [`docs/INSTALLATION-CLIENT.md`](docs/INSTALLATION-CLIENT.md).
 
 **Poste de développement** (sans Docker), depuis un clone du dépôt :

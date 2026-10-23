@@ -18,17 +18,26 @@ Deux façons d'installer, au choix :
 
 ## 0. Raccourci : tout installer en une commande (Docker)
 
-Sur le serveur du client (Linux, avec accès à Internet) :
+Avec accès à Internet, selon le système du client :
 
+**Linux ou macOS** (terminal) :
 ```bash
 curl -fsSL https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.sh | bash
 ```
+
+**Windows 10/11** (PowerShell, administrateur inutile) :
+```powershell
+irm https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.ps1 | iex
+```
+Avec options : `& ([scriptblock]::Create((irm https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.ps1))) -WithVideos`
+(`-NoStart`, `-Yes` existent aussi). Voir § 11 pour les particularités de Windows.
 
 Le script installe Docker s'il manque (après confirmation), récupère le code dans `~/tms-vision`,
 pose les questions utiles (adresse du site, identifiant, mot de passe, ou en génère un), crée le
 `.env`, puis construit et lance tout. Options : `bash -s -- --with-videos` (génère aussi les vidéos
 d'étirement), `--no-start` (prépare sans lancer), `--yes` (aucune question). Sans question, on peut
-tout passer par variables : `TMS_DOMAIN=tms.client.fr TMS_USER=dr TMS_PASSWORD=... bash`.
+tout passer par variables : `TMS_DOMAIN=tms.client.fr TMS_USER=dr TMS_PASSWORD=... bash`. (Sous
+macOS, Docker Desktop doit être installé avant : le script ne l'installe que sous Linux.)
 
 **Relancer la même commande plus tard fait la mise à jour** : sauvegarde de `data/`, `git pull`,
 reconstruction. Le `.env` et `data/` ne sont jamais écrasés.
@@ -45,7 +54,8 @@ habitude : <https://github.com/toussaintgarinat-crypto/tms-vision/blob/main/inst
 
 ### Le serveur du client
 - Linux (Ubuntu 22.04/24.04 ou Debian 12 recommandés), 8 Go de RAM, 4 cœurs, 20 Go de disque libres.
-  macOS fonctionne aussi. Windows : passer par WSL2.
+  macOS et Windows 10/11 fonctionnent aussi, avec Docker Desktop (voir § 11 pour Windows). Windows Server
+  n'est pas pris en charge par Docker Desktop.
 - Un accès à Internet pour l'installation (téléchargement des images et des paquets). Ensuite, le
   fonctionnement courant n'en dépend plus (sauf HTTPS public et envoi d'emails).
 
@@ -304,3 +314,73 @@ sous `src/` puis reconstruire). `TMS_SITE_URL` fixe l'adresse mise dans le lien.
   comptes individuels ni journal des accès.
 - **Licence du modèle musculaire** (CC BY-SA 4.0, voir `NOTICE.md`) : vérifier les obligations avant
   une diffusion commerciale.
+
+---
+
+## 11. Windows 10/11 (Docker Desktop)
+
+La voie recommandée sous Windows est la même que sous Linux (Docker) : l'application tourne dans des
+conteneurs Linux, seuls les scripts d'installation et de sauvegarde ont leur version PowerShell.
+
+**Prérequis**
+- Windows 10 (22H2) ou 11, 64 bits, **virtualisation activée** dans le BIOS, 8 Go de RAM ou plus.
+- **Docker Desktop** avec WSL2 : <https://docs.docker.com/desktop/setup/install/windows-install/>.
+  `install.ps1` peut le télécharger via `winget` ; un redémarrage de Windows est alors souvent
+  nécessaire, puis il faut **lancer Docker Desktop** une première fois (accepter ses conditions,
+  attendre « Engine running ») avant de relancer la commande.
+- **Git pour Windows** (`install.ps1` le propose via `winget` s'il manque) : <https://git-scm.com/download/win>.
+- Pour sortir sur Internet : ports **80 et 443** libres sur le PC (IIS, Skype ou un autre serveur web
+  les occupent parfois : sinon régler `TMS_HTTP_PORT` / `TMS_HTTPS_PORT` dans `.env`) et ouverts dans le
+  pare-feu Windows et sur la box du client.
+
+**Installation, mise à jour, sauvegarde**
+
+| Action | Commande (PowerShell, dans le dossier `tms-vision`) |
+|---|---|
+| Installer / mettre à jour | `irm https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/main/install.ps1 \| iex` |
+| Vidéos d'étirement | `docker compose run --rm capsules` |
+| État, journaux | `docker compose ps` ; `docker compose logs --tail=50 api web` |
+| Arrêter / relancer | `docker compose down` ; `docker compose up -d` |
+| Sauvegarder `data\` | `.\deploy\backup.ps1` (ou `.\deploy\backup.ps1 D:\Sauvegardes`) |
+| Restaurer | `docker compose stop api web` ; `.\deploy\restore.ps1 .\backups\tms-data-….tar.gz` ; `docker compose start api web` |
+
+Si PowerShell refuse d'exécuter `.\deploy\backup.ps1` (« l'exécution de scripts est désactivée ») :
+`powershell -ExecutionPolicy Bypass -File .\deploy\backup.ps1`, ou une fois pour toutes
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. Les archives sont au même format que sous
+Linux (`.tar.gz`) : on peut les restaurer d'un système à l'autre.
+
+**Sauvegarde automatique chaque nuit** (Planificateur de tâches) :
+```powershell
+$action  = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\Users\<nom>\tms-vision\deploy\backup.ps1"'
+$trigger = New-ScheduledTaskTrigger -Daily -At 2:30am
+Register-ScheduledTask -TaskName 'TMS Vision - sauvegarde' -Action $action -Trigger $trigger
+```
+Copier aussi les archives hors du PC (disque externe, NAS).
+
+**Démarrage automatique.** Les services redémarrent seuls (`restart: unless-stopped`) **si Docker
+Desktop est lancé**. Dans Docker Desktop : *Settings > General > Start Docker Desktop when you sign
+in*. Le PC doit rester allumé et la session ouverte (ou le démarrage de Docker configuré en
+conséquence) : sur un poste qui sert de serveur, désactiver la mise en veille.
+
+**Mémoire.** Docker Desktop (WSL2) réserve par défaut la moitié de la RAM. Pour la génération des
+vidéos, prévoir 4 à 6 Go : créer au besoin `%USERPROFILE%\.wslconfig` avec
+```
+[wsl2]
+memory=6GB
+```
+puis `wsl --shutdown` et relancer Docker Desktop.
+
+**Certificat local** (adresse `localhost` ou IP, sans nom de domaine) : récupérer le certificat racine
+`docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt .` puis, en PowerShell administrateur,
+`certutil -addstore -f ROOT root.crt`, pour supprimer l'avertissement du navigateur sous Windows. Un
+téléphone doit avoir ce certificat installé aussi pour ouvrir la caméra.
+
+**Fins de ligne.** Le dépôt contient un `.gitattributes` qui force LF pour les fichiers lus par Linux
+(Caddyfile, Dockerfiles, scripts). Ne le supprimez pas : des CRLF casseraient les conteneurs.
+
+**Sans Docker.** La commande `./tms` et les unités systemd sont réservées à Linux/macOS. Sous Windows,
+utiliser WSL2 (Ubuntu) et suivre le § 6 dans la distribution, ou, plus simplement, Docker Desktop.
+
+> Comme le reste, les scripts PowerShell ont été testés avec PowerShell 7 sous Linux et un faux Docker
+> (génération du `.env` sans BOM, mise à jour, sauvegarde et restauration), mais **pas sur un vrai
+> Windows avec Docker Desktop** : essayez-les sur un PC de test avant de livrer.

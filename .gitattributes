@@ -1,0 +1,10 @@
+# Fins de ligne LF partout où un fichier est lu par Linux (conteneurs, scripts, Caddy), même si Git
+# pour Windows est réglé sur CRLF. Les scripts PowerShell restent en LF : PowerShell les accepte.
+* text=auto
+*.sh text eol=lf
+tms text eol=lf
+Caddyfile text eol=lf
+Dockerfile* text eol=lf
+*.yml text eol=lf
+.env.example text eol=lf
+*.ps1 text eol=lf
