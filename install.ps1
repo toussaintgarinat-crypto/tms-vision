@@ -155,7 +155,14 @@ Step 'Configuration'
 if (Test-Path '.env') {
     Ok '.env déjà présent : conservé tel quel'
 } else {
-    $Domain = if ($env:TMS_DOMAIN) { $env:TMS_DOMAIN } else { Ask 'Adresse du site (nom de domaine, ou localhost pour un essai)' 'localhost' }
+    # Adresse du site : un nom de domaine, une adresse IP ou « localhost » (pas un numéro de port).
+    while ($true) {
+        $Domain = if ($env:TMS_DOMAIN) { $env:TMS_DOMAIN } else { Ask 'Adresse du site (nom de domaine, ou localhost pour un essai)' 'localhost' }
+        $Domain = ($Domain -replace '^https?://', '') -replace '/.*$', ''
+        if (($Domain -match '^[A-Za-z0-9.-]+$') -and ($Domain -notmatch '^[0-9]+$')) { break }
+        Warn "« $Domain » n'est pas une adresse valide : tapez un nom de domaine (tms.client.fr), une adresse IP ou localhost (pas un numéro de port)."
+        if ($env:TMS_DOMAIN -or $Yes) { Fail 'Adresse du site invalide.' }
+    }
     $UserName = if ($env:TMS_USER) { $env:TMS_USER } else { Ask 'Identifiant du praticien' 'praticien' }
     $Password = $env:TMS_PASSWORD
     $Generated = $false

@@ -132,7 +132,14 @@ step "Configuration"
 if [ -f .env ]; then
   ok ".env déjà présent : conservé tel quel"
 else
-  DOMAIN="${TMS_DOMAIN:-$(ask "Adresse du site (nom de domaine, ou localhost pour un essai)" "localhost")}"
+  # Adresse du site : un nom de domaine, une adresse IP ou « localhost » (pas un numéro de port).
+  while :; do
+    DOMAIN="${TMS_DOMAIN:-$(ask "Adresse du site (nom de domaine, ou localhost pour un essai)" "localhost")}"
+    DOMAIN="${DOMAIN#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
+    if [[ "$DOMAIN" =~ ^[A-Za-z0-9.-]+$ ]] && ! [[ "$DOMAIN" =~ ^[0-9]+$ ]]; then break; fi
+    warn "« $DOMAIN » n'est pas une adresse valide : tapez un nom de domaine (tms.client.fr), une adresse IP ou localhost (pas un numéro de port)."
+    if [ -n "${TMS_DOMAIN:-}" ] || [ "$ASSUME_YES" = "1" ] || [ -z "$TTY" ]; then die "Adresse du site invalide."; fi
+  done
   USER_NAME="${TMS_USER:-$(ask "Identifiant du praticien" "praticien")}"
   PASSWORD="${TMS_PASSWORD:-}"
   GENERATED=0
