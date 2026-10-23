@@ -1,0 +1,165 @@
+{
+  "id": "seated-finger-extension-stretch",
+  "zone": "hand",
+  "title": "Ouvrir et fermer les mains, assis",
+  "description": "Alterner mains grandes ouvertes et poings serrés pour détendre les doigts et la paume après un travail de précision. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "raised": {
+      "L_upper_arm": {
+        "flexion": 40
+      },
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "L_forearm": {
+        "flexion": 60
+      },
+      "R_forearm": {
+        "flexion": 60
+      }
+    },
+    "open": {
+      "L_upper_arm": {
+        "flexion": 40
+      },
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "L_forearm": {
+        "flexion": 60
+      },
+      "R_forearm": {
+        "flexion": 60
+      },
+      "L_fingers": {
+        "flexion": -25
+      },
+      "R_fingers": {
+        "flexion": -25
+      },
+      "L_thumb": {
+        "lateral": 35
+      },
+      "R_thumb": {
+        "lateral": 35
+      }
+    },
+    "fist": {
+      "L_upper_arm": {
+        "flexion": 40
+      },
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "L_forearm": {
+        "flexion": 60
+      },
+      "R_forearm": {
+        "flexion": 60
+      },
+      "L_fingers": {
+        "flexion": 85
+      },
+      "R_fingers": {
+        "flexion": 85
+      },
+      "L_thumb": {
+        "flexion": 40
+      },
+      "R_thumb": {
+        "flexion": 40
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "raised"
+    },
+    {
+      "t": 7,
+      "pose": "open"
+    },
+    {
+      "t": 12,
+      "pose": "open"
+    },
+    {
+      "t": 15,
+      "pose": "fist"
+    },
+    {
+      "t": 20,
+      "pose": "fist"
+    },
+    {
+      "t": 23,
+      "pose": "open"
+    },
+    {
+      "t": 28,
+      "pose": "open"
+    },
+    {
+      "t": 31,
+      "pose": "fist"
+    },
+    {
+      "t": 36,
+      "pose": "fist"
+    },
+    {
+      "t": 39,
+      "pose": "raised"
+    },
+    {
+      "t": 42,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les épaules relâchées."
+    },
+    {
+      "t": 4,
+      "text": "Levez les mains devant vous."
+    },
+    {
+      "t": 7,
+      "text": "Ouvrez grand les mains, doigts écartés."
+    },
+    {
+      "t": 15,
+      "text": "Serrez les poings sans forcer."
+    },
+    {
+      "t": 23,
+      "text": "Rouvrez grand les mains."
+    },
+    {
+      "t": 31,
+      "text": "Serrez à nouveau."
+    },
+    {
+      "t": 39,
+      "text": "Relâchez et secouez les mains."
+    }
+  ],
+  "duration_seconds": 45
+}

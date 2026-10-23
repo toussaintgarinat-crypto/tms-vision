@@ -1,0 +1,136 @@
+{
+  "id": "seated-knee-lift",
+  "zone": "hip",
+  "title": "Montées de genoux, assis",
+  "description": "Lever un genou puis l'autre depuis la chaise pour mobiliser les hanches et activer la circulation.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_thigh": {
+        "flexion": 30
+      },
+      "R_shin": {
+        "flexion": -10
+      }
+    },
+    "left": {
+      "L_thigh": {
+        "flexion": 30
+      },
+      "L_shin": {
+        "flexion": -10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 6,
+      "pose": "right"
+    },
+    {
+      "t": 8,
+      "pose": "neutral"
+    },
+    {
+      "t": 10,
+      "pose": "left"
+    },
+    {
+      "t": 12,
+      "pose": "neutral"
+    },
+    {
+      "t": 14,
+      "pose": "right"
+    },
+    {
+      "t": 16,
+      "pose": "neutral"
+    },
+    {
+      "t": 18,
+      "pose": "left"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 22,
+      "pose": "right"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "left"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 30,
+      "pose": "right"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    },
+    {
+      "t": 34,
+      "pose": "left"
+    },
+    {
+      "t": 36,
+      "pose": "neutral"
+    },
+    {
+      "t": 38,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les mains sur les cuisses."
+    },
+    {
+      "t": 3,
+      "text": "Levez lentement le genou droit, puis reposez le pied."
+    },
+    {
+      "t": 8,
+      "text": "Alternez avec le genou gauche, sans vous pencher en arrière."
+    },
+    {
+      "t": 22,
+      "text": "Continuez à votre rythme, en respirant calmement."
+    },
+    {
+      "t": 36,
+      "text": "Reposez les pieds et relâchez."
+    }
+  ],
+  "duration_seconds": 38
+}

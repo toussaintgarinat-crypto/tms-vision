@@ -1,0 +1,139 @@
+{
+  "id": "seated-plantar-fascia-stretch",
+  "zone": "foot",
+  "title": "Étirement de la plante du pied, assis",
+  "description": "Orteils tirés vers soi, jambe tendue, pour étirer l'aponévrose plantaire et soulager le pied fatigué.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "leg": {
+      "R_shin": {
+        "flexion": 90
+      }
+    },
+    "stretch": {
+      "R_shin": {
+        "flexion": 90
+      },
+      "R_foot": {
+        "flexion": 25
+      },
+      "R_toes": {
+        "flexion": 45
+      },
+      "spine": {
+        "flexion": 20
+      },
+      "R_upper_arm": {
+        "flexion": 35
+      }
+    },
+    "leg_left": {
+      "L_shin": {
+        "flexion": 90
+      }
+    },
+    "stretch_left": {
+      "L_shin": {
+        "flexion": 90
+      },
+      "L_foot": {
+        "flexion": 25
+      },
+      "L_toes": {
+        "flexion": 45
+      },
+      "spine": {
+        "flexion": 20
+      },
+      "L_upper_arm": {
+        "flexion": 35
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "leg"
+    },
+    {
+      "t": 9,
+      "pose": "stretch"
+    },
+    {
+      "t": 24,
+      "pose": "stretch"
+    },
+    {
+      "t": 28,
+      "pose": "leg"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "leg_left"
+    },
+    {
+      "t": 40,
+      "pose": "stretch_left"
+    },
+    {
+      "t": 55,
+      "pose": "stretch_left"
+    },
+    {
+      "t": 59,
+      "pose": "leg_left"
+    },
+    {
+      "t": 62,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol."
+    },
+    {
+      "t": 4,
+      "text": "Tendez la jambe droite, le talon au sol."
+    },
+    {
+      "t": 9,
+      "text": "Avec la main, tirez doucement les orteils vers vous : l'étirement se sent sous le pied."
+    },
+    {
+      "t": 24,
+      "text": "Relâchez, puis changez de pied."
+    },
+    {
+      "t": 35,
+      "text": "Tendez la jambe gauche."
+    },
+    {
+      "t": 40,
+      "text": "Tirez doucement les orteils gauches vers vous."
+    },
+    {
+      "t": 55,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 62
+}

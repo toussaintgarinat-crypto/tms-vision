@@ -131,7 +131,7 @@ exercice (`web/scripts/snapshot-exercise.mjs`) avant de le diffuser.
    un humain le relit, le corrige, le déplace dans `exercises/`, passe `source` à `"human"`, puis le
    valide comme ci-dessus.
 
-Les soixante-trois exercices livrés (au moins un par région du corps, dont onze assis et sept allongés) sont des brouillons rédigés
+Les quatre-vingt-quinze exercices livrés (au moins un par région du corps, dont trente-quatre assis et quatorze allongés) sont des brouillons rédigés
 sans expertise d'ostéopathe : ils ne doivent pas être présentés à un salarié ou à un patient comme
 validés. Ceux ajoutés pour la bibliothèque du praticien (voir `library/body_map.json`) ne changent pas
 le programme d'étirements des salariés : l'exercice recommandé pour chaque zone mesurée est fixé par

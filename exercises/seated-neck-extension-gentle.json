@@ -1,0 +1,95 @@
+{
+  "id": "seated-neck-extension-gentle",
+  "zone": "neck",
+  "title": "Extension douce du cou, assis",
+  "description": "Mouvement lent de regard vers le haut pour redonner de la mobilité au cou, sans amplitude forcée. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "target": {
+      "neck": {
+        "flexion": -12
+      },
+      "head": {
+        "flexion": -14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "target"
+    },
+    {
+      "t": 14,
+      "pose": "target"
+    },
+    {
+      "t": 19,
+      "pose": "neutral"
+    },
+    {
+      "t": 22,
+      "pose": "neutral"
+    },
+    {
+      "t": 27,
+      "pose": "target"
+    },
+    {
+      "t": 33,
+      "pose": "target"
+    },
+    {
+      "t": 38,
+      "pose": "neutral"
+    },
+    {
+      "t": 41,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les épaules basses."
+    },
+    {
+      "t": 3,
+      "text": "Regardez doucement vers le haut, sans écraser l'arrière du cou."
+    },
+    {
+      "t": 8,
+      "text": "Respirez calmement, restez dans une zone sans douleur."
+    },
+    {
+      "t": 22,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Respirez calmement, restez dans une zone sans douleur."
+    },
+    {
+      "t": 33,
+      "text": "Revenez au regard horizontal."
+    }
+  ],
+  "duration_seconds": 44
+}

@@ -15,6 +15,8 @@
             "neck-rotation-stretch",
             "seated-neck-rotation-stretch",
             "head-chin-tuck",
+            "seated-head-chin-tuck",
+            "lying-head-chin-tuck",
             "neck-flexion-stretch",
             "seated-neck-flexion-stretch"
           ]
@@ -26,7 +28,10 @@
             "neck-rotation-stretch",
             "seated-neck-rotation-stretch",
             "neck-extension-gentle",
+            "seated-neck-extension-gentle",
             "head-chin-tuck",
+            "seated-head-chin-tuck",
+            "lying-head-chin-tuck",
             "neck-flexion-stretch",
             "seated-neck-flexion-stretch"
           ]
@@ -38,9 +43,14 @@
             "neck-lateral-stretch",
             "seated-neck-lateral-stretch",
             "head-chin-tuck",
+            "seated-head-chin-tuck",
+            "lying-head-chin-tuck",
             "shoulder-shrug-release",
+            "seated-shoulder-shrug-release",
             "levator-scapulae-stretch",
-            "neck-scalene-stretch"
+            "seated-levator-scapulae-stretch",
+            "neck-scalene-stretch",
+            "seated-neck-scalene-stretch"
           ]
         },
         {
@@ -48,7 +58,9 @@
           "label": "Tension latérale du cou, cou « bloqué »",
           "exercises": [
             "neck-scalene-stretch",
+            "seated-neck-scalene-stretch",
             "levator-scapulae-stretch",
+            "seated-levator-scapulae-stretch",
             "neck-lateral-stretch",
             "seated-neck-lateral-stretch",
             "neck-rotation-stretch",
@@ -66,9 +78,13 @@
           "label": "Tension du trapèze, épaules montées",
           "exercises": [
             "shoulder-shrug-release",
+            "seated-shoulder-shrug-release",
             "shoulder-blade-squeeze",
+            "seated-shoulder-blade-squeeze",
             "shoulder-rolls",
+            "seated-shoulder-rolls",
             "levator-scapulae-stretch",
+            "seated-levator-scapulae-stretch",
             "neck-lateral-stretch",
             "seated-neck-lateral-stretch"
           ]
@@ -80,10 +96,13 @@
             "chest-opening-stretch",
             "lying-chest-opening",
             "chest-hands-behind-stretch",
+            "seated-chest-hands-behind-stretch",
             "shoulder-blade-squeeze",
+            "seated-shoulder-blade-squeeze",
             "shoulder-cross-body-stretch",
             "seated-shoulder-cross-body-stretch",
-            "shoulder-rolls"
+            "shoulder-rolls",
+            "seated-shoulder-rolls"
           ]
         },
         {
@@ -104,8 +123,11 @@
             "seated-shoulder-arm-elevation",
             "lying-arms-overhead-stretch",
             "shoulder-external-rotation",
+            "seated-shoulder-external-rotation",
+            "lying-shoulder-external-rotation",
             "shoulder-cross-body-stretch",
-            "seated-shoulder-cross-body-stretch"
+            "seated-shoulder-cross-body-stretch",
+            "arm-circles"
           ]
         },
         {
@@ -114,9 +136,12 @@
           "exercises": [
             "shoulder-pendulum",
             "shoulder-external-rotation",
+            "seated-shoulder-external-rotation",
+            "lying-shoulder-external-rotation",
             "shoulder-arm-elevation",
             "seated-shoulder-arm-elevation",
-            "lying-arms-overhead-stretch"
+            "lying-arms-overhead-stretch",
+            "arm-circles"
           ]
         }
       ]
@@ -132,6 +157,7 @@
             "forearm-extension-stretch",
             "seated-forearm-extension-stretch",
             "forearm-rotation",
+            "seated-forearm-rotation",
             "elbow-flexion-extension"
           ]
         },
@@ -142,6 +168,7 @@
             "wrist-flexor-stretch",
             "seated-wrist-flexor-stretch",
             "forearm-rotation",
+            "seated-forearm-rotation",
             "elbow-flexion-extension"
           ]
         },
@@ -153,7 +180,8 @@
             "seated-forearm-extension-stretch",
             "wrist-flexor-stretch",
             "seated-wrist-flexor-stretch",
-            "forearm-rotation"
+            "forearm-rotation",
+            "seated-forearm-rotation"
           ]
         },
         {
@@ -162,7 +190,8 @@
           "exercises": [
             "elbow-flexion-extension",
             "biceps-stretch-arm-back",
-            "triceps-overhead-stretch"
+            "triceps-overhead-stretch",
+            "seated-triceps-overhead-stretch"
           ]
         },
         {
@@ -170,7 +199,8 @@
           "label": "Tension du bras (biceps, triceps)",
           "exercises": [
             "biceps-stretch-arm-back",
-            "triceps-overhead-stretch"
+            "triceps-overhead-stretch",
+            "seated-triceps-overhead-stretch"
           ]
         }
       ]
@@ -186,8 +216,11 @@
             "wrist-flexor-stretch",
             "seated-wrist-flexor-stretch",
             "finger-extension-stretch",
+            "seated-finger-extension-stretch",
             "wrist-circles",
-            "thumb-mobility"
+            "seated-wrist-circles",
+            "thumb-mobility",
+            "seated-thumb-mobility"
           ]
         },
         {
@@ -197,7 +230,10 @@
             "forearm-extension-stretch",
             "seated-forearm-extension-stretch",
             "finger-extension-stretch",
-            "wrist-circles"
+            "seated-finger-extension-stretch",
+            "wrist-circles",
+            "seated-wrist-circles",
+            "wrist-flexion-extension"
           ]
         },
         {
@@ -205,10 +241,12 @@
           "label": "Raideur du poignet",
           "exercises": [
             "wrist-circles",
+            "seated-wrist-circles",
             "wrist-flexor-stretch",
             "seated-wrist-flexor-stretch",
             "forearm-extension-stretch",
-            "seated-forearm-extension-stretch"
+            "seated-forearm-extension-stretch",
+            "wrist-flexion-extension"
           ]
         },
         {
@@ -216,7 +254,9 @@
           "label": "Raideur des doigts",
           "exercises": [
             "finger-extension-stretch",
-            "thumb-mobility"
+            "seated-finger-extension-stretch",
+            "thumb-mobility",
+            "seated-thumb-mobility"
           ]
         },
         {
@@ -224,7 +264,9 @@
           "label": "Douleur de la base du pouce",
           "exercises": [
             "thumb-mobility",
-            "wrist-circles"
+            "seated-thumb-mobility",
+            "wrist-circles",
+            "seated-wrist-circles"
           ]
         }
       ]
@@ -240,10 +282,12 @@
             "chest-opening-stretch",
             "lying-chest-opening",
             "shoulder-blade-squeeze",
+            "seated-shoulder-blade-squeeze",
             "trunk-rotation-stretch",
             "seated-trunk-rotation-stretch",
             "lying-lumbar-twist",
             "thoracic-rotation-crossed-arms",
+            "seated-thoracic-rotation-crossed-arms",
             "round-hollow-back",
             "seated-round-hollow-back"
           ]
@@ -253,7 +297,9 @@
           "label": "Raideur thoracique",
           "exercises": [
             "thoracic-rotation-crossed-arms",
+            "seated-thoracic-rotation-crossed-arms",
             "thoracic-extension-hands-back",
+            "seated-thoracic-extension-hands-back",
             "trunk-side-bend",
             "seated-trunk-side-bend",
             "round-hollow-back",
@@ -271,6 +317,7 @@
           "label": "Lombalgie commune, raideur lombaire",
           "exercises": [
             "trunk-lumbar-mobility",
+            "seated-trunk-lumbar-mobility",
             "trunk-rotation-stretch",
             "seated-trunk-rotation-stretch",
             "lying-lumbar-twist",
@@ -291,9 +338,12 @@
             "hamstring-stretch",
             "lying-hamstring-stretch",
             "trunk-lumbar-mobility",
+            "seated-trunk-lumbar-mobility",
             "thoracic-extension-hands-back",
+            "seated-thoracic-extension-hands-back",
             "knee-to-chest",
-            "lying-knee-to-chest"
+            "lying-knee-to-chest",
+            "seated-forward-fold"
           ]
         },
         {
@@ -306,7 +356,8 @@
             "trunk-side-bend",
             "seated-trunk-side-bend",
             "knee-to-chest",
-            "lying-knee-to-chest"
+            "lying-knee-to-chest",
+            "seated-forward-fold"
           ]
         }
       ]
@@ -321,7 +372,8 @@
           "exercises": [
             "hip-flexor-stretch",
             "lying-single-knee-to-chest",
-            "trunk-lumbar-mobility"
+            "trunk-lumbar-mobility",
+            "seated-trunk-lumbar-mobility"
           ]
         },
         {
@@ -330,7 +382,9 @@
           "exercises": [
             "knee-to-chest",
             "lying-knee-to-chest",
-            "leg-swing-hip-mobility"
+            "leg-swing-hip-mobility",
+            "seated-figure-four-stretch",
+            "lying-figure-four-stretch"
           ]
         },
         {
@@ -340,7 +394,9 @@
             "leg-swing-hip-mobility",
             "hip-abduction-standing",
             "knee-to-chest",
-            "lying-knee-to-chest"
+            "lying-knee-to-chest",
+            "lying-hip-abduction-slide",
+            "seated-knee-lift"
           ]
         },
         {
@@ -348,7 +404,8 @@
           "label": "Tension des adducteurs",
           "exercises": [
             "adductor-wide-stance",
-            "hip-abduction-standing"
+            "hip-abduction-standing",
+            "lying-butterfly-stretch"
           ]
         }
       ]
@@ -364,7 +421,8 @@
             "hamstring-stretch",
             "lying-hamstring-stretch",
             "leg-swing-hip-mobility",
-            "forward-hang-relax"
+            "forward-hang-relax",
+            "seated-hamstring-stretch"
           ]
         },
         {
@@ -381,7 +439,8 @@
           "label": "Tension de l'intérieur de la cuisse",
           "exercises": [
             "adductor-wide-stance",
-            "hip-abduction-standing"
+            "hip-abduction-standing",
+            "lying-butterfly-stretch"
           ]
         }
       ]
@@ -398,7 +457,9 @@
             "hamstring-stretch",
             "lying-hamstring-stretch",
             "knee-extension-standing",
-            "seated-knee-extension"
+            "seated-knee-extension",
+            "lying-heel-slide",
+            "lying-straight-leg-raise"
           ]
         },
         {
@@ -407,7 +468,9 @@
           "exercises": [
             "knee-extension-standing",
             "seated-knee-extension",
-            "leg-swing-hip-mobility"
+            "leg-swing-hip-mobility",
+            "lying-heel-slide",
+            "lying-straight-leg-raise"
           ]
         }
       ]
@@ -422,7 +485,8 @@
           "exercises": [
             "calf-stretch",
             "ankle-mobility",
-            "lying-ankle-pumps"
+            "lying-ankle-pumps",
+            "seated-calf-stretch"
           ]
         },
         {
@@ -456,7 +520,8 @@
             "toe-lift",
             "ankle-circles",
             "ankle-mobility",
-            "lying-ankle-pumps"
+            "lying-ankle-pumps",
+            "seated-plantar-fascia-stretch"
           ]
         }
       ]

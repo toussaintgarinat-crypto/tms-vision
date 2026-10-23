@@ -1,0 +1,124 @@
+{
+  "id": "wrist-flexion-extension",
+  "zone": "hand",
+  "title": "Flexion et extension du poignet",
+  "description": "Plier le poignet vers le haut puis vers le bas, les avant-bras devant soi, pour assouplir l'articulation après un travail répétitif.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "standing",
+  "view": "side",
+  "target_segments": [
+    "hand",
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "forward": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      }
+    },
+    "down": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "flexion": -60
+      },
+      "L_hand": {
+        "flexion": -60
+      }
+    },
+    "up": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "flexion": 60
+      },
+      "L_hand": {
+        "flexion": 60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "forward"
+    },
+    {
+      "t": 6,
+      "pose": "down"
+    },
+    {
+      "t": 10,
+      "pose": "up"
+    },
+    {
+      "t": 14,
+      "pose": "down"
+    },
+    {
+      "t": 18,
+      "pose": "up"
+    },
+    {
+      "t": 22,
+      "pose": "down"
+    },
+    {
+      "t": 26,
+      "pose": "up"
+    },
+    {
+      "t": 30,
+      "pose": "forward"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    },
+    {
+      "t": 36,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout ou assis, les épaules relâchées."
+    },
+    {
+      "t": 3,
+      "text": "Tendez les bras devant vous, les paumes vers le bas."
+    },
+    {
+      "t": 6,
+      "text": "Pliez les poignets vers le bas, puis vers le haut, lentement."
+    },
+    {
+      "t": 22,
+      "text": "Continuez à votre rythme, sans forcer."
+    },
+    {
+      "t": 30,
+      "text": "Relâchez les mains."
+    }
+  ],
+  "duration_seconds": 36
+}

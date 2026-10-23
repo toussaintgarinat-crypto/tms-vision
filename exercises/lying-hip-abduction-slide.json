@@ -1,0 +1,125 @@
+{
+  "id": "lying-hip-abduction-slide",
+  "zone": "hip",
+  "title": "Jambe écartée sur le côté, allongé",
+  "description": "Faire glisser une jambe tendue vers l'extérieur puis la ramener, pour mobiliser la hanche.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "front",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_thigh": {
+        "lateral": 35
+      }
+    },
+    "left": {
+      "L_thigh": {
+        "lateral": 35
+      }
+    },
+    "both": {
+      "R_thigh": {
+        "lateral": 30
+      },
+      "L_thigh": {
+        "lateral": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "right"
+    },
+    {
+      "t": 9,
+      "pose": "right"
+    },
+    {
+      "t": 13,
+      "pose": "neutral"
+    },
+    {
+      "t": 17,
+      "pose": "right"
+    },
+    {
+      "t": 19,
+      "pose": "right"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    },
+    {
+      "t": 27,
+      "pose": "left"
+    },
+    {
+      "t": 29,
+      "pose": "left"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    },
+    {
+      "t": 37,
+      "pose": "left"
+    },
+    {
+      "t": 39,
+      "pose": "left"
+    },
+    {
+      "t": 43,
+      "pose": "neutral"
+    },
+    {
+      "t": 45,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées, les orteils vers le plafond."
+    },
+    {
+      "t": 3,
+      "text": "Faites glisser la jambe droite vers l'extérieur, sans la tourner."
+    },
+    {
+      "t": 9,
+      "text": "Ramenez-la lentement vers le centre."
+    },
+    {
+      "t": 27,
+      "text": "Faites glisser la jambe gauche vers l'extérieur."
+    },
+    {
+      "t": 33,
+      "text": "Ramenez-la lentement vers le centre."
+    },
+    {
+      "t": 43,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 45
+}

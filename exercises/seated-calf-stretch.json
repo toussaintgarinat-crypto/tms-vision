@@ -1,0 +1,139 @@
+{
+  "id": "seated-calf-stretch",
+  "zone": "lower_leg",
+  "title": "Étirement du mollet, assis",
+  "description": "Jambe tendue, pointe du pied ramenée vers soi, pour étirer le mollet et le tendon d'Achille depuis la chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "lower_leg"
+  ],
+  "poses": {
+    "neutral": {},
+    "leg": {
+      "R_shin": {
+        "flexion": 90
+      }
+    },
+    "stretch": {
+      "R_shin": {
+        "flexion": 90
+      },
+      "R_foot": {
+        "flexion": 35
+      },
+      "R_toes": {
+        "flexion": 15
+      },
+      "spine": {
+        "flexion": 15
+      },
+      "R_upper_arm": {
+        "flexion": 30
+      }
+    },
+    "leg_left": {
+      "L_shin": {
+        "flexion": 90
+      }
+    },
+    "stretch_left": {
+      "L_shin": {
+        "flexion": 90
+      },
+      "L_foot": {
+        "flexion": 35
+      },
+      "L_toes": {
+        "flexion": 15
+      },
+      "spine": {
+        "flexion": 15
+      },
+      "L_upper_arm": {
+        "flexion": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "leg"
+    },
+    {
+      "t": 9,
+      "pose": "stretch"
+    },
+    {
+      "t": 24,
+      "pose": "stretch"
+    },
+    {
+      "t": 28,
+      "pose": "leg"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "leg_left"
+    },
+    {
+      "t": 40,
+      "pose": "stretch_left"
+    },
+    {
+      "t": 55,
+      "pose": "stretch_left"
+    },
+    {
+      "t": 59,
+      "pose": "leg_left"
+    },
+    {
+      "t": 62,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol."
+    },
+    {
+      "t": 4,
+      "text": "Tendez la jambe droite devant vous, le talon au sol."
+    },
+    {
+      "t": 9,
+      "text": "Ramenez les orteils vers vous, aidez-vous d'une sangle ou d'une serviette si besoin."
+    },
+    {
+      "t": 24,
+      "text": "Relâchez, puis changez de jambe."
+    },
+    {
+      "t": 35,
+      "text": "Tendez la jambe gauche devant vous."
+    },
+    {
+      "t": 40,
+      "text": "Ramenez les orteils vers vous."
+    },
+    {
+      "t": 55,
+      "text": "Relâchez le pied."
+    }
+  ],
+  "duration_seconds": 62
+}

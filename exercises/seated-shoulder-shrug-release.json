@@ -1,0 +1,84 @@
+{
+  "id": "seated-shoulder-shrug-release",
+  "zone": "shoulder",
+  "title": "Haussement d'épaules, assis",
+  "description": "Monter les épaules vers les oreilles puis les relâcher, pour relâcher le haut du dos et la base de la nuque. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "shrug": {
+      "L_clavicle": {
+        "lateral": 18
+      },
+      "R_clavicle": {
+        "lateral": 18
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "shrug"
+    },
+    {
+      "t": 7,
+      "pose": "shrug"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 14,
+      "pose": "shrug"
+    },
+    {
+      "t": 18,
+      "pose": "shrug"
+    },
+    {
+      "t": 21,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les bras le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Montez les deux épaules vers les oreilles."
+    },
+    {
+      "t": 7,
+      "text": "Gardez quelques secondes, puis relâchez d'un coup."
+    },
+    {
+      "t": 10,
+      "text": "Laissez les épaules retomber."
+    },
+    {
+      "t": 14,
+      "text": "Recommencez, en soufflant au relâchement."
+    },
+    {
+      "t": 21,
+      "text": "Relâchez complètement."
+    }
+  ],
+  "duration_seconds": 30
+}

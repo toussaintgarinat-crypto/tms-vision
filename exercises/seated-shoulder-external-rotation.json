@@ -1,0 +1,126 @@
+{
+  "id": "seated-shoulder-external-rotation",
+  "zone": "shoulder",
+  "title": "Rotation externe de l'épaule, assis",
+  "description": "Coudes pliés contre le corps, ouverture des avant-bras pour mobiliser les rotateurs de l'épaule. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "target": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "twist": 60
+      },
+      "L_upper_arm": {
+        "twist": 60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 24,
+      "pose": "target"
+    },
+    {
+      "t": 30,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "neutral"
+    },
+    {
+      "t": 37,
+      "pose": "neutral"
+    },
+    {
+      "t": 41,
+      "pose": "target"
+    },
+    {
+      "t": 47,
+      "pose": "target"
+    },
+    {
+      "t": 51,
+      "pose": "neutral"
+    },
+    {
+      "t": 54,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les coudes collés au corps et pliés à 90°."
+    },
+    {
+      "t": 3,
+      "text": "Ouvrez les avant-bras vers l'extérieur, les coudes restent collés au corps."
+    },
+    {
+      "t": 7,
+      "text": "Gardez les coudes contre le corps et respirez, sans forcer."
+    },
+    {
+      "t": 20,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 24,
+      "text": "Gardez les coudes contre le corps et respirez, sans forcer."
+    },
+    {
+      "t": 37,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 41,
+      "text": "Gardez les coudes contre le corps et respirez, sans forcer."
+    },
+    {
+      "t": 47,
+      "text": "Ramenez lentement les avant-bras devant vous."
+    }
+  ],
+  "duration_seconds": 57
+}

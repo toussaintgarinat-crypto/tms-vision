@@ -1,0 +1,131 @@
+{
+  "id": "seated-figure-four-stretch",
+  "zone": "hip",
+  "title": "Étirement des fessiers (figure 4), assis",
+  "description": "Cheville posée sur le genou opposé, buste incliné vers l'avant, pour étirer la fesse et la face externe de la hanche depuis la chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "cross_right": {
+      "R_thigh": {
+        "lateral": 40,
+        "twist": 45
+      },
+      "R_shin": {
+        "lateral": -70,
+        "flexion": -20
+      }
+    },
+    "lean_right": {
+      "R_thigh": {
+        "lateral": 40,
+        "twist": 45
+      },
+      "R_shin": {
+        "flexion": -20
+      },
+      "spine": {
+        "flexion": 30
+      }
+    },
+    "cross_left": {
+      "L_thigh": {
+        "lateral": 40,
+        "twist": 45
+      },
+      "L_shin": {
+        "lateral": -70,
+        "flexion": -20
+      }
+    },
+    "lean_left": {
+      "L_thigh": {
+        "lateral": 40,
+        "twist": 45
+      },
+      "L_shin": {
+        "flexion": -20
+      },
+      "spine": {
+        "flexion": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "cross_right"
+    },
+    {
+      "t": 10,
+      "pose": "lean_right"
+    },
+    {
+      "t": 24,
+      "pose": "lean_right"
+    },
+    {
+      "t": 29,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "cross_left"
+    },
+    {
+      "t": 38,
+      "pose": "lean_left"
+    },
+    {
+      "t": 52,
+      "pose": "lean_left"
+    },
+    {
+      "t": 57,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol."
+    },
+    {
+      "t": 5,
+      "text": "Posez la cheville droite sur le genou gauche, le genou droit s'ouvre vers l'extérieur."
+    },
+    {
+      "t": 10,
+      "text": "Penchez doucement le buste vers l'avant, le dos reste droit : l'étirement se sent dans la fesse droite."
+    },
+    {
+      "t": 24,
+      "text": "Redressez-vous et reposez le pied, puis changez de côté."
+    },
+    {
+      "t": 33,
+      "text": "Posez la cheville gauche sur le genou droit."
+    },
+    {
+      "t": 38,
+      "text": "Penchez doucement le buste vers l'avant."
+    },
+    {
+      "t": 52,
+      "text": "Redressez-vous et reposez le pied."
+    }
+  ],
+  "duration_seconds": 57
+}

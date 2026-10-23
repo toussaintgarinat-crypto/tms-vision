@@ -1,0 +1,81 @@
+{
+  "id": "seated-forward-fold",
+  "zone": "trunk",
+  "title": "Penché en avant, assis",
+  "description": "Buste incliné vers l'avant, bras relâchés entre les genoux, pour détendre le bas du dos après une longue position assise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "fold": {
+      "spine": {
+        "flexion": 70
+      },
+      "neck": {
+        "flexion": 20
+      },
+      "R_upper_arm": {
+        "flexion": 65
+      },
+      "L_upper_arm": {
+        "flexion": 65
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "fold"
+    },
+    {
+      "t": 27,
+      "pose": "fold"
+    },
+    {
+      "t": 36,
+      "pose": "neutral"
+    },
+    {
+      "t": 40,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les mains sur les cuisses."
+    },
+    {
+      "t": 3,
+      "text": "Laissez le buste descendre lentement vers l'avant, la tête et les bras relâchés."
+    },
+    {
+      "t": 12,
+      "text": "Respirez calmement, sans forcer. Si besoin, appuyez les mains sur les cuisses."
+    },
+    {
+      "t": 27,
+      "text": "Remontez lentement, vertèbre par vertèbre."
+    },
+    {
+      "t": 36,
+      "text": "Redressez-vous et relâchez les épaules."
+    }
+  ],
+  "duration_seconds": 40
+}

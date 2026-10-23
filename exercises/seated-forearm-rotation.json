@@ -1,0 +1,156 @@
+{
+  "id": "seated-forearm-rotation",
+  "zone": "lower_arm",
+  "title": "Rotation de l'avant-bras, assis",
+  "description": "Mouvements lents de pronation et de supination pour assouplir l'avant-bras et le coude. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "lower_arm",
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "bent": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 90
+      }
+    },
+    "rot_a": {
+      "R_forearm": {
+        "flexion": 90,
+        "twist": 70
+      },
+      "L_forearm": {
+        "flexion": 90,
+        "twist": 70
+      }
+    },
+    "rot_b": {
+      "R_forearm": {
+        "flexion": 90,
+        "twist": -70
+      },
+      "L_forearm": {
+        "flexion": 90,
+        "twist": -70
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "bent"
+    },
+    {
+      "t": 8,
+      "pose": "bent"
+    },
+    {
+      "t": 11,
+      "pose": "rot_a"
+    },
+    {
+      "t": 12,
+      "pose": "rot_a"
+    },
+    {
+      "t": 16,
+      "pose": "rot_b"
+    },
+    {
+      "t": 17,
+      "pose": "rot_b"
+    },
+    {
+      "t": 20,
+      "pose": "rot_a"
+    },
+    {
+      "t": 21,
+      "pose": "rot_a"
+    },
+    {
+      "t": 25,
+      "pose": "rot_b"
+    },
+    {
+      "t": 26,
+      "pose": "rot_b"
+    },
+    {
+      "t": 29,
+      "pose": "rot_a"
+    },
+    {
+      "t": 30,
+      "pose": "rot_a"
+    },
+    {
+      "t": 34,
+      "pose": "rot_b"
+    },
+    {
+      "t": 35,
+      "pose": "rot_b"
+    },
+    {
+      "t": 38,
+      "pose": "rot_a"
+    },
+    {
+      "t": 39,
+      "pose": "rot_a"
+    },
+    {
+      "t": 43,
+      "pose": "rot_b"
+    },
+    {
+      "t": 44,
+      "pose": "rot_b"
+    },
+    {
+      "t": 48,
+      "pose": "neutral"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les coudes collés au corps et pliés à 90°."
+    },
+    {
+      "t": 8,
+      "text": "Tournez lentement les avant-bras d'un côté, comme pour tourner une clé."
+    },
+    {
+      "t": 12,
+      "text": "Puis tournez-les dans l'autre sens."
+    },
+    {
+      "t": 44,
+      "text": "Relâchez les bras."
+    }
+  ],
+  "duration_seconds": 53
+}

@@ -1,0 +1,215 @@
+{
+  "id": "lying-figure-four-stretch",
+  "zone": "hip",
+  "title": "Étirement des fessiers (figure 4), allongé",
+  "description": "Cheville posée sur le genou opposé, la jambe fléchie ramenée vers la poitrine, pour étirer la fesse et le piriforme.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "bent": {
+      "L_thigh": {
+        "flexion": 65
+      },
+      "L_shin": {
+        "flexion": -65
+      }
+    },
+    "cross": {
+      "L_thigh": {
+        "flexion": 65
+      },
+      "L_shin": {
+        "flexion": -65
+      },
+      "R_thigh": {
+        "flexion": 80,
+        "lateral": 40,
+        "twist": 45
+      },
+      "R_shin": {
+        "flexion": -30
+      }
+    },
+    "pull": {
+      "L_thigh": {
+        "flexion": 105
+      },
+      "L_shin": {
+        "flexion": -105
+      },
+      "R_thigh": {
+        "flexion": 90,
+        "lateral": 40,
+        "twist": 45
+      },
+      "R_shin": {
+        "flexion": -30
+      },
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "L_upper_arm": {
+        "flexion": 50
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "L_forearm": {
+        "flexion": 70
+      }
+    },
+    "bent_r": {
+      "R_thigh": {
+        "flexion": 65
+      },
+      "R_shin": {
+        "flexion": -65
+      }
+    },
+    "cross_l": {
+      "R_thigh": {
+        "flexion": 65
+      },
+      "R_shin": {
+        "flexion": -65
+      },
+      "L_thigh": {
+        "flexion": 80,
+        "lateral": 40,
+        "twist": 45
+      },
+      "L_shin": {
+        "flexion": -30
+      }
+    },
+    "pull_l": {
+      "R_thigh": {
+        "flexion": 105
+      },
+      "R_shin": {
+        "flexion": -105
+      },
+      "L_thigh": {
+        "flexion": 90,
+        "lateral": 40,
+        "twist": 45
+      },
+      "L_shin": {
+        "flexion": -30
+      },
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "L_upper_arm": {
+        "flexion": 50
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "L_forearm": {
+        "flexion": 70
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "bent"
+    },
+    {
+      "t": 7,
+      "pose": "cross"
+    },
+    {
+      "t": 12,
+      "pose": "pull"
+    },
+    {
+      "t": 26,
+      "pose": "pull"
+    },
+    {
+      "t": 31,
+      "pose": "bent"
+    },
+    {
+      "t": 34,
+      "pose": "neutral"
+    },
+    {
+      "t": 37,
+      "pose": "bent_r"
+    },
+    {
+      "t": 41,
+      "pose": "cross_l"
+    },
+    {
+      "t": 46,
+      "pose": "pull_l"
+    },
+    {
+      "t": 60,
+      "pose": "pull_l"
+    },
+    {
+      "t": 65,
+      "pose": "bent_r"
+    },
+    {
+      "t": 68,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Fléchissez le genou gauche, le pied à plat."
+    },
+    {
+      "t": 7,
+      "text": "Posez la cheville droite sur le genou gauche, le genou droit s'ouvre vers l'extérieur."
+    },
+    {
+      "t": 12,
+      "text": "Ramenez doucement la cuisse gauche vers vous : l'étirement se sent dans la fesse droite."
+    },
+    {
+      "t": 26,
+      "text": "Relâchez, puis changez de côté."
+    },
+    {
+      "t": 37,
+      "text": "Fléchissez le genou droit, le pied à plat."
+    },
+    {
+      "t": 41,
+      "text": "Posez la cheville gauche sur le genou droit."
+    },
+    {
+      "t": 46,
+      "text": "Ramenez doucement la cuisse droite vers vous."
+    },
+    {
+      "t": 60,
+      "text": "Relâchez et allongez les jambes."
+    }
+  ],
+  "duration_seconds": 68
+}

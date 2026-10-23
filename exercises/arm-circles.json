@@ -1,0 +1,144 @@
+{
+  "id": "arm-circles",
+  "zone": "shoulder",
+  "title": "Cercles de bras",
+  "description": "Grands cercles lents des bras pour mobiliser les épaules dans toutes les directions.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "standing",
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "front": {
+      "R_upper_arm": {
+        "flexion": 45,
+        "lateral": 60
+      },
+      "L_upper_arm": {
+        "flexion": 45,
+        "lateral": 60
+      }
+    },
+    "up": {
+      "R_upper_arm": {
+        "flexion": 0,
+        "lateral": 130
+      },
+      "L_upper_arm": {
+        "flexion": 0,
+        "lateral": 130
+      }
+    },
+    "back": {
+      "R_upper_arm": {
+        "flexion": -35,
+        "lateral": 70
+      },
+      "L_upper_arm": {
+        "flexion": -35,
+        "lateral": 70
+      }
+    },
+    "down": {
+      "R_upper_arm": {
+        "flexion": 0,
+        "lateral": 25
+      },
+      "L_upper_arm": {
+        "flexion": 0,
+        "lateral": 25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "down"
+    },
+    {
+      "t": 6,
+      "pose": "front"
+    },
+    {
+      "t": 9,
+      "pose": "up"
+    },
+    {
+      "t": 12,
+      "pose": "back"
+    },
+    {
+      "t": 15,
+      "pose": "down"
+    },
+    {
+      "t": 18,
+      "pose": "front"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "back"
+    },
+    {
+      "t": 27,
+      "pose": "down"
+    },
+    {
+      "t": 30,
+      "pose": "front"
+    },
+    {
+      "t": 33,
+      "pose": "up"
+    },
+    {
+      "t": 36,
+      "pose": "back"
+    },
+    {
+      "t": 39,
+      "pose": "down"
+    },
+    {
+      "t": 42,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, le dos droit, les bras le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Décrivez de grands cercles lents avec les deux bras tendus."
+    },
+    {
+      "t": 15,
+      "text": "Gardez les épaules basses et respirez calmement."
+    },
+    {
+      "t": 27,
+      "text": "Continuez, sans forcer."
+    },
+    {
+      "t": 39,
+      "text": "Laissez retomber les bras."
+    }
+  ],
+  "duration_seconds": 42
+}

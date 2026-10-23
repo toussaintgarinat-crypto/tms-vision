@@ -1,0 +1,163 @@
+{
+  "id": "lying-straight-leg-raise",
+  "zone": "thigh",
+  "title": "Jambe tendue levée, allongé",
+  "description": "Lever une jambe tendue à quelques dizaines de centimètres du sol, l'autre genou fléchi, pour activer le quadriceps sans solliciter le dos.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "base_r": {
+      "L_thigh": {
+        "flexion": 60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "raise_r": {
+      "L_thigh": {
+        "flexion": 60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_thigh": {
+        "flexion": 40
+      },
+      "R_foot": {
+        "flexion": 20
+      }
+    },
+    "base_l": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      }
+    },
+    "raise_l": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_thigh": {
+        "flexion": 40
+      },
+      "L_foot": {
+        "flexion": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "base_r"
+    },
+    {
+      "t": 7,
+      "pose": "raise_r"
+    },
+    {
+      "t": 12,
+      "pose": "raise_r"
+    },
+    {
+      "t": 16,
+      "pose": "base_r"
+    },
+    {
+      "t": 20,
+      "pose": "raise_r"
+    },
+    {
+      "t": 25,
+      "pose": "raise_r"
+    },
+    {
+      "t": 29,
+      "pose": "base_r"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "base_l"
+    },
+    {
+      "t": 39,
+      "pose": "raise_l"
+    },
+    {
+      "t": 44,
+      "pose": "raise_l"
+    },
+    {
+      "t": 48,
+      "pose": "base_l"
+    },
+    {
+      "t": 52,
+      "pose": "raise_l"
+    },
+    {
+      "t": 57,
+      "pose": "raise_l"
+    },
+    {
+      "t": 61,
+      "pose": "base_l"
+    },
+    {
+      "t": 64,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Fléchissez le genou gauche, le pied à plat."
+    },
+    {
+      "t": 7,
+      "text": "Contractez la cuisse droite et levez la jambe tendue, orteils vers vous."
+    },
+    {
+      "t": 12,
+      "text": "Gardez quelques secondes, puis redescendez lentement."
+    },
+    {
+      "t": 35,
+      "text": "Fléchissez le genou droit et levez la jambe gauche tendue."
+    },
+    {
+      "t": 44,
+      "text": "Redescendez lentement."
+    },
+    {
+      "t": 61,
+      "text": "Allongez les jambes et relâchez."
+    }
+  ],
+  "duration_seconds": 64
+}

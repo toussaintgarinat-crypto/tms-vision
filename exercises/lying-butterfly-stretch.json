@@ -1,0 +1,100 @@
+{
+  "id": "lying-butterfly-stretch",
+  "zone": "hip",
+  "title": "Papillon, allongé",
+  "description": "Plantes des pieds jointes, genoux ouverts vers l'extérieur, pour étirer l'intérieur des cuisses.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "feet": {
+      "R_thigh": {
+        "flexion": 55
+      },
+      "L_thigh": {
+        "flexion": 55
+      },
+      "R_shin": {
+        "flexion": -100
+      },
+      "L_shin": {
+        "flexion": -100
+      }
+    },
+    "open": {
+      "R_thigh": {
+        "flexion": 55,
+        "lateral": 45,
+        "twist": 25
+      },
+      "L_thigh": {
+        "flexion": 55,
+        "lateral": 45,
+        "twist": 25
+      },
+      "R_shin": {
+        "flexion": -100
+      },
+      "L_shin": {
+        "flexion": -100
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "feet"
+    },
+    {
+      "t": 9,
+      "pose": "open"
+    },
+    {
+      "t": 27,
+      "pose": "open"
+    },
+    {
+      "t": 33,
+      "pose": "feet"
+    },
+    {
+      "t": 36,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Fléchissez les genoux et joignez les plantes des pieds."
+    },
+    {
+      "t": 9,
+      "text": "Laissez les genoux s'ouvrir doucement vers l'extérieur, sans forcer."
+    },
+    {
+      "t": 27,
+      "text": "Ramenez les genoux, puis allongez les jambes."
+    },
+    {
+      "t": 33,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 36
+}

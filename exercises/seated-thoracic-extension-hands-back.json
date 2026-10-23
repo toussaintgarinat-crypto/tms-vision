@@ -1,0 +1,107 @@
+{
+  "id": "seated-thoracic-extension-hands-back",
+  "zone": "trunk",
+  "title": "Extension du dos, mains sur les reins, assis",
+  "description": "Légère extension du tronc pour contrebalancer les postures penchées en avant. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "target": {
+      "spine": {
+        "flexion": -16
+      },
+      "neck": {
+        "flexion": -4
+      },
+      "R_upper_arm": {
+        "lateral": 32
+      },
+      "L_upper_arm": {
+        "lateral": 32
+      },
+      "R_forearm": {
+        "flexion": 105
+      },
+      "L_forearm": {
+        "flexion": 105
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 19,
+      "pose": "neutral"
+    },
+    {
+      "t": 22,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "target"
+    },
+    {
+      "t": 38,
+      "pose": "neutral"
+    },
+    {
+      "t": 41,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les mains posées sur le bas du dos."
+    },
+    {
+      "t": 3,
+      "text": "Poussez doucement le bassin vers l'avant et ouvrez la poitrine."
+    },
+    {
+      "t": 7,
+      "text": "Gardez le regard à l'horizon et respirez, sans forcer dans le bas du dos."
+    },
+    {
+      "t": 22,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 26,
+      "text": "Gardez le regard à l'horizon et respirez, sans forcer dans le bas du dos."
+    },
+    {
+      "t": 34,
+      "text": "Revenez à la position droite."
+    }
+  ],
+  "duration_seconds": 44
+}

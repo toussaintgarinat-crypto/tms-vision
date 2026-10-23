@@ -1,0 +1,145 @@
+{
+  "id": "seated-hamstring-stretch",
+  "zone": "thigh",
+  "title": "Étirement des ischio-jambiers, assis",
+  "description": "Jambe tendue devant soi, talon au sol, buste incliné vers l'avant pour étirer l'arrière de la cuisse.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "leg": {
+      "R_shin": {
+        "flexion": 90
+      },
+      "R_foot": {
+        "flexion": 20
+      }
+    },
+    "lean": {
+      "R_shin": {
+        "flexion": 90
+      },
+      "R_foot": {
+        "flexion": 20
+      },
+      "spine": {
+        "flexion": 30
+      },
+      "R_upper_arm": {
+        "flexion": 15
+      },
+      "L_upper_arm": {
+        "flexion": 15
+      }
+    },
+    "leg_left": {
+      "L_shin": {
+        "flexion": 90
+      },
+      "L_foot": {
+        "flexion": 20
+      }
+    },
+    "lean_left": {
+      "L_shin": {
+        "flexion": 90
+      },
+      "L_foot": {
+        "flexion": 20
+      },
+      "spine": {
+        "flexion": 30
+      },
+      "R_upper_arm": {
+        "flexion": 15
+      },
+      "L_upper_arm": {
+        "flexion": 15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "leg"
+    },
+    {
+      "t": 9,
+      "pose": "lean"
+    },
+    {
+      "t": 24,
+      "pose": "lean"
+    },
+    {
+      "t": 28,
+      "pose": "leg"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "leg_left"
+    },
+    {
+      "t": 40,
+      "pose": "lean_left"
+    },
+    {
+      "t": 55,
+      "pose": "lean_left"
+    },
+    {
+      "t": 59,
+      "pose": "leg_left"
+    },
+    {
+      "t": 62,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol."
+    },
+    {
+      "t": 4,
+      "text": "Tendez la jambe droite devant vous, le talon au sol, les orteils vers le haut."
+    },
+    {
+      "t": 9,
+      "text": "Penchez le buste vers l'avant en gardant le dos droit, jusqu'à sentir l'étirement derrière la cuisse."
+    },
+    {
+      "t": 24,
+      "text": "Redressez-vous, puis changez de jambe."
+    },
+    {
+      "t": 35,
+      "text": "Tendez la jambe gauche devant vous."
+    },
+    {
+      "t": 40,
+      "text": "Penchez le buste vers l'avant, sans douleur."
+    },
+    {
+      "t": 55,
+      "text": "Redressez-vous et reposez le pied."
+    }
+  ],
+  "duration_seconds": 62
+}

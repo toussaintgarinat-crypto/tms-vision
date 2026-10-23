@@ -1,0 +1,127 @@
+{
+  "id": "lying-heel-slide",
+  "zone": "thigh",
+  "title": "Glissé du talon, allongé",
+  "description": "Faire glisser le talon vers les fesses puis le repousser pour mobiliser le genou et la hanche en douceur.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "slide_right": {
+      "R_thigh": {
+        "flexion": 70
+      },
+      "R_shin": {
+        "flexion": -120
+      }
+    },
+    "slide_left": {
+      "L_thigh": {
+        "flexion": 70
+      },
+      "L_shin": {
+        "flexion": -120
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "slide_right"
+    },
+    {
+      "t": 10,
+      "pose": "slide_right"
+    },
+    {
+      "t": 15,
+      "pose": "neutral"
+    },
+    {
+      "t": 18,
+      "pose": "slide_right"
+    },
+    {
+      "t": 20,
+      "pose": "slide_right"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "slide_left"
+    },
+    {
+      "t": 30,
+      "pose": "slide_left"
+    },
+    {
+      "t": 35,
+      "pose": "neutral"
+    },
+    {
+      "t": 38,
+      "pose": "slide_left"
+    },
+    {
+      "t": 40,
+      "pose": "slide_left"
+    },
+    {
+      "t": 45,
+      "pose": "neutral"
+    },
+    {
+      "t": 47,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, sur un tapis, les jambes allongées."
+    },
+    {
+      "t": 3,
+      "text": "Faites glisser le talon droit vers les fesses, le pied reste au sol."
+    },
+    {
+      "t": 10,
+      "text": "Repoussez lentement le talon pour allonger la jambe."
+    },
+    {
+      "t": 18,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 28,
+      "text": "Faites glisser le talon gauche vers les fesses."
+    },
+    {
+      "t": 35,
+      "text": "Repoussez lentement pour allonger la jambe."
+    },
+    {
+      "t": 45,
+      "text": "Relâchez."
+    }
+  ],
+  "duration_seconds": 47
+}

@@ -1,0 +1,107 @@
+{
+  "id": "seated-triceps-overhead-stretch",
+  "zone": "upper_arm",
+  "title": "Étirement du triceps, assis",
+  "description": "Main derrière la tête, coude vers le haut, pour étirer l'arrière du bras. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "upper_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_upper_arm": {
+        "flexion": 165
+      },
+      "R_forearm": {
+        "flexion": 120
+      }
+    },
+    "left": {
+      "L_upper_arm": {
+        "flexion": 165
+      },
+      "L_forearm": {
+        "flexion": 120
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 8,
+      "pose": "right"
+    },
+    {
+      "t": 20,
+      "pose": "right"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "left"
+    },
+    {
+      "t": 45,
+      "pose": "left"
+    },
+    {
+      "t": 50,
+      "pose": "neutral"
+    },
+    {
+      "t": 53,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les épaules relâchées."
+    },
+    {
+      "t": 3,
+      "text": "Levez le bras droit au-dessus de la tête, puis pliez le coude pour amener la main derrière la tête."
+    },
+    {
+      "t": 8,
+      "text": "Avec l'autre main, appuyez très doucement sur le coude, sans cambrer le dos."
+    },
+    {
+      "t": 20,
+      "text": "Relâchez, puis changez de bras."
+    },
+    {
+      "t": 28,
+      "text": "Levez le bras gauche au-dessus de la tête, puis pliez le coude pour amener la main derrière la tête."
+    },
+    {
+      "t": 33,
+      "text": "Avec l'autre main, appuyez très doucement sur le coude, sans cambrer le dos."
+    },
+    {
+      "t": 45,
+      "text": "Relâchez le bras."
+    }
+  ],
+  "duration_seconds": 56
+}

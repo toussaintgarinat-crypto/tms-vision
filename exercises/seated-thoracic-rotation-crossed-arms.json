@@ -1,0 +1,143 @@
+{
+  "id": "seated-thoracic-rotation-crossed-arms",
+  "zone": "trunk",
+  "title": "Rotation du haut du dos, bras croisés, assis",
+  "description": "Rotation lente du buste, bras croisés, pour assouplir la région dorsale. Version à faire assis sur une chaise.",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "right": {
+      "R_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "L_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "spine": {
+        "twist": 45
+      }
+    },
+    "left": {
+      "R_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "L_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "spine": {
+        "twist": -45
+      }
+    },
+    "arms": {
+      "R_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "L_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 7,
+      "pose": "arms"
+    },
+    {
+      "t": 8,
+      "pose": "arms"
+    },
+    {
+      "t": 12,
+      "pose": "right"
+    },
+    {
+      "t": 20,
+      "pose": "right"
+    },
+    {
+      "t": 24,
+      "pose": "arms"
+    },
+    {
+      "t": 26,
+      "pose": "arms"
+    },
+    {
+      "t": 30,
+      "pose": "left"
+    },
+    {
+      "t": 38,
+      "pose": "left"
+    },
+    {
+      "t": 42,
+      "pose": "arms"
+    },
+    {
+      "t": 43,
+      "pose": "arms"
+    },
+    {
+      "t": 47,
+      "pose": "neutral"
+    },
+    {
+      "t": 49,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, le dos droit, les pieds à plat au sol, les bras croisés devant la poitrine."
+    },
+    {
+      "t": 8,
+      "text": "Tournez le haut du corps vers la droite, le bassin reste de face."
+    },
+    {
+      "t": 12,
+      "text": "Respirez calmement, sans forcer."
+    },
+    {
+      "t": 20,
+      "text": "Revenez au centre."
+    },
+    {
+      "t": 26,
+      "text": "Tournez vers la gauche."
+    },
+    {
+      "t": 38,
+      "text": "Revenez au centre."
+    },
+    {
+      "t": 43,
+      "text": "Relâchez les bras."
+    }
+  ],
+  "duration_seconds": 52
+}
