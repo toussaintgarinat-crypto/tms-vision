@@ -17,6 +17,14 @@ import {
   slotsTotalHours,
   toCyclesPerMinute,
 } from "./taskForm";
+import { AssistantPanel } from "../assistant/AssistantPanel";
+import {
+  AssistantTaskFields,
+  FilledKey,
+  TaskFormState,
+  applyTaskFields,
+  taskFormToCurrentValues,
+} from "../assistant/taskFill";
 import { BilanItem, BilanTask, ZONES, ZONE_LABELS, Zone } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -65,6 +73,43 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
   const [breaksOther, setBreaksOther] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [aiFilled, setAiFilled] = useState<Set<FilledKey>>(new Set());
+
+  function formState(): TaskFormState {
+    return {
+      name, zones, useSlots, slots, hours, frequencies, unit, cycleSeconds, staticSeconds,
+      loadKg, daysPerWeek, notes, workstation, workstationOther, breaks, breaksOther,
+    };
+  }
+
+  function handleAssistantFields(fields: AssistantTaskFields, overwrite: boolean) {
+    const result = applyTaskFields(formState(), fields, overwrite);
+    const next = result.state;
+    setName(next.name);
+    setZones(next.zones);
+    setUseSlots(next.useSlots);
+    setSlots(next.slots);
+    setHours(next.hours);
+    setFrequencies(next.frequencies);
+    setUnit(next.unit);
+    setCycleSeconds(next.cycleSeconds);
+    setStaticSeconds(next.staticSeconds);
+    setLoadKg(next.loadKg);
+    setDaysPerWeek(next.daysPerWeek);
+    setNotes(next.notes);
+    setWorkstation(next.workstation);
+    setWorkstationOther(next.workstationOther);
+    setBreaks(next.breaks);
+    setBreaksOther(next.breaksOther);
+    setAiFilled((current) => new Set([...current, ...result.filled]));
+    return result;
+  }
+
+  /** Surligne un champ rempli par l'assistant, jusqu'à l'envoi de la fiche. */
+  function ai(...keys: FilledKey[]): string {
+    return keys.some((key) => aiFilled.has(key)) ? " bg-yellow-50 ring-2 ring-yellow-400" : "";
+  }
 
   function toggleZone(zone: Zone) {
     setZones((current) =>
@@ -167,6 +212,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
       setDaysPerWeek("");
       setNotes("");
       setAnalysisId("");
+      setAiFilled(new Set());
       onChanged();
     } catch {
       setError("Impossible d'ajouter la tâche (problème réseau ou serveur).");
@@ -252,17 +298,21 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
 
       <form onSubmit={handleSubmit} className="grid gap-4 rounded border p-4 sm:grid-cols-2">
         <h3 className="text-lg font-semibold sm:col-span-2">Ajouter une tâche</h3>
+        <AssistantPanel
+          values={taskFormToCurrentValues(formState())}
+          onFields={handleAssistantFields}
+        />
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           Nom de la tâche
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Peindre un plafond, saisie…"
-            className={input}
+            className={`${input}${ai("name")}`}
           />
         </label>
 
-        <fieldset className="flex flex-wrap gap-x-4 gap-y-1 text-sm sm:col-span-2">
+        <fieldset className={`flex flex-wrap gap-x-4 gap-y-1 rounded text-sm sm:col-span-2${ai("zones")}`}>
           <legend className="mb-1">Zones concernées</legend>
           {ZONES.map((zone) => (
             <label key={zone} className="flex items-center gap-1">
@@ -272,7 +322,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
           ))}
         </fieldset>
 
-        <div className="flex flex-col gap-2 text-sm sm:col-span-2">
+        <div className={`flex flex-col gap-2 rounded text-sm sm:col-span-2${ai("slots", "useSlots", "hours")}`}>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={useSlots} onChange={(e) => setUseSlots(e.target.checked)} />
             Je connais les horaires (plages) de cette tâche
@@ -310,7 +360,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
           )}
         </div>
 
-        <fieldset className="flex flex-col gap-2 text-sm sm:col-span-2">
+        <fieldset className={`flex flex-col gap-2 rounded text-sm sm:col-span-2${ai("frequencies")}`}>
           <legend className="mb-1">Répétitions (une valeur par zone cochée)</legend>
           <select value={unit} onChange={(e) => setUnit(e.target.value as FrequencyUnit)} className={`${input} self-start`} aria-label="Unité des répétitions">
             {(Object.keys(FREQUENCY_UNIT_LABELS) as FrequencyUnit[]).map((key) => (
@@ -332,19 +382,19 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
         </fieldset>
         <label className="flex flex-col gap-1 text-sm">
           Durée d&apos;un cycle (secondes)
-          <input type="number" min="0" step="any" value={cycleSeconds} onChange={(e) => setCycleSeconds(e.target.value)} className={input} />
+          <input type="number" min="0" step="any" value={cycleSeconds} onChange={(e) => setCycleSeconds(e.target.value)} className={`${input}${ai("cycleSeconds")}`} />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Plus longue tenue statique (secondes)
-          <input type="number" min="0" step="any" value={staticSeconds} onChange={(e) => setStaticSeconds(e.target.value)} className={input} />
+          <input type="number" min="0" step="any" value={staticSeconds} onChange={(e) => setStaticSeconds(e.target.value)} className={`${input}${ai("staticSeconds")}`} />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Charge manipulée (kg)
-          <input type="number" min="0" step="any" value={loadKg} onChange={(e) => setLoadKg(e.target.value)} className={input} />
+          <input type="number" min="0" step="any" value={loadKg} onChange={(e) => setLoadKg(e.target.value)} className={`${input}${ai("loadKg")}`} />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Jours par semaine
-          <input type="number" min="1" max="7" step="any" value={daysPerWeek} onChange={(e) => setDaysPerWeek(e.target.value)} className={input} />
+          <input type="number" min="1" max="7" step="any" value={daysPerWeek} onChange={(e) => setDaysPerWeek(e.target.value)} className={`${input}${ai("daysPerWeek")}`} />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Compléter une vidéo du bilan (facultatif)
@@ -362,7 +412,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Poste de travail
-          <select value={workstation} onChange={(e) => setWorkstation(e.target.value)} className={input}>
+          <select value={workstation} onChange={(e) => setWorkstation(e.target.value)} className={`${input}${ai("workstation")}`}>
             <option value="">— Non précisé —</option>
             {WORKSTATION_OPTIONS.map((option) => (
               <option key={option} value={option}>{option}</option>
@@ -375,7 +425,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Pauses
-          <select value={breaks} onChange={(e) => setBreaks(e.target.value)} className={input}>
+          <select value={breaks} onChange={(e) => setBreaks(e.target.value)} className={`${input}${ai("breaks")}`}>
             <option value="">— Non précisé —</option>
             {BREAK_OPTIONS.map((option) => (
               <option key={option} value={option}>{option}</option>
@@ -388,7 +438,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
         </label>
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           Notes
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={input} />
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={`${input}${ai("notes")}`} />
         </label>
 
         <div className="sm:col-span-2">
