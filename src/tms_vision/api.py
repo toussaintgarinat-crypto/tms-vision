@@ -26,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from tms_vision import bilan, capsule_build, exercises, library, mailer, recurrence, storage, version
+from tms_vision import assistant, bilan, capsule_build, exercises, library, mailer, recurrence, storage, version
 from tms_vision.load import bounds, parse_load
 from tms_vision.program import build_analysis_program, build_bilan_program
 from tms_vision.rescore import rescore_frames, summarize_for_load
@@ -92,6 +92,7 @@ async def _lifespan(_app: FastAPI):
 
 
 app = FastAPI(lifespan=_lifespan)
+app.include_router(assistant.router)
 
 app.add_middleware(
     CORSMiddleware,
