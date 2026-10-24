@@ -201,6 +201,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_METIER_MODELS_TABLE)
     conn.execute(CREATE_ANALYSIS_LOADS_TABLE)
     conn.execute(CREATE_LIBRARY_SHARES_TABLE)
+    # Archivage des bilans (ajouté après coup) : NULL = bilan actif.
+    conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP")
     for column, column_type in _BILAN_TASKS_LATER_COLUMNS:
         conn.execute(f"ALTER TABLE bilan_tasks ADD COLUMN IF NOT EXISTS {column} {column_type}")
     # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
@@ -465,12 +467,14 @@ def get_frame_angles(analysis_id: str) -> list[dict] | None:
     return [dict(zip(columns, row)) for row in rows]
 
 
-_BILAN_COLUMNS = ["id", "created_at", "label", "workday_hours"]
+_BILAN_COLUMNS = ["id", "created_at", "label", "workday_hours", "archived_at"]
 
 
 def _bilan_record(row) -> dict:
     record = dict(zip(_BILAN_COLUMNS, row))
     record["created_at"] = _attach_utc(record["created_at"]).isoformat()
+    if record["archived_at"] is not None:
+        record["archived_at"] = _attach_utc(record["archived_at"]).isoformat()
     return record
 
 
@@ -758,11 +762,43 @@ def delete_bilan_task(*, task_id: str, bilan_id: str) -> None:
         conn.close()
 
 
-def list_bilans() -> list[dict]:
+def set_bilan_archived(*, bilan_id: str, archived_at: datetime | None) -> None:
+    """Archive un bilan (date d'archivage) ou le restaure (`None`). KeyError s'il est inconnu."""
     conn = _connect()
     try:
+        if conn.execute("SELECT 1 FROM bilans WHERE id = ?", [bilan_id]).fetchone() is None:
+            raise KeyError(f"bilan {bilan_id}")
+        conn.execute(
+            "UPDATE bilans SET archived_at = ? WHERE id = ?",
+            [_to_naive_utc(archived_at) if archived_at is not None else None, bilan_id],
+        )
+    finally:
+        conn.close()
+
+
+def delete_bilan(bilan_id: str) -> bool:
+    """Supprime définitivement un bilan, ses fiches d'activité et ses rattachements de vidéos.
+    Les analyses (vidéos) restent : elles existent hors du bilan. False si le bilan est inconnu."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilans WHERE id = ?", [bilan_id]).fetchone() is None:
+            return False
+        conn.execute("DELETE FROM bilan_tasks WHERE bilan_id = ?", [bilan_id])
+        conn.execute("DELETE FROM bilan_analyses WHERE bilan_id = ?", [bilan_id])
+        conn.execute("DELETE FROM bilans WHERE id = ?", [bilan_id])
+    finally:
+        conn.close()
+    return True
+
+
+def list_bilans(*, archived: bool = False) -> list[dict]:
+    """Bilans actifs, ou archivés si `archived` : les plus récents d'abord."""
+    conn = _connect()
+    try:
+        condition = "IS NOT NULL" if archived else "IS NULL"
         rows = conn.execute(
-            f"SELECT {', '.join(_BILAN_COLUMNS)} FROM bilans ORDER BY created_at DESC, id"
+            f"SELECT {', '.join(_BILAN_COLUMNS)} FROM bilans WHERE archived_at {condition} "
+            "ORDER BY created_at DESC, id"
         ).fetchall()
     finally:
         conn.close()

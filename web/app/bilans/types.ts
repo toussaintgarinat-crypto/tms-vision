@@ -97,6 +97,8 @@ export type StoredBilan = {
   created_at: string;
   label: string | null;
   workday_hours: number;
+  // Date d'archivage ; null pour un bilan actif.
+  archived_at?: string | null;
   items?: BilanItem[];
   tasks?: BilanTask[];
 };

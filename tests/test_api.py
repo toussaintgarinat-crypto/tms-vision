@@ -1672,3 +1672,87 @@ def test_bilan_program_stays_empty_without_video_and_without_tasks(tmp_path, mon
 
     assert response["program"] == []
     assert not any("tâches saisies" in warning for warning in response["warnings"])
+
+
+def test_archive_and_restore_a_bilan_moves_it_between_the_two_lists(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    kept = client.post("/bilans", json={"label": "Gardé"}).json()["id"]
+    old = client.post("/bilans", json={"label": "Ancien"}).json()["id"]
+
+    archived = client.post(f"/bilans/{old}/archive")
+
+    assert archived.status_code == 200
+    assert archived.json()["archived_at"] is not None
+    assert [b["id"] for b in client.get("/bilans").json()] == [kept]
+    assert [b["id"] for b in client.get("/bilans?archived=true").json()] == [old]
+    # Un bilan archivé reste lisible, avec ses fiches.
+    assert client.get(f"/bilans/{old}").json()["archived_at"] is not None
+
+    restored = client.post(f"/bilans/{old}/unarchive")
+
+    assert restored.json()["archived_at"] is None
+    assert {b["id"] for b in client.get("/bilans").json()} == {kept, old}
+    assert client.get("/bilans?archived=true").json() == []
+
+
+def test_archive_unknown_bilan_returns_404(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    assert client.post("/bilans/nope/archive").status_code == 404
+    assert client.post("/bilans/nope/unarchive").status_code == 404
+
+
+def test_delete_bilan_removes_its_tasks_but_keeps_the_analysis(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"workday_hours": 9.0}).json()["id"]
+    other = client.post("/bilans", json={"label": "Autre"}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 4.0, "representative": True})
+    client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload())
+
+    response = client.delete(f"/bilans/{bilan_id}")
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": bilan_id}
+    assert client.get(f"/bilans/{bilan_id}").status_code == 404
+    assert [b["id"] for b in client.get("/bilans").json()] == [other]
+    assert client.get("/analyses/a-1").status_code == 200
+    # La vidéo peut être rattachée à un autre bilan.
+    attach = client.post(f"/bilans/{other}/analyses",
+                         json={"analysis_id": "a-1", "activity_hours": 4.0, "representative": True})
+    assert attach.status_code == 200
+    assert client.delete(f"/bilans/{bilan_id}").status_code == 404
+
+
+def test_delete_an_archived_bilan(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/archive")
+
+    assert client.delete(f"/bilans/{bilan_id}").status_code == 200
+    assert client.get("/bilans?archived=true").json() == []
+
+
+def test_an_existing_database_without_archiving_is_upgraded_in_place(tmp_path, monkeypatch):
+    import duckdb
+
+    path = tmp_path / "old.duckdb"
+    old = duckdb.connect(str(path))
+    old.execute(
+        "CREATE TABLE bilans (id VARCHAR PRIMARY KEY, created_at TIMESTAMP NOT NULL, "
+        "label VARCHAR, workday_hours DOUBLE NOT NULL)"
+    )
+    old.execute("INSERT INTO bilans VALUES ('b-1', '2026-01-01 10:00:00', 'Ancien bilan', 8.0)")
+    old.close()
+    monkeypatch.setattr(storage, "DB_PATH", path)
+    client = TestClient(app)
+
+    [bilan] = client.get("/bilans").json()
+
+    assert bilan["id"] == "b-1" and bilan["archived_at"] is None
+    assert client.post("/bilans/b-1/archive").json()["archived_at"] is not None

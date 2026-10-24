@@ -55,6 +55,9 @@ export default function BilanDetailPage() {
   const [savingModel, setSavingModel] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const [savedModelTitle, setSavedModelTitle] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [filing, setFiling] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -244,6 +247,29 @@ export default function BilanDetailPage() {
     }
   }
 
+  // Archive, restaure ou supprime ce bilan. Archiver ou supprimer ramène à la liste.
+  async function handleFile(action: "archive" | "unarchive" | "delete") {
+    setFiling(true);
+    setFileError(null);
+    try {
+      const url = `${API_URL}/bilans/${encodeURIComponent(id)}`;
+      const response =
+        action === "delete"
+          ? await fetch(url, { method: "DELETE" })
+          : await fetch(`${url}/${action}`, { method: "POST" });
+      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      if (action === "unarchive") {
+        setReloadToken((token) => token + 1);
+      } else {
+        router.push("/bilans");
+      }
+    } catch {
+      setFileError("L'action a échoué (problème réseau ou serveur). Réessayez.");
+    } finally {
+      setFiling(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
@@ -261,6 +287,59 @@ export default function BilanDetailPage() {
           </Link>
         </div>
       </div>
+
+      {isLoaded && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          {loaded.bilan.archived_at ? (
+            <>
+              <span className="rounded bg-amber-100 px-2 py-1 font-semibold text-amber-900">
+                Bilan archivé le {new Date(loaded.bilan.archived_at).toLocaleDateString("fr-FR")}
+              </span>
+              <button
+                type="button"
+                disabled={filing}
+                onClick={() => handleFile("unarchive")}
+                className="rounded border border-black px-3 py-1 disabled:opacity-50"
+              >
+                Restaurer
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={filing}
+              onClick={() => handleFile("archive")}
+              className="rounded border border-black px-3 py-1 disabled:opacity-50"
+            >
+              Archiver ce bilan
+            </button>
+          )}
+          {confirmDelete ? (
+            <span className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={filing}
+                onClick={() => handleFile("delete")}
+                className="rounded border border-red-600 px-3 py-1 text-red-600 disabled:opacity-50"
+              >
+                Supprimer définitivement
+              </button>
+              <button type="button" onClick={() => setConfirmDelete(false)} className="underline">
+                Annuler
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="rounded border px-3 py-1 text-red-600"
+            >
+              Supprimer
+            </button>
+          )}
+          {fileError && <span className="text-red-600">{fileError}</span>}
+        </div>
+      )}
 
       {isNotFound && <p className="text-red-600">Bilan introuvable.</p>}
 

@@ -632,8 +632,33 @@ async def delete_metier(metier_id: str) -> dict:
 
 
 @app.get("/bilans")
-async def list_bilans() -> list[dict]:
-    return storage.list_bilans()
+async def list_bilans(archived: bool = False) -> list[dict]:
+    """Bilans actifs ; `?archived=true` liste les archives."""
+    return storage.list_bilans(archived=archived)
+
+
+@app.post("/bilans/{bilan_id}/archive")
+async def archive_bilan(bilan_id: str) -> dict:
+    """Range le bilan dans les archives : il quitte la liste, rien n'est perdu."""
+    _get_bilan_or_404(bilan_id)
+    storage.set_bilan_archived(bilan_id=bilan_id, archived_at=datetime.now(timezone.utc))
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.post("/bilans/{bilan_id}/unarchive")
+async def unarchive_bilan(bilan_id: str) -> dict:
+    """Sort le bilan des archives."""
+    _get_bilan_or_404(bilan_id)
+    storage.set_bilan_archived(bilan_id=bilan_id, archived_at=None)
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.delete("/bilans/{bilan_id}")
+async def delete_bilan(bilan_id: str) -> dict:
+    """Supprime définitivement le bilan et ses fiches ; les vidéos analysées sont conservées."""
+    if not storage.delete_bilan(bilan_id):
+        raise HTTPException(status_code=404, detail="Bilan introuvable.")
+    return {"deleted": bilan_id}
 
 
 @app.get("/bilans/{bilan_id}")

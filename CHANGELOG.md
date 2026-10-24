@@ -22,6 +22,10 @@ une version précise.
   propose désormais jusqu'à 3 exercices d'après les zones des tâches saisies, classées par durée de
   tâches qui les sollicitent, avec le badge « Sans vidéo ». Les zones mesurées sur vidéo passent
   toujours en premier. Aucun score de risque n'est inventé : sans mesure, seules les durées comptent.
+- Bilans de poste : onglets « Bilans » et « Archives » dans la liste, pour ranger un bilan sans le
+  perdre (Archiver, Restaurer) ou le supprimer définitivement (avec confirmation). Les mêmes actions
+  sont sur la page d'un bilan. Les vidéos analysées ne sont jamais supprimées avec le bilan. Les
+  bases existantes sont mises à niveau automatiquement.
 - Correction : la suppression d'une fiche d'activité depuis le site était refusée par l'API
   (méthode DELETE absente de la configuration CORS).
 
