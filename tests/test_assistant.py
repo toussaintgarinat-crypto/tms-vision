@@ -205,26 +205,31 @@ def anyio_backend():
     return "asyncio"
 
 
-def test_settings_saved_from_the_interface_enable_and_configure_the_assistant(tmp_path):
+def test_settings_saved_from_the_interface_enable_and_configure_the_assistant(monkeypatch):
     client = TestClient(app)
     view = client.get("/assistant/settings").json()
-    assert view["enabled"] is False and view["provider"] == ""
+    assert view["enabled"] is False and view["provider"] == "" and view["key_set"] is False
     assert {p["id"] for p in view["providers"]} >= {"ollama", "openrouter", "custom"}
 
+    monkeypatch.setenv("TMS_ASSISTANT_LLM_KEY", "sk-secret")
     view = client.put("/assistant/settings", json={
         "enabled": True, "provider": "openrouter", "base_url": "https://openrouter.ai/api/v1",
-        "model": "mistralai/mistral-small", "api_key": "sk-secret",
+        "model": "mistralai/mistral-small",
+        # une clé envoyée par un vieux navigateur ne doit jamais être enregistrée
+        "api_key": "sk-ne-doit-pas-etre-gardee",
     }).json()
-    assert view["enabled"] is True and view["key_set"] is True and "sk-secret" not in str(view)
+    assert view["enabled"] is True and view["key_set"] is True and view["key_env"] == "TMS_ASSISTANT_LLM_KEY"
+    assert "sk-secret" not in str(view)
     config = client.get("/assistant/config").json()
     assert config["enabled"] and config["llm_configured"] and not config["llm_local"]
-    saved = assistant_settings.settings_path()
-    assert saved.stat().st_mode & 0o777 == 0o600 and "sk-secret" in saved.read_text()
+    saved = assistant_settings.settings_path().read_text()
+    assert "sk-" not in saved and "api_key" not in saved and "openrouter" in saved
+    assert assistant_settings.effective()["api_key"] == "sk-secret"  # vient de l'environnement
 
-    # clé absente = inchangée ; chaîne vide = effacée
-    client.put("/assistant/settings", json={"model": "autre"})
-    assert assistant_settings.effective()["api_key"] == "sk-secret"
-    assert client.put("/assistant/settings", json={"api_key": ""}).json()["key_set"] is False
+
+def test_a_key_left_in_an_old_settings_file_is_ignored(monkeypatch):
+    assistant_settings.save_file({"enabled": True, "base_url": "ollama", "api_key": "sk-vieille"})
+    assert assistant_settings.effective()["api_key"] == ""
 
 
 def test_settings_validation(tmp_path):

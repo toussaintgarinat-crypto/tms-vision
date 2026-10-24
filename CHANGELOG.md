@@ -14,11 +14,13 @@ une version précise.
 - Écoute le praticien et pré-remplit la fiche d'activité (dictée libre ou questions guidées, lecture
   à voix haute en option) ; n'enregistre jamais, les champs remplis sont surlignés pour relecture.
 - Réglage depuis le site, par la roue ⚙ du bandeau : fournisseur d'IA (Ollama, LM Studio, llama.cpp,
-  OpenRouter, OpenAI, DeepSeek ou tout serveur compatible OpenAI), adresse, clé, modèle, test de
-  connexion. Écoute par le navigateur ou transcription souveraine (Workplace). Voir
+  OpenRouter, OpenAI, DeepSeek ou tout serveur compatible OpenAI), adresse et modèle (liste
+  déroulante chargée automatiquement). Les clés restent dans le fichier `.env`, jamais enregistrées
+  par le site. Écoute par le navigateur ou transcription souveraine (Workplace). Voir
   `docs/INSTALLATION-CLIENT.md` § 12.
-- Variables facultatives (valeurs par défaut) : `TMS_ASSISTANT`, `TMS_ASSISTANT_LLM_URL`,
-  `TMS_ASSISTANT_LLM_KEY`, `TMS_ASSISTANT_MODEL`, `TMS_TRANSCRIPTION_URL`, `TMS_TRANSCRIPTION_KEY`.
+- Variables facultatives : `TMS_ASSISTANT_LLM_KEY` et `TMS_TRANSCRIPTION_KEY` (clés, dans `.env`) ;
+  `TMS_ASSISTANT`, `TMS_ASSISTANT_LLM_URL`, `TMS_ASSISTANT_MODEL`, `TMS_TRANSCRIPTION_URL` (valeurs
+  par défaut).
 
 ## [1.0.0] - 2026-10-23
 

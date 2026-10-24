@@ -394,19 +394,22 @@ jamais, le praticien relit les champs surlignés puis valide. Il est **éteint p
 cocher « Assistant vocal » puis cliquer sur la roue **⚙** du bandeau :
 - *Fournisseur d'IA* : Ollama, LM Studio, llama.cpp (locaux, rien ne sort de la machine), OpenRouter,
   OpenAI, DeepSeek (en ligne), ou « Autre serveur compatible OpenAI » (vLLM, LocalAI, Mistral, Groq…).
-  Choisir un fournisseur remplit l'adresse ; la clé n'est demandée que pour les services en ligne.
-- *Tester la connexion* liste les modèles du serveur ; *Modèle* vide = le premier du serveur.
+  Choisir un fournisseur remplit l'adresse et **charge la liste des modèles** du serveur dans une
+  liste déroulante (« Automatique » = le premier modèle du serveur ; « Actualiser la liste » relit).
 - *Enregistrer* active l'assistant pour tous les utilisateurs du site.
-- La clé est conservée dans `data/assistant.json` (droits 0600, sauvegardé avec `data/`), en clair
-  comme les autres secrets du `.env` : protégez le dossier `data/`. Elle n'est jamais renvoyée au
-  navigateur. Un modèle local évite d'avoir une clé à garder.
+- **Les clés ne se saisissent pas sur le site** : elles se mettent dans le fichier `.env`
+  (`TMS_ASSISTANT_LLM_KEY=…` pour le service d'IA, `TMS_TRANSCRIPTION_KEY=…` pour la transcription),
+  puis `docker compose up -d`. Le site n'enregistre ni ne renvoie jamais une clé ; le panneau indique
+  seulement si elle est trouvée. `.env` n'est pas envoyé sur GitHub (`.gitignore`), pas plus que
+  `data/` qui contient les autres réglages (`data/assistant.json` : fournisseur, adresse, modèle).
+  Un modèle local n'a pas besoin de clé.
 - Chaque utilisateur choisit ensuite, dans son navigateur : l'écoute (dictée du navigateur ou
   transcription souveraine), le mode (dictée libre ou guidé), la lecture des questions à voix haute.
 
 **Variables d'environnement (facultatif).** Elles servent de valeurs par défaut, ce qui est
 enregistré depuis le site les remplace : `TMS_ASSISTANT_LLM_URL` (adresse, ou `ollama`, `lmstudio`,
-`llamacpp`), `TMS_ASSISTANT_LLM_KEY`, `TMS_ASSISTANT_MODEL`, `TMS_TRANSCRIPTION_URL`,
-`TMS_TRANSCRIPTION_KEY`. `TMS_ASSISTANT=off` verrouille l'assistant éteint (l'interface ne peut plus
+`llamacpp`), `TMS_ASSISTANT_MODEL`, `TMS_TRANSCRIPTION_URL`. Les clés `TMS_ASSISTANT_LLM_KEY` et
+`TMS_TRANSCRIPTION_KEY` ne se lisent que dans `.env`. `TMS_ASSISTANT=off` verrouille l'assistant éteint (l'interface ne peut plus
 l'activer) ; `TMS_ASSISTANT=on` l'autorise d'office.
 
 **Modèle d'IA.**

@@ -323,10 +323,7 @@ class SettingsBody(BaseModel):
     provider: str | None = Field(default=None, max_length=40)
     base_url: str | None = Field(default=None, max_length=300)
     model: str | None = Field(default=None, max_length=200)
-    # None = clé inchangée ; "" = clé effacée.
-    api_key: str | None = Field(default=None, max_length=500)
     transcription_url: str | None = Field(default=None, max_length=300)
-    transcription_key: str | None = Field(default=None, max_length=500)
 
 
 def _validated_settings(body: SettingsBody) -> dict:

@@ -20,8 +20,10 @@ type ServerSettings = {
   base_url: string;
   model: string;
   key_set: boolean;
+  key_env: string;
   transcription_url: string;
   transcription_key_set: boolean;
+  transcription_key_env: string;
   providers: Provider[];
 };
 
@@ -40,13 +42,12 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
   const [provider, setProvider] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [model, setModel] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [clearKey, setClearKey] = useState(false);
   const [transcriptionUrl, setTranscriptionUrl] = useState("");
-  const [transcriptionKey, setTranscriptionKey] = useState("");
   const [models, setModels] = useState<string[]>([]);
+  const [modelsStatus, setModelsStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [modelsMessage, setModelsMessage] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/assistant/settings`)
@@ -61,6 +62,42 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
       .catch(() => setMessage({ ok: false, text: "Impossible de lire les réglages du serveur." }));
   }, []);
 
+  // La liste des modèles se charge toute seule dès que le fournisseur et l'adresse sont connus.
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (server === null || provider === "" || baseUrl.trim() === "") return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setModelsStatus("loading");
+      fetch(`${API_URL}/assistant/settings/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, base_url: baseUrl }),
+      })
+        .then((response) =>
+          response.ok
+            ? (response.json() as Promise<{ ok: boolean; message: string; models: string[] }>)
+            : Promise.reject(),
+        )
+        .then((result) => {
+          if (cancelled) return;
+          setModels(result.models);
+          setModelsStatus(result.ok ? "ok" : "error");
+          setModelsMessage(result.message);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setModels([]);
+          setModelsStatus("error");
+          setModelsMessage("Impossible de joindre le serveur TMS Vision.");
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [server, provider, baseUrl, reload]);
+
   if (server === null) {
     return <p className="text-xs text-gray-600">{message?.text ?? "Chargement des réglages…"}</p>;
   }
@@ -70,69 +107,41 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
   function chooseProvider(id: string) {
     setProvider(id);
     const next = server?.providers.find((p) => p.id === id);
-    if (next && next.base_url) setBaseUrl(next.base_url);
+    setBaseUrl(next?.base_url ?? "");
     setModel("");
     setModels([]);
+    setModelsStatus("idle");
     setMessage(null);
-  }
-
-  /** Valeurs du formulaire ; une clé laissée vide n'est pas envoyée (= gardée). */
-  function formValues() {
-    return {
-      provider,
-      base_url: baseUrl,
-      model,
-      api_key: clearKey ? "" : apiKey !== "" ? apiKey : undefined,
-      transcription_url: transcriptionUrl,
-      transcription_key: transcriptionKey !== "" ? transcriptionKey : undefined,
-    };
-  }
-
-  async function test() {
-    setBusy(true);
-    setMessage(null);
-    try {
-      const response = await fetch(`${API_URL}/assistant/settings/test`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formValues()),
-      });
-      if (!response.ok) return setMessage({ ok: false, text: await detail(response) });
-      const result = (await response.json()) as { ok: boolean; message: string; models: string[] };
-      setModels(result.models);
-      if (result.ok && model === "" && result.models.length > 0) setModel(result.models[0]);
-      setMessage({ ok: result.ok, text: result.message });
-    } catch {
-      setMessage({ ok: false, text: "Impossible de joindre le serveur TMS Vision." });
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function save() {
-    setBusy(true);
+    setSaving(true);
     setMessage(null);
     try {
       const response = await fetch(`${API_URL}/assistant/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formValues(), enabled: true }),
+        body: JSON.stringify({
+          provider,
+          base_url: baseUrl,
+          model,
+          transcription_url: transcriptionUrl,
+          enabled: true,
+        }),
       });
       if (!response.ok) return setMessage({ ok: false, text: await detail(response) });
       setServer((await response.json()) as ServerSettings);
-      setApiKey("");
-      setClearKey(false);
-      setTranscriptionKey("");
       setMessage({ ok: true, text: "Réglages enregistrés." });
       onSaved();
     } catch {
       setMessage({ ok: false, text: "Impossible d'enregistrer (problème réseau ou serveur)." });
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
 
   const input = "rounded border p-2";
+  const missingKey = current?.key_required === true && !server.key_set;
 
   return (
     <div className="flex flex-col gap-3 rounded border bg-gray-50 p-3 text-gray-900 dark:bg-transparent dark:text-inherit">
@@ -165,53 +174,64 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           placeholder="http://localhost:11434/v1"
           className={input}
         />
-        {server.providers.some((p) => p.id === provider && p.local) && (
+        {current?.local && (
           <span className="text-xs text-gray-600">
             Sous Docker, « localhost » est converti automatiquement vers votre machine.
           </span>
         )}
       </label>
 
-      {(current?.key_required || provider === "custom" || server.key_set) && (
-        <label className="flex flex-col gap-1">
-          Clé API
-          <input
-            type="password"
-            autoComplete="off"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            disabled={clearKey}
-            placeholder={server.key_set ? "Clé enregistrée (laisser vide pour la garder)" : "sk-…"}
-            className={input}
-          />
-          {server.key_set && (
-            <span className="flex items-center gap-1 text-xs">
-              <input
-                type="checkbox"
-                checked={clearKey}
-                onChange={(e) => setClearKey(e.target.checked)}
-              />
-              Effacer la clé enregistrée
+      {current && (current.key_required || provider === "custom") && (
+        <div className="text-xs" role="status">
+          {server.key_set ? (
+            <span className="text-green-700">✓ Clé API trouvée dans le fichier .env ({server.key_env}).</span>
+          ) : (
+            <span className={missingKey ? "text-amber-700" : "text-gray-600"}>
+              {missingKey ? "Clé API manquante. " : "Clé API (si le serveur en demande une). "}
+              Ajoutez dans le fichier <code>.env</code> la ligne <code>{server.key_env}=votre_clé</code>,
+              puis lancez <code>docker compose up -d</code>. La clé reste sur votre serveur : elle n&apos;est
+              jamais enregistrée par le site ni envoyée sur GitHub.
             </span>
           )}
-        </label>
+        </div>
       )}
 
-      <label className="flex flex-col gap-1">
-        Modèle
-        <input
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <label htmlFor="assistant-model">Modèle</label>
+          {modelsStatus === "loading" && <span className="text-xs text-gray-600">Chargement…</span>}
+          {provider !== "" && modelsStatus !== "loading" && (
+            <button
+              type="button"
+              onClick={() => setReload((n) => n + 1)}
+              className="text-xs text-blue-600 underline"
+            >
+              Actualiser la liste
+            </button>
+          )}
+        </div>
+        <select
+          id="assistant-model"
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          list="assistant-models"
-          placeholder="Vide : le premier modèle du serveur"
+          disabled={provider === ""}
           className={input}
-        />
-        <datalist id="assistant-models">
+        >
+          <option value="">Automatique (premier modèle du serveur)</option>
+          {model !== "" && !models.includes(model) && <option value={model}>{model}</option>}
           {models.map((name) => (
-            <option key={name} value={name} />
+            <option key={name} value={name}>
+              {name}
+            </option>
           ))}
-        </datalist>
-      </label>
+        </select>
+        {provider === "" && <span className="text-xs text-gray-600">Choisissez d&apos;abord un fournisseur.</span>}
+        {modelsStatus !== "idle" && modelsStatus !== "loading" && (
+          <span className={`text-xs ${modelsStatus === "ok" ? "text-green-700" : "text-red-600"}`} role="status">
+            {modelsMessage}
+          </span>
+        )}
+      </div>
 
       <details className="rounded border p-2">
         <summary className="cursor-pointer">Transcription souveraine (facultatif)</summary>
@@ -225,33 +245,19 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
               className={input}
             />
           </label>
-          <label className="flex flex-col gap-1">
-            Clé du service
-            <input
-              type="password"
-              autoComplete="off"
-              value={transcriptionKey}
-              onChange={(e) => setTranscriptionKey(e.target.value)}
-              placeholder={server.transcription_key_set ? "Clé enregistrée (laisser vide pour la garder)" : ""}
-              className={input}
-            />
-          </label>
+          <p className="text-xs text-gray-600">
+            {server.transcription_key_set
+              ? `✓ Clé trouvée dans le fichier .env (${server.transcription_key_env}).`
+              : `Si le service demande une clé : ajoutez ${server.transcription_key_env}=… dans le fichier .env.`}
+          </p>
         </div>
       </details>
 
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => void test()}
-          disabled={busy}
-          className="rounded border px-3 py-1 disabled:opacity-50"
-        >
-          Tester la connexion
-        </button>
-        <button
-          type="button"
           onClick={() => void save()}
-          disabled={busy || provider === ""}
+          disabled={saving || provider === ""}
           className="rounded border border-black px-3 py-1 disabled:opacity-50"
         >
           Enregistrer
@@ -262,9 +268,6 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           </span>
         )}
       </div>
-      <p className="text-xs text-gray-500">
-        La clé est conservée sur le serveur (dossier data/) et n&apos;est jamais renvoyée au navigateur.
-      </p>
     </div>
   );
 }

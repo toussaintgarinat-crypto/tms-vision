@@ -1,9 +1,11 @@
 """Réglages de l'assistant vocal : fournisseur d'IA, adresse, clé, modèle, transcription.
 
-Ils se règlent depuis l'interface (roue ⚙ du bandeau de l'assistant) et sont rangés dans
-data/assistant.json (droits 0600, sauvegardé avec data/). La clé n'est JAMAIS renvoyée au navigateur.
-Les variables d'environnement TMS_ASSISTANT* restent valables comme réglages par défaut ; ce qui est
-enregistré depuis l'interface les remplace. TMS_ASSISTANT=off les verrouille : l'assistant reste éteint.
+Fournisseur, adresse, modèle et transcription se règlent depuis l'interface (roue ⚙ du bandeau de
+l'assistant) et sont rangés dans data/assistant.json (sauvegardé avec data/, ignoré par Git).
+Les CLÉS (TMS_ASSISTANT_LLM_KEY, TMS_TRANSCRIPTION_KEY) ne sont lues QUE dans l'environnement, donc
+dans le fichier .env : le site ne les enregistre jamais et ne les renvoie jamais au navigateur.
+Les autres variables TMS_ASSISTANT* restent valables comme réglages par défaut ; ce qui est enregistré
+depuis l'interface les remplace. TMS_ASSISTANT=off les verrouille : l'assistant reste éteint.
 """
 import json
 import os
@@ -36,8 +38,9 @@ PROVIDERS = [
 ]
 PROVIDER_IDS = {provider["id"] for provider in PROVIDERS}
 _LOCAL_HOSTS = ("localhost", "127.0.0.1", "host.docker.internal")
-FILE_FIELDS = ("enabled", "provider", "base_url", "model", "api_key",
-               "transcription_url", "transcription_key")
+FILE_FIELDS = ("enabled", "provider", "base_url", "model", "transcription_url")
+KEY_ENV = "TMS_ASSISTANT_LLM_KEY"
+TRANSCRIPTION_KEY_ENV = "TMS_TRANSCRIPTION_KEY"
 
 
 def settings_path() -> Path:
@@ -94,19 +97,20 @@ def _env_enabled() -> bool | None:
 
 
 def effective(overrides: dict | None = None) -> dict:
-    """Réglages réellement utilisés : environnement < fichier < `overrides` (essai non enregistré)."""
+    """Réglages réellement utilisés : environnement < fichier < `overrides` (essai non enregistré).
+    Les clés viennent toujours de l'environnement."""
     env = os.environ.get
     merged = {
         "provider": "", "base_url": env("TMS_ASSISTANT_LLM_URL", "").strip(),
         "model": env("TMS_ASSISTANT_MODEL", "").strip(),
-        "api_key": env("TMS_ASSISTANT_LLM_KEY", "").strip(),
+        "api_key": env(KEY_ENV, "").strip(),
         "transcription_url": env("TMS_TRANSCRIPTION_URL", "").strip(),
-        "transcription_key": env("TMS_TRANSCRIPTION_KEY", "").strip(),
+        "transcription_key": env(TRANSCRIPTION_KEY_ENV, "").strip(),
     }
     file_data = load_file()
     for source in (file_data, overrides or {}):
         for key, value in source.items():
-            if key != "enabled" and isinstance(value, str) and (value.strip() or key == "api_key"):
+            if key in FILE_FIELDS and key != "enabled" and isinstance(value, str) and value.strip():
                 merged[key] = value.strip()
     forced = _env_enabled()
     merged["enabled"] = forced if forced is not None else bool(file_data.get("enabled", False))
@@ -122,15 +126,16 @@ def public_view() -> dict:
     return {
         "enabled": current["enabled"], "enabled_locked": current["enabled_locked"],
         "provider": current["provider"], "base_url": current["base_url"], "model": current["model"],
-        "key_set": bool(current["api_key"]),
+        "key_set": bool(current["api_key"]), "key_env": KEY_ENV,
         "transcription_url": current["transcription_url"],
         "transcription_key_set": bool(current["transcription_key"]),
+        "transcription_key_env": TRANSCRIPTION_KEY_ENV,
         "local": current["local"], "providers": PROVIDERS,
     }
 
 
 def update(changes: dict) -> None:
-    """Enregistre `changes`. Pour une clé : absente = inchangée, chaîne vide = effacée."""
+    """Enregistre `changes` (jamais de clé : elles restent dans le fichier .env)."""
     data = load_file()
     for key in FILE_FIELDS:
         if key not in changes or changes[key] is None:
