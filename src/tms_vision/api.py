@@ -817,8 +817,15 @@ async def get_bilan_program(bilan_id: str) -> dict:
     record = _get_bilan_or_404(bilan_id)
     report = _build_bilan_report(record)
     position = bilan.preferred_position(record["tasks"])
+    program = build_bilan_program(report, position, record["tasks"])
+    warnings = list(report["warnings"])
+    if any(item["basis"] == "declared" for item in program):
+        warnings.append(
+            "Une partie du programme vient des tâches saisies : sans vidéo, aucune posture n'est "
+            "mesurée. Il se précise avec une analyse vidéo du poste."
+        )
     return {
-        "program": _annotate_program_videos(build_bilan_program(report, position)),
+        "program": _annotate_program_videos(program),
         "position": position,
         "position_note": (
             "Poste de travail assis (d'après les tâches saisies) : exercices proposés assis "
@@ -827,7 +834,7 @@ async def get_bilan_program(bilan_id: str) -> dict:
         ),
         # Réservé à la correction du geste (Partie D de la spec), vide pour l'instant.
         "gesture_corrections": [],
-        "warnings": report["warnings"],
+        "warnings": warnings,
     }
 
 

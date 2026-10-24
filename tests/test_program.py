@@ -146,3 +146,51 @@ def test_bilan_program_uses_seated_exercises_for_a_seated_workstation_and_keeps_
     ]
     assert [item["capsule"]["id"] for item in standard] != [item["capsule"]["id"] for item in seated]
     assert [item["reason"] for item in seated] == [item["reason"] for item in standard]
+
+
+def _task(name, zones, hours, analysis_id=None):
+    return {"name": name, "zones": zones, "activity_hours": hours, "analysis_id": analysis_id}
+
+
+def test_bilan_program_without_video_is_built_from_the_declared_tasks():
+    tasks = [
+        _task("Saisie", ["neck", "hand"], 4.5),
+        _task("Réunions", ["neck", "trunk"], 1.5),
+        _task("Classement", ["trunk"], 1.0),
+    ]
+
+    program = build_bilan_program(_report(), None, tasks)
+
+    # Cou : 6 h, tronc : 2 h 30, main : 4 h 30 → cou, main, tronc.
+    assert [item["zone"] for item in program] == ["neck", "hand", "trunk"]
+    assert [item["rank"] for item in program] == [1, 2, 3]
+    assert {item["basis"] for item in program} == {"declared"}
+    assert program[0]["load"] == 6.0
+    assert program[0]["reason"] == (
+        "Cou : environ 6 h de tâches qui la sollicitent, surtout « Saisie » "
+        "(d'après les tâches saisies, sans mesure vidéo)."
+    )
+
+
+def test_bilan_program_puts_measured_zones_first_and_never_repeats_a_zone():
+    tasks = [_task("Saisie", ["neck", "hand"], 4.5), _task("Port", ["trunk", "foot"], 1.0)]
+
+    program = build_bilan_program(_report(trunk=2.0), None, tasks)
+
+    assert [item["zone"] for item in program] == ["trunk", "neck", "hand"]
+    assert [item["basis"] for item in program] == ["measured", "declared", "declared"]
+
+
+def test_bilan_program_ignores_tasks_completing_a_video_and_stays_empty_without_tasks():
+    assert build_bilan_program(_report(), None, [_task("Vissage", ["hand"], 2.0, "a-1")]) == []
+    assert build_bilan_program(_report(), None, []) == []
+
+
+def test_declared_program_follows_the_seated_position():
+    tasks = [_task("Saisie", ["neck"], 4.5)]
+
+    seated = build_bilan_program(_report(), "seated", tasks)
+    standard = build_bilan_program(_report(), None, tasks)
+
+    assert seated[0]["capsule"]["id"] == "seated-neck-lateral-stretch"
+    assert standard[0]["capsule"]["id"] == "neck-lateral-stretch"

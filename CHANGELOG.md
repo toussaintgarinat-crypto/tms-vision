@@ -18,6 +18,10 @@ une version précise.
 - Bilans de poste : « Dupliquer ce bilan » pour reprendre un bilan avec une autre personne (fiches
   d'activité et durée de la journée copiées, vidéos non copiées) et « Enregistrer comme modèle de
   métier » pour garder un bilan réussi dans la bibliothèque (« Mes modèles »).
+- Programme d'étirements sans vidéo : un bilan sans analyse vidéo (par exemple créé depuis un métier)
+  propose désormais jusqu'à 3 exercices d'après les zones des tâches saisies, classées par durée de
+  tâches qui les sollicitent, avec le badge « Sans vidéo ». Les zones mesurées sur vidéo passent
+  toujours en premier. Aucun score de risque n'est inventé : sans mesure, seules les durées comptent.
 - Correction : la suppression d'une fiche d'activité depuis le site était refusée par l'API
   (méthode DELETE absente de la configuration CORS).
 

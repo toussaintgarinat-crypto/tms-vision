@@ -6,6 +6,7 @@ pur, sans accès à la base.
 Le classement ne dépend que de la posture : le poids saisi n'est qu'affiché
 dans le motif, car il ne modifie pas les niveaux d'action par segment."""
 from tms_vision.capsules import (
+    MAX_PROGRAM_SIZE,
     capsule_to_dict,
     elevated_seconds_by_zone,
     rank_zones,
@@ -70,6 +71,7 @@ def _build_program(
             "capsule": capsule_to_dict(capsule),
             "reason": reason_for(zone, load),
             "load": load,
+            "basis": "measured",
         })
     return program
 
@@ -89,10 +91,35 @@ def build_analysis_program(frames: list[dict], load: dict | None) -> list[dict]:
     return _build_program(elevated_seconds_by_zone(frames), reason_for)
 
 
-def build_bilan_program(report: dict, position: str | None = None) -> list[dict]:
-    """Programme d'un bilan de poste : charge = heures projetées en niveau
-    élevé sur la journée. `report` : sortie de bilan.project_bilan().
-    `position` : voir bilan.preferred_position."""
+def declared_hours_by_zone(tasks: list[dict]) -> dict[str, float]:
+    """Heures de tâches saisies sans vidéo qui sollicitent chaque zone, avec le nom de la tâche la
+    plus longue. Sans mesure, c'est la seule information : on n'en tire aucun score de risque."""
+    hours: dict[str, float] = {}
+    for task in tasks:
+        if task.get("analysis_id") is not None:
+            continue
+        for zone in task["zones"]:
+            hours[zone] = hours.get(zone, 0.0) + task["activity_hours"]
+    return hours
+
+
+def _main_task_name(tasks: list[dict], zone: str) -> str:
+    candidates = [
+        task for task in tasks if task.get("analysis_id") is None and zone in task["zones"]
+    ]
+    return max(candidates, key=lambda task: task["activity_hours"])["name"]
+
+
+def build_bilan_program(
+    report: dict, position: str | None = None, tasks: list[dict] | None = None
+) -> list[dict]:
+    """Programme d'un bilan de poste. Les zones mesurées sur vidéo passent en premier : charge =
+    heures projetées en niveau élevé sur la journée. `report` : sortie de bilan.project_bilan().
+    `position` : voir bilan.preferred_position.
+
+    Sans vidéo, rien n'est mesuré. Les places restantes (jusqu'à MAX_PROGRAM_SIZE) vont alors aux
+    zones des tâches saisies (`tasks` : fiches du bilan), classées par durée de tâches qui les
+    sollicitent. Ces recommandations portent `basis: "declared"` et un motif qui le dit."""
     workday = format_hours(report["workday_hours"])
     load_by_zone = {
         zone: values["projected_elevated_hours"] for zone, values in report["zones"].items()
@@ -104,4 +131,27 @@ def build_bilan_program(report: dict, position: str | None = None) -> list[dict]
             f"sur {workday} estimées."
         )
 
-    return _build_program(load_by_zone, reason_for, position)
+    program = _build_program(load_by_zone, reason_for, position)
+    if tasks and len(program) < MAX_PROGRAM_SIZE:
+        covered = {item["zone"] for item in program}
+        declared = {
+            zone: hours for zone, hours in declared_hours_by_zone(tasks).items()
+            if zone not in covered
+        }
+        for zone, hours in rank_zones(declared, limit=MAX_PROGRAM_SIZE - len(program)):
+            capsule = recommend_capsule(zone, position)
+            if capsule is None:
+                continue
+            program.append({
+                "rank": len(program) + 1,
+                "zone": zone,
+                "capsule": capsule_to_dict(capsule),
+                "reason": (
+                    f"{ZONE_LABELS[zone]} : environ {format_hours(hours)} de tâches qui la "
+                    f"sollicitent, surtout « {_main_task_name(tasks, zone)} » (d'après les "
+                    "tâches saisies, sans mesure vidéo)."
+                ),
+                "load": hours,
+                "basis": "declared",
+            })
+    return program

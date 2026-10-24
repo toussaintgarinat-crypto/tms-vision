@@ -24,6 +24,8 @@ export type ProgramItem = {
   capsule: ProgramCapsule;
   reason: string;
   load: number;
+  // « declared » : recommandation tirée des tâches saisies, sans mesure vidéo.
+  basis?: "measured" | "declared";
 };
 
 // Réservé à la correction du geste : l'API renvoie toujours une liste vide
@@ -72,7 +74,14 @@ export function ProgramList({
                       </p>
                     )}
                     <p className="text-sm text-gray-700">{item.capsule.description}</p>
-                    <p className="text-xs text-gray-600">{item.reason}</p>
+                    <p className="text-xs text-gray-600">
+                      {item.basis === "declared" && (
+                        <span className="mr-1 rounded bg-sky-100 px-1.5 py-0.5 font-semibold text-sky-900">
+                          Sans vidéo
+                        </span>
+                      )}
+                      {item.reason}
+                    </p>
                     <button
                       type="button"
                       onClick={() => setOpenId(openId === item.capsule.id ? null : item.capsule.id)}

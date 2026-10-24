@@ -1637,3 +1637,38 @@ def test_cors_preflight_allows_delete_from_the_web_origin(tmp_path, monkeypatch)
 
     assert response.status_code == 200
     assert "DELETE" in response.headers["access-control-allow-methods"]
+
+
+def test_bilan_program_without_video_is_proposed_from_the_tasks(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/metiers/bureau-gestionnaire/bilan", json={}).json()["id"]
+
+    response = client.get(f"/bilans/{bilan_id}/program").json()
+
+    assert response["position"] == "seated"
+    assert [item["zone"] for item in response["program"]] == ["neck", "lower_arm", "hand"]
+    assert all(item["basis"] == "declared" for item in response["program"])
+    assert response["program"][0]["capsule"]["id"] == "seated-neck-lateral-stretch"
+    assert any("tâches saisies" in warning for warning in response["warnings"])
+
+
+def test_every_library_metier_gets_a_program_without_any_video(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    for model in client.get("/metiers").json():
+        bilan_id = client.post(f"/metiers/{model['id']}/bilan", json={}).json()["id"]
+        program = client.get(f"/bilans/{bilan_id}/program").json()["program"]
+        assert 1 <= len(program) <= 3, model["id"]
+
+
+def test_bilan_program_stays_empty_without_video_and_without_tasks(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+
+    response = client.get(f"/bilans/{bilan_id}/program").json()
+
+    assert response["program"] == []
+    assert not any("tâches saisies" in warning for warning in response["warnings"])
