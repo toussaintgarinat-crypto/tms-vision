@@ -1853,3 +1853,133 @@ def test_archiving_and_moving_a_bilan_that_has_tasks_and_a_video_works(tmp_path,
     final = client.get(f"/bilans/{bilan_id}").json()
     assert len(final["tasks"]) == 1 and len(final["items"]) == 1
     assert final["folder_id"] is None and final["archived_at"] is None
+
+
+def _folder(client, name, parent_id=None):
+    response = client.post("/bilan-folders", json={"name": name, "parent_id": parent_id})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_folders_nest_company_service_and_post(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    acme = _folder(client, "Acme")
+    production = _folder(client, "Production", acme["id"])
+    soudure = _folder(client, "Soudure", production["id"])
+    bilan_id = client.post("/bilans", json={"label": "Poste soudeur"}).json()["id"]
+
+    assert acme["parent_id"] is None and soudure["parent_id"] == production["id"]
+    assert client.post(f"/bilans/{bilan_id}/folder", json={"folder_id": soudure["id"]}).json()[
+        "folder_id"] == soudure["id"]
+    assert {f["id"]: f["parent_id"] for f in client.get("/bilan-folders").json()} == {
+        acme["id"]: None, production["id"]: acme["id"], soudure["id"]: production["id"]}
+
+
+def test_folder_names_are_unique_per_parent_only(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    acme = _folder(client, "Acme")
+    roche = _folder(client, "Roche")
+    _folder(client, "Production", acme["id"])
+
+    # Même nom sous un autre parent : permis. Même nom dans le même parent : refusé.
+    _folder(client, "production", roche["id"])
+    duplicate = client.post("/bilan-folders", json={"name": "PRODUCTION", "parent_id": acme["id"]})
+    assert duplicate.status_code == 409
+    assert client.post("/bilan-folders", json={"name": "acme"}).status_code == 409
+    assert client.post("/bilan-folders", json={"name": "X", "parent_id": "nope"}).status_code == 404
+
+
+def test_moving_a_folder_carries_its_content_and_refuses_cycles(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    acme = _folder(client, "Acme")
+    production = _folder(client, "Production", acme["id"])
+    soudure = _folder(client, "Soudure", production["id"])
+    other = _folder(client, "Autre société")
+    bilan_id = client.post("/bilans", json={"label": "Poste"}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/folder", json={"folder_id": soudure["id"]})
+
+    moved = client.post(f"/bilan-folders/{production['id']}/move", json={"parent_id": other["id"]})
+
+    assert moved.status_code == 200 and moved.json()["parent_id"] == other["id"]
+    folders = {f["id"]: f["parent_id"] for f in client.get("/bilan-folders").json()}
+    assert folders[soudure["id"]] == production["id"]
+    assert client.get(f"/bilans/{bilan_id}").json()["folder_id"] == soudure["id"]
+    # Cycles : dans lui-même, dans un de ses descendants.
+    for target in (production["id"], soudure["id"]):
+        refused = client.post(f"/bilan-folders/{production['id']}/move", json={"parent_id": target})
+        assert refused.status_code == 422
+    assert client.post(f"/bilan-folders/{production['id']}/move",
+                       json={"parent_id": "nope"}).status_code == 404
+    assert client.post("/bilan-folders/nope/move", json={"parent_id": None}).status_code == 404
+    # Retour à la racine.
+    root = client.post(f"/bilan-folders/{production['id']}/move", json={"parent_id": None})
+    assert root.json()["parent_id"] is None
+
+
+def test_moving_a_folder_onto_a_sibling_name_is_refused(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    acme = _folder(client, "Acme")
+    roche = _folder(client, "Roche")
+    _folder(client, "Production", acme["id"])
+    other_production = _folder(client, "Production", roche["id"])
+
+    refused = client.post(f"/bilan-folders/{other_production['id']}/move",
+                          json={"parent_id": acme["id"]})
+
+    assert refused.status_code == 409
+
+
+def test_deleting_a_folder_moves_its_subfolders_and_bilans_up_one_level(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    acme = _folder(client, "Acme")
+    production = _folder(client, "Production", acme["id"])
+    soudure = _folder(client, "Soudure", production["id"])
+    direct = client.post("/bilans", json={"label": "Chef d'atelier"}).json()["id"]
+    client.post(f"/bilans/{direct}/folder", json={"folder_id": production["id"]})
+
+    assert client.delete(f"/bilan-folders/{production['id']}").status_code == 200
+
+    folders = {f["id"]: f["parent_id"] for f in client.get("/bilan-folders").json()}
+    assert folders == {acme["id"]: None, soudure["id"]: acme["id"]}
+    assert client.get(f"/bilans/{direct}").json()["folder_id"] == acme["id"]
+    # Un dossier racine supprimé : son contenu va à la racine.
+    assert client.delete(f"/bilan-folders/{acme['id']}").status_code == 200
+    assert client.get(f"/bilans/{direct}").json()["folder_id"] is None
+    assert [f["parent_id"] for f in client.get("/bilan-folders").json()] == [None]
+
+
+def test_deleting_a_folder_is_refused_when_a_subfolder_would_clash_by_name(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    acme = _folder(client, "Acme")
+    production = _folder(client, "Production", acme["id"])
+    _folder(client, "Soudure", production["id"])
+    _folder(client, "Soudure", acme["id"])
+
+    refused = client.delete(f"/bilan-folders/{production['id']}")
+
+    assert refused.status_code == 409
+    assert len(client.get("/bilan-folders").json()) == 4
+
+
+def test_an_existing_folder_table_without_parent_is_upgraded_in_place(tmp_path, monkeypatch):
+    import duckdb
+
+    path = tmp_path / "old.duckdb"
+    old = duckdb.connect(str(path))
+    old.execute("CREATE TABLE bilan_folders (id VARCHAR PRIMARY KEY, created_at TIMESTAMP NOT NULL, "
+                "name VARCHAR NOT NULL)")
+    old.execute("INSERT INTO bilan_folders VALUES ('f-1', '2026-01-01 10:00:00', 'Acme')")
+    old.close()
+    monkeypatch.setattr(storage, "DB_PATH", path)
+    client = TestClient(app)
+
+    [folder] = client.get("/bilan-folders").json()
+
+    assert folder["name"] == "Acme" and folder["parent_id"] is None
+    assert _folder(client, "Production", "f-1")["parent_id"] == "f-1"

@@ -641,8 +641,16 @@ class FolderBody(BaseModel):
     name: str = Field(min_length=1, max_length=80)
 
 
+class FolderCreate(FolderBody):
+    parent_id: str | None = None
+
+
 class FolderMove(BaseModel):
     folder_id: str | None = None
+
+
+class FolderReparent(BaseModel):
+    parent_id: str | None = None
 
 
 def _clean_folder_name(body: FolderBody) -> str:
@@ -659,15 +667,21 @@ async def list_bilan_folders() -> list[dict]:
 
 
 @app.post("/bilan-folders")
-async def create_bilan_folder(body: FolderBody) -> dict:
+async def create_bilan_folder(body: FolderCreate) -> dict:
+    """Crée un dossier, à la racine ou dans `parent_id` (entreprise > service > poste)."""
     name = _clean_folder_name(body)
     folder_id = generate_run_id()
     try:
         storage.create_bilan_folder(
-            folder_id=folder_id, created_at=datetime.now(timezone.utc), name=name
+            folder_id=folder_id, created_at=datetime.now(timezone.utc), name=name,
+            parent_id=body.parent_id,
         )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Dossier parent introuvable.") from error
     except ValueError as error:
-        raise HTTPException(status_code=409, detail="Un dossier porte déjà ce nom.") from error
+        raise HTTPException(
+            status_code=409, detail="Un dossier porte déjà ce nom à cet endroit."
+        ) from error
     return storage.get_bilan_folder(folder_id)
 
 
@@ -679,14 +693,42 @@ async def rename_bilan_folder(folder_id: str, body: FolderBody) -> dict:
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Dossier introuvable.") from error
     except ValueError as error:
-        raise HTTPException(status_code=409, detail="Un dossier porte déjà ce nom.") from error
+        raise HTTPException(
+            status_code=409, detail="Un dossier porte déjà ce nom à cet endroit."
+        ) from error
+    return storage.get_bilan_folder(folder_id)
+
+
+@app.post("/bilan-folders/{folder_id}/move")
+async def move_bilan_folder(folder_id: str, body: FolderReparent) -> dict:
+    """Place le dossier (avec tout ce qu'il contient) dans un autre dossier ou à la racine."""
+    try:
+        storage.move_bilan_folder(folder_id=folder_id, parent_id=body.parent_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Dossier introuvable.") from error
+    except storage.FolderCycleError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="Un dossier ne peut pas être placé dans lui-même ni dans l'un de ses sous-dossiers.",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409, detail="Un dossier porte déjà ce nom à cet endroit."
+        ) from error
     return storage.get_bilan_folder(folder_id)
 
 
 @app.delete("/bilan-folders/{folder_id}")
 async def delete_bilan_folder(folder_id: str) -> dict:
-    """Supprime le dossier seulement : ses bilans repassent « sans dossier »."""
-    if not storage.delete_bilan_folder(folder_id):
+    """Supprime le dossier seulement : ses sous-dossiers et ses bilans montent d'un niveau."""
+    try:
+        deleted = storage.delete_bilan_folder(folder_id)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Un sous-dossier porte le même nom qu'un dossier du niveau au-dessus : renommez-le d'abord.",
+        ) from error
+    if not deleted:
         raise HTTPException(status_code=404, detail="Dossier introuvable.")
     return {"deleted": folder_id}
 

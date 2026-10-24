@@ -214,6 +214,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP")
     # Rangement des bilans en dossiers (par entreprise, par exemple) : NULL = sans dossier.
     conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS folder_id VARCHAR")
+    # Dossiers dans des dossiers (entreprise > service > poste) : NULL = à la racine.
+    conn.execute("ALTER TABLE bilan_folders ADD COLUMN IF NOT EXISTS parent_id VARCHAR")
     for column, column_type in _BILAN_TASKS_LATER_COLUMNS:
         conn.execute(f"ALTER TABLE bilan_tasks ADD COLUMN IF NOT EXISTS {column} {column_type}")
     # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
@@ -790,15 +792,27 @@ def set_bilan_archived(*, bilan_id: str, archived_at: datetime | None) -> None:
         conn.close()
 
 
+_FOLDER_SELECT = "id, created_at, name, parent_id"
+
+
 def _folder_record(row) -> dict:
-    folder_id, created_at, name = row
-    return {"id": folder_id, "created_at": _attach_utc(created_at).isoformat(), "name": name}
+    folder_id, created_at, name, parent_id = row
+    return {
+        "id": folder_id, "created_at": _attach_utc(created_at).isoformat(), "name": name,
+        "parent_id": parent_id,
+    }
 
 
-def _check_folder_name_free(conn, name: str, *, except_id: str | None = None) -> None:
-    """ValueError si un autre dossier porte déjà ce nom (sans tenir compte des majuscules)."""
+def _check_folder_name_free(
+    conn, name: str, parent_id: str | None, *, except_id: str | None = None
+) -> None:
+    """ValueError si un autre dossier du même parent porte déjà ce nom (sans tenir compte des
+    majuscules) : deux entreprises ne peuvent pas s'appeler pareil, mais deux entreprises peuvent
+    chacune avoir un service « Production »."""
     taken = conn.execute(
-        "SELECT id FROM bilan_folders WHERE lower(name) = lower(?)", [name]
+        "SELECT id FROM bilan_folders "
+        "WHERE lower(name) = lower(?) AND parent_id IS NOT DISTINCT FROM ?",
+        [name, parent_id],
     ).fetchall()
     if any(row[0] != except_id for row in taken):
         raise ValueError(f"folder name {name!r} already used")
@@ -808,7 +822,7 @@ def list_bilan_folders() -> list[dict]:
     conn = _connect()
     try:
         rows = conn.execute(
-            "SELECT id, created_at, name FROM bilan_folders ORDER BY lower(name), id"
+            f"SELECT {_FOLDER_SELECT} FROM bilan_folders ORDER BY lower(name), id"
         ).fetchall()
     finally:
         conn.close()
@@ -819,46 +833,108 @@ def get_bilan_folder(folder_id: str) -> dict | None:
     conn = _connect()
     try:
         row = conn.execute(
-            "SELECT id, created_at, name FROM bilan_folders WHERE id = ?", [folder_id]
+            f"SELECT {_FOLDER_SELECT} FROM bilan_folders WHERE id = ?", [folder_id]
         ).fetchone()
     finally:
         conn.close()
     return _folder_record(row) if row is not None else None
 
 
-def create_bilan_folder(*, folder_id: str, created_at: datetime, name: str) -> None:
-    """ValueError si le nom est déjà pris."""
+def create_bilan_folder(
+    *, folder_id: str, created_at: datetime, name: str, parent_id: str | None = None
+) -> None:
+    """KeyError si le dossier parent est inconnu, ValueError si le nom est déjà pris dans ce
+    parent."""
     conn = _connect()
     try:
-        _check_folder_name_free(conn, name)
+        if parent_id is not None and conn.execute(
+            "SELECT 1 FROM bilan_folders WHERE id = ?", [parent_id]
+        ).fetchone() is None:
+            raise KeyError(f"folder {parent_id}")
+        _check_folder_name_free(conn, name, parent_id)
         conn.execute(
-            "INSERT INTO bilan_folders (id, created_at, name) VALUES (?, ?, ?)",
-            [folder_id, _to_naive_utc(created_at), name],
+            "INSERT INTO bilan_folders (id, created_at, name, parent_id) VALUES (?, ?, ?, ?)",
+            [folder_id, _to_naive_utc(created_at), name, parent_id],
         )
     finally:
         conn.close()
 
 
 def rename_bilan_folder(*, folder_id: str, name: str) -> None:
-    """KeyError si le dossier est inconnu, ValueError si le nom est déjà pris."""
+    """KeyError si le dossier est inconnu, ValueError si le nom est déjà pris dans son parent."""
     conn = _connect()
     try:
-        if conn.execute("SELECT 1 FROM bilan_folders WHERE id = ?", [folder_id]).fetchone() is None:
+        row = conn.execute(
+            "SELECT parent_id FROM bilan_folders WHERE id = ?", [folder_id]
+        ).fetchone()
+        if row is None:
             raise KeyError(f"folder {folder_id}")
-        _check_folder_name_free(conn, name, except_id=folder_id)
+        _check_folder_name_free(conn, name, row[0], except_id=folder_id)
         conn.execute("UPDATE bilan_folders SET name = ? WHERE id = ?", [name, folder_id])
     finally:
         conn.close()
 
 
-def delete_bilan_folder(folder_id: str) -> bool:
-    """Supprime le dossier ; ses bilans ne sont pas supprimés, ils repassent « sans dossier ».
-    False si le dossier est inconnu."""
+class FolderCycleError(ValueError):
+    """Un dossier ne peut pas être placé dans lui-même ni dans l'un de ses sous-dossiers."""
+
+
+def move_bilan_folder(*, folder_id: str, parent_id: str | None) -> None:
+    """Place un dossier dans un autre (`None` : à la racine). KeyError si l'un des deux est
+    inconnu, FolderCycleError si la destination est le dossier ou l'un de ses descendants,
+    ValueError si le nom est déjà pris dans la destination."""
     conn = _connect()
     try:
-        if conn.execute("SELECT 1 FROM bilan_folders WHERE id = ?", [folder_id]).fetchone() is None:
+        row = conn.execute(
+            "SELECT name FROM bilan_folders WHERE id = ?", [folder_id]
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"folder {folder_id}")
+        if parent_id is not None:
+            # On remonte de la destination vers la racine : si on croise le dossier déplacé, c'est
+            # un descendant (ou lui-même).
+            current, seen = parent_id, set()
+            while current is not None:
+                if current == folder_id:
+                    raise FolderCycleError(f"folder {folder_id} cannot go into itself")
+                if current in seen:
+                    break
+                seen.add(current)
+                parent = conn.execute(
+                    "SELECT parent_id FROM bilan_folders WHERE id = ?", [current]
+                ).fetchone()
+                if parent is None:
+                    raise KeyError(f"folder {parent_id}")
+                current = parent[0]
+        _check_folder_name_free(conn, row[0], parent_id, except_id=folder_id)
+        conn.execute(
+            "UPDATE bilan_folders SET parent_id = ? WHERE id = ?", [parent_id, folder_id]
+        )
+    finally:
+        conn.close()
+
+
+def delete_bilan_folder(folder_id: str) -> bool:
+    """Supprime le dossier seulement : ses sous-dossiers et ses bilans montent d'un niveau, dans
+    le dossier parent (ou à la racine). False si le dossier est inconnu. ValueError si un
+    sous-dossier porte le même nom qu'un dossier du parent (il faut d'abord le renommer)."""
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT parent_id FROM bilan_folders WHERE id = ?", [folder_id]
+        ).fetchone()
+        if row is None:
             return False
-        conn.execute("UPDATE bilans SET folder_id = NULL WHERE folder_id = ?", [folder_id])
+        parent_id = row[0]
+        children = conn.execute(
+            "SELECT id, name FROM bilan_folders WHERE parent_id = ?", [folder_id]
+        ).fetchall()
+        for child_id, child_name in children:
+            _check_folder_name_free(conn, child_name, parent_id, except_id=child_id)
+        conn.execute(
+            "UPDATE bilan_folders SET parent_id = ? WHERE parent_id = ?", [parent_id, folder_id]
+        )
+        conn.execute("UPDATE bilans SET folder_id = ? WHERE folder_id = ?", [parent_id, folder_id])
         conn.execute("DELETE FROM bilan_folders WHERE id = ?", [folder_id])
     finally:
         conn.close()

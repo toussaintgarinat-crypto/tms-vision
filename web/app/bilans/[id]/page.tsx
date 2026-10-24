@@ -8,6 +8,7 @@ import { GestureCorrection, ProgramItem, ProgramList } from "../../ProgramList";
 import { RecurrenceReport } from "../RecurrenceReport";
 import { formatHours } from "../recurrenceFormat";
 import { TaskSection } from "../TaskSection";
+import { folderOptions } from "../folderTree";
 import { BilanFolder, BilanReport, StoredBilan } from "../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -362,9 +363,9 @@ export default function BilanDetailPage() {
               className="rounded border p-1"
             >
               <option value="">Sans dossier</option>
-              {folders.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
+              {folderOptions(folders).map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
                 </option>
               ))}
             </select>

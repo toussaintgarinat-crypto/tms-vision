@@ -109,4 +109,6 @@ export type BilanFolder = {
   id: string;
   created_at: string;
   name: string;
+  // Dossier qui le contient ; null : à la racine (entreprise > service > poste).
+  parent_id: string | null;
 };

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useState } from "react";
 
+import { childrenOf, descendantIds, folderOptions, totalCount } from "./folderTree";
 import { formatHours } from "./recurrenceFormat";
 import { BilanFolder, StoredBilan } from "./types";
 
@@ -34,6 +35,7 @@ export default function BilansPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
+  const [subFolderNames, setSubFolderNames] = useState<Record<string, string>>({});
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
@@ -119,11 +121,20 @@ export default function BilansPage() {
     if (done) setConfirmDeleteId(null);
   }
 
-  async function handleCreateFolder(event: FormEvent) {
+  async function handleCreateFolder(event: FormEvent, parentId: string | null = null) {
     event.preventDefault();
-    const name = newFolderName.trim();
+    const name = (parentId ? subFolderNames[parentId] ?? "" : newFolderName).trim();
     if (!name) return;
-    if (await run(() => post("/bilan-folders", { name }))) setNewFolderName("");
+    const done = await run(() => post("/bilan-folders", { name, parent_id: parentId }));
+    if (!done) return;
+    if (parentId) setSubFolderNames((names) => ({ ...names, [parentId]: "" }));
+    else setNewFolderName("");
+  }
+
+  function moveFolder(folderId: string, target: string) {
+    return run(() => post(`/bilan-folders/${encodeURIComponent(folderId)}/move`, {
+      parent_id: target === NO_FOLDER ? null : target,
+    }), folderId);
   }
 
   async function handleRenameFolder(event: FormEvent, folder: BilanFolder) {
@@ -163,15 +174,18 @@ export default function BilansPage() {
     }
   }
 
-  // Glisser-déposer : la ligne porte l'identifiant du bilan, le dossier ou « sans dossier » le reçoit.
-  function onDragStart(event: DragEvent, bilan: StoredBilan) {
-    event.dataTransfer.setData("text/plain", bilan.id);
+  // Glisser-déposer : on glisse un bilan ou un dossier ; le dossier (ou « sans dossier ») le plus
+  // proche du dépôt le reçoit. Le contenu glissé est décrit par « bilan:<id> » ou « dossier:<id> ».
+  function onDragStart(event: DragEvent, kind: "bilan" | "dossier", id: string) {
+    event.stopPropagation();
+    event.dataTransfer.setData("text/plain", `${kind}:${id}`);
     event.dataTransfer.effectAllowed = "move";
   }
   function dropProps(target: string) {
     return {
       onDragOver: (event: DragEvent) => {
         event.preventDefault();
+        event.stopPropagation();
         event.dataTransfer.dropEffect = "move";
         if (dropTarget !== target) setDropTarget(target);
       },
@@ -180,19 +194,24 @@ export default function BilansPage() {
       },
       onDrop: (event: DragEvent) => {
         event.preventDefault();
+        event.stopPropagation();
         setDropTarget(null);
-        const bilanId = event.dataTransfer.getData("text/plain");
-        if (bilanId) void moveBilan(bilanId, target);
+        const [kind, id] = event.dataTransfer.getData("text/plain").split(":");
+        if (!id || id === target) return;
+        if (kind === "bilan") void moveBilan(id, target);
+        else if (kind === "dossier") void moveFolder(id, target);
       },
     };
   }
+
+  const options = folderOptions(folders);
 
   function renderRow(bilan: StoredBilan) {
     return (
       <li
         key={bilan.id}
         draggable
-        onDragStart={(event) => onDragStart(event, bilan)}
+        onDragStart={(event) => onDragStart(event, "bilan", bilan.id)}
         onDragEnd={() => setDropTarget(null)}
         className="flex cursor-grab flex-wrap items-center justify-between gap-2 rounded border bg-background p-3 text-sm active:cursor-grabbing"
       >
@@ -215,8 +234,8 @@ export default function BilansPage() {
             className="max-w-[10rem] rounded border p-1 text-xs"
           >
             <option value={NO_FOLDER}>Sans dossier</option>
-            {folders.map((folder) => (
-              <option key={folder.id} value={folder.id}>{folder.name}</option>
+            {options.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
             ))}
           </select>
           <a href={`/bilans/${encodeURIComponent(bilan.id)}`} className="text-blue-600 underline">
@@ -258,16 +277,33 @@ export default function BilansPage() {
   const knownFolderIds = new Set(folders.map((folder) => folder.id));
   const inFolder = (folderId: string) => current.filter((bilan) => bilan.folder_id === folderId);
   const withoutFolder = current.filter((bilan) => !bilan.folder_id || !knownFolderIds.has(bilan.folder_id));
+  const countByFolder = new Map<string, number>();
+  for (const bilan of current) {
+    if (bilan.folder_id) countByFolder.set(bilan.folder_id, (countByFolder.get(bilan.folder_id) ?? 0) + 1);
+  }
   const zoneClass = (target: string) =>
     `rounded border p-3 transition-colors ${dropTarget === target ? "border-blue-600 bg-blue-50 dark:bg-blue-950" : ""}`;
 
   function renderFolder(folder: BilanFolder) {
     const items = inFolder(folder.id);
+    const subFolders = childrenOf(folders, folder.id);
+    const total = totalCount(folders, folder.id, countByFolder);
+    const blocked = descendantIds(folders, folder.id);
+    const destinations = folderOptions(folders, folder.id).filter((option) => !blocked.has(option.id));
     return (
       <details key={folder.id} open className={zoneClass(folder.id)} {...dropProps(folder.id)}>
-        <summary className="cursor-pointer font-semibold">
+        <summary
+          draggable
+          onDragStart={(event) => onDragStart(event, "dossier", folder.id)}
+          onDragEnd={() => setDropTarget(null)}
+          className="cursor-grab font-semibold active:cursor-grabbing"
+        >
           <span aria-hidden="true">📁 </span>
-          {folder.name} <span className="font-normal text-gray-500">({items.length})</span>
+          {folder.name}{" "}
+          <span className="font-normal text-gray-500">
+            ({items.length}
+            {total !== items.length ? `, ${total} avec les sous-dossiers` : ""})
+          </span>
         </summary>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
           {renamingId === folder.id ? (
@@ -294,6 +330,18 @@ export default function BilansPage() {
               Renommer le dossier
             </button>
           )}
+          <select
+            aria-label={`Placer le dossier « ${folder.name} » dans un autre dossier`}
+            value={folder.parent_id && knownFolderIds.has(folder.parent_id) ? folder.parent_id : NO_FOLDER}
+            disabled={busyId === folder.id}
+            onChange={(event) => void moveFolder(folder.id, event.target.value)}
+            className="max-w-[12rem] rounded border p-1 text-xs"
+          >
+            <option value={NO_FOLDER}>À la racine</option>
+            {destinations.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
+          </select>
           {confirmDeleteFolderId === folder.id ? (
             <span className="flex items-center gap-2">
               <button
@@ -315,17 +363,33 @@ export default function BilansPage() {
         </div>
         {confirmDeleteFolderId === folder.id && (
           <p className="mt-2 text-sm text-gray-600">
-            Les bilans de ce dossier ne sont pas supprimés : ils repassent « sans dossier ».
+            Ses bilans et ses sous-dossiers ne sont pas supprimés : ils montent d&apos;un niveau.
           </p>
         )}
-        <ul className="mt-3 flex flex-col gap-2">
-          {items.map(renderRow)}
-          {items.length === 0 && (
-            <li className="rounded border border-dashed p-3 text-sm text-gray-500">
-              Dossier vide : glissez un bilan ici.
-            </li>
+        <form onSubmit={(event) => handleCreateFolder(event, folder.id)} className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <input
+            value={subFolderNames[folder.id] ?? ""}
+            onChange={(event) => setSubFolderNames((names) => ({ ...names, [folder.id]: event.target.value }))}
+            aria-label={`Nouveau sous-dossier de ${folder.name}`}
+            placeholder="Nouveau sous-dossier (service, poste…)"
+            maxLength={80}
+            className="min-w-[14rem] flex-1 rounded border p-1"
+          />
+          <button type="submit" className="rounded border px-2 py-1">Ajouter</button>
+        </form>
+        <div className="mt-3 flex flex-col gap-3 border-l-2 pl-3">
+          {subFolders.map(renderFolder)}
+          {(items.length > 0 || subFolders.length === 0) && (
+            <ul className="flex flex-col gap-2">
+              {items.map(renderRow)}
+              {items.length === 0 && (
+                <li className="rounded border border-dashed p-3 text-sm text-gray-500">
+                  Dossier vide : glissez un bilan ou un dossier ici.
+                </li>
+              )}
+            </ul>
           )}
-        </ul>
+        </div>
       </details>
     );
   }
@@ -398,7 +462,7 @@ export default function BilansPage() {
             </button>
           </div>
 
-          <form onSubmit={handleCreateFolder} className="flex flex-wrap items-end gap-3">
+          <form onSubmit={(event) => handleCreateFolder(event)} className="flex flex-wrap items-end gap-3">
             <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
               Nouveau dossier (par exemple une entreprise)
               <input
@@ -414,14 +478,15 @@ export default function BilansPage() {
             </button>
           </form>
           <p className="-mt-3 text-xs text-gray-500">
-            Glissez un bilan sur un dossier pour l&apos;y ranger, ou choisissez le dossier dans la liste de
-            sa ligne. Les dossiers sont communs aux bilans et aux archives.
+            Un dossier peut en contenir d&apos;autres (entreprise, service, poste). Glissez un bilan ou un
+            dossier sur un dossier pour l&apos;y ranger, ou choisissez sa place dans la liste de sa ligne.
+            Les dossiers sont communs aux bilans et aux archives.
           </p>
 
           {actionError && <p className="text-red-600">{actionError}</p>}
 
           <div className="flex flex-col gap-3">
-            {folders.map(renderFolder)}
+            {childrenOf(folders, null).map(renderFolder)}
             <section className={zoneClass(NO_FOLDER)} {...dropProps(NO_FOLDER)}>
               {folders.length > 0 && (
                 <h2 className="mb-3 font-semibold">
