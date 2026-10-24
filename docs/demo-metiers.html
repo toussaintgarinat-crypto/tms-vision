@@ -1,0 +1,260 @@
+<title>Démo postes TMS Vision</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Mise en page : titre + sélecteur de métier, bandeau du poste, puis deux colonnes (analyse à gauche, programme de micro-pauses à droite). */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --fg:#10201f; --muted:#566867; --line:#d9e2e1; --soft:#e8f0ef;
+  --accent:#0b7a75; --accent-bg:#d9f0ee; --accent-fg:#ffffff;
+  --g:#1f8a4c; --g-bg:#ddf3e5; --y:#9a6a00; --y-bg:#fbf0cc; --o:#b4540a; --o-bg:#fde6d2; --r:#b42318; --r-bg:#fbe0dd;
+  --display:'Bricolage Grotesque',system-ui,sans-serif; --body:'Source Sans 3',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1414; --surface:#122020; --fg:#e6f1f0; --muted:#93aaa8; --line:#243837; --soft:#192b2a;
+  --accent:#4cc9c0; --accent-bg:#0f3533; --accent-fg:#04201e;
+  --g:#5fd18a; --g-bg:#123222; --y:#f0cf63; --y-bg:#3a3010; --o:#f5a35f; --o-bg:#40240d; --r:#f58b80; --r-bg:#401a16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1414; --surface:#122020; --fg:#e6f1f0; --muted:#93aaa8; --line:#243837; --soft:#192b2a;
+  --accent:#4cc9c0; --accent-bg:#0f3533; --accent-fg:#04201e;
+  --g:#5fd18a; --g-bg:#123222; --y:#f0cf63; --y-bg:#3a3010; --o:#f5a35f; --o-bg:#40240d; --r:#f58b80; --r-bg:#401a16; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:30px}h2{font-size:20px}h3{font-size:16px}
+.tag{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:flex-end}
+.top p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-weight:500;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.poste{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px 28px}
+@media(max-width:720px){.poste{grid-template-columns:minmax(0,1fr)}}
+.poste p{margin:4px 0 0;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:12px;font-weight:600;background:var(--accent-bg);color:var(--accent);border-radius:99px;padding:3px 10px}
+.tasks{display:flex;flex-direction:column;gap:6px}
+.task{display:flex;justify-content:space-between;gap:10px;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.task:last-child{border:0}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media(max-width:820px){.cols{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.zone{display:grid;grid-template-columns:110px minmax(0,1fr) 34px;gap:10px;align-items:center}
+@media(max-width:420px){.zone{grid-template-columns:90px minmax(0,1fr) 30px}}
+.zone .bar{height:10px;border-radius:99px;background:var(--soft);overflow:hidden}
+.zone .bar i{display:block;height:100%;border-radius:99px}
+.lv-g i{background:var(--g)}.lv-y i{background:var(--y)}.lv-o i{background:var(--o)}.lv-r i{background:var(--r)}
+.zone b{font-family:var(--mono);text-align:right}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--muted)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.reco{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.ex{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.ex:first-of-type{border-top:0}
+.ex input{width:18px;height:18px;accent-color:var(--accent)}
+.ex label{cursor:pointer;min-width:0}
+.ex .z{display:block;color:var(--muted);font-size:12px}
+.ex.done label b{text-decoration:line-through;color:var(--muted)}
+.prog{height:8px;background:var(--soft);border-radius:99px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.note{font-size:12px;color:var(--muted)}
+.warn{background:var(--y-bg);color:var(--fg);border-radius:8px;padding:10px 12px;font-size:13px}
+@media(prefers-reduced-motion:reduce){.prog i{transition:none}}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.btn{font:inherit;font-weight:600;font-size:13px;color:var(--accent);background:var(--accent-bg);border:1px solid transparent;border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn.plain{background:var(--surface);color:var(--fg);border-color:var(--line)}
+.btn.danger{background:var(--surface);color:var(--r);border-color:var(--line)}
+.in{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0;width:100%}
+.in.num{width:64px;text-align:right;font-family:var(--mono)}
+.erow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld>span{font-size:12px;font-weight:600;color:var(--muted)}
+.x{font:inherit;border:0;background:none;color:var(--r);cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
+.copie{background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;margin-left:6px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="tag">Démonstration · données fictives</div>
+      <h1>Du poste de travail au programme d’étirements</h1>
+      <p>Une même fiche pour tous les métiers : le poste et les tâches, les zones du corps les plus sollicitées, puis le programme de micro-pauses. Dupliquez une fiche pour l’adapter à une personne.</p>
+    </div>
+    <div class="seg" id="metiers" role="group" aria-label="Choisir un métier"></div>
+  </header>
+
+  <section class="poste" id="poste"></section>
+  <div class="cols">
+    <section class="panel" id="analyse"></section>
+    <section class="panel" id="programme"></section>
+  </div>
+  <div class="warn">Les scores et les heures sont inventés pour la démonstration. Les exercices viennent de la bibliothèque du dépôt et sont encore en brouillon : un professionnel de santé doit les valider avant tout usage auprès de salariés.</div>
+</div>
+
+<script>
+// Exercices réels de /exercises (id, titre, zone, durée en secondes). Zones traduites pour l'affichage.
+const ZONE={head:'Tête',neck:'Cou',shoulder:'Épaule',upper_arm:'Bras',lower_arm:'Avant-bras',hand:'Main / poignet',trunk:'Tronc / dos',hip:'Hanche',thigh:'Cuisse',lower_leg:'Mollet',foot:'Pied'};
+const EX={
+'seated-head-chin-tuck':['Rentrer le menton, assis','head',28],
+'seated-neck-lateral-stretch':['Inclinaisons du cou, assis','neck',40],
+'seated-neck-rotation-stretch':['Rotations du cou, assis','neck',40],
+'seated-levator-scapulae-stretch':['Étirement de l’élévateur de la scapula, assis','neck',53],
+'seated-shoulder-rolls':['Rotation des épaules, assis','shoulder',40],
+'seated-shoulder-blade-squeeze':['Rapprocher les omoplates, assis','shoulder',21],
+'seated-chest-hands-behind-stretch':['Ouverture de la poitrine, bras derrière le dos, assis','shoulder',49],
+'seated-wrist-flexor-stretch':['Étirement des fléchisseurs du poignet, assis','hand',54],
+'seated-wrist-circles':['Cercles du poignet, assis','hand',41],
+'seated-finger-extension-stretch':['Ouvrir et fermer les mains, assis','hand',42],
+'seated-thoracic-extension-hands-back':['Extension du dos, mains sur les reins, assis','trunk',41],
+'seated-trunk-rotation-stretch':['Rotation du tronc, assis','trunk',40],
+'seated-figure-four-stretch':['Étirement des fessiers (figure 4), assis','hip',57],
+'trunk-lumbar-mobility':['Mobilisation lombaire','trunk',40],
+'round-hollow-back':['Dos rond, dos creux','trunk',49],
+'forward-hang-relax':['Relâchement du dos penché en avant','trunk',53],
+'thoracic-extension-hands-back':['Extension du dos, mains sur les reins','trunk',41],
+'hamstring-stretch':['Étirement des ischio-jambiers','thigh',32],
+'hip-flexor-stretch':['Étirement du fléchisseur de hanche','hip',50],
+'quadriceps-standing-stretch':['Étirement du quadriceps','thigh',46],
+'calf-stretch':['Étirement du mollet','lower_leg',30],
+'ankle-mobility':['Mobilité de la cheville','foot',36],
+'shoulder-cross-body-stretch':['Étirement des épaules','upper_arm',50],
+'triceps-overhead-stretch':['Étirement du triceps','upper_arm',53],
+'forearm-extension-stretch':['Étirement de l’avant-bras et du coude','lower_arm',44],
+'wrist-flexor-stretch':['Étirement des fléchisseurs du poignet','hand',54],
+'finger-extension-stretch':['Ouvrir et fermer les mains','hand',42],
+'shoulder-arm-elevation':['Élévation des bras','shoulder',50],
+'arm-circles':['Cercles de bras','shoulder',42],
+'neck-lateral-stretch':['Étirements cervicaux','neck',40],
+'chest-opening-stretch':['Ouverture de la poitrine','shoulder',20]
+};
+const M={
+bureau:{label:'Bureau',nom:'Gestionnaire administratif',ctx:'Service comptabilité · 38 personnes · 7 h 30 par jour',
+ poste:'Assis devant écran',pos:'Programme proposé assis',
+ taches:[['Saisie et traitement de factures',4.5],['Réunions et appels',1.5],['Classement et déplacements',1.5]],
+ zones:[['neck',6],['shoulder',5],['hand',5],['trunk',4],['head',4],['hip',3]],
+ reco:['Écran à hauteur des yeux, bras à 90° sur le bureau.','Une micro-pause de 3 minutes toutes les 90 minutes.','Alterner position assise et debout pour les appels.'],
+ prog:['seated-head-chin-tuck','seated-neck-rotation-stretch','seated-shoulder-blade-squeeze','seated-wrist-flexor-stretch','seated-thoracic-extension-hands-back','seated-figure-four-stretch']},
+logistique:{label:'Logistique',nom:'Préparateur de commandes',ctx:'Entrepôt · 3 × 8 · charges de 5 à 18 kg',
+ poste:'Manutention et port de charges',pos:'Programme proposé debout',
+ taches:[['Prélèvement en rayon',3.5],['Palettisation',2.5],['Chargement de camions',1.5]],
+ zones:[['trunk',7],['shoulder',6],['hip',5],['lower_arm',5],['thigh',4],['neck',3]],
+ reco:['Palette surélevée pour éviter de travailler en dessous des genoux.','Rotation de poste toutes les 2 heures.','Charges au-delà de 15 kg : aide à la manutention.'],
+ prog:['round-hollow-back','forward-hang-relax','thoracic-extension-hands-back','hip-flexor-stretch','shoulder-cross-body-stretch','forearm-extension-stretch']},
+industrie:{label:'Industrie',nom:'Opérateur d’assemblage',ctx:'Ligne de montage · cadence de 42 pièces par heure',
+ poste:'Geste répétitif en production',pos:'Programme proposé debout',
+ taches:[['Vissage au-dessus des épaules',3.0],['Contrôle visuel',2.0],['Emballage',2.0]],
+ zones:[['shoulder',7],['lower_arm',6],['hand',6],['neck',5],['upper_arm',5],['trunk',4]],
+ reco:['Outil suspendu pour décharger les bras.','Plan de travail réglable en hauteur.','Micro-pauses de 2 minutes toutes les heures.'],
+ prog:['shoulder-arm-elevation','triceps-overhead-stretch','wrist-flexor-stretch','finger-extension-stretch','neck-lateral-stretch','chest-opening-stretch']},
+caisse:{label:'Caisse',nom:'Hôte de caisse',ctx:'Hypermarché · 35 heures · 280 clients par jour',
+ poste:'Debout statique (caisse, atelier)',pos:'Programme proposé debout',
+ taches:[['Scan et encaissement',5.5],['Mise en rayon',1.0],['Accueil client',1.0]],
+ zones:[['lower_leg',6],['trunk',6],['shoulder',5],['hand',5],['foot',5],['neck',4]],
+ reco:['Tapis anti-fatigue et repose-pied.','Siège assis-debout lors des temps creux.','Alterner le côté du scan toutes les heures.'],
+ prog:['calf-stretch','ankle-mobility','trunk-lumbar-mobility','quadriceps-standing-stretch','arm-circles','seated-wrist-circles']}
+};
+const $=id=>document.getElementById(id);
+const lvl=s=>s<=2?['g','Acceptable']:s<=4?['y','À investiguer']:s<=6?['o','Modifications à prévoir']:['r','Changement immédiat'];
+const fmt=s=>Math.floor(s/60)+' min '+String(s%60).padStart(2,'0')+' s';
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY='tms-demo-fiches-v1';
+
+// Fiches : les 4 modèles (lecture seule) puis les copies créées par l'utilisateur.
+let modeles=Object.keys(M).map(k=>({id:k,modele:true,...structuredClone(M[k])}));
+let copies=[]; try{copies=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){copies=[]}
+let cur='bureau', edit=false; const done={};
+const toutes=()=>[...modeles,...copies];
+const fiche=()=>toutes().find(f=>f.id===cur)||modeles[0];
+const sauve=()=>{try{localStorage.setItem(KEY,JSON.stringify(copies))}catch(e){}};
+
+function render(){
+  const f=fiche(); if(f.modele) edit=false;
+  $('metiers').innerHTML=toutes().map(x=>`<button aria-pressed="${x.id===cur}" data-k="${x.id}">${esc(x.modele?x.label:x.personne||'Copie')}${x.modele?'':'<span class="copie">copie</span>'}</button>`).join('');
+  $('poste').innerHTML=edit?posteEdit(f):posteLecture(f);
+  $('analyse').innerHTML=edit?analyseEdit(f):analyseLecture(f);
+  renderProg();
+}
+function actions(f){
+  if(f.modele) return `<div class="acts"><button class="btn" data-act="dup">Dupliquer pour une personne</button></div>`;
+  return `<div class="acts"><button class="btn" data-act="edit">${edit?'Terminer la modification':'Modifier cette fiche'}</button><button class="btn plain" data-act="dup">Dupliquer</button><button class="btn danger" data-act="del">Supprimer la copie</button></div>`;
+}
+function posteLecture(f){
+  const h=f.taches.reduce((a,t)=>a+Number(t[1]),0);
+  return `<div><div class="tag">${f.modele?'Fiche modèle · '+esc(f.label):'Fiche personnelle · copie du modèle '+esc(M[f.base].label)}</div><h2>${esc(f.modele?f.nom:(f.personne||'Sans nom'))}</h2><p>${f.modele?'':esc(f.nom)+' · '}${esc(f.ctx)}</p>
+    <div class="chips"><span class="chip">Poste : ${esc(f.poste)}</span><span class="chip">${esc(f.pos)}</span></div>${actions(f)}</div>
+    <div class="tasks">${f.taches.map(t=>`<div class="task"><span>${esc(t[0])}</span><span class="mono">${Number(t[1]).toFixed(1).replace('.',',')} h</span></div>`).join('')}
+    <div class="task"><b>Total</b><b class="mono">${h.toFixed(1).replace('.',',')} h</b></div></div>`;
+}
+function posteEdit(f){
+  return `<div style="display:flex;flex-direction:column;gap:10px"><div class="tag">Modification de la copie</div>
+    <label class="fld"><span>Nom de la personne</span><input class="in" id="e-personne" value="${esc(f.personne||'')}" placeholder="Prénom Nom"></label>
+    <label class="fld"><span>Intitulé du poste</span><input class="in" id="e-nom" value="${esc(f.nom)}"></label>
+    <label class="fld"><span>Contexte</span><input class="in" id="e-ctx" value="${esc(f.ctx)}"></label>${actions(f)}</div>
+    <div style="display:flex;flex-direction:column;gap:8px"><div class="tag">Tâches et heures par jour</div>
+    ${f.taches.map((t,n)=>`<div class="erow"><input class="in" data-tl="${n}" value="${esc(t[0])}" aria-label="Tâche ${n+1}"><span><input class="in num" type="number" min="0" max="12" step="0.5" data-th="${n}" value="${t[1]}" aria-label="Heures tâche ${n+1}"> h <button class="x" data-rt="${n}" aria-label="Retirer la tâche ${n+1}">×</button></span></div>`).join('')}
+    <div class="acts"><button class="btn plain" data-act="addtask">Ajouter une tâche</button></div></div>`;
+}
+function analyseLecture(f){
+  const zs=[...f.zones].sort((a,b)=>b[1]-a[1]);
+  return `<div class="head"><h3>Zones les plus sollicitées</h3><span class="note">Score de type RULA, de 1 à 7</span></div>
+    ${zs.map(([z,s])=>{const l=lvl(s);return `<div class="zone lv-${l[0]}"><span>${ZONE[z]}</span><div class="bar" role="img" aria-label="${ZONE[z]} : ${s} sur 7, ${l[1]}"><i style="width:${s/7*100}%"></i></div><b>${s}</b></div>`}).join('')}
+    <div class="legend"><span><i class="dot" style="background:var(--g)"></i>1-2 acceptable</span><span><i class="dot" style="background:var(--y)"></i>3-4 à investiguer</span><span><i class="dot" style="background:var(--o)"></i>5-6 modifier</span><span><i class="dot" style="background:var(--r)"></i>7 immédiat</span></div>
+    <h3>Pistes d’aménagement</h3><ul class="reco">${f.reco.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+}
+function analyseEdit(f){
+  return `<div class="head"><h3>Scores par zone</h3><span class="note">de 1 à 7</span></div>
+    ${f.zones.map(([z,s],n)=>`<div class="erow"><label for="e-z${n}">${ZONE[z]}</label><input class="in num" id="e-z${n}" type="number" min="1" max="7" step="1" data-z="${n}" value="${s}"></div>`).join('')}
+    <label class="fld"><span>Pistes d’aménagement (une par ligne)</span><textarea class="in" id="e-reco" rows="4">${esc(f.reco.join('\n'))}</textarea></label>`;
+}
+function renderProg(){
+  const f=fiche(); const d=done[cur]||(done[cur]={});
+  const tot=f.prog.reduce((a,i)=>a+EX[i][2],0);
+  const fait=f.prog.filter(i=>d[i]); const faitS=fait.reduce((a,i)=>a+EX[i][2],0);
+  const dispo=Object.keys(EX).filter(i=>!f.prog.includes(i));
+  $('programme').innerHTML=`<div class="head"><h3>Micro-pause : ${f.prog.length} exercices</h3><span class="note mono">${fmt(tot)}</span></div>
+    <div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="${f.prog.length}" aria-valuenow="${fait.length}" aria-label="Avancement de la micro-pause"><i style="width:${f.prog.length?fait.length/f.prog.length*100:0}%"></i></div>
+    <div class="note">${fait.length} sur ${f.prog.length} faits · ${fmt(faitS)}</div>
+    <div>${f.prog.map(i=>`<div class="ex ${d[i]?'done':''}"><input type="checkbox" id="c-${i}" data-i="${i}" ${d[i]?'checked':''}><label for="c-${i}"><b>${EX[i][0]}</b><span class="z">${ZONE[EX[i][1]]}</span></label><span class="mono note">${EX[i][2]} s${edit?` <button class="x" data-rx="${i}" aria-label="Retirer ${EX[i][0]}">×</button>`:''}</span></div>`).join('')}</div>
+    ${edit?`<div class="erow"><select class="in" id="e-add" aria-label="Ajouter un exercice"><option value="">Ajouter un exercice…</option>${dispo.map(i=>`<option value="${i}">${EX[i][0]} (${ZONE[EX[i][1]]})</option>`).join('')}</select></div>`:''}`;
+}
+function dupliquer(){
+  const f=fiche(); const c=structuredClone(f);
+  c.id='c'+Date.now(); c.modele=false; c.base=f.modele?f.id:f.base; c.personne=''; 
+  copies.push(c); sauve(); cur=c.id; edit=true; render();
+  const el=$('e-personne'); if(el) el.focus();
+}
+document.addEventListener('click',e=>{
+  const k=e.target.closest('[data-k]'); if(k){cur=k.dataset.k;edit=false;render();return}
+  const a=e.target.closest('[data-act]'); const f=fiche();
+  if(a){
+    const act=a.dataset.act;
+    if(act==='dup') dupliquer();
+    else if(act==='edit'){edit=!edit;render()}
+    else if(act==='del'){copies=copies.filter(c=>c.id!==cur);sauve();cur=f.base;edit=false;render()}
+    else if(act==='addtask'){f.taches.push(['Nouvelle tâche',1]);sauve();render()}
+    return;
+  }
+  const rt=e.target.closest('[data-rt]'); if(rt){f.taches.splice(Number(rt.dataset.rt),1);sauve();render();return}
+  const rx=e.target.closest('[data-rx]'); if(rx){f.prog=f.prog.filter(i=>i!==rx.dataset.rx);sauve();render()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target; const f=fiche();
+  if(t.dataset&&t.dataset.i){(done[cur]||(done[cur]={}))[t.dataset.i]=t.checked;renderProg();const el=document.getElementById('c-'+t.dataset.i);if(el)el.focus();return}
+  if(f.modele) return;
+  if(t.id==='e-personne'){f.personne=t.value.trim();}
+  else if(t.id==='e-nom'){f.nom=t.value}
+  else if(t.id==='e-ctx'){f.ctx=t.value}
+  else if(t.id==='e-reco'){f.reco=t.value.split('\n').map(x=>x.trim()).filter(Boolean)}
+  else if(t.dataset.tl!==undefined){f.taches[Number(t.dataset.tl)][0]=t.value}
+  else if(t.dataset.th!==undefined){f.taches[Number(t.dataset.th)][1]=Math.max(0,Math.min(12,Number(t.value)||0))}
+  else if(t.dataset.z!==undefined){f.zones[Number(t.dataset.z)][1]=Math.max(1,Math.min(7,Math.round(Number(t.value))||1))}
+  else if(t.id==='e-add'){if(t.value)f.prog.push(t.value)}
+  else return;
+  sauve(); render();
+});
+render();
+</script>
