@@ -10,11 +10,16 @@ une version précise.
 
 ## [Non publié]
 
-### Démo par métier et copie de bilan
-- Page « Démo par métier » dans le menu : quatre fiches types (bureau, logistique, industrie, caisse)
-  avec zones sollicitées et programme de micro-pauses ; une fiche se copie et se modifie par personne.
-- Bilans de poste : bouton « Dupliquer ce bilan » pour reprendre un bilan avec une autre personne
-  (fiches d'activité et durée de la journée copiées, vidéos non copiées).
+### Bibliothèque de métiers et copie de bilan
+- Page « Bibliothèque de métiers » (dossier `metiers/`) : 10 métiers avec leurs fiches d'activité
+  types (bureau, caisse, logistique, assemblage, conduite, soins, coiffure, cuisine, peinture,
+  entretien). Un bouton crée un bilan prérempli, nommé d'après la personne, à adapter. Les modèles
+  sont en brouillon (écrits par l'IA) : à relire et valider par un professionnel de santé.
+- Bilans de poste : « Dupliquer ce bilan » pour reprendre un bilan avec une autre personne (fiches
+  d'activité et durée de la journée copiées, vidéos non copiées) et « Enregistrer comme modèle de
+  métier » pour garder un bilan réussi dans la bibliothèque (« Mes modèles »).
+- Correction : la suppression d'une fiche d'activité depuis le site était refusée par l'API
+  (méthode DELETE absente de la configuration CORS).
 
 ### Assistant vocal (facultatif, éteint par défaut)
 - Écoute le praticien et pré-remplit la fiche d'activité (dictée libre ou questions guidées, lecture

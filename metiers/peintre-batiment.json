@@ -1,0 +1,61 @@
+{
+  "id": "peintre-batiment",
+  "title": "Peintre en bâtiment",
+  "description": "Plafonds et murs, ponçage, manutention de matériel sur chantier. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Peinture de plafonds",
+      "zones": [
+        "upper_arm",
+        "neck",
+        "lower_arm"
+      ],
+      "activity_hours": 3.0,
+      "cycles_per_minute": 15,
+      "workstation": "Bras au-dessus des épaules (peinture, plafond)",
+      "breaks": "Pauses courtes toutes les 2 h",
+      "notes": "Bras au-dessus des épaules, nuque en extension."
+    },
+    {
+      "name": "Peinture de murs",
+      "zones": [
+        "upper_arm",
+        "lower_arm",
+        "trunk"
+      ],
+      "activity_hours": 2.5,
+      "cycles_per_minute": 20,
+      "workstation": "Geste répétitif en production",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Ponçage et préparation des supports",
+      "zones": [
+        "lower_arm",
+        "hand",
+        "upper_arm"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 60,
+      "workstation": "Geste répétitif en production",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Manutention du matériel",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 0.5,
+      "cycles_per_minute": 2,
+      "load_kg": 15,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

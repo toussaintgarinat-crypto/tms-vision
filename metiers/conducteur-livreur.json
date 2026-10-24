@@ -1,0 +1,49 @@
+{
+  "id": "conducteur-livreur",
+  "title": "Conducteur-livreur",
+  "description": "Conduite prolongée, chargement et déchargement, livraisons à pied. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Conduite",
+      "zones": [
+        "neck",
+        "trunk",
+        "lower_arm"
+      ],
+      "activity_hours": 5.0,
+      "static_seconds": 3600,
+      "workstation": "Conduite",
+      "breaks": "Pauses courtes toutes les 2 h",
+      "notes": "Position assise, vibrations, réglage du siège."
+    },
+    {
+      "name": "Chargement et déchargement",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 2.0,
+      "cycles_per_minute": 4,
+      "load_kg": 12,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Livraison à pied",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 0.5,
+      "workstation": "Marche et déplacements",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": "aide-soignant",
+  "title": "Aide-soignant ou soignante",
+  "description": "Soins au lit, transferts de patients, déplacements dans le service, transmissions écrites. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Toilette et soins au lit",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "neck"
+      ],
+      "activity_hours": 2.5,
+      "cycles_per_minute": 3,
+      "load_kg": 20,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement",
+      "notes": "Posture penchée prolongée."
+    },
+    {
+      "name": "Transferts de patients",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 1,
+      "load_kg": 25,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement",
+      "notes": "Utilisation des aides techniques à vérifier."
+    },
+    {
+      "name": "Déplacements dans le service",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 2.0,
+      "workstation": "Marche et déplacements",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Dossiers et transmissions",
+      "zones": [
+        "neck",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 15,
+      "workstation": "Assis devant écran",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

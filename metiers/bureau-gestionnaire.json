@@ -1,0 +1,49 @@
+{
+  "id": "bureau-gestionnaire",
+  "title": "Gestionnaire administratif (bureau)",
+  "description": "Travail sur écran, appels et réunions, classement. Poste assis la majeure partie de la journée. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Saisie au clavier et à la souris",
+      "zones": [
+        "neck",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 4.5,
+      "cycles_per_minute": 20,
+      "workstation": "Assis devant écran",
+      "breaks": "Pauses courtes toutes les 2 h",
+      "notes": "Écran, clavier et souris : hauteur de l'écran à vérifier."
+    },
+    {
+      "name": "Réunions et appels",
+      "zones": [
+        "neck",
+        "trunk"
+      ],
+      "activity_hours": 1.5,
+      "static_seconds": 600,
+      "workstation": "Assis devant écran",
+      "breaks": "Pauses courtes toutes les 2 h",
+      "notes": "Position assise prolongée."
+    },
+    {
+      "name": "Classement et déplacements",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 3,
+      "load_kg": 3,
+      "workstation": "Marche et déplacements",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

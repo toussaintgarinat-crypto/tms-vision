@@ -1,0 +1,59 @@
+{
+  "id": "cuisinier",
+  "title": "Cuisinier ou cuisinière",
+  "description": "Préparation et découpe, cuisson et service debout, plonge, réception de marchandises. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Préparation et découpe",
+      "zones": [
+        "upper_arm",
+        "lower_arm",
+        "hand",
+        "neck"
+      ],
+      "activity_hours": 3.0,
+      "cycles_per_minute": 40,
+      "workstation": "Geste répétitif en production",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Cuisson et service au passe",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 3.0,
+      "static_seconds": 1800,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Plonge et nettoyage",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 6,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Réception de marchandises",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 0.5,
+      "cycles_per_minute": 2,
+      "load_kg": 15,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

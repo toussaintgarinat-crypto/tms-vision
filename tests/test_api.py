@@ -1525,3 +1525,115 @@ def test_duplicate_bilan_default_label_and_unknown_bilan(tmp_path, monkeypatch):
     assert client.post(f"/bilans/{unnamed}/duplicate", json={"label": "  "}).json()[
         "label"] == "Copie de bilan"
     assert client.post("/bilans/nope/duplicate", json={}).status_code == 404
+
+
+def test_metiers_library_lists_the_shipped_models(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    models = client.get("/metiers").json()
+
+    assert len(models) >= 10
+    assert {model["origin"] for model in models} == {"library"}
+    assert all(model["status"] == "draft" and model["tasks"] for model in models)
+
+
+def test_create_bilan_from_metier_prefills_label_hours_and_tasks(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    model = next(m for m in client.get("/metiers").json() if m["id"] == "bureau-gestionnaire")
+
+    response = client.post("/metiers/bureau-gestionnaire/bilan", json={"label": "Sophie Martin"})
+
+    assert response.status_code == 200
+    bilan = response.json()
+    assert bilan["label"] == "Sophie Martin"
+    assert bilan["workday_hours"] == model["workday_hours"]
+    assert bilan["items"] == []
+    assert [task["name"] for task in bilan["tasks"]] == [task["name"] for task in model["tasks"]]
+    first = bilan["tasks"][0]
+    assert first["workstation"] == "Assis devant écran"
+    assert first["zone_cycles"] == {zone: 20 for zone in first["zones"]}
+    assert first["source"] == "practitioner" and first["analysis_id"] is None
+    # Le bilan créé se projette comme n'importe quel autre.
+    assert client.get(f"/bilans/{bilan['id']}/recurrence").status_code == 200
+    assert client.get(f"/bilans/{bilan['id']}/program").status_code == 200
+    # Sans libellé, le titre du métier sert de nom.
+    unnamed = client.post("/metiers/bureau-gestionnaire/bilan", json={}).json()
+    assert unnamed["label"] == model["title"]
+
+
+def test_every_library_metier_creates_a_valid_bilan(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    for model in client.get("/metiers").json():
+        response = client.post(f"/metiers/{model['id']}/bilan", json={})
+        assert response.status_code == 200, model["id"]
+        assert client.get(f"/bilans/{response.json()['id']}/program").status_code == 200
+
+
+def test_create_bilan_from_unknown_metier_returns_404(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    assert client.post("/metiers/nope/bilan", json={}).status_code == 404
+
+
+def test_save_bilan_as_metier_then_reuse_and_delete_it(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={"label": "Quai 3", "workday_hours": 7.5}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 2.0, "representative": True})
+    client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload(
+        name="Peindre", zones=["upper_arm", "hand"], zone_cycles_per_minute={
+            "upper_arm": 10.0, "hand": 30.0}, cycles_per_minute=None, workstation="Conduite",
+        notes="note", load_kg=4.0))
+
+    saved = client.post(f"/bilans/{bilan_id}/metier", json={"title": " Peintre atelier "})
+
+    assert saved.status_code == 200
+    model = saved.json()
+    assert model["origin"] == "custom" and model["id"].startswith("perso-")
+    assert model["title"] == "Peintre atelier"
+    assert model["workday_hours"] == 7.5
+    assert model["tasks"] == [{
+        "name": "Peindre", "zones": ["upper_arm", "hand"], "activity_hours": 2.0,
+        "zone_cycles": {"upper_arm": 10.0, "hand": 30.0}, "load_kg": 4.0,
+        "workstation": "Conduite", "notes": "note",
+    }]
+    assert model["id"] in [m["id"] for m in client.get("/metiers").json()]
+
+    reused = client.post(f"/metiers/{model['id']}/bilan", json={"label": "Paul"}).json()
+    assert reused["tasks"][0]["zone_cycles"] == {"upper_arm": 10.0, "hand": 30.0}
+    assert reused["tasks"][0]["load_kg"] == 4.0
+
+    assert client.delete(f"/metiers/{model['id']}").status_code == 200
+    assert client.delete(f"/metiers/{model['id']}").status_code == 404
+    assert model["id"] not in [m["id"] for m in client.get("/metiers").json()]
+
+
+def test_save_bilan_as_metier_needs_a_task_and_library_models_stay(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    empty = client.post("/bilans", json={}).json()["id"]
+
+    assert client.post(f"/bilans/{empty}/metier", json={"title": "X"}).status_code == 422
+    assert client.post(f"/bilans/{empty}/metier", json={"title": ""}).status_code == 422
+    assert client.post("/bilans/nope/metier", json={"title": "X"}).status_code == 404
+    assert client.delete("/metiers/bureau-gestionnaire").status_code == 403
+
+
+def test_cors_preflight_allows_delete_from_the_web_origin(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    response = client.options(
+        "/bilans/x/tasks/y",
+        headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "DELETE"},
+    )
+
+    assert response.status_code == 200
+    assert "DELETE" in response.headers["access-control-allow-methods"]

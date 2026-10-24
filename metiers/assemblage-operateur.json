@@ -1,0 +1,49 @@
+{
+  "id": "assemblage-operateur",
+  "title": "Opérateur d'assemblage (industrie)",
+  "description": "Ligne de montage : gestes répétitifs, bras souvent en élévation, contrôle visuel. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 7.5,
+  "tasks": [
+    {
+      "name": "Vissage, bras en élévation",
+      "zones": [
+        "upper_arm",
+        "lower_arm",
+        "hand",
+        "neck"
+      ],
+      "activity_hours": 3.0,
+      "cycles_per_minute": 10,
+      "workstation": "Geste répétitif en production",
+      "breaks": "Micro-pauses fréquentes",
+      "notes": "Travail au-dessus de la hauteur des épaules."
+    },
+    {
+      "name": "Contrôle visuel",
+      "zones": [
+        "neck"
+      ],
+      "activity_hours": 2.0,
+      "static_seconds": 900,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Micro-pauses fréquentes"
+    },
+    {
+      "name": "Emballage",
+      "zones": [
+        "hand",
+        "lower_arm",
+        "trunk"
+      ],
+      "activity_hours": 2.0,
+      "cycles_per_minute": 14,
+      "load_kg": 2,
+      "workstation": "Geste répétitif en production",
+      "breaks": "Micro-pauses fréquentes"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ import tempfile
 import time
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -26,7 +26,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from tms_vision import assistant, bilan, capsule_build, exercises, library, mailer, recurrence, storage, version
+from tms_vision import (
+    assistant, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, storage, version,
+)
 from tms_vision.load import bounds, parse_load
 from tms_vision.program import build_analysis_program, build_bilan_program
 from tms_vision.rescore import rescore_frames, summarize_for_load
@@ -101,7 +103,8 @@ app.add_middleware(
     # personnalisé) ne déclenche pas de preflight CORS, donc pas besoin de la
     # lister ici -- ça vaut pour les routes GET /analyses/... (vidéo/CSV/
     # pose3D) comme ça valait pour l'ancienne route GET /outputs/{filename}.
-    allow_methods=["POST", "PUT"],
+    # DELETE : suppression d'une fiche d'activité et d'un modèle de métier depuis le site.
+    allow_methods=["POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -526,6 +529,106 @@ async def duplicate_bilan(bilan_id: str, body: BilanDuplicate) -> dict:
         task_ids=[generate_run_id() for _ in original["tasks"]],
     )
     return _get_bilan_or_404(new_id)
+
+
+class MetierBilanCreate(BaseModel):
+    label: str | None = None
+
+
+class MetierModelCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=500)
+
+
+def _library_entries() -> list[dict]:
+    return [{**model, "origin": "library"} for model in metiers.load_library()]
+
+
+def _custom_entries() -> list[dict]:
+    return [
+        {
+            **model, "origin": "custom", "status": "draft", "source": "human",
+            "validated_by": None, "validated_on": None,
+        }
+        for model in storage.list_metier_models()
+    ]
+
+
+def _get_metier_or_404(metier_id: str) -> dict:
+    entry = next(
+        (entry for entry in _library_entries() + _custom_entries() if entry["id"] == metier_id),
+        None,
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Métier introuvable.")
+    return entry
+
+
+@app.get("/metiers")
+async def list_metiers() -> list[dict]:
+    """Modèles de métier : ceux de la bibliothèque (`origin: "library"`), puis ceux du praticien."""
+    return _library_entries() + _custom_entries()
+
+
+@app.post("/metiers/{metier_id}/bilan")
+async def create_bilan_from_metier(metier_id: str, body: MetierBilanCreate) -> dict:
+    """Crée un bilan prérempli avec les fiches d'activité types du métier. Le libellé sert
+    d'ordinaire à nommer la personne."""
+    model = _get_metier_or_404(metier_id)
+    label = _clean_text(body.label) or model["title"]
+    bilan_id = generate_run_id()
+    now = datetime.now(timezone.utc)
+    storage.create_bilan(
+        bilan_id=bilan_id, created_at=now, label=label, workday_hours=model["workday_hours"],
+    )
+    for index, task in enumerate(model["tasks"]):
+        storage.create_bilan_task(
+            task_id=generate_run_id(), bilan_id=bilan_id,
+            # Un décalage de quelques microsecondes garde l'ordre des fiches du modèle.
+            created_at=now + timedelta(microseconds=index), task=metiers.task_to_stored(task),
+        )
+    return _get_bilan_or_404(bilan_id)
+
+
+@app.post("/bilans/{bilan_id}/metier")
+async def save_bilan_as_metier(bilan_id: str, body: MetierModelCreate) -> dict:
+    """Enregistre les fiches d'activité du bilan comme modèle de métier réutilisable. Les vidéos
+    et les mesures ne sont pas conservées : seulement la description des tâches."""
+    record = _get_bilan_or_404(bilan_id)
+    if not record["tasks"]:
+        raise HTTPException(
+            status_code=422, detail="Ajoutez au moins une fiche d'activité avant d'enregistrer un modèle."
+        )
+    tasks = []
+    for task in record["tasks"]:
+        entry = {
+            "name": task["name"], "zones": task["zones"], "activity_hours": task["activity_hours"],
+            "workstation": task["workstation"], "breaks": task["breaks"], "notes": task["notes"],
+            "cycle_seconds": task["cycle_seconds"], "static_seconds": task["static_seconds"],
+            "load_kg": task["load_kg"], "days_per_week": task["days_per_week"],
+        }
+        if task["zone_cycles"]:
+            entry["zone_cycles"] = task["zone_cycles"]
+        tasks.append(metiers.validate_task({k: v for k, v in entry.items() if v is not None}))
+    model_id = f"perso-{generate_run_id()}"
+    storage.create_metier_model(
+        model_id=model_id, created_at=datetime.now(timezone.utc), title=body.title.strip(),
+        description=_clean_text(body.description), workday_hours=record["workday_hours"],
+        tasks=tasks,
+    )
+    return _get_metier_or_404(model_id)
+
+
+@app.delete("/metiers/{metier_id}")
+async def delete_metier(metier_id: str) -> dict:
+    """Supprime un modèle du praticien. Ceux de la bibliothèque ne se suppriment pas."""
+    if any(model["id"] == metier_id for model in _library_entries()):
+        raise HTTPException(
+            status_code=403, detail="Les métiers de la bibliothèque ne se suppriment pas."
+        )
+    if not storage.delete_metier_model(metier_id):
+        raise HTTPException(status_code=404, detail="Métier introuvable.")
+    return {"deleted": metier_id}
 
 
 @app.get("/bilans")

@@ -90,6 +90,17 @@ CREATE TABLE IF NOT EXISTS bilan_analyses (
 )
 """
 
+CREATE_METIER_MODELS_TABLE = """
+CREATE TABLE IF NOT EXISTS metier_models (
+    id VARCHAR PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    title VARCHAR NOT NULL,
+    description VARCHAR,
+    workday_hours DOUBLE NOT NULL,
+    tasks_json VARCHAR NOT NULL
+)
+"""
+
 CREATE_BILAN_TASKS_TABLE = """
 CREATE TABLE IF NOT EXISTS bilan_tasks (
     id VARCHAR PRIMARY KEY,
@@ -187,6 +198,7 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_BILANS_TABLE)
     conn.execute(CREATE_BILAN_ANALYSES_TABLE)
     conn.execute(CREATE_BILAN_TASKS_TABLE)
+    conn.execute(CREATE_METIER_MODELS_TABLE)
     conn.execute(CREATE_ANALYSIS_LOADS_TABLE)
     conn.execute(CREATE_LIBRARY_SHARES_TABLE)
     for column, column_type in _BILAN_TASKS_LATER_COLUMNS:
@@ -642,6 +654,71 @@ def duplicate_bilan(
             task_id=task_id, bilan_id=new_id,
             created_at=created_at + timedelta(microseconds=index), task=copied,
         )
+
+
+def _metier_model_record(row) -> dict:
+    model_id, created_at, title, description, workday_hours, tasks_json = row
+    return {
+        "id": model_id, "created_at": _attach_utc(created_at).isoformat(), "title": title,
+        "description": description or "", "workday_hours": workday_hours,
+        "tasks": json.loads(tasks_json),
+    }
+
+
+_METIER_MODEL_SELECT = "id, created_at, title, description, workday_hours, tasks_json"
+
+
+def create_metier_model(
+    *, model_id: str, created_at: datetime, title: str, description: str | None,
+    workday_hours: float, tasks: list[dict],
+) -> None:
+    """Enregistre un modèle de métier créé par le praticien. `tasks` : fiches types (voir
+    metiers.validate_task), stockées telles quelles."""
+    conn = _connect()
+    try:
+        conn.execute(
+            "INSERT INTO metier_models (id, created_at, title, description, workday_hours, "
+            "tasks_json) VALUES (?, ?, ?, ?, ?, ?)",
+            [model_id, _to_naive_utc(created_at), title, description, workday_hours,
+             json.dumps(tasks)],
+        )
+    finally:
+        conn.close()
+
+
+def list_metier_models() -> list[dict]:
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            f"SELECT {_METIER_MODEL_SELECT} FROM metier_models ORDER BY created_at DESC, id"
+        ).fetchall()
+    finally:
+        conn.close()
+    return [_metier_model_record(row) for row in rows]
+
+
+def get_metier_model(model_id: str) -> dict | None:
+    conn = _connect()
+    try:
+        row = conn.execute(
+            f"SELECT {_METIER_MODEL_SELECT} FROM metier_models WHERE id = ?", [model_id]
+        ).fetchone()
+    finally:
+        conn.close()
+    return _metier_model_record(row) if row is not None else None
+
+
+def delete_metier_model(model_id: str) -> bool:
+    """Supprime un modèle créé par le praticien ; False s'il n'existe pas."""
+    conn = _connect()
+    try:
+        existed = conn.execute(
+            "SELECT 1 FROM metier_models WHERE id = ?", [model_id]
+        ).fetchone() is not None
+        conn.execute("DELETE FROM metier_models WHERE id = ?", [model_id])
+    finally:
+        conn.close()
+    return existed
 
 
 def update_bilan_task(*, task_id: str, bilan_id: str, task: dict) -> None:

@@ -1,0 +1,58 @@
+{
+  "id": "agent-entretien",
+  "title": "Agent d'entretien",
+  "description": "Nettoyage des sols et des sanitaires, vidage des poubelles, déplacements entre les locaux. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 7,
+  "tasks": [
+    {
+      "name": "Nettoyage des sols",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm"
+      ],
+      "activity_hours": 3.0,
+      "cycles_per_minute": 25,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Nettoyage des sanitaires",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "hand"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 15,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Vidage des poubelles",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 2,
+      "load_kg": 10,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Déplacements entre les locaux",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 1.0,
+      "workstation": "Marche et déplacements",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
 COPY exercises ./exercises
+COPY metiers ./metiers
 COPY library ./library
 COPY VERSION ./VERSION
 

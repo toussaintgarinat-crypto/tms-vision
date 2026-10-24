@@ -1,0 +1,50 @@
+{
+  "id": "caisse-hote",
+  "title": "Hôte ou hôtesse de caisse",
+  "description": "Encaissement debout, mise en rayon ponctuelle, accueil des clients. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 7,
+  "tasks": [
+    {
+      "name": "Scan et encaissement",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 5.0,
+      "cycles_per_minute": 12,
+      "load_kg": 3,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement",
+      "notes": "Rotation du tronc à chaque article."
+    },
+    {
+      "name": "Mise en rayon",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 4,
+      "load_kg": 6,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Accueil des clients",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 0.5,
+      "static_seconds": 1200,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

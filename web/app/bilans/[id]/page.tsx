@@ -51,6 +51,10 @@ export default function BilanDetailPage() {
   const [copyLabel, setCopyLabel] = useState("");
   const [copying, setCopying] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const [modelTitle, setModelTitle] = useState("");
+  const [savingModel, setSavingModel] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
+  const [savedModelTitle, setSavedModelTitle] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,6 +206,44 @@ export default function BilanDetailPage() {
     }
   }
 
+  // Garde les fiches d'activité de ce bilan comme modèle de métier réutilisable (page
+  // « Bibliothèque de métiers »). Les vidéos et les mesures ne sont pas conservées.
+  async function handleSaveModel(event: FormEvent) {
+    event.preventDefault();
+    const title = modelTitle.trim();
+    if (!title) {
+      setModelError("Donnez un nom au modèle.");
+      return;
+    }
+    setSavingModel(true);
+    setModelError(null);
+    setSavedModelTitle(null);
+    try {
+      const response = await fetch(`${API_URL}/bilans/${encodeURIComponent(id)}/metier`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!response.ok) {
+        let message = `Erreur ${response.status}`;
+        try {
+          const body = (await response.json()) as { detail?: unknown };
+          if (typeof body.detail === "string") message = body.detail;
+        } catch {
+          // corps non JSON : on garde le message générique.
+        }
+        setModelError(message);
+        return;
+      }
+      setSavedModelTitle(title);
+      setModelTitle("");
+    } catch {
+      setModelError("Impossible d'enregistrer le modèle (problème réseau ou serveur).");
+    } finally {
+      setSavingModel(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
@@ -267,6 +309,44 @@ export default function BilanDetailPage() {
             </div>
             {copyError && <p className="text-sm text-red-600">{copyError}</p>}
           </form>
+
+          {(loaded.bilan.tasks ?? []).length > 0 && (
+            <form onSubmit={handleSaveModel} className="flex flex-col gap-2 rounded border p-4">
+              <h2 className="text-lg font-semibold">Enregistrer comme modèle de métier</h2>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Garde les fiches d&apos;activité de ce bilan dans la bibliothèque de métiers, pour
+                créer d&apos;autres bilans à partir de lui. Les vidéos et les mesures ne sont pas
+                conservées.
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
+                  Nom du modèle
+                  <input
+                    value={modelTitle}
+                    onChange={(event) => setModelTitle(event.target.value)}
+                    placeholder="Ex. Opérateur de découpe laser"
+                    className="rounded border p-2"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={savingModel}
+                  className="rounded border border-black px-3 py-2 text-sm disabled:opacity-50"
+                >
+                  {savingModel ? "Enregistrement..." : "Enregistrer le modèle"}
+                </button>
+              </div>
+              {modelError && <p className="text-sm text-red-600">{modelError}</p>}
+              {savedModelTitle && (
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  Modèle « {savedModelTitle} » enregistré.{" "}
+                  <Link href="/metiers" className="underline">
+                    Ouvrir la bibliothèque de métiers
+                  </Link>
+                </p>
+              )}
+            </form>
+          )}
 
           <form onSubmit={handleAttach} className="grid gap-4 rounded border p-4 sm:grid-cols-3">
             <h2 className="text-lg font-semibold sm:col-span-3">Ajouter une vidéo au bilan</h2>
