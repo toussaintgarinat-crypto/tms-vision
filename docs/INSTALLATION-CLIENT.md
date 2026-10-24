@@ -390,13 +390,16 @@ utiliser WSL2 (Ubuntu) et suivre le § 6 dans la distribution, ou, plus simpleme
 L'assistant écoute le praticien et **pré-remplit** la fiche d'activité d'un bilan ; il n'enregistre
 jamais, le praticien relit les champs surlignés puis valide. Il est **éteint par défaut**.
 
-**Le régler depuis le site (sans toucher au `.env`).** Dans un bilan, section « Ajouter une tâche »,
-cocher « Assistant vocal » puis cliquer sur la roue **⚙** du bandeau :
+**L'activer et le régler depuis le site (sans toucher au `.env`).** Dans un bilan, section « Ajouter
+une tâche », cliquer sur la roue **⚙** du bandeau « Assistant vocal ». Le praticien l'**active ou le
+désactive lui-même** avec l'interrupteur « Assistant vocal activé » ; il est **désactivé au départ**
+et, tant qu'il l'est, rien n'est écouté ni envoyé (le serveur refuse aussi les demandes). L'activation
+vaut pour tous les utilisateurs du site. Dans le même panneau :
 - *Fournisseur d'IA* : Ollama, LM Studio, llama.cpp (locaux, rien ne sort de la machine), OpenRouter,
   OpenAI, DeepSeek (en ligne), ou « Autre serveur compatible OpenAI » (vLLM, LocalAI, Mistral, Groq…).
   Choisir un fournisseur remplit l'adresse et **charge la liste des modèles** du serveur dans une
   liste déroulante (« Automatique » = le premier modèle du serveur ; « Actualiser la liste » relit).
-- *Enregistrer* active l'assistant pour tous les utilisateurs du site.
+- *Enregistrer* garde le fournisseur, l'adresse et le modèle.
 - **Les clés ne se saisissent pas sur le site** : elles se mettent dans le fichier `.env`
   (`TMS_ASSISTANT_LLM_KEY=…` pour le service d'IA, `TMS_TRANSCRIPTION_KEY=…` pour la transcription),
   puis `docker compose up -d`. Le site n'enregistre ni ne renvoie jamais une clé ; le panneau indique
@@ -409,8 +412,8 @@ cocher « Assistant vocal » puis cliquer sur la roue **⚙** du bandeau :
 **Variables d'environnement (facultatif).** Elles servent de valeurs par défaut, ce qui est
 enregistré depuis le site les remplace : `TMS_ASSISTANT_LLM_URL` (adresse, ou `ollama`, `lmstudio`,
 `llamacpp`), `TMS_ASSISTANT_MODEL`, `TMS_TRANSCRIPTION_URL`. Les clés `TMS_ASSISTANT_LLM_KEY` et
-`TMS_TRANSCRIPTION_KEY` ne se lisent que dans `.env`. `TMS_ASSISTANT=off` verrouille l'assistant éteint (l'interface ne peut plus
-l'activer) ; `TMS_ASSISTANT=on` l'autorise d'office.
+`TMS_TRANSCRIPTION_KEY` ne se lisent que dans `.env`. L'ancienne variable `TMS_ASSISTANT` n'existe plus :
+si elle traîne dans un `.env`, elle est ignorée (vous pouvez la supprimer).
 
 **Modèle d'IA.**
 - *Local* : installer [Ollama](https://ollama.com) sur le serveur, `ollama pull mistral` (ou un autre

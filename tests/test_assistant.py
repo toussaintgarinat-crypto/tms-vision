@@ -72,9 +72,10 @@ def test_missing_fields():
 
 @pytest.fixture
 def client(monkeypatch):
-    monkeypatch.setenv("TMS_ASSISTANT", "on")
     monkeypatch.setenv("TMS_ASSISTANT_LLM_URL", "http://llm.test/v1")
-    return TestClient(app)
+    test_client = TestClient(app)
+    test_client.put("/assistant/settings", json={"enabled": True})
+    return test_client
 
 
 def _fake_llm(monkeypatch, reply):
@@ -86,8 +87,7 @@ def _fake_llm(monkeypatch, reply):
     return fake
 
 
-def test_disabled_by_default(monkeypatch):
-    monkeypatch.delenv("TMS_ASSISTANT", raising=False)
+def test_disabled_by_default():
     client = TestClient(app)
     assert client.get("/assistant/config").json()["enabled"] is False
     response = client.post("/assistant/extract", json={"form": "task", "transcript": "bonjour"})
@@ -95,9 +95,9 @@ def test_disabled_by_default(monkeypatch):
 
 
 def test_extract_requires_a_configured_model(monkeypatch):
-    monkeypatch.setenv("TMS_ASSISTANT", "on")
-    monkeypatch.delenv("TMS_ASSISTANT_LLM_URL", raising=False)
-    response = TestClient(app).post("/assistant/extract", json={"form": "task", "transcript": "x"})
+    test_client = TestClient(app)
+    test_client.put("/assistant/settings", json={"enabled": True})
+    response = test_client.post("/assistant/extract", json={"form": "task", "transcript": "x"})
     assert response.status_code == 503
 
 
@@ -239,13 +239,17 @@ def test_settings_validation(tmp_path):
     assert client.put("/assistant/settings", json={"base_url": "ollama"}).status_code == 200
 
 
-def test_environment_off_locks_the_assistant_and_env_gives_defaults(monkeypatch):
+def test_assistant_is_off_by_default_and_only_the_interface_switches_it(monkeypatch):
     client = TestClient(app)
+    assert client.get("/assistant/config").json()["enabled"] is False
+    # l'ancienne variable est ignorée, dans un sens comme dans l'autre
+    monkeypatch.setenv("TMS_ASSISTANT", "on")
+    assert client.get("/assistant/config").json()["enabled"] is False
     client.put("/assistant/settings", json={"enabled": True, "base_url": "ollama"})
-    assert client.get("/assistant/config").json()["enabled"] is True
     monkeypatch.setenv("TMS_ASSISTANT", "off")
-    view = client.get("/assistant/settings").json()
-    assert view["enabled"] is False and view["enabled_locked"] is True
+    assert client.get("/assistant/config").json()["enabled"] is True
+    assert client.put("/assistant/settings", json={"enabled": False}).json()["enabled"] is False
+    assert client.post("/assistant/extract", json={"form": "task", "transcript": "x"}).status_code == 403
     monkeypatch.delenv("TMS_ASSISTANT")
     monkeypatch.setenv("TMS_ASSISTANT_MODEL", "mistral:7b")
     assert client.get("/assistant/settings").json()["model"] == "mistral:7b"

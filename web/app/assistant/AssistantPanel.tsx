@@ -75,10 +75,10 @@ export function AssistantPanel({ values, onFields }: Props) {
   });
 
   const [showSettings, setShowSettings] = useState(false);
+  const assistantOn = config?.enabled === true;
   const [configVersion, setConfigVersion] = useState(0);
 
   useEffect(() => {
-    if (!settings.enabled) return;
     fetch(`${API_URL}/assistant/config`)
       .then((response) => (response.ok ? (response.json() as Promise<ServerConfig>) : Promise.reject()))
       .then((data) => {
@@ -86,7 +86,7 @@ export function AssistantPanel({ values, onFields }: Props) {
         setConfigError(false);
       })
       .catch(() => setConfigError(true));
-  }, [settings.enabled, configVersion]);
+  }, [configVersion]);
 
   function update(patch: Partial<AssistantSettings>) {
     saveSettings({ ...settings, ...patch });
@@ -158,20 +158,22 @@ export function AssistantPanel({ values, onFields }: Props) {
   return (
     <section className="flex flex-col gap-3 rounded border border-dashed p-4 text-sm sm:col-span-2">
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-2 font-medium">
-          <input
-            type="checkbox"
-            checked={settings.enabled}
-            onChange={(event) => update({ enabled: event.target.checked })}
-          />
+        <span className="flex items-center gap-2 font-medium">
           Assistant vocal (remplit la fiche à partir de ce que vous dites)
-        </label>
+          {config && (
+            <span
+              className={`rounded px-2 py-0.5 text-xs font-normal ${assistantOn ? "bg-green-100 text-green-900" : "bg-gray-200 text-gray-900"}`}
+            >
+              {assistantOn ? "Activé" : "Désactivé"}
+            </span>
+          )}
+        </span>
         <button
           type="button"
           onClick={() => setShowSettings((open) => !open)}
           aria-expanded={showSettings}
           aria-label="Réglages de l'assistant"
-          title="Réglages de l'assistant (fournisseur d'IA, clé, modèle)"
+          title="Réglages de l'assistant (activation, fournisseur d'IA, modèle)"
           className={`rounded border px-2 py-1 text-base leading-none ${showSettings ? "bg-gray-200 text-gray-900" : ""}`}
         >
           ⚙
@@ -182,25 +184,24 @@ export function AssistantPanel({ values, onFields }: Props) {
         <AssistantSettingsPanel onSaved={() => setConfigVersion((version) => version + 1)} />
       )}
 
-      {settings.enabled && (
+      {configError && (
+        <p className="text-red-600">Impossible de joindre le serveur de l&apos;assistant.</p>
+      )}
+      {config && !assistantOn && (
+        <p className="text-xs text-gray-600">
+          L&apos;assistant est désactivé. Pour l&apos;utiliser, ouvrez la roue ⚙ et activez-le.
+        </p>
+      )}
+      {assistantOn && (
         <>
-          {configError && (
-            <p className="text-red-600">Impossible de joindre le serveur de l&apos;assistant.</p>
-          )}
-          {config && !config.enabled && (
-            <p className="text-amber-700">
-              L&apos;assistant n&apos;est pas encore configuré sur ce serveur : ouvrez la roue ⚙ pour
-              choisir un fournisseur d&apos;IA.
-            </p>
-          )}
-          {config?.enabled && !config.llm_configured && (
+          {!config.llm_configured && (
             <p className="text-amber-700">
               Aucun modèle d&apos;IA n&apos;est configuré : ouvrez la roue ⚙ (par exemple Ollama ou
               OpenRouter).
             </p>
           )}
 
-          {config?.enabled && (
+          {config.llm_configured && (
             <>
               <p className="text-xs text-gray-600">
                 {privacyNotice(settings.engine, config.llm_local)}

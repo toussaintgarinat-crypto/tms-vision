@@ -15,7 +15,6 @@ type Provider = {
 
 type ServerSettings = {
   enabled: boolean;
-  enabled_locked: boolean;
   provider: string;
   base_url: string;
   model: string;
@@ -126,7 +125,6 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           base_url: baseUrl,
           model,
           transcription_url: transcriptionUrl,
-          enabled: true,
         }),
       });
       if (!response.ok) return setMessage({ ok: false, text: await detail(response) });
@@ -140,18 +138,43 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
     }
   }
 
+  async function toggleEnabled(next: boolean) {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`${API_URL}/assistant/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+      });
+      if (!response.ok) return setMessage({ ok: false, text: await detail(response) });
+      setServer((await response.json()) as ServerSettings);
+      onSaved();
+    } catch {
+      setMessage({ ok: false, text: "Impossible de modifier l'activation (problème réseau ou serveur)." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const input = "rounded border p-2";
   const missingKey = current?.key_required === true && !server.key_set;
 
   return (
     <div className="flex flex-col gap-3 rounded border bg-gray-50 p-3 text-gray-900 dark:bg-transparent dark:text-inherit">
       <h4 className="font-semibold">Réglages de l&apos;assistant</h4>
-      {server.enabled_locked && (
-        <p className="text-xs text-amber-700">
-          L&apos;administrateur a verrouillé l&apos;assistant (TMS_ASSISTANT dans le fichier .env) : il
-          reste éteint tant que cette ligne n&apos;est pas retirée.
-        </p>
-      )}
+      <label className="flex items-center gap-2 font-medium">
+        <input
+          type="checkbox"
+          checked={server.enabled}
+          disabled={saving}
+          onChange={(e) => void toggleEnabled(e.target.checked)}
+        />
+        Assistant vocal activé
+        <span className={`text-xs font-normal ${server.enabled ? "text-green-700" : "text-gray-600"}`}>
+          {server.enabled ? "(les praticiens peuvent l'utiliser)" : "(désactivé : rien n'est écouté ni envoyé)"}
+        </span>
+      </label>
 
       <label className="flex flex-col gap-1">
         Fournisseur d&apos;IA

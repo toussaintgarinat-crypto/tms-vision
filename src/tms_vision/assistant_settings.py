@@ -4,8 +4,9 @@ Fournisseur, adresse, modèle et transcription se règlent depuis l'interface (r
 l'assistant) et sont rangés dans data/assistant.json (sauvegardé avec data/, ignoré par Git).
 Les CLÉS (TMS_ASSISTANT_LLM_KEY, TMS_TRANSCRIPTION_KEY) ne sont lues QUE dans l'environnement, donc
 dans le fichier .env : le site ne les enregistre jamais et ne les renvoie jamais au navigateur.
-Les autres variables TMS_ASSISTANT* restent valables comme réglages par défaut ; ce qui est enregistré
-depuis l'interface les remplace. TMS_ASSISTANT=off les verrouille : l'assistant reste éteint.
+L'activation se fait UNIQUEMENT depuis l'interface (interrupteur du panneau ⚙) : éteint tant que le
+praticien ne l'a pas allumé. La variable TMS_ASSISTANT n'existe plus (ignorée). Les autres variables
+TMS_ASSISTANT_* restent valables comme réglages par défaut ; ce qui est enregistré sur le site les remplace.
 """
 import json
 import os
@@ -86,16 +87,6 @@ def is_local_url(url: str) -> bool:
     return any(host in url for host in _LOCAL_HOSTS)
 
 
-def _env_enabled() -> bool | None:
-    """True / False si l'environnement tranche, None s'il laisse l'interface décider."""
-    value = os.environ.get("TMS_ASSISTANT", "").strip().lower()
-    if value in {"on", "1", "true", "oui"}:
-        return True
-    if value in {"off", "0", "false", "non"}:
-        return False
-    return None
-
-
 def effective(overrides: dict | None = None) -> dict:
     """Réglages réellement utilisés : environnement < fichier < `overrides` (essai non enregistré).
     Les clés viennent toujours de l'environnement."""
@@ -112,9 +103,7 @@ def effective(overrides: dict | None = None) -> dict:
         for key, value in source.items():
             if key in FILE_FIELDS and key != "enabled" and isinstance(value, str) and value.strip():
                 merged[key] = value.strip()
-    forced = _env_enabled()
-    merged["enabled"] = forced if forced is not None else bool(file_data.get("enabled", False))
-    merged["enabled_locked"] = forced is not None
+    merged["enabled"] = bool(file_data.get("enabled", False))
     merged["base_url_resolved"] = resolve_url(merged["base_url"])
     merged["local"] = bool(merged["base_url_resolved"]) and is_local_url(merged["base_url_resolved"])
     return merged
@@ -124,7 +113,7 @@ def public_view() -> dict:
     """Ce que le navigateur peut voir : jamais les clés."""
     current = effective()
     return {
-        "enabled": current["enabled"], "enabled_locked": current["enabled_locked"],
+        "enabled": current["enabled"],
         "provider": current["provider"], "base_url": current["base_url"], "model": current["model"],
         "key_set": bool(current["api_key"]), "key_env": KEY_ENV,
         "transcription_url": current["transcription_url"],

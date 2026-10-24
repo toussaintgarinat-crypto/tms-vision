@@ -1,16 +1,14 @@
 export type SpeechEngine = "browser" | "server";
 export type AssistantMode = "dictation" | "guided";
 
+/** Préférences de ce navigateur. L'activation de l'assistant, elle, est réglée sur le serveur. */
 export type AssistantSettings = {
-  enabled: boolean;
   engine: SpeechEngine;
   speak: boolean;
   mode: AssistantMode;
 };
 
-/** L'assistant est éteint tant que l'utilisateur ne l'a pas activé. */
 export const DEFAULT_SETTINGS: AssistantSettings = {
-  enabled: false,
   engine: "browser",
   speak: false,
   mode: "dictation",
@@ -24,7 +22,6 @@ export function parseSettings(raw: string | null): AssistantSettings {
   try {
     const data = JSON.parse(raw) as Record<string, unknown>;
     return {
-      enabled: data.enabled === true,
       engine: data.engine === "server" ? "server" : "browser",
       speak: data.speak === true,
       mode: data.mode === "guided" ? "guided" : "dictation",
