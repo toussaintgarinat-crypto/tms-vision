@@ -1,0 +1,65 @@
+{
+  "id": "osteopathe",
+  "title": "Ostéopathe",
+  "description": "Consultations avec manipulations et techniques manuelles sur table de soin, travail penché et debout, gestes de force en torsion. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "sante-soins",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Techniques manuelles et manipulations",
+      "zones": [
+        "neck",
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 4.0,
+      "cycles_per_minute": 6,
+      "static_seconds": 30,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Palpation et tests",
+      "zones": [
+        "neck",
+        "trunk",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 10,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Installation et mobilisation des patients",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 1,
+      "load_kg": 15,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Entretien, dossiers et administratif",
+      "zones": [
+        "neck",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 30,
+      "workstation": "Assis devant écran",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

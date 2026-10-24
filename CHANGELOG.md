@@ -12,10 +12,10 @@ une version précise.
 
 ### Bibliothèque de métiers et copie de bilan
 - Bibliothèque classée par domaine d'activité (Terrain et BTP, Industrie et logistique, Alimentaire
-  et commerce, Santé et soins, Tertiaire et autres), avec des raccourcis en haut de page, et 16 métiers
-  de plus (26 au total) : maçon, carreleur, électricien, plombier-chauffagiste, couvreur, soudeur,
+  et commerce, Santé et soins, Tertiaire et autres), avec des raccourcis en haut de page, et 17 métiers
+  de plus (27 au total) : maçon, carreleur, électricien, plombier-chauffagiste, couvreur, soudeur,
   boulanger-pâtissier, boucher-charcutier, employé libre-service, infirmier, kinésithérapeute,
-  chirurgien-dentiste, téléconseiller, développeur ou graphiste, mécanicien, agriculteur ou
+  chirurgien-dentiste, ostéopathe, téléconseiller, développeur ou graphiste, mécanicien, agriculteur ou
   viticulteur. Tous en brouillon, à relire par un professionnel de santé. Chaque fichier de
   `metiers/` porte désormais un champ `domain`.
 - Page « Bibliothèque de métiers » (dossier `metiers/`) : 10 métiers avec leurs fiches d'activité
