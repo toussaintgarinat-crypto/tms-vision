@@ -1,0 +1,65 @@
+{
+  "id": "carreleur",
+  "title": "Carreleur",
+  "description": "Pose de carrelage au sol et au mur, découpe, collage et jointoiement, souvent à genoux. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "terrain-btp",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Pose au sol",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 4.0,
+      "cycles_per_minute": 6,
+      "static_seconds": 40,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Découpe des carreaux",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "hand"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 8,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Jointoiement",
+      "zones": [
+        "neck",
+        "trunk",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 25,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Transport des cartons de carreaux",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "foot"
+      ],
+      "activity_hours": 0.5,
+      "cycles_per_minute": 1,
+      "load_kg": 20,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

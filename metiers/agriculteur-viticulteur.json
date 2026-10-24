@@ -1,0 +1,62 @@
+{
+  "id": "agriculteur-viticulteur",
+  "title": "Agriculteur ou viticulteur",
+  "description": "Taille, récolte, conduite d'engins agricoles, port de caisses. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "tertiaire-autres",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Taille et récolte",
+      "zones": [
+        "neck",
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 3.5,
+      "cycles_per_minute": 20,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Port de caisses et de matériel",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 2,
+      "load_kg": 18,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Conduite d'engins",
+      "zones": [
+        "neck",
+        "trunk"
+      ],
+      "activity_hours": 2.0,
+      "static_seconds": 300,
+      "workstation": "Conduite",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Entretien du matériel",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 10,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

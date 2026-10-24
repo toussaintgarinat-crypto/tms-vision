@@ -2,6 +2,7 @@
   "id": "aide-soignant",
   "title": "Aide-soignant ou soignante",
   "description": "Soins au lit, transferts de patients, déplacements dans le service, transmissions écrites. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "sante-soins",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

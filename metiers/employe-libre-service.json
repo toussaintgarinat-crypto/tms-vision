@@ -1,0 +1,61 @@
+{
+  "id": "employe-libre-service",
+  "title": "Employé libre-service",
+  "description": "Mise en rayon, manutention de cartons, travail du sol au haut des étagères. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "alimentaire-commerce",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 7,
+  "tasks": [
+    {
+      "name": "Mise en rayon",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 3.5,
+      "cycles_per_minute": 8,
+      "load_kg": 8,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Déchargement de palettes et cartons",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 3,
+      "load_kg": 15,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Rayons bas et hauts",
+      "zones": [
+        "neck",
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 4,
+      "workstation": "Bras au-dessus des épaules (peinture, plafond)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Déplacements entre rayons et réserve",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 1.0,
+      "workstation": "Marche et déplacements",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

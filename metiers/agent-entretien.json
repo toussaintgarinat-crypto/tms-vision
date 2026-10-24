@@ -2,6 +2,7 @@
   "id": "agent-entretien",
   "title": "Agent d'entretien",
   "description": "Nettoyage des sols et des sanitaires, vidage des poubelles, déplacements entre les locaux. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "tertiaire-autres",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

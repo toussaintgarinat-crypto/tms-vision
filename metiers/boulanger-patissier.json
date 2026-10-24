@@ -1,0 +1,73 @@
+{
+  "id": "boulanger-patissier",
+  "title": "Boulanger-pâtissier",
+  "description": "Pétrissage, façonnage, enfournement, port de sacs de farine, travail de nuit debout. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "alimentaire-commerce",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Pétrissage et façonnage",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 3.0,
+      "cycles_per_minute": 12,
+      "workstation": "Geste répétitif en production",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Enfournement et défournement",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 3,
+      "load_kg": 8,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Réception et rangement des sacs",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 1,
+      "load_kg": 25,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Décoration et pâtisserie",
+      "zones": [
+        "neck",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 20,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Nettoyage de l'atelier",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 15,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

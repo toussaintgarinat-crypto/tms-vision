@@ -1,0 +1,37 @@
+{
+  "id": "teleconseiller",
+  "title": "Téléconseiller",
+  "description": "Appels entrants ou sortants au casque, saisie sur écran, posture assise prolongée. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "tertiaire-autres",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 7,
+  "tasks": [
+    {
+      "name": "Appels et saisie sur écran",
+      "zones": [
+        "neck",
+        "trunk",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 5.5,
+      "cycles_per_minute": 40,
+      "static_seconds": 300,
+      "workstation": "Assis devant écran",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Formations et réunions d'équipe",
+      "zones": [
+        "neck",
+        "trunk"
+      ],
+      "activity_hours": 1.0,
+      "workstation": "Assis devant écran",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

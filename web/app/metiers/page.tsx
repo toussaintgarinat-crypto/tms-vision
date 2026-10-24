@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 import { formatHours } from "../bilans/recurrenceFormat";
-import { MetierModel } from "./types";
+import { DOMAIN_LABELS, MetierDomain, MetierModel } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -101,6 +101,9 @@ export default function MetiersPage() {
 
   const custom = (models ?? []).filter((model) => model.origin === "custom");
   const library = (models ?? []).filter((model) => model.origin === "library");
+  const domains = (Object.keys(DOMAIN_LABELS) as MetierDomain[])
+    .map((domain) => ({ domain, items: library.filter((model) => model.domain === domain) }))
+    .filter(({ items }) => items.length > 0);
 
   function renderCard(model: MetierModel) {
     const total = model.tasks.reduce((sum, task) => sum + task.activity_hours, 0);
@@ -109,7 +112,7 @@ export default function MetiersPage() {
       <li key={model.id} className="flex flex-col gap-3 rounded border p-4">
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-lg font-semibold">{model.title}</h3>
+            <h4 className="text-lg font-semibold">{model.title}</h4>
             <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs dark:bg-zinc-800">
               {statusLabel(model)}
             </span>
@@ -219,7 +222,21 @@ export default function MetiersPage() {
             Contenu en brouillon : à relire et valider par un professionnel de santé avant tout
             usage auprès de salariés.
           </p>
-          <ul className="flex flex-col gap-4">{library.map(renderCard)}</ul>
+          <nav aria-label="Domaines d'activité" className="flex flex-wrap gap-2 text-sm">
+            {domains.map(({ domain, items }) => (
+              <a key={domain} href={`#domaine-${domain}`} className="rounded border px-3 py-1">
+                {DOMAIN_LABELS[domain]} ({items.length})
+              </a>
+            ))}
+          </nav>
+          {domains.map(({ domain, items }) => (
+            <section key={domain} id={`domaine-${domain}`} className="flex flex-col gap-3 pt-2">
+              <h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-300">
+                {DOMAIN_LABELS[domain]}
+              </h3>
+              <ul className="flex flex-col gap-4">{items.map(renderCard)}</ul>
+            </section>
+          ))}
         </section>
       )}
     </main>

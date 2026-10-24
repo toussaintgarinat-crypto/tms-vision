@@ -1,0 +1,66 @@
+{
+  "id": "mecanicien-automobile",
+  "title": "Mécanicien automobile",
+  "description": "Réparation sous le véhicule, travail les bras levés sous un pont élévateur, outils vibrants. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "tertiaire-autres",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Travail sous le véhicule",
+      "zones": [
+        "neck",
+        "trunk",
+        "upper_arm",
+        "lower_arm"
+      ],
+      "activity_hours": 3.0,
+      "cycles_per_minute": 6,
+      "static_seconds": 90,
+      "workstation": "Bras au-dessus des épaules (peinture, plafond)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Démontage et remontage de pièces",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 2.5,
+      "cycles_per_minute": 8,
+      "load_kg": 15,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Diagnostic et saisie",
+      "zones": [
+        "neck",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 25,
+      "workstation": "Assis devant écran",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Roues, pneus et outils vibrants",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 10,
+      "load_kg": 20,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

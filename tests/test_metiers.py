@@ -19,7 +19,7 @@ def _options(name: str) -> set[str]:
 def _model(**overrides) -> dict:
     return {
         "id": "test-metier", "title": "Test", "description": "Un métier de test.",
-        "status": "draft", "source": "human", "validated_by": None, "validated_on": None,
+        "domain": "tertiaire-autres", "status": "draft", "source": "human", "validated_by": None, "validated_on": None,
         "workday_hours": 8,
         "tasks": [{"name": "Tâche", "zones": ["neck"], "activity_hours": 2.0}],
         **overrides,
@@ -34,6 +34,15 @@ def test_the_shipped_library_is_valid_and_complete():
     # Rien ne se présente comme validé sans avoir été relu par un professionnel.
     assert all(model["status"] == "draft" for model in library)
     assert all(model["source"] == "ai" or model["validated_by"] for model in library)
+
+
+def test_library_domains_match_the_page_labels_and_each_one_has_jobs():
+    source = (Path(__file__).resolve().parents[1] / "web" / "app" / "metiers" / "types.ts")
+    block = re.search(r"DOMAIN_LABELS[^{]*\{(.*?)\};", source.read_text(encoding="utf-8"), re.S)
+    labelled = set(re.findall(r'"([a-z-]+)":', block.group(1)))
+
+    assert labelled == set(metiers.DOMAINS)
+    assert {model["domain"] for model in metiers.load_library()} == set(metiers.DOMAINS)
 
 
 def test_library_workstations_and_breaks_match_the_task_form_lists():
@@ -62,6 +71,7 @@ def test_validate_model_accepts_a_minimal_model_and_normalizes_tasks():
 
 @pytest.mark.parametrize("change, message", [
     ({"id": "Mauvais Id"}, "id"),
+    ({"domain": "autre"}, "domain"),
     ({"status": "ok"}, "status"),
     ({"source": "robot"}, "source"),
     ({"workday_hours": 0}, "workday_hours"),

@@ -1,0 +1,62 @@
+{
+  "id": "boucher-charcutier",
+  "title": "Boucher-charcutier",
+  "description": "Désossage, découpe, travail du couteau en poste debout, port de carcasses et de bacs. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "alimentaire-commerce",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Désossage et découpe",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 4.0,
+      "cycles_per_minute": 25,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Port de carcasses et de bacs",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 2,
+      "load_kg": 25,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Service au comptoir",
+      "zones": [
+        "trunk",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 2.0,
+      "cycles_per_minute": 6,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Nettoyage et affûtage",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 15,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

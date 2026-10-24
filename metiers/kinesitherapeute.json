@@ -1,0 +1,60 @@
+{
+  "id": "kinesitherapeute",
+  "title": "Kinésithérapeute",
+  "description": "Massages, mobilisations et manipulations manuelles, travail penché sur la table de soin. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "sante-soins",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Massage et thérapie manuelle",
+      "zones": [
+        "neck",
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 4.5,
+      "cycles_per_minute": 40,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Mobilisation de patients",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 2,
+      "load_kg": 15,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Rééducation guidée",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 1.0,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Bilans et dossiers",
+      "zones": [
+        "neck",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 30,
+      "workstation": "Assis devant écran",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

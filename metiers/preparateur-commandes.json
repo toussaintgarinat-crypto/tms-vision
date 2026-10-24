@@ -2,6 +2,7 @@
   "id": "preparateur-commandes",
   "title": "Préparateur de commandes (logistique)",
   "description": "Prélèvement en rayon, palettisation et déplacements en entrepôt, charges de 5 à 25 kg. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "industrie-logistique",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

@@ -1,0 +1,65 @@
+{
+  "id": "macon",
+  "title": "Maçon",
+  "description": "Montage de murs en briques ou parpaings, préparation et pose du mortier, port de matériaux. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "terrain-btp",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 8,
+  "tasks": [
+    {
+      "name": "Montage de murs",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 4.0,
+      "cycles_per_minute": 4,
+      "load_kg": 12,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Préparation du mortier",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 6,
+      "load_kg": 20,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Approvisionnement du chantier",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "foot"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 2,
+      "load_kg": 25,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Finitions et jointoiement",
+      "zones": [
+        "neck",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 20,
+      "workstation": "Bras au-dessus des épaules (peinture, plafond)",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

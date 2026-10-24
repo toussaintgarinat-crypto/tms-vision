@@ -15,11 +15,15 @@ METIERS_DIR = Path(__file__).resolve().parents[2] / "metiers"
 ZONES = ("neck", "trunk", "upper_arm", "lower_arm", "hand", "foot")
 STATUSES = ("draft", "validated")
 SOURCES = ("human", "ai")
+DOMAINS = (
+    "terrain-btp", "industrie-logistique", "alimentaire-commerce", "sante-soins",
+    "tertiaire-autres",
+)
 _ID_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 MAX_WORKDAY_HOURS = 24
 
 LIBRARY_KEYS = (
-    "id", "title", "description", "status", "source", "validated_by", "validated_on",
+    "id", "title", "description", "domain", "status", "source", "validated_by", "validated_on",
     "workday_hours", "tasks",
 )
 _TASK_NUMBERS = (
@@ -97,6 +101,8 @@ def validate_model(model: object) -> dict:
     for key in ("title", "description"):
         if not isinstance(model[key], str) or not model[key].strip():
             _fail(key, "texte obligatoire")
+    if model["domain"] not in DOMAINS:
+        _fail("domain", f"doit valoir l'un de : {', '.join(DOMAINS)}")
     if model["status"] not in STATUSES:
         _fail("status", f"doit valoir {' ou '.join(STATUSES)}")
     if model["source"] not in SOURCES:

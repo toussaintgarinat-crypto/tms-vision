@@ -2,6 +2,7 @@
   "id": "assemblage-operateur",
   "title": "Opérateur d'assemblage (industrie)",
   "description": "Ligne de montage : gestes répétitifs, bras souvent en élévation, contrôle visuel. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "industrie-logistique",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

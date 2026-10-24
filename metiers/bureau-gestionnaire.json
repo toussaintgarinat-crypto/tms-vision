@@ -2,6 +2,7 @@
   "id": "bureau-gestionnaire",
   "title": "Gestionnaire administratif (bureau)",
   "description": "Travail sur écran, appels et réunions, classement. Poste assis la majeure partie de la journée. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "tertiaire-autres",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

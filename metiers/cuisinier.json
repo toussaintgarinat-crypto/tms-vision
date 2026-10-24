@@ -2,6 +2,7 @@
   "id": "cuisinier",
   "title": "Cuisinier ou cuisinière",
   "description": "Préparation et découpe, cuisson et service debout, plonge, réception de marchandises. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "alimentaire-commerce",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

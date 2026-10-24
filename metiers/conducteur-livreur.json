@@ -2,6 +2,7 @@
   "id": "conducteur-livreur",
   "title": "Conducteur-livreur",
   "description": "Conduite prolongée, chargement et déchargement, livraisons à pied. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "industrie-logistique",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

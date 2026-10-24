@@ -2,6 +2,7 @@
   "id": "peintre-batiment",
   "title": "Peintre en bâtiment",
   "description": "Plafonds et murs, ponçage, manutention de matériel sur chantier. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "terrain-btp",
   "status": "draft",
   "source": "ai",
   "validated_by": null,

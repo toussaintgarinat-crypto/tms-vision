@@ -1,0 +1,74 @@
+{
+  "id": "infirmier",
+  "title": "Infirmier",
+  "description": "Soins au lit du patient, toilettes, mobilisations, préparation des traitements. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "sante-soins",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 7.5,
+  "tasks": [
+    {
+      "name": "Soins au lit du patient",
+      "zones": [
+        "neck",
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 3.0,
+      "cycles_per_minute": 3,
+      "static_seconds": 60,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Aide à la mobilisation et aux transferts",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 1,
+      "load_kg": 20,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Préparation des traitements",
+      "zones": [
+        "neck",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 10,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Dossiers et saisie informatique",
+      "zones": [
+        "neck",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 30,
+      "workstation": "Assis devant écran",
+      "breaks": "Déjeuner seulement"
+    },
+    {
+      "name": "Déplacements dans le service",
+      "zones": [
+        "trunk",
+        "foot"
+      ],
+      "activity_hours": 1.0,
+      "workstation": "Marche et déplacements",
+      "breaks": "Déjeuner seulement"
+    }
+  ]
+}

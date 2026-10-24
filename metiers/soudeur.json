@@ -1,0 +1,64 @@
+{
+  "id": "soudeur",
+  "title": "Soudeur",
+  "description": "Soudage à l'arc ou semi-automatique de pièces métalliques, meulage, posture contrainte sous masque. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "industrie-logistique",
+  "status": "draft",
+  "source": "ai",
+  "validated_by": null,
+  "validated_on": null,
+  "workday_hours": 7.5,
+  "tasks": [
+    {
+      "name": "Soudage",
+      "zones": [
+        "neck",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 4.0,
+      "cycles_per_minute": 6,
+      "static_seconds": 120,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Meulage et finition",
+      "zones": [
+        "trunk",
+        "upper_arm",
+        "lower_arm",
+        "hand"
+      ],
+      "activity_hours": 1.5,
+      "cycles_per_minute": 40,
+      "workstation": "Debout statique (caisse, atelier)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Manutention des pièces",
+      "zones": [
+        "trunk",
+        "upper_arm"
+      ],
+      "activity_hours": 1.0,
+      "cycles_per_minute": 2,
+      "load_kg": 10,
+      "workstation": "Manutention et port de charges",
+      "breaks": "Pauses courtes toutes les 2 h"
+    },
+    {
+      "name": "Préparation et traçage",
+      "zones": [
+        "neck",
+        "trunk",
+        "hand"
+      ],
+      "activity_hours": 0.5,
+      "cycles_per_minute": 5,
+      "workstation": "Penché (soins, nettoyage)",
+      "breaks": "Pauses courtes toutes les 2 h"
+    }
+  ]
+}

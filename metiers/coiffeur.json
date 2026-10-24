@@ -2,6 +2,7 @@
   "id": "coiffeur",
   "title": "Coiffeur ou coiffeuse",
   "description": "Coupe et coiffage bras en avant ou élevés, shampoings penchés, accueil. Valeurs types indicatives, à ajuster pour chaque personne.",
+  "domain": "tertiaire-autres",
   "status": "draft",
   "source": "ai",
   "validated_by": null,
