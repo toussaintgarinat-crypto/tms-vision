@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 import { GestureCorrection, ProgramItem, ProgramList } from "../../ProgramList";
@@ -32,6 +32,7 @@ type LoadedBilan = { id: string; bilan: StoredBilan; report: BilanReport; progra
 
 export default function BilanDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const id = params.id;
   // État porteur de l'id auquel il correspond, comparé à `id` au rendu (même
   // motif que historique/[id]/page.tsx, pour satisfaire
@@ -47,6 +48,9 @@ export default function BilanDetailPage() {
   const [representative, setRepresentative] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [copyLabel, setCopyLabel] = useState("");
+  const [copying, setCopying] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,6 +169,39 @@ export default function BilanDetailPage() {
     }
   }
 
+  // Copie le bilan (fiches d'activité, durée de la journée) pour le reprendre avec une autre
+  // personne, puis ouvre la copie. Les vidéos de la personne d'origine ne sont pas copiées.
+  async function handleDuplicate(event: FormEvent) {
+    event.preventDefault();
+    setCopying(true);
+    setCopyError(null);
+    try {
+      const response = await fetch(`${API_URL}/bilans/${encodeURIComponent(id)}/duplicate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: copyLabel.trim() || null }),
+      });
+      if (!response.ok) {
+        let message = `Erreur ${response.status}`;
+        try {
+          const body = (await response.json()) as { detail?: unknown };
+          if (typeof body.detail === "string") message = body.detail;
+        } catch {
+          // corps non JSON : on garde le message générique.
+        }
+        setCopyError(message);
+        return;
+      }
+      const copy = (await response.json()) as StoredBilan;
+      setCopyLabel("");
+      router.push(`/bilans/${encodeURIComponent(copy.id)}`);
+    } catch {
+      setCopyError("Impossible de dupliquer le bilan (problème réseau ou serveur).");
+    } finally {
+      setCopying(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
@@ -203,6 +240,34 @@ export default function BilanDetailPage() {
 
       {loaded && loaded.id === id && (
         <>
+          <form onSubmit={handleDuplicate} className="flex flex-col gap-2 rounded border p-4">
+            <h2 className="text-lg font-semibold">Reprendre ce bilan pour une autre personne</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Copie les fiches d&apos;activité et la durée de la journée. Les vidéos de la
+              personne d&apos;origine ne sont pas copiées : ajoutez celles de la nouvelle personne
+              sur la copie.
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
+                Nom de la copie
+                <input
+                  value={copyLabel}
+                  onChange={(event) => setCopyLabel(event.target.value)}
+                  placeholder={`Copie de ${loaded.bilan.label ?? "bilan"}`}
+                  className="rounded border p-2"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={copying}
+                className="rounded border border-black px-3 py-2 text-sm disabled:opacity-50"
+              >
+                {copying ? "Copie en cours..." : "Dupliquer ce bilan"}
+              </button>
+            </div>
+            {copyError && <p className="text-sm text-red-600">{copyError}</p>}
+          </form>
+
           <form onSubmit={handleAttach} className="grid gap-4 rounded border p-4 sm:grid-cols-3">
             <h2 className="text-lg font-semibold sm:col-span-3">Ajouter une vidéo au bilan</h2>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">

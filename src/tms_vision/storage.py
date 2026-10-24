@@ -6,7 +6,7 @@ concurrente à optimiser)."""
 import csv
 import io
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import duckdb
@@ -619,6 +619,29 @@ def create_bilan_task(*, task_id: str, bilan_id: str, created_at: datetime, task
         )
     finally:
         conn.close()
+
+
+def duplicate_bilan(
+    *, source_id: str, new_id: str, created_at: datetime, label: str | None, task_ids: list[str]
+) -> None:
+    """Crée `new_id` à partir de `source_id` : durée de la journée et fiches d'activité (dans le
+    même ordre, avec les identifiants `task_ids`). Les analyses ne sont pas rattachées à la copie,
+    donc les fiches perdent leur lien avec une analyse. KeyError si `source_id` est inconnu."""
+    source = get_bilan(source_id)
+    if source is None:
+        raise KeyError(f"bilan {source_id}")
+    create_bilan(
+        bilan_id=new_id, created_at=created_at, label=label,
+        workday_hours=source["workday_hours"],
+    )
+    for index, (task_id, task) in enumerate(zip(task_ids, source["tasks"], strict=True)):
+        copied = {field: task[field] for field in _TASK_FIELDS}
+        copied["analysis_id"] = None
+        # Un décalage de quelques microsecondes garde l'ordre d'origine des fiches.
+        create_bilan_task(
+            task_id=task_id, bilan_id=new_id,
+            created_at=created_at + timedelta(microseconds=index), task=copied,
+        )
 
 
 def update_bilan_task(*, task_id: str, bilan_id: str, task: dict) -> None:

@@ -1481,3 +1481,47 @@ def test_bilan_program_is_seated_for_a_seated_workstation_and_says_so(tmp_path, 
     assert after["position"] == "seated"
     assert "assis" in after["position_note"]
     assert after["program"][0]["capsule"]["id"] == "seated-round-hollow-back"
+
+
+def test_duplicate_bilan_copies_the_tasks_but_not_the_videos(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    original_id = client.post("/bilans", json={"label": "Quai 3", "workday_hours": 7.5}).json()["id"]
+    client.post(f"/bilans/{original_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 5.0, "representative": True})
+    client.post(f"/bilans/{original_id}/tasks", json=_task_payload(name="Peindre", notes="note"))
+    client.post(f"/bilans/{original_id}/tasks", json=_task_payload(
+        name="Contrôler", zones=["trunk"], activity_hours=None, cycles_per_minute=8.0,
+        analysis_id="a-1"))
+
+    response = client.post(f"/bilans/{original_id}/duplicate", json={"label": "Sophie Martin"})
+
+    assert response.status_code == 200
+    copy = response.json()
+    assert copy["id"] != original_id
+    assert copy["label"] == "Sophie Martin"
+    assert copy["workday_hours"] == 7.5
+    assert copy["items"] == []
+    assert [task["name"] for task in copy["tasks"]] == ["Peindre", "Contrôler"]
+    assert copy["tasks"][0]["notes"] == "note"
+    assert all(task["analysis_id"] is None for task in copy["tasks"])
+    assert {task["id"] for task in copy["tasks"]}.isdisjoint(
+        task["id"] for task in client.get(f"/bilans/{original_id}").json()["tasks"]
+    )
+    # L'original ne bouge pas : sa vidéo et le lien de sa fiche sont intacts.
+    original = client.get(f"/bilans/{original_id}").json()
+    assert [item["analysis_id"] for item in original["items"]] == ["a-1"]
+    assert original["tasks"][1]["analysis_id"] == "a-1"
+
+
+def test_duplicate_bilan_default_label_and_unknown_bilan(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    named = client.post("/bilans", json={"label": "Quai 3"}).json()["id"]
+    unnamed = client.post("/bilans", json={}).json()["id"]
+
+    assert client.post(f"/bilans/{named}/duplicate", json={}).json()["label"] == "Copie de Quai 3"
+    assert client.post(f"/bilans/{unnamed}/duplicate", json={"label": "  "}).json()[
+        "label"] == "Copie de bilan"
+    assert client.post("/bilans/nope/duplicate", json={}).status_code == 404

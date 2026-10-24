@@ -10,6 +10,12 @@ une version précise.
 
 ## [Non publié]
 
+### Démo par métier et copie de bilan
+- Page « Démo par métier » dans le menu : quatre fiches types (bureau, logistique, industrie, caisse)
+  avec zones sollicitées et programme de micro-pauses ; une fiche se copie et se modifie par personne.
+- Bilans de poste : bouton « Dupliquer ce bilan » pour reprendre un bilan avec une autre personne
+  (fiches d'activité et durée de la journée copiées, vidéos non copiées).
+
 ### Assistant vocal (facultatif, éteint par défaut)
 - Écoute le praticien et pré-remplit la fiche d'activité (dictée libre ou questions guidées, lecture
   à voix haute en option) ; n'enregistre jamais, les champs remplis sont surlignés pour relecture.

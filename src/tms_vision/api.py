@@ -484,6 +484,10 @@ class BilanCreate(BaseModel):
     workday_hours: float = Field(default=9.0, gt=0, le=24)
 
 
+class BilanDuplicate(BaseModel):
+    label: str | None = None
+
+
 class BilanAnalysisAttach(BaseModel):
     analysis_id: str
     activity_hours: float = Field(gt=0)
@@ -505,6 +509,23 @@ async def create_bilan(body: BilanCreate) -> dict:
         label=body.label, workday_hours=body.workday_hours,
     )
     return _get_bilan_or_404(bilan_id)
+
+
+@app.post("/bilans/{bilan_id}/duplicate")
+async def duplicate_bilan(bilan_id: str, body: BilanDuplicate) -> dict:
+    """Copie un bilan pour le reprendre avec une autre personne : libellé, durée de la journée et
+    fiches d'activité. Les vidéos analysées ne sont pas copiées (ce sont celles de la personne
+    d'origine), donc une fiche n'y reste pas liée."""
+    original = _get_bilan_or_404(bilan_id)
+    label = _clean_text(body.label)
+    if label is None:
+        label = f"Copie de {original['label']}" if original["label"] else "Copie de bilan"
+    new_id = generate_run_id()
+    storage.duplicate_bilan(
+        source_id=bilan_id, new_id=new_id, created_at=datetime.now(timezone.utc), label=label,
+        task_ids=[generate_run_id() for _ in original["tasks"]],
+    )
+    return _get_bilan_or_404(new_id)
 
 
 @app.get("/bilans")
