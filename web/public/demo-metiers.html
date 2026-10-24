@@ -1,9 +1,15 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Démo postes TMS Vision</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 /* Mise en page : titre + sélecteur de métier, bandeau du poste, puis deux colonnes (analyse à gauche, programme de micro-pauses à droite). */
 :root{
+  color-scheme:light;
   --bg:#f3f6f6; --surface:#ffffff; --fg:#10201f; --muted:#566867; --line:#d9e2e1; --soft:#e8f0ef;
   --accent:#0b7a75; --accent-bg:#d9f0ee; --accent-fg:#ffffff;
   --g:#1f8a4c; --g-bg:#ddf3e5; --y:#9a6a00; --y-bg:#fbf0cc; --o:#b4540a; --o-bg:#fde6d2; --r:#b42318; --r-bg:#fbe0dd;
@@ -19,7 +25,7 @@
   --g:#5fd18a; --g-bg:#123222; --y:#f0cf63; --y-bg:#3a3010; --o:#f5a35f; --o-bg:#40240d; --r:#f58b80; --r-bg:#401a16; color-scheme:dark}
 
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
   padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.15}
@@ -77,6 +83,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .copie{background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;margin-left:6px}
 </style>
 
+</head>
+<body>
 <div class="wrap">
   <header class="top">
     <div>
@@ -258,3 +266,5 @@ document.addEventListener('change',e=>{
 });
 render();
 </script>
+</body>
+</html>

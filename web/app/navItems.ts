@@ -5,6 +5,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/historique", label: "Historique" },
   { href: "/bilans", label: "Bilans de poste" },
   { href: "/bibliotheque", label: "Bibliothèque d'exercices" },
+  { href: "/demo", label: "Démo par métier" },
 ];
 
 // Page de l'élément du menu en cours : « / » n'est actif que sur l'accueil, les autres aussi sur
