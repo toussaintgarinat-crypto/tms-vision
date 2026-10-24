@@ -79,6 +79,14 @@ CREATE TABLE IF NOT EXISTS bilans (
 )
 """
 
+CREATE_BILAN_FOLDERS_TABLE = """
+CREATE TABLE IF NOT EXISTS bilan_folders (
+    id VARCHAR PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    name VARCHAR NOT NULL
+)
+"""
+
 CREATE_BILAN_ANALYSES_TABLE = """
 CREATE TABLE IF NOT EXISTS bilan_analyses (
     bilan_id VARCHAR NOT NULL REFERENCES bilans(id),
@@ -196,6 +204,7 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_ANALYSES_TABLE)
     conn.execute(CREATE_ANALYSIS_FRAMES_TABLE)
     conn.execute(CREATE_BILANS_TABLE)
+    conn.execute(CREATE_BILAN_FOLDERS_TABLE)
     conn.execute(CREATE_BILAN_ANALYSES_TABLE)
     conn.execute(CREATE_BILAN_TASKS_TABLE)
     conn.execute(CREATE_METIER_MODELS_TABLE)
@@ -203,6 +212,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_LIBRARY_SHARES_TABLE)
     # Archivage des bilans (ajouté après coup) : NULL = bilan actif.
     conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP")
+    # Rangement des bilans en dossiers (par entreprise, par exemple) : NULL = sans dossier.
+    conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS folder_id VARCHAR")
     for column, column_type in _BILAN_TASKS_LATER_COLUMNS:
         conn.execute(f"ALTER TABLE bilan_tasks ADD COLUMN IF NOT EXISTS {column} {column_type}")
     # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
@@ -467,7 +478,7 @@ def get_frame_angles(analysis_id: str) -> list[dict] | None:
     return [dict(zip(columns, row)) for row in rows]
 
 
-_BILAN_COLUMNS = ["id", "created_at", "label", "workday_hours", "archived_at"]
+_BILAN_COLUMNS = ["id", "created_at", "label", "workday_hours", "archived_at", "folder_id"]
 
 
 def _bilan_record(row) -> dict:
@@ -650,6 +661,9 @@ def duplicate_bilan(
         bilan_id=new_id, created_at=created_at, label=label,
         workday_hours=source["workday_hours"],
     )
+    # Une copie reste dans le dossier d'origine (même entreprise, autre personne).
+    if source["folder_id"] is not None:
+        set_bilan_folder(bilan_id=new_id, folder_id=source["folder_id"])
     for index, (task_id, task) in enumerate(zip(task_ids, source["tasks"], strict=True)):
         copied = {field: task[field] for field in _TASK_FIELDS}
         copied["analysis_id"] = None
@@ -772,6 +786,97 @@ def set_bilan_archived(*, bilan_id: str, archived_at: datetime | None) -> None:
             "UPDATE bilans SET archived_at = ? WHERE id = ?",
             [_to_naive_utc(archived_at) if archived_at is not None else None, bilan_id],
         )
+    finally:
+        conn.close()
+
+
+def _folder_record(row) -> dict:
+    folder_id, created_at, name = row
+    return {"id": folder_id, "created_at": _attach_utc(created_at).isoformat(), "name": name}
+
+
+def _check_folder_name_free(conn, name: str, *, except_id: str | None = None) -> None:
+    """ValueError si un autre dossier porte déjà ce nom (sans tenir compte des majuscules)."""
+    taken = conn.execute(
+        "SELECT id FROM bilan_folders WHERE lower(name) = lower(?)", [name]
+    ).fetchall()
+    if any(row[0] != except_id for row in taken):
+        raise ValueError(f"folder name {name!r} already used")
+
+
+def list_bilan_folders() -> list[dict]:
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            "SELECT id, created_at, name FROM bilan_folders ORDER BY lower(name), id"
+        ).fetchall()
+    finally:
+        conn.close()
+    return [_folder_record(row) for row in rows]
+
+
+def get_bilan_folder(folder_id: str) -> dict | None:
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT id, created_at, name FROM bilan_folders WHERE id = ?", [folder_id]
+        ).fetchone()
+    finally:
+        conn.close()
+    return _folder_record(row) if row is not None else None
+
+
+def create_bilan_folder(*, folder_id: str, created_at: datetime, name: str) -> None:
+    """ValueError si le nom est déjà pris."""
+    conn = _connect()
+    try:
+        _check_folder_name_free(conn, name)
+        conn.execute(
+            "INSERT INTO bilan_folders (id, created_at, name) VALUES (?, ?, ?)",
+            [folder_id, _to_naive_utc(created_at), name],
+        )
+    finally:
+        conn.close()
+
+
+def rename_bilan_folder(*, folder_id: str, name: str) -> None:
+    """KeyError si le dossier est inconnu, ValueError si le nom est déjà pris."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilan_folders WHERE id = ?", [folder_id]).fetchone() is None:
+            raise KeyError(f"folder {folder_id}")
+        _check_folder_name_free(conn, name, except_id=folder_id)
+        conn.execute("UPDATE bilan_folders SET name = ? WHERE id = ?", [name, folder_id])
+    finally:
+        conn.close()
+
+
+def delete_bilan_folder(folder_id: str) -> bool:
+    """Supprime le dossier ; ses bilans ne sont pas supprimés, ils repassent « sans dossier ».
+    False si le dossier est inconnu."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilan_folders WHERE id = ?", [folder_id]).fetchone() is None:
+            return False
+        conn.execute("UPDATE bilans SET folder_id = NULL WHERE folder_id = ?", [folder_id])
+        conn.execute("DELETE FROM bilan_folders WHERE id = ?", [folder_id])
+    finally:
+        conn.close()
+    return True
+
+
+def set_bilan_folder(*, bilan_id: str, folder_id: str | None) -> None:
+    """Range un bilan dans un dossier (`None` : sans dossier). KeyError si le bilan ou le dossier
+    est inconnu."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilans WHERE id = ?", [bilan_id]).fetchone() is None:
+            raise KeyError(f"bilan {bilan_id}")
+        if folder_id is not None and conn.execute(
+            "SELECT 1 FROM bilan_folders WHERE id = ?", [folder_id]
+        ).fetchone() is None:
+            raise KeyError(f"folder {folder_id}")
+        conn.execute("UPDATE bilans SET folder_id = ? WHERE id = ?", [folder_id, bilan_id])
     finally:
         conn.close()
 

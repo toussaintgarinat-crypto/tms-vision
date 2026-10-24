@@ -1756,3 +1756,100 @@ def test_an_existing_database_without_archiving_is_upgraded_in_place(tmp_path, m
 
     assert bilan["id"] == "b-1" and bilan["archived_at"] is None
     assert client.post("/bilans/b-1/archive").json()["archived_at"] is not None
+
+
+def test_folders_are_created_renamed_listed_and_names_stay_unique(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    acme = client.post("/bilan-folders", json={"name": "  Acme Industrie "})
+    assert acme.status_code == 200 and acme.json()["name"] == "Acme Industrie"
+    client.post("/bilan-folders", json={"name": "Boulangerie Roche"})
+
+    assert [f["name"] for f in client.get("/bilan-folders").json()] == [
+        "Acme Industrie", "Boulangerie Roche"]
+    assert client.post("/bilan-folders", json={"name": "ACME industrie"}).status_code == 409
+    assert client.post("/bilan-folders", json={"name": "   "}).status_code == 422
+    assert client.post("/bilan-folders", json={"name": "x" * 81}).status_code == 422
+
+    renamed = client.put(f"/bilan-folders/{acme.json()['id']}", json={"name": "Acme SA"})
+    assert renamed.json()["name"] == "Acme SA"
+    # Garder son propre nom (casse changée) est permis, prendre celui d'un autre non.
+    assert client.put(f"/bilan-folders/{acme.json()['id']}", json={"name": "ACME sa"}).status_code == 200
+    assert client.put(f"/bilan-folders/{acme.json()['id']}",
+                      json={"name": "boulangerie roche"}).status_code == 409
+    assert client.put("/bilan-folders/nope", json={"name": "Z"}).status_code == 404
+
+
+def test_moving_bilans_between_folders_keeps_them_in_their_active_or_archive_list(
+    tmp_path, monkeypatch
+):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    folder = client.post("/bilan-folders", json={"name": "Acme"}).json()["id"]
+    first = client.post("/bilans", json={"label": "Poste A"}).json()["id"]
+    second = client.post("/bilans", json={"label": "Poste B"}).json()["id"]
+
+    assert client.get(f"/bilans/{first}").json()["folder_id"] is None
+    moved = client.post(f"/bilans/{first}/folder", json={"folder_id": folder})
+    assert moved.status_code == 200 and moved.json()["folder_id"] == folder
+    client.post(f"/bilans/{second}/folder", json={"folder_id": folder})
+    client.post(f"/bilans/{second}/archive")
+
+    active = {b["id"]: b["folder_id"] for b in client.get("/bilans").json()}
+    archived = {b["id"]: b["folder_id"] for b in client.get("/bilans?archived=true").json()}
+    assert active == {first: folder} and archived == {second: folder}
+
+    out = client.post(f"/bilans/{first}/folder", json={"folder_id": None})
+    assert out.json()["folder_id"] is None
+    assert client.post(f"/bilans/{first}/folder", json={"folder_id": "nope"}).status_code == 404
+    assert client.post("/bilans/nope/folder", json={"folder_id": folder}).status_code == 404
+
+
+def test_deleting_a_folder_keeps_its_bilans(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    folder = client.post("/bilan-folders", json={"name": "Acme"}).json()["id"]
+    bilan_id = client.post("/bilans", json={"label": "Poste A"}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/folder", json={"folder_id": folder})
+
+    assert client.delete(f"/bilan-folders/{folder}").status_code == 200
+
+    assert client.get("/bilan-folders").json() == []
+    assert client.get(f"/bilans/{bilan_id}").json()["folder_id"] is None
+    assert [b["id"] for b in client.get("/bilans").json()] == [bilan_id]
+    assert client.delete(f"/bilan-folders/{folder}").status_code == 404
+
+
+def test_duplicating_a_bilan_keeps_its_folder_but_not_its_archive_state(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    folder = client.post("/bilan-folders", json={"name": "Acme"}).json()["id"]
+    bilan_id = client.post("/bilans", json={"label": "Poste A"}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/folder", json={"folder_id": folder})
+    client.post(f"/bilans/{bilan_id}/archive")
+
+    copy = client.post(f"/bilans/{bilan_id}/duplicate", json={}).json()
+
+    assert copy["folder_id"] == folder
+    assert copy["archived_at"] is None
+
+
+def test_archiving_and_moving_a_bilan_that_has_tasks_and_a_video_works(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    _save_analysis_with_frames("a-1", _sawtooth_frames())
+    client = TestClient(app)
+    folder = client.post("/bilan-folders", json={"name": "Acme"}).json()["id"]
+    bilan_id = client.post("/bilans", json={"label": "Poste A", "workday_hours": 9.0}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": 4.0, "representative": True})
+    client.post(f"/bilans/{bilan_id}/tasks", json=_task_payload())
+
+    assert client.post(f"/bilans/{bilan_id}/archive").status_code == 200
+    assert client.post(f"/bilans/{bilan_id}/folder", json={"folder_id": folder}).status_code == 200
+    assert client.post(f"/bilans/{bilan_id}/unarchive").status_code == 200
+    assert client.delete(f"/bilan-folders/{folder}").status_code == 200
+
+    final = client.get(f"/bilans/{bilan_id}").json()
+    assert len(final["tasks"]) == 1 and len(final["items"]) == 1
+    assert final["folder_id"] is None and final["archived_at"] is None

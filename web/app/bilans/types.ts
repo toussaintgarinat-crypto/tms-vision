@@ -99,6 +99,14 @@ export type StoredBilan = {
   workday_hours: number;
   // Date d'archivage ; null pour un bilan actif.
   archived_at?: string | null;
+  // Dossier (par exemple une entreprise) où le bilan est rangé ; null : sans dossier.
+  folder_id?: string | null;
   items?: BilanItem[];
   tasks?: BilanTask[];
+};
+
+export type BilanFolder = {
+  id: string;
+  created_at: string;
+  name: string;
 };

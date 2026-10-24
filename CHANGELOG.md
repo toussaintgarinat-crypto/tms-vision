@@ -26,6 +26,11 @@ une version précise.
   perdre (Archiver, Restaurer) ou le supprimer définitivement (avec confirmation). Les mêmes actions
   sont sur la page d'un bilan. Les vidéos analysées ne sont jamais supprimées avec le bilan. Les
   bases existantes sont mises à niveau automatiquement.
+- Dossiers de bilans (par exemple un dossier par entreprise, avec ses différents postes) : création,
+  renommage et suppression de dossiers dans « Bilans » comme dans « Archives », rangement des bilans
+  par glisser-déposer ou par la liste de leur ligne, et choix du dossier sur la page d'un bilan. Les
+  dossiers sont communs aux bilans et aux archives ; supprimer un dossier ne supprime pas ses bilans.
+  Une copie de bilan reste dans le dossier d'origine.
 - Correction : la suppression d'une fiche d'activité depuis le site était refusée par l'API
   (méthode DELETE absente de la configuration CORS).
 

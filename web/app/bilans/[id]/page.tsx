@@ -8,7 +8,7 @@ import { GestureCorrection, ProgramItem, ProgramList } from "../../ProgramList";
 import { RecurrenceReport } from "../RecurrenceReport";
 import { formatHours } from "../recurrenceFormat";
 import { TaskSection } from "../TaskSection";
-import { BilanReport, StoredBilan } from "../types";
+import { BilanFolder, BilanReport, StoredBilan } from "../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -55,6 +55,7 @@ export default function BilanDetailPage() {
   const [savingModel, setSavingModel] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const [savedModelTitle, setSavedModelTitle] = useState<string | null>(null);
+  const [folders, setFolders] = useState<BilanFolder[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [filing, setFiling] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -119,6 +120,21 @@ export default function BilanDetailPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/bilan-folders`)
+      .then((response) => (response.ok ? (response.json() as Promise<BilanFolder[]>) : []))
+      .then((data) => {
+        if (!cancelled) setFolders(data);
+      })
+      .catch(() => {
+        if (!cancelled) setFolders([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadToken]);
 
   const isNotFound = notFoundFor === id;
   const isFetchError = fetchErrorFor === id;
@@ -247,6 +263,25 @@ export default function BilanDetailPage() {
     }
   }
 
+  // Range ce bilan dans un dossier (chaîne vide : sans dossier).
+  async function handleMove(folderId: string) {
+    setFiling(true);
+    setFileError(null);
+    try {
+      const response = await fetch(`${API_URL}/bilans/${encodeURIComponent(id)}/folder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder_id: folderId || null }),
+      });
+      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      setReloadToken((token) => token + 1);
+    } catch {
+      setFileError("Impossible de déplacer le bilan (problème réseau ou serveur).");
+    } finally {
+      setFiling(false);
+    }
+  }
+
   // Archive, restaure ou supprime ce bilan. Archiver ou supprimer ramène à la liste.
   async function handleFile(action: "archive" | "unarchive" | "delete") {
     setFiling(true);
@@ -314,6 +349,26 @@ export default function BilanDetailPage() {
               Archiver ce bilan
             </button>
           )}
+          <label className="flex items-center gap-2">
+            Dossier
+            <select
+              value={
+                loaded.bilan.folder_id && folders.some((folder) => folder.id === loaded.bilan.folder_id)
+                  ? loaded.bilan.folder_id
+                  : ""
+              }
+              disabled={filing}
+              onChange={(event) => handleMove(event.target.value)}
+              className="rounded border p-1"
+            >
+              <option value="">Sans dossier</option>
+              {folders.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </label>
           {confirmDelete ? (
             <span className="flex items-center gap-2">
               <button

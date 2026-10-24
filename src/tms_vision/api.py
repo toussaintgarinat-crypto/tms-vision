@@ -637,6 +637,71 @@ async def list_bilans(archived: bool = False) -> list[dict]:
     return storage.list_bilans(archived=archived)
 
 
+class FolderBody(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+class FolderMove(BaseModel):
+    folder_id: str | None = None
+
+
+def _clean_folder_name(body: FolderBody) -> str:
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Le nom du dossier est obligatoire.")
+    return name
+
+
+@app.get("/bilan-folders")
+async def list_bilan_folders() -> list[dict]:
+    """Dossiers de bilans (par exemple une entreprise), par ordre alphabétique."""
+    return storage.list_bilan_folders()
+
+
+@app.post("/bilan-folders")
+async def create_bilan_folder(body: FolderBody) -> dict:
+    name = _clean_folder_name(body)
+    folder_id = generate_run_id()
+    try:
+        storage.create_bilan_folder(
+            folder_id=folder_id, created_at=datetime.now(timezone.utc), name=name
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail="Un dossier porte déjà ce nom.") from error
+    return storage.get_bilan_folder(folder_id)
+
+
+@app.put("/bilan-folders/{folder_id}")
+async def rename_bilan_folder(folder_id: str, body: FolderBody) -> dict:
+    name = _clean_folder_name(body)
+    try:
+        storage.rename_bilan_folder(folder_id=folder_id, name=name)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Dossier introuvable.") from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail="Un dossier porte déjà ce nom.") from error
+    return storage.get_bilan_folder(folder_id)
+
+
+@app.delete("/bilan-folders/{folder_id}")
+async def delete_bilan_folder(folder_id: str) -> dict:
+    """Supprime le dossier seulement : ses bilans repassent « sans dossier »."""
+    if not storage.delete_bilan_folder(folder_id):
+        raise HTTPException(status_code=404, detail="Dossier introuvable.")
+    return {"deleted": folder_id}
+
+
+@app.post("/bilans/{bilan_id}/folder")
+async def move_bilan_to_folder(bilan_id: str, body: FolderMove) -> dict:
+    """Range le bilan dans un dossier ; `folder_id: null` le sort de son dossier."""
+    _get_bilan_or_404(bilan_id)
+    try:
+        storage.set_bilan_folder(bilan_id=bilan_id, folder_id=body.folder_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Dossier introuvable.") from error
+    return _get_bilan_or_404(bilan_id)
+
+
 @app.post("/bilans/{bilan_id}/archive")
 async def archive_bilan(bilan_id: str) -> dict:
     """Range le bilan dans les archives : il quitte la liste, rien n'est perdu."""
