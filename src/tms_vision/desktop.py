@@ -96,6 +96,7 @@ class Application:
         self.directory.mkdir(parents=True, exist_ok=True)
         # L'API écrit dans `data/` et `outputs/` relativement au dossier courant.
         os.chdir(self.directory)
+        os.environ["TMS_CHECK_UPDATES"] = "1"
         os.environ.setdefault("ALLOWED_ORIGINS", f"http://{HOST}:{WEB_PORT},http://localhost:{WEB_PORT}")
         ffmpeg = find_ffmpeg()
         if ffmpeg:
@@ -156,7 +157,7 @@ def show_window(app: Application) -> None:
     import tkinter as tk
     from tkinter import ttk
 
-    from tms_vision import version
+    from tms_vision import updates, version
 
     root = tk.Tk()
     root.title("TMS Vision")
@@ -177,6 +178,12 @@ def show_window(app: Application) -> None:
         row=0, column=1, padx=(0, 8)
     )
     ttk.Button(buttons, text="Quitter", command=root.destroy).grid(row=0, column=2)
+    update_text = tk.StringVar(value="")
+    update_label = ttk.Label(frame, textvariable=update_text, foreground="#b45309")
+    update_label.grid(sticky="w", pady=(10, 0))
+    update_button = ttk.Button(frame, text="Télécharger la mise à jour")
+    update_button.grid(sticky="w", pady=(4, 0))
+    update_button.grid_remove()
     ttk.Label(
         frame,
         text="Fermez cette fenêtre (Quitter) pour arrêter l'application.\nVos données restent sur cet ordinateur.",
@@ -196,7 +203,20 @@ def show_window(app: Application) -> None:
 
         root.after(0, done)
 
+    def look_for_update() -> None:
+        result = updates.check(version.get_version())
+
+        def show() -> None:
+            if result["available"]:
+                update_text.set(f"Une nouvelle version est disponible : {result['version']}")
+                update_button.configure(command=lambda: webbrowser.open(result["url"]))
+                update_button.grid()
+
+        if result["available"]:
+            root.after(0, show)
+
     threading.Thread(target=boot, daemon=True).start()
+    threading.Thread(target=look_for_update, daemon=True).start()
     root.mainloop()
 
 

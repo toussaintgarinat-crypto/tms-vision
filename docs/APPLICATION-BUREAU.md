@@ -22,7 +22,11 @@ désinstallations ; le bouton *Dossier des données* y mène :
 - Windows : `%APPDATA%\TMS Vision`
 - macOS : `~/Library/Application Support/TMS Vision`
 
-**Sauvegarde** : copier ce dossier. **Mise à jour** : installer la nouvelle version par-dessus.
+**Sauvegarde** : copier ce dossier. **Mise à jour** : quitter l'application, puis installer la nouvelle
+version par-dessus (aucune désinstallation). L'application prévient quand une version plus récente est
+publiée : message dans la petite fenêtre et bandeau « Nouvelle version X disponible » en haut du site,
+qui ouvre la page de téléchargement. Elle ne se met jamais à jour toute seule. Hors ligne, rien ne
+s'affiche.
 **Journaux** (en cas de problème) : sous-dossier `logs` des données.
 
 Pas de mot de passe : l'application n'est joignable que depuis l'ordinateur lui-même. Pas de vidéos

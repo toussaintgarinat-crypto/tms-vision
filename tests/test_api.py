@@ -2070,3 +2070,18 @@ def test_an_empty_selection_means_no_exercise_at_all(tmp_path, monkeypatch):
     body = client.put(f"/bilans/{bilan_id}/program", json={"size": 5, "exercise_ids": []}).json()
 
     assert body["program"] == [] and body["selection"] == []
+
+
+def test_update_check_is_off_unless_the_desktop_app_enables_it(tmp_path, monkeypatch):
+    from tms_vision import updates
+
+    client = TestClient(app)
+    none = {"available": False, "version": None, "url": None}
+    monkeypatch.delenv("TMS_CHECK_UPDATES", raising=False)
+    monkeypatch.setattr(updates, "check", lambda current: pytest.fail("ne doit pas être appelé"))
+
+    assert client.get("/update").json() == none
+
+    monkeypatch.setenv("TMS_CHECK_UPDATES", "1")
+    monkeypatch.setattr(updates, "check", lambda current: {"available": True, "version": "9.9.9", "url": "https://x"})
+    assert client.get("/update").json() == {"available": True, "version": "9.9.9", "url": "https://x"}

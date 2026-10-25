@@ -27,7 +27,8 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from tms_vision import (
-    assistant, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, storage, version,
+    assistant, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, storage, updates,
+    version,
 )
 from tms_vision.load import bounds, parse_load
 from tms_vision.capsules import CAPSULES, DEFAULT_PROGRAM_SIZE, MAX_PROGRAM_SIZE
@@ -1078,6 +1079,15 @@ async def get_exercise(exercise_id: str) -> dict:
 @app.get("/version")
 async def get_version() -> dict:
     return {"version": version.get_version()}
+
+
+@app.get("/update")
+async def get_update() -> dict:
+    """Une version plus récente est-elle publiée ? Seulement dans l'application de bureau
+    (TMS_CHECK_UPDATES=1) : un serveur installé par Docker se met à jour avec install.sh."""
+    if os.environ.get("TMS_CHECK_UPDATES") != "1":
+        return {"available": False, "version": None, "url": None}
+    return await run_in_threadpool(updates.check, version.get_version())
 
 
 @app.get("/library")

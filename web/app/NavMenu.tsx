@@ -25,12 +25,38 @@ function useAppVersion(): string | null {
   return version;
 }
 
+// Une version plus récente est publiée (application de bureau seulement : l'API répond
+// « available: false » ailleurs). Un clic ouvre la page de téléchargement ; rien n'est installé seul.
+function useUpdate(): { version: string; url: string } | null {
+  const [update, setUpdate] = useState<{ version: string; url: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/update`)
+      .then((response) =>
+        response.ok
+          ? (response.json() as Promise<{ available: boolean; version: string | null; url: string | null }>)
+          : null,
+      )
+      .then((data) => {
+        if (!cancelled && data?.available && data.version && data.url) {
+          setUpdate({ version: data.version, url: data.url });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return update;
+}
+
 // Barre du haut avec un menu rétractable : accès à toutes les pages sans taper l'adresse.
 export function NavMenu() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const appVersion = useAppVersion();
+  const update = useUpdate();
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +87,16 @@ export function NavMenu() {
         </button>
         <span className="text-sm font-semibold">TMS Vision</span>
         {appVersion && <span className="text-xs text-zinc-500" title="Version de l'application">v{appVersion}</span>}
+        {update && (
+          <a
+            href={update.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full bg-amber-100 px-3 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200"
+          >
+            Nouvelle version {update.version} disponible : télécharger
+          </a>
+        )}
       </header>
 
       {open && (
