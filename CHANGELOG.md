@@ -10,6 +10,11 @@ une version précise.
 
 ## [Non publié]
 
+### Compte rendu : animation 3D plus fluide
+- En mode « Animation 3D », seuls les mannequins visibles à l'écran sont animés (les autres attendent
+  qu'on arrive dessus) ; ils n'existent plus du tout dans les autres modes. Avant, tous les exercices
+  du compte rendu chargeaient et animaient leur mannequin en même temps, ce qui ralentissait la page.
+
 ### Programme d'étirements : plus d'exercices, choix du praticien, explications
 - Le nombre d'exercices est réglable (3, 5 ou 10 ; 5 par défaut, au lieu de 3 au maximum). Chaque zone
   sollicitée reçoit d'abord un exercice, puis un deuxième, etc., à partir du catalogue de la zone

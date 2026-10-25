@@ -55,14 +55,40 @@ function Carousel({ steps, title }: { steps: Still[]; title: string }) {
   );
 }
 
+// Anime l'exercice seulement tant que son bloc est à l'écran : un compte rendu de 10 exercices
+// ne garde ainsi que 1 ou 2 mannequins 3D (contextes WebGL) en vie, au lieu de 10 qui tournent
+// ensemble et ralentissent la page. Les blocs hors écran gardent leur place (hauteur minimale).
+function LazyLive({ exerciseId }: { exerciseId: string }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(() => typeof IntersectionObserver === "undefined");
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), {
+      rootMargin: "150px",
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{ minHeight: 320 }}>
+      {visible && <LiveExercise exerciseId={exerciseId} />}
+    </div>
+  );
+}
+
 function ExerciseBlock({
   item,
   exercise,
   stills,
+  animated,
 }: {
   item: ProgramItem;
   exercise: Exercise;
   stills: Still[];
+  animated: boolean;
 }) {
   const videoSrc = capsuleVideoSrc(item.capsule, API_URL);
   return (
@@ -84,9 +110,11 @@ function ExerciseBlock({
           <video controls preload="metadata" src={videoSrc} />
         </div>
       )}
-      <div className="live">
-        <LiveExercise exerciseId={exercise.id} />
-      </div>
+      {animated && (
+        <div className="live">
+          <LazyLive exerciseId={exercise.id} />
+        </div>
+      )}
     </section>
   );
 }
@@ -238,7 +266,13 @@ export function ReportFrame({
           program.map((item) => {
             const exercise = exercises.find((candidate) => candidate.id === item.capsule.id);
             return exercise ? (
-              <ExerciseBlock key={item.capsule.id} item={item} exercise={exercise} stills={stills[exercise.id] ?? []} />
+              <ExerciseBlock
+                key={item.capsule.id}
+                item={item}
+                exercise={exercise}
+                stills={stills[exercise.id] ?? []}
+                animated={mode === "animation"}
+              />
             ) : null;
           })}
         <footer className="muted">
