@@ -232,7 +232,8 @@ def test_program_items_explain_the_work_movement_and_the_muscles_behind_each_exe
         "Mouvements du poste qui sollicitent cou : « Soins au lit » "
         "(3 h, penché, 3 gestes/min, maintien 1 min)."
     )
-    assert any(line.startswith("Cet exercice fait travailler : ") for line in first)
+    assert any(line.startswith("Ce que l'exercice apporte : ") for line in first)
+    assert any(line.startswith("Il fait travailler : ") for line in first)
     assert not any("complémentaire" in line for line in first)
     assert any("complémentaire" in line for line in third)
 

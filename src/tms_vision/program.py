@@ -99,9 +99,11 @@ def _why(zone: str, capsule, tasks: list[dict] | None, rank_in_zone: int) -> lis
             f"Zone : {ZONE_LABELS[zone].lower()}. Aucune tâche saisie ne précise le mouvement "
             "du poste."
         )
+    if capsule.benefit:
+        lines.append(f"Ce que l'exercice apporte : {capsule.benefit}")
     targets = [SEGMENT_LABELS.get(name, name) for name in capsule.target_segments]
     if targets:
-        lines.append(f"Cet exercice fait travailler : {', '.join(targets)}.")
+        lines.append(f"Il fait travailler : {', '.join(targets)}.")
     if rank_in_zone > 0:
         lines.append(
             "Exercice complémentaire pour la même zone, proposé parce que vous demandez plus "
@@ -248,7 +250,7 @@ def select_program(
                     if capsule.zone in ZONE_LABELS
                     else [
                         "Exercice ajouté par le praticien.",
-                        "Cet exercice fait travailler : "
+                        "Il fait travailler : "
                         + ", ".join(SEGMENT_LABELS.get(n, n) for n in capsule.target_segments) + ".",
                     ]
                 ),

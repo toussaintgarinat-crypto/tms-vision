@@ -34,6 +34,10 @@ Les règles de validation sont dans `src/tms_vision/exercises.py` : un fichier i
   doigts), `hip` (bassin, fessiers, psoas), `thigh`, `lower_leg` (mollet, jambe) et `foot`. Les
   régions hors RULA n'ont pas de mesure : leurs exercices existent et se génèrent, mais aucun score
   ne les recommande encore.
+- `benefit` (facultatif) : ce que l'exercice apporte, en une phrase (« Étire le côté du cou et
+  décompresse les cervicales... »). Affiché dans la bulle ⓘ du programme d'étirements. Reste
+  prudent : mobilité, détente, circulation, jamais de promesse de guérison. À relire par l'ostéopathe
+  comme le reste de l'exercice.
 - `position` (facultatif) : `standing` (debout, par défaut), `seated` (assis) ou `lying` (allongé sur
   le dos). Voir « Positions » plus bas.
 - `view` : `front`, `side` ou `three_quarter` (cadrage de la caméra). Le zoom est automatique : tête

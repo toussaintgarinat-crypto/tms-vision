@@ -41,6 +41,8 @@ class Capsule:
     # Position de l'exercice (standing, seated, lying) et segments du squelette qu'il fait travailler.
     position: str = "standing"
     target_segments: tuple[str, ...] = ()
+    # Ce que l'exercice apporte, en une phrase (vide quand l'exercice n'en donne pas).
+    benefit: str = ""
 
 
 def capsule_from_exercise(exercise: dict) -> Capsule:
@@ -56,6 +58,7 @@ def capsule_from_exercise(exercise: dict) -> Capsule:
         status=exercise["status"],
         position=exercise.get("position", "standing"),
         target_segments=tuple(exercise["target_segments"]),
+        benefit=exercise.get("benefit", ""),
     )
 
 

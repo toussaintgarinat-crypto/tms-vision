@@ -18,8 +18,9 @@ une version précise.
 - Sur un bilan, le praticien peut retirer un exercice, en ajouter un autre du catalogue ou revenir au
   programme automatique. Sa sélection est enregistrée avec le bilan et reprise dans le compte rendu.
 - Une icône ⓘ à côté de chaque exercice explique pourquoi il est proposé (survol, clic ou clavier) :
-  les tâches du poste qui sollicitent la zone (durée, poste, gestes par minute, maintien, charge) et
-  ce que l'exercice fait travailler. Rien n'est inventé : sans tâche saisie, la bulle le dit.
+  les tâches du poste qui sollicitent la zone (durée, poste, gestes par minute, maintien, charge), ce
+  que l'exercice apporte (nouveau champ `benefit` dans `exercises/`, écrit pour les 95 exercices, en
+  brouillon : à relire par l'ostéopathe) et ce qu'il fait travailler. Sans tâche saisie, la bulle le dit.
 - API : `GET /bilans/{id}/program?size=` et `GET /analyses/{id}/recommendation?size=` ; réglages
   enregistrés avec `PUT /bilans/{id}/program`. Les bases existantes sont mises à niveau automatiquement.
 

@@ -3,6 +3,7 @@
   "zone": "head",
   "title": "Rentrer le menton, assis",
   "description": "Ramener la tête en arrière sans la lever, pour soulager la base du crâne quand la tête avance vers l'écran. Version à faire assis sur une chaise.",
+  "benefit": "Replace la tête dans l'axe du corps et relâche la base du crâne quand la tête avance, par exemple vers l'écran.",
   "status": "draft",
   "source": "human",
   "validated_by": null,

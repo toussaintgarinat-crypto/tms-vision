@@ -392,3 +392,11 @@ def test_shipped_exercises_declare_a_known_position_and_include_seated_and_lying
         exercise.get("position", exercises.DEFAULT_POSITION) for exercise in load_catalog()
     }
     assert positions == {"standing", "seated", "lying"}
+
+
+def test_every_shipped_exercise_says_what_it_brings_and_a_blank_benefit_is_rejected():
+    catalog = load_catalog()
+
+    assert catalog and all(exercise.get("benefit", "").strip() for exercise in catalog)
+    with pytest.raises(ValueError, match="benefit"):
+        validate_exercise({**_valid(), "benefit": "  "})
