@@ -10,6 +10,13 @@ une version précise.
 
 ## [Non publié]
 
+### Application de bureau (Windows et macOS)
+- Installation par double-clic, sans Docker : `TMS-Vision-Setup.exe` (Windows) et `.dmg` (macOS Apple
+  Silicon et Intel), fabriqués par GitHub (Actions > Application de bureau). Tout tourne sur le poste
+  du praticien ; les données sont dans son dossier utilisateur et survivent aux mises à jour. Voir
+  `docs/APPLICATION-BUREAU.md`. Les fichiers ne sont pas signés : un avertissement s'affiche au
+  premier lancement.
+
 ### Compte rendu : animation 3D plus fluide
 - En mode « Animation 3D », seuls les mannequins visibles à l'écran sont animés (les autres attendent
   qu'on arrive dessus) ; ils n'existent plus du tout dans les autres modes. Avant, tous les exercices
