@@ -8,6 +8,7 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 root = Path(os.environ["TMS_ROOT"])
 stage = Path(os.environ["TMS_STAGE"])
 package = root / "src" / "tms_vision"
+here = root / "deploy" / "desktop"
 
 datas = [
     (str(root / "exercises"), "exercises"),
@@ -17,6 +18,7 @@ datas = [
     (str(package / "models"), "tms_vision/models"),
     (str(package / "extremity_thresholds.json"), "tms_vision"),
     (str(package / "recurrence_thresholds.json"), "tms_vision"),
+    (str(here / "icon.png"), "assets"),
     (str(stage / "web"), "web"),
     (str(stage / "node"), "node"),
 ]
@@ -43,12 +45,14 @@ executable = EXE(
     exclude_binaries=True,
     name="TMS Vision",
     console=False,
+    icon=str(here / "icon.ico"),
 )
 collection = COLLECT(executable, analysis.binaries, analysis.datas, name="TMS Vision")
 if sys.platform == "darwin":
     app = BUNDLE(
         collection,
         name="TMS Vision.app",
+        icon=str(here / "icon.icns"),
         bundle_identifier="fr.tms-vision.app",
         info_plist={
             "NSCameraUsageDescription": "TMS Vision filme le poste de travail pour l'analyse.",

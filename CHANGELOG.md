@@ -18,6 +18,10 @@ une version précise.
   premier lancement. L'application signale une nouvelle version publiée sur GitHub (fenêtre et bandeau
   du site) sans jamais se mettre à jour seule ; hors ligne, elle ne dit rien.
 
+### Logo
+- Le logo de TMS Vision remplace l'icône par défaut : installateur, raccourcis, application Mac,
+  petite fenêtre et onglet du navigateur.
+
 ### Compte rendu : animation 3D plus fluide
 - En mode « Animation 3D », seuls les mannequins visibles à l'écran sont animés (les autres attendent
   qu'on arrive dessus) ; ils n'existent plus du tout dans les autres modes. Avant, tous les exercices

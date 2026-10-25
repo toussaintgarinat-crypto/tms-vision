@@ -49,6 +49,8 @@ Essai sans installateur depuis le dépôt : `python -m tms_vision.desktop --web-
   embarqué, port 13000, mode Next.js « standalone »), ouvre le navigateur, petite fenêtre Tkinter.
 - `deploy/desktop/build.py` + `tms-vision.spec` : construction du site (le port de l'API est figé dans
   le site), assemblage, PyInstaller. `installer.iss` : installateur Windows (Inno Setup).
+- `deploy/desktop/icon.*` : le logo (png, ico Windows, icns Mac), tiré de l'image du logo sans son texte,
+  trop petit pour être lu en icône. `web/app/favicon.ico` en est la version pour l'onglet du navigateur.
 - `src/tms_vision/paths.py` : retrouve `exercises/`, `metiers/`, `library/` et `VERSION`, dans le dépôt
   comme dans l'application construite.
 - Vidéos annotées : OpenCV n'embarque pas toujours l'encodeur H.264 sous Windows et macOS ; avec

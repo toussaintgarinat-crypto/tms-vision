@@ -36,6 +36,14 @@ def test_find_web_dir_needs_a_built_site(tmp_path):
     assert desktop.find_web_dir(tmp_path / "ailleurs", str(tmp_path / "web")) == tmp_path / "web"
 
 
+def test_the_logo_is_shipped_and_found():
+    icon = desktop.find_icon(paths.resource_root())
+
+    assert icon is not None and icon.name == "icon.png"
+    assert (paths.resource_root() / "deploy" / "desktop" / "icon.ico").is_file()
+    assert (paths.resource_root() / "deploy" / "desktop" / "icon.icns").is_file()
+
+
 def test_find_node_prefers_the_bundled_one(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "platform", "linux")
     (tmp_path / "node").mkdir()

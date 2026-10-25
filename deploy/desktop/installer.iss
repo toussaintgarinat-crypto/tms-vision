@@ -20,6 +20,7 @@ OutputBaseFilename=TMS-Vision-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=icon.ico
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\TMS Vision.exe
 

@@ -152,6 +152,13 @@ def open_folder(path: Path) -> None:
         subprocess.Popen(["xdg-open", str(path)])
 
 
+def find_icon(root: Path) -> Path | None:
+    for candidate in (root / "assets" / "icon.png", root / "deploy" / "desktop" / "icon.png"):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def show_window(app: Application) -> None:
     """Petite fenêtre : état, ouvrir le site, ouvrir le dossier des données, quitter."""
     import tkinter as tk
@@ -162,6 +169,12 @@ def show_window(app: Application) -> None:
     root = tk.Tk()
     root.title("TMS Vision")
     root.resizable(False, False)
+    icon = find_icon(resource_root())
+    if icon is not None:
+        try:
+            root.iconphoto(True, tk.PhotoImage(file=str(icon)))
+        except tk.TclError:
+            pass  # icône illisible : on garde celle par défaut
     frame = ttk.Frame(root, padding=16)
     frame.grid()
     ttk.Label(frame, text=f"TMS Vision {version.get_version()}", font=("TkDefaultFont", 14, "bold")).grid(
