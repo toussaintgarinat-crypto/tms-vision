@@ -6,8 +6,9 @@ import json
 from pathlib import Path
 
 from tms_vision import exercises
+from tms_vision.paths import resource_root
 
-LIBRARY_PATH = Path(__file__).resolve().parents[2] / "library" / "body_map.json"
+LIBRARY_PATH = resource_root() / "library" / "body_map.json"
 
 
 def _fail(field: str, message: str) -> None:

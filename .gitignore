@@ -12,3 +12,5 @@ data/
 .env
 backups/
 .tms-updates.log
+build/
+dist/

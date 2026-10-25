@@ -7,7 +7,9 @@ supprimé avant que la fonction ne retourne. Persister le résultat (fichiers
 locaux pour la CLI, DuckDB pour l'API web) est la responsabilité de
 l'appelant (tms_vision.cli, tms_vision.api / tms_vision.storage).
 """
+import os
 import secrets
+import subprocess
 import sys
 import tempfile
 import time
@@ -67,6 +69,22 @@ class AnalysisResult:
     frame_rows: list[dict] | None = None
     summary: dict | None = None
     pose3d_records: list[Pose3DFrameRecord] | None = None
+
+
+def _h264_with_ffmpeg(video_path: Path, ffmpeg: str) -> None:
+    """Réencode la vidéo en H.264 lisible par les navigateurs, sur place. Sert à l'application de
+    bureau : les builds d'OpenCV pour Windows et macOS n'embarquent pas toujours l'encodeur « avc1 »,
+    alors que ffmpeg (fourni avec l'application, voir desktop.py) sait toujours le faire."""
+    encoded = video_path.with_suffix(".h264.mp4")
+    try:
+        subprocess.run(
+            [ffmpeg, "-y", "-loglevel", "error", "-i", str(video_path), "-c:v", "libx264",
+             "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(encoded)],
+            check=True, capture_output=True,
+        )
+        encoded.replace(video_path)
+    finally:
+        encoded.unlink(missing_ok=True)
 
 
 def analyze_video(
@@ -154,8 +172,11 @@ def analyze_video(
         # "avc1" (H.264/AVC) est lisible par les navigateurs (Chromium/
         # Firefox), contrairement à "mp4v" -- voir commit 9d6a9da et
         # test_analyze_video_writes_browser_playable_h264_not_mp4v.
+        # Application de bureau (TMS_FFMPEG = chemin de ffmpeg) : écriture en "mp4v" puis réencodage
+        # en H.264 par ffmpeg, car OpenCV n'y embarque pas toujours l'encodeur "avc1".
+        ffmpeg = os.environ.get("TMS_FFMPEG", "").strip()
         writer = cv2.VideoWriter(
-            str(video_tmp_path), cv2.VideoWriter_fourcc(*"avc1"),
+            str(video_tmp_path), cv2.VideoWriter_fourcc(*("mp4v" if ffmpeg else "avc1")),
             frame_source.fps() or 30.0, (width, height),
         )
         try:
@@ -218,6 +239,8 @@ def analyze_video(
             # supprimé -- pas de fuite disque visible -- mais le handle reste
             # ouvert jusqu'au GC, ce qui n'est pas garanti immédiat).
             writer.release()
+        if ffmpeg:
+            _h264_with_ffmpeg(video_tmp_path, ffmpeg)
         video_bytes = video_tmp_path.read_bytes()
     finally:
         video_tmp_path.unlink(missing_ok=True)

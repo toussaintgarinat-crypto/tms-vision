@@ -10,7 +10,9 @@ import json
 import re
 from pathlib import Path
 
-METIERS_DIR = Path(__file__).resolve().parents[2] / "metiers"
+from tms_vision.paths import resource_root
+
+METIERS_DIR = resource_root() / "metiers"
 
 ZONES = ("neck", "trunk", "upper_arm", "lower_arm", "hand", "foot")
 STATUSES = ("draft", "validated")

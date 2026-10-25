@@ -14,9 +14,10 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from tms_vision.paths import resource_root
 from tms_vision.providers import ExerciseProvider, ProviderError, get_exercise_provider
 
-EXERCISES_DIR = Path(__file__).resolve().parents[2] / "exercises"
+EXERCISES_DIR = resource_root() / "exercises"
 
 # Les quatre zones RULA mesurées : ce sont elles que l'analyse note et que le programme d'étirements
 # classe. Les régions ajoutées avec le corps complet (tête, épaule, main, hanche, cuisse, jambe,

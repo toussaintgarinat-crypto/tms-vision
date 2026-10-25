@@ -1,0 +1,70 @@
+name: Application de bureau
+
+# Construit l'application autonome (double-clic, sans Docker) pour Windows et macOS.
+# Lancement à la main (Actions > Application de bureau > Run workflow) ou à chaque étiquette de version
+# (v1.2.0) ; les fichiers sont téléchargeables dans « Artifacts », et joints à la version GitHub pour
+# une étiquette.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: pip install -r requirements.txt -r deploy/desktop/requirements.txt
+      - run: python deploy/desktop/build.py
+      - name: Installateur
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $version = (Get-Content VERSION).Trim()
+          & "$env:ProgramFiles (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" deploy\desktop\installer.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TMS-Vision-Windows
+          path: dist/TMS-Vision-Setup.exe
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/TMS-Vision-Setup.exe
+
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            label: Apple-Silicon
+          - runner: macos-15-intel
+            label: Intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: pip install -r requirements.txt -r deploy/desktop/requirements.txt
+      - run: python deploy/desktop/build.py
+      - name: Image disque
+        run: |
+          hdiutil create -volname "TMS Vision" -srcfolder "dist/TMS Vision.app" -ov -format UDZO "dist/TMS-Vision-Mac-${{ matrix.label }}.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TMS-Vision-Mac-${{ matrix.label }}
+          path: dist/TMS-Vision-Mac-${{ matrix.label }}.dmg
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/TMS-Vision-Mac-${{ matrix.label }}.dmg

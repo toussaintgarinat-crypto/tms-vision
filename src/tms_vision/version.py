@@ -1,8 +1,8 @@
 """Numéro de version de l'application, lu dans le fichier VERSION à la racine du dépôt (voir
 docs/VERSIONS.md). Dans l'image Docker, ce fichier est copié à côté de src/."""
-from pathlib import Path
+from tms_vision.paths import resource_root
 
-VERSION_FILE = Path(__file__).resolve().parents[2] / "VERSION"
+VERSION_FILE = resource_root() / "VERSION"
 UNKNOWN = "inconnue"
 
 
