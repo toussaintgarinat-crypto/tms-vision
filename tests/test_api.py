@@ -1024,7 +1024,7 @@ def test_recommendation_returns_a_ranked_program_and_keeps_first_zone_and_capsul
     ])
     client = TestClient(app)
 
-    body = client.get("/analyses/p-1/recommendation").json()
+    body = client.get("/analyses/p-1/recommendation?size=3").json()
 
     assert [item["zone"] for item in body["program"]] == ["trunk", "neck", "upper_arm"]
     assert [item["rank"] for item in body["program"]] == [1, 2, 3]
@@ -1040,7 +1040,7 @@ def test_recommendation_with_a_single_loaded_zone_has_a_single_item(tmp_path, mo
     _save_with_segments("p-1", [_segment_row(0, 0.0, neck="changement_immediat"), _segment_row(1, 2.0)])
     client = TestClient(app)
 
-    body = client.get("/analyses/p-1/recommendation").json()
+    body = client.get("/analyses/p-1/recommendation?size=1").json()
 
     assert [item["zone"] for item in body["program"]] == ["neck"]
     assert body["zone"] == "neck"
@@ -1105,7 +1105,7 @@ def test_bilan_program_ranks_zones_by_projected_hours(tmp_path, monkeypatch):
         client.post(f"/bilans/{bilan_id}/analyses",
                     json={"analysis_id": analysis_id, "activity_hours": hours, "representative": True})
 
-    body = client.get(f"/bilans/{bilan_id}/program").json()
+    body = client.get(f"/bilans/{bilan_id}/program?size=2").json()
 
     # a-1 : 10 s sur 20 s = 50 % de 6 h = 3 h de tronc ; a-2 : 20 s sur 20 s = 100 % de 3 h = 3 h de cou.
     # Egalite a 3 h -> ordre fixe : tronc avant cou.
@@ -1278,7 +1278,9 @@ def test_recommendation_reports_whether_each_capsule_video_exists(tmp_path, monk
 
     body = client.get("/analyses/p-1/recommendation").json()
 
-    by_zone = {item["zone"]: item["capsule"] for item in body["program"]}
+    by_zone = {}
+    for item in reversed(body["program"]):  # le premier exercice de chaque zone
+        by_zone[item["zone"]] = item["capsule"]
     assert by_zone["trunk"]["video_available"] is True
     assert by_zone["neck"]["video_available"] is False
     assert body["capsule"]["video_available"] is True  # premier élément = tronc
@@ -1644,7 +1646,7 @@ def test_bilan_program_without_video_is_proposed_from_the_tasks(tmp_path, monkey
     client = TestClient(app)
     bilan_id = client.post("/metiers/bureau-gestionnaire/bilan", json={}).json()["id"]
 
-    response = client.get(f"/bilans/{bilan_id}/program").json()
+    response = client.get(f"/bilans/{bilan_id}/program?size=3").json()
 
     assert response["position"] == "seated"
     assert [item["zone"] for item in response["program"]] == ["neck", "lower_arm", "hand"]
@@ -1660,7 +1662,7 @@ def test_every_library_metier_gets_a_program_without_any_video(tmp_path, monkeyp
     for model in client.get("/metiers").json():
         bilan_id = client.post(f"/metiers/{model['id']}/bilan", json={}).json()["id"]
         program = client.get(f"/bilans/{bilan_id}/program").json()["program"]
-        assert 1 <= len(program) <= 3, model["id"]
+        assert 1 <= len(program) <= 5, model["id"]
 
 
 def test_bilan_program_stays_empty_without_video_and_without_tasks(tmp_path, monkeypatch):
@@ -1983,3 +1985,88 @@ def test_an_existing_folder_table_without_parent_is_upgraded_in_place(tmp_path, 
 
     assert folder["name"] == "Acme" and folder["parent_id"] is None
     assert _folder(client, "Production", "f-1")["parent_id"] == "f-1"
+
+
+def _hot_bilan(client, hours=4.0):
+    _save_with_segments("a-1", [
+        _segment_row(0, 0.0, trunk="changement_immediat", neck="changement_immediat"),
+        _segment_row(1, 10.0), _segment_row(2, 20.0),
+    ])
+    bilan_id = client.post("/bilans", json={"workday_hours": 8.0}).json()["id"]
+    client.post(f"/bilans/{bilan_id}/analyses",
+                json={"analysis_id": "a-1", "activity_hours": hours, "representative": True})
+    return bilan_id
+
+
+def test_bilan_program_defaults_to_five_exercises_and_follows_the_requested_size(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = _hot_bilan(client)
+
+    default = client.get(f"/bilans/{bilan_id}/program").json()
+    ten = client.get(f"/bilans/{bilan_id}/program?size=10").json()
+
+    assert default["size"] == 5 and len(default["program"]) == 5
+    assert len(ten["program"]) == 10 and ten["selection"] is None
+    assert client.get(f"/bilans/{bilan_id}/program?size=0").status_code == 422
+    assert client.get(f"/bilans/{bilan_id}/program?size=99").status_code == 422
+    assert all(item["why"] for item in default["program"])
+    assert any(entry["id"] == "thumb-mobility" for entry in default["available"])
+    assert all(entry["position"] != "lying" for entry in default["available"])
+
+
+def test_bilan_program_size_is_saved_per_bilan(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = _hot_bilan(client)
+    other = client.post("/bilans", json={}).json()["id"]
+
+    saved = client.put(f"/bilans/{bilan_id}/program", json={"size": 3, "exercise_ids": None})
+
+    assert saved.status_code == 200 and saved.json()["size"] == 3
+    assert len(client.get(f"/bilans/{bilan_id}/program").json()["program"]) == 3
+    assert client.get(f"/bilans/{other}/program").json()["size"] == 5
+    # La requête gagne sur le réglage enregistré, sans le modifier.
+    assert len(client.get(f"/bilans/{bilan_id}/program?size=4").json()["program"]) == 4
+    assert client.get(f"/bilans/{bilan_id}/program").json()["size"] == 3
+
+
+def test_practitioner_selection_replaces_the_automatic_program_until_reset(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = _hot_bilan(client)
+    automatic = client.get(f"/bilans/{bilan_id}/program").json()["program"]
+    wanted = [automatic[3]["capsule"]["id"], "thumb-mobility", automatic[0]["capsule"]["id"]]
+
+    response = client.put(f"/bilans/{bilan_id}/program", json={"size": 5, "exercise_ids": wanted})
+
+    body = response.json()
+    assert [item["capsule"]["id"] for item in body["program"]] == wanted
+    assert body["selection"] == wanted
+    assert [item["basis"] for item in body["program"]] == ["measured", "manual", "measured"]
+    assert client.get(f"/bilans/{bilan_id}/program").json()["selection"] == wanted
+
+    reset = client.put(f"/bilans/{bilan_id}/program", json={"size": 5, "exercise_ids": None}).json()
+    assert reset["selection"] is None and len(reset["program"]) == 5
+
+
+def test_program_settings_reject_unknown_exercises_and_unknown_bilans(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = client.post("/bilans", json={}).json()["id"]
+
+    assert client.put(f"/bilans/{bilan_id}/program",
+                      json={"exercise_ids": ["nope"]}).status_code == 422
+    assert client.put(f"/bilans/{bilan_id}/program", json={"size": 0}).status_code == 422
+    assert client.put("/bilans/nope/program", json={"size": 5}).status_code == 404
+    assert client.get(f"/bilans/{bilan_id}/program").json()["selection"] is None
+
+
+def test_an_empty_selection_means_no_exercise_at_all(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+    bilan_id = _hot_bilan(client)
+
+    body = client.put(f"/bilans/{bilan_id}/program", json={"size": 5, "exercise_ids": []}).json()
+
+    assert body["program"] == [] and body["selection"] == []

@@ -10,6 +10,19 @@ une version précise.
 
 ## [Non publié]
 
+### Programme d'étirements : plus d'exercices, choix du praticien, explications
+- Le nombre d'exercices est réglable (3, 5 ou 10 ; 5 par défaut, au lieu de 3 au maximum). Chaque zone
+  sollicitée reçoit d'abord un exercice, puis un deuxième, etc., à partir du catalogue de la zone
+  (exercices allongés exclus, variantes assises pour un poste assis). Le nombre choisi est enregistré
+  pour chaque bilan, et aussi réglable sur la page d'une analyse.
+- Sur un bilan, le praticien peut retirer un exercice, en ajouter un autre du catalogue ou revenir au
+  programme automatique. Sa sélection est enregistrée avec le bilan et reprise dans le compte rendu.
+- Une icône ⓘ à côté de chaque exercice explique pourquoi il est proposé (survol, clic ou clavier) :
+  les tâches du poste qui sollicitent la zone (durée, poste, gestes par minute, maintien, charge) et
+  ce que l'exercice fait travailler. Rien n'est inventé : sans tâche saisie, la bulle le dit.
+- API : `GET /bilans/{id}/program?size=` et `GET /analyses/{id}/recommendation?size=` ; réglages
+  enregistrés avec `PUT /bilans/{id}/program`. Les bases existantes sont mises à niveau automatiquement.
+
 ### Bibliothèque de métiers et copie de bilan
 - Bibliothèque classée par domaine d'activité (Terrain et BTP, Industrie et logistique, Alimentaire
   et commerce, Santé et soins, Tertiaire et autres), avec des raccourcis en haut de page, et 17 métiers

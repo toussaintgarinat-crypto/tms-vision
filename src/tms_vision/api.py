@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Literal
 
 import cv2
-from fastapi import FastAPI, File, Form, Header, HTTPException, Response, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -30,7 +30,10 @@ from tms_vision import (
     assistant, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, storage, version,
 )
 from tms_vision.load import bounds, parse_load
-from tms_vision.program import build_analysis_program, build_bilan_program
+from tms_vision.capsules import CAPSULES, DEFAULT_PROGRAM_SIZE, MAX_PROGRAM_SIZE
+from tms_vision.program import (
+    build_analysis_program, build_bilan_program, select_program,
+)
 from tms_vision.rescore import rescore_frames, summarize_for_load
 from tms_vision.pipeline import analyze_video, generate_run_id
 from tms_vision.pose3d_export import build_pose3d_payload
@@ -454,13 +457,15 @@ def _annotate_program_videos(program: list[dict]) -> list[dict]:
 
 
 @app.get("/analyses/{analysis_id}/recommendation")
-async def get_analysis_recommendation(analysis_id: str) -> dict:
+async def get_analysis_recommendation(
+    analysis_id: str, size: int = Query(DEFAULT_PROGRAM_SIZE, ge=1, le=MAX_PROGRAM_SIZE)
+) -> dict:
     analysis = storage.get_analysis(analysis_id)
     frames = storage.get_frame_segments(analysis_id)
     if analysis is None or frames is None:
         raise HTTPException(status_code=404, detail="Analyse introuvable.")
 
-    program = _annotate_program_videos(build_analysis_program(frames, analysis["load"]))
+    program = _annotate_program_videos(build_analysis_program(frames, analysis["load"], size))
     first = program[0] if program else None
     return {
         # `zone` et `capsule` : premier élément du programme, conservés pour les
@@ -944,12 +949,31 @@ async def get_bilan_recurrence(bilan_id: str) -> dict:
     return _build_bilan_report(_get_bilan_or_404(bilan_id))
 
 
+def _program_catalog() -> list[dict]:
+    """Exercices que le praticien peut ajouter à la main (hors exercices allongés)."""
+    return [
+        {"id": c.id, "zone": c.zone, "title": c.title, "position": c.position}
+        for c in CAPSULES if c.position != "lying"
+    ]
+
+
 @app.get("/bilans/{bilan_id}/program")
-async def get_bilan_program(bilan_id: str) -> dict:
+async def get_bilan_program(
+    bilan_id: str, size: int | None = Query(None, ge=1, le=MAX_PROGRAM_SIZE)
+) -> dict:
+    """Programme d'étirements du bilan. Nombre d'exercices : `?size=`, sinon le réglage enregistré,
+    sinon 5. Si le praticien a choisi ses exercices, c'est sa sélection qui est renvoyée."""
     record = _get_bilan_or_404(bilan_id)
+    settings = storage.get_program_settings(bilan_id)
+    size = size or settings["size"] or DEFAULT_PROGRAM_SIZE
     report = _build_bilan_report(record)
     position = bilan.preferred_position(record["tasks"])
-    program = build_bilan_program(report, position, record["tasks"])
+    selection = settings["exercise_ids"]
+    if selection is None:
+        program = build_bilan_program(report, position, record["tasks"], size)
+    else:
+        full = build_bilan_program(report, position, record["tasks"], 200)
+        program = select_program(selection, full, record["tasks"])
     warnings = list(report["warnings"])
     if any(item["basis"] == "declared" for item in program):
         warnings.append(
@@ -958,6 +982,9 @@ async def get_bilan_program(bilan_id: str) -> dict:
         )
     return {
         "program": _annotate_program_videos(program),
+        "size": size,
+        "selection": selection,
+        "available": _program_catalog(),
         "position": position,
         "position_note": (
             "Poste de travail assis (d'après les tâches saisies) : exercices proposés assis "
@@ -1149,3 +1176,24 @@ async def get_library_share(token: str) -> dict:
             if item["exercise_id"] in catalog
         ],
     }
+
+
+class ProgramSettingsBody(BaseModel):
+    size: int | None = Field(default=None, ge=1, le=MAX_PROGRAM_SIZE)
+    # None : programme automatique ; une liste : exercices choisis par le praticien, dans l'ordre.
+    exercise_ids: list[str] | None = Field(default=None, max_length=MAX_PROGRAM_SIZE * 2)
+
+
+@app.put("/bilans/{bilan_id}/program")
+async def put_bilan_program_settings(bilan_id: str, body: ProgramSettingsBody) -> dict:
+    """Enregistre le nombre d'exercices et, éventuellement, la sélection du praticien."""
+    _get_bilan_or_404(bilan_id)
+    known = {capsule.id for capsule in CAPSULES}
+    unknown = [i for i in body.exercise_ids or [] if i not in known]
+    if unknown:
+        raise HTTPException(status_code=422, detail=f"Exercices inconnus : {', '.join(unknown)}")
+    storage.set_program_settings(
+        bilan_id=bilan_id, size=body.size,
+        exercise_ids=list(dict.fromkeys(body.exercise_ids)) if body.exercise_ids is not None else None,
+    )
+    return await get_bilan_program(bilan_id, size=None)

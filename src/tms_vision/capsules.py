@@ -20,7 +20,9 @@ ZONE_PRIORITY = ["trunk", "neck", "upper_arm", "lower_arm", "hand", "foot"]
 # redéfinis -- accepté pour ce sprint, voir la spec
 # docs/superpowers/specs/2026-09-22-capsule-zone-recommendation-design.md.
 ELEVATED_LEVELS = {"investigation_et_changement_bientot", "changement_immediat"}
-MAX_PROGRAM_SIZE = 3
+# Nombre d'exercices proposés par défaut ; le praticien le règle bilan par bilan (3, 5, 10...).
+DEFAULT_PROGRAM_SIZE = 5
+MAX_PROGRAM_SIZE = 20  # plafond du nombre d'exercices qu'on peut demander
 
 
 @dataclass
@@ -36,6 +38,9 @@ class Capsule:
     # "draft" : exercice rédigé mais pas encore relu par l'ostéopathe ; "validated"
     # une fois `validated_by` / `validated_on` renseignés dans sa définition.
     status: str = "draft"
+    # Position de l'exercice (standing, seated, lying) et segments du squelette qu'il fait travailler.
+    position: str = "standing"
+    target_segments: tuple[str, ...] = ()
 
 
 def capsule_from_exercise(exercise: dict) -> Capsule:
@@ -49,6 +54,8 @@ def capsule_from_exercise(exercise: dict) -> Capsule:
         kind="stretch",
         id=exercise["id"],
         status=exercise["status"],
+        position=exercise.get("position", "standing"),
+        target_segments=tuple(exercise["target_segments"]),
     )
 
 
@@ -102,9 +109,9 @@ def compute_worst_zone(frames: list[dict]) -> str | None:
     return ranked[0][0] if ranked else None
 
 
-def rank_zones(load_by_zone: dict[str, float], limit: int = MAX_PROGRAM_SIZE) -> list[tuple[str, float]]:
+def rank_zones(load_by_zone: dict[str, float], limit: int | None = None) -> list[tuple[str, float]]:
     """Zones à charge strictement positive, de la plus chargée à la moins chargée
-    (égalité : ordre fixe ZONE_PRIORITY), tronquées à `limit`. Une zone absente
+    (égalité : ordre fixe ZONE_PRIORITY), tronquées à `limit` si donné. Une zone absente
     du dictionnaire compte pour 0."""
     loaded = [
         (zone, load_by_zone.get(zone, 0.0))
@@ -153,6 +160,21 @@ def recommend_capsule(zone: str | None, position: str | None = None) -> Capsule 
         if capsule.zone == zone:
             return capsule
     return None
+
+
+def candidate_capsules(zone: str, position: str | None = None) -> list[Capsule]:
+    """Exercices utilisables pour une zone, du plus adapté au moins adapté : d'abord l'exercice
+    habituel du programme, puis les autres de la zone dans la position du poste (assis pour un
+    poste assis, debout sinon), puis ceux de l'autre position. Les exercices allongés sont exclus :
+    ils ne se font pas sur un poste de travail."""
+    first = recommend_capsule(zone, position)
+    wanted = "seated" if position == "seated" else "standing"
+    others = [
+        capsule for capsule in CAPSULES
+        if capsule.zone == zone and capsule.position != "lying" and capsule is not first
+    ]
+    others.sort(key=lambda capsule: (capsule.position != wanted, capsule.id))
+    return ([first] if first is not None else []) + others
 
 
 def capsule_to_dict(capsule: Capsule) -> dict:

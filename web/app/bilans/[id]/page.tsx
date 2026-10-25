@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
-import { GestureCorrection, ProgramItem, ProgramList } from "../../ProgramList";
+import {
+  AvailableExercise,
+  GestureCorrection,
+  ProgramItem,
+  ProgramList,
+} from "../../ProgramList";
 import { RecurrenceReport } from "../RecurrenceReport";
 import { formatHours } from "../recurrenceFormat";
 import { TaskSection } from "../TaskSection";
@@ -23,6 +28,10 @@ type AnalysisOption = {
 
 type BilanProgram = {
   program: ProgramItem[];
+  size: number;
+  // null : programme automatique ; une liste : exercices choisis par le praticien.
+  selection: string[] | null;
+  available: AvailableExercise[];
   gesture_corrections: GestureCorrection[];
   warnings: string[];
   position?: "seated" | null;
@@ -60,6 +69,8 @@ export default function BilanDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [filing, setFiling] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [programBusy, setProgramBusy] = useState(false);
+  const [programError, setProgramError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,6 +272,25 @@ export default function BilanDetailPage() {
       setModelError("Impossible d'enregistrer le modèle (problème réseau ou serveur).");
     } finally {
       setSavingModel(false);
+    }
+  }
+
+  // Enregistre le nombre d'exercices et la sélection du praticien (null : programme automatique).
+  async function saveProgram(size: number, exerciseIds: string[] | null) {
+    setProgramBusy(true);
+    setProgramError(null);
+    try {
+      const response = await fetch(`${API_URL}/bilans/${encodeURIComponent(id)}/program`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ size, exercise_ids: exerciseIds }),
+      });
+      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      setReloadToken((token) => token + 1);
+    } catch {
+      setProgramError("Impossible d'enregistrer le programme (problème réseau ou serveur).");
+    } finally {
+      setProgramBusy(false);
     }
   }
 
@@ -546,7 +576,9 @@ export default function BilanDetailPage() {
 
           <RecurrenceReport report={loaded.report} />
 
-          {(loaded.program.program.length > 0 || loaded.program.gesture_corrections.length > 0) && (
+          {(loaded.program.program.length > 0 ||
+            loaded.program.gesture_corrections.length > 0 ||
+            loaded.program.selection !== null) && (
             <section className="flex flex-col gap-3">
               <h2 className="text-xl font-semibold">Programme d&apos;étirements du poste</h2>
               {loaded.program.position_note && (
@@ -555,7 +587,16 @@ export default function BilanDetailPage() {
               <ProgramList
                 program={loaded.program.program}
                 gestureCorrections={loaded.program.gesture_corrections}
+                controls={{
+                  size: loaded.program.size,
+                  busy: programBusy,
+                  selection: loaded.program.selection,
+                  available: loaded.program.available,
+                  onSizeChange: (size) => saveProgram(size, null),
+                  onSelectionChange: (ids) => saveProgram(loaded.program.size, ids),
+                }}
               />
+              {programError && <p className="text-sm text-red-600">{programError}</p>}
             </section>
           )}
         </>

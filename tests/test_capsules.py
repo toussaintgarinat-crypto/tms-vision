@@ -2,7 +2,7 @@ from tms_vision.capsules import (
     CAPSULES,
     ZONE_PRIORITY,
     ZONES,
-    MAX_PROGRAM_SIZE,
+    candidate_capsules,
     capsule_to_dict,
     compute_worst_zone,
     elevated_seconds_by_zone,
@@ -152,15 +152,15 @@ def test_rank_zones_sorts_by_load_descending():
 
 
 def test_rank_zones_breaks_ties_with_the_fixed_zone_priority():
-    ranked = rank_zones({"neck": 5.0, "trunk": 5.0, "upper_arm": 5.0, "lower_arm": 5.0})
+    ranked = rank_zones({"neck": 5.0, "trunk": 5.0, "upper_arm": 5.0, "lower_arm": 5.0}, limit=3)
 
     assert [zone for zone, _ in ranked] == ["trunk", "neck", "upper_arm"]
 
 
-def test_rank_zones_excludes_zero_load_and_caps_the_program_size():
-    ranked = rank_zones({"neck": 1.0, "trunk": 2.0, "upper_arm": 3.0, "lower_arm": 4.0})
+def test_rank_zones_excludes_zero_load_and_caps_at_the_limit():
+    ranked = rank_zones({"neck": 1.0, "trunk": 2.0, "upper_arm": 3.0, "lower_arm": 4.0}, limit=3)
 
-    assert MAX_PROGRAM_SIZE == 3
+    assert len(rank_zones({"neck": 1.0, "trunk": 2.0, "upper_arm": 3.0, "lower_arm": 4.0})) == 4
     assert len(ranked) == 3
     assert [zone for zone, _ in ranked] == ["lower_arm", "upper_arm", "trunk"]
     assert rank_zones({zone: 0.0 for zone in ZONES}) == []
@@ -229,3 +229,26 @@ def test_seated_program_capsules_exist_are_seated_and_match_their_zone():
         assert recommend_capsule(zone).id == capsule_id
     assert recommend_capsule("foot", "seated").id == PROGRAM_CAPSULE_BY_ZONE["foot"]
     assert {c.id for c in CAPSULES} >= set(SEATED_CAPSULE_BY_ZONE.values())
+
+
+def test_candidate_capsules_start_with_the_usual_exercise_and_follow_the_position():
+    standing = candidate_capsules("neck")
+    seated = candidate_capsules("neck", "seated")
+
+    assert standing[0].id == "neck-lateral-stretch"
+    assert seated[0].id == "seated-neck-lateral-stretch"
+    assert len(standing) > 3 and len({capsule.id for capsule in standing}) == len(standing)
+    assert all(capsule.zone == "neck" and capsule.position != "lying" for capsule in standing)
+    # Après l'exercice habituel : la position du poste d'abord, l'autre ensuite.
+    assert [c.position for c in standing[1:]] == sorted(
+        [c.position for c in standing[1:]], key=lambda position: position != "standing"
+    )
+    assert [c.position for c in seated[1:]] == sorted(
+        [c.position for c in seated[1:]], key=lambda position: position != "seated"
+    )
+    assert {capsule.id for capsule in standing} == {capsule.id for capsule in seated}
+
+
+def test_candidate_capsules_never_include_lying_exercises():
+    for zone in ZONES:
+        assert all(capsule.position != "lying" for capsule in candidate_capsules(zone))

@@ -214,6 +214,10 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP")
     # Rangement des bilans en dossiers (par entreprise, par exemple) : NULL = sans dossier.
     conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS folder_id VARCHAR")
+    # Réglages du programme d'étirements d'un bilan : nombre d'exercices et sélection du praticien
+    # (liste JSON d'identifiants d'exercices). NULL = réglage par défaut / programme automatique.
+    conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS program_size INTEGER")
+    conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS program_selection VARCHAR")
     # Dossiers dans des dossiers (entreprise > service > poste) : NULL = à la racine.
     conn.execute("ALTER TABLE bilan_folders ADD COLUMN IF NOT EXISTS parent_id VARCHAR")
     for column, column_type in _BILAN_TASKS_LATER_COLUMNS:
@@ -953,6 +957,37 @@ def set_bilan_folder(*, bilan_id: str, folder_id: str | None) -> None:
         ).fetchone() is None:
             raise KeyError(f"folder {folder_id}")
         conn.execute("UPDATE bilans SET folder_id = ? WHERE id = ?", [folder_id, bilan_id])
+    finally:
+        conn.close()
+
+
+def get_program_settings(bilan_id: str) -> dict:
+    """Réglages du programme d'étirements du bilan : `size` (None : valeur par défaut) et
+    `exercise_ids` (None : programme automatique). KeyError si le bilan est inconnu."""
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT program_size, program_selection FROM bilans WHERE id = ?", [bilan_id]
+        ).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        raise KeyError(f"bilan {bilan_id}")
+    return {"size": row[0], "exercise_ids": json.loads(row[1]) if row[1] is not None else None}
+
+
+def set_program_settings(
+    *, bilan_id: str, size: int | None, exercise_ids: list[str] | None
+) -> None:
+    """Enregistre les réglages du programme du bilan. KeyError si le bilan est inconnu."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilans WHERE id = ?", [bilan_id]).fetchone() is None:
+            raise KeyError(f"bilan {bilan_id}")
+        conn.execute(
+            "UPDATE bilans SET program_size = ?, program_selection = ? WHERE id = ?",
+            [size, json.dumps(exercise_ids) if exercise_ids is not None else None, bilan_id],
+        )
     finally:
         conn.close()
 

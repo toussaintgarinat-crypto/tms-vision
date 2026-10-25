@@ -6,6 +6,7 @@ from tms_vision.program import (
     describe_load,
     format_hours,
     format_seconds,
+    select_program,
 )
 
 
@@ -57,7 +58,7 @@ def test_analysis_program_ranks_zones_by_elevated_time_and_numbers_them():
         _frame(2, 4.0, trunk="acceptable"),
     ]
 
-    program = build_analysis_program(frames, NO_LOAD)
+    program = build_analysis_program(frames, NO_LOAD, size=2)
 
     assert [item["zone"] for item in program] == ["trunk", "neck"]
     assert [item["rank"] for item in program] == [1, 2]
@@ -85,17 +86,18 @@ def test_analysis_program_is_empty_when_no_zone_is_at_risk():
     assert build_analysis_program(frames, NO_LOAD) == []
 
 
-def test_analysis_program_is_capped_at_three_capsules():
+def test_analysis_program_is_capped_at_the_requested_size():
     frames = [
         _frame(0, 0.0, neck="changement_immediat", trunk="changement_immediat",
                upper_arm="changement_immediat", lower_arm="changement_immediat"),
         _frame(1, 1.0),
     ]
 
-    program = build_analysis_program(frames, NO_LOAD)
+    program = build_analysis_program(frames, NO_LOAD, size=3)
 
     assert len(program) == 3
     assert [item["zone"] for item in program] == ["trunk", "neck", "upper_arm"]
+    assert len(build_analysis_program(frames, NO_LOAD, size=10)) == 10
 
 
 def _report(**hours_by_zone):
@@ -107,7 +109,7 @@ def _report(**hours_by_zone):
 
 
 def test_bilan_program_ranks_zones_by_projected_hours():
-    program = build_bilan_program(_report(trunk=4.2, upper_arm=1.5, neck=0.5))
+    program = build_bilan_program(_report(trunk=4.2, upper_arm=1.5, neck=0.5), size=3)
 
     assert [item["zone"] for item in program] == ["trunk", "upper_arm", "neck"]
     assert program[0]["reason"] == (
@@ -127,7 +129,7 @@ def test_hand_and_foot_can_be_recommended_with_their_own_labels():
         _frame(1, 10.0, hand="investigation_et_changement_bientot", foot="investigation_et_changement_bientot"),
         _frame(2, 12.0),
     ]
-    program = build_analysis_program(frames, None)
+    program = build_analysis_program(frames, None, size=2)
     assert [item["zone"] for item in program] == ["hand", "foot"]
     assert program[0]["capsule"]["zone"] == "hand"
     assert program[0]["reason"].startswith("Main / poignet : 12 s")
@@ -137,8 +139,8 @@ def test_hand_and_foot_can_be_recommended_with_their_own_labels():
 def test_bilan_program_uses_seated_exercises_for_a_seated_workstation_and_keeps_the_ranking():
     report = _report(trunk=4.2, upper_arm=1.5, neck=0.5)
 
-    standard = build_bilan_program(report)
-    seated = build_bilan_program(report, "seated")
+    standard = build_bilan_program(report, size=3)
+    seated = build_bilan_program(report, "seated", size=3)
 
     assert [item["zone"] for item in seated] == [item["zone"] for item in standard]
     assert [item["capsule"]["id"] for item in seated] == [
@@ -159,7 +161,7 @@ def test_bilan_program_without_video_is_built_from_the_declared_tasks():
         _task("Classement", ["trunk"], 1.0),
     ]
 
-    program = build_bilan_program(_report(), None, tasks)
+    program = build_bilan_program(_report(), None, tasks, size=3)
 
     # Cou : 6 h, tronc : 2 h 30, main : 4 h 30 → cou, main, tronc.
     assert [item["zone"] for item in program] == ["neck", "hand", "trunk"]
@@ -172,13 +174,18 @@ def test_bilan_program_without_video_is_built_from_the_declared_tasks():
     )
 
 
-def test_bilan_program_puts_measured_zones_first_and_never_repeats_a_zone():
+def test_bilan_program_puts_measured_zones_first_and_covers_each_zone_before_repeating():
     tasks = [_task("Saisie", ["neck", "hand"], 4.5), _task("Port", ["trunk", "foot"], 1.0)]
 
-    program = build_bilan_program(_report(trunk=2.0), None, tasks)
+    program = build_bilan_program(_report(trunk=2.0), None, tasks, size=3)
 
     assert [item["zone"] for item in program] == ["trunk", "neck", "hand"]
     assert [item["basis"] for item in program] == ["measured", "declared", "declared"]
+
+    longer = build_bilan_program(_report(trunk=2.0), None, tasks, size=6)
+    # Une fois chaque zone servie (tronc, cou, main, pied), on revient au tronc, puis au cou.
+    assert [item["zone"] for item in longer] == ["trunk", "neck", "hand", "foot", "trunk", "neck"]
+    assert len({item["capsule"]["id"] for item in longer}) == 6
 
 
 def test_bilan_program_ignores_tasks_completing_a_video_and_stays_empty_without_tasks():
@@ -194,3 +201,58 @@ def test_declared_program_follows_the_seated_position():
 
     assert seated[0]["capsule"]["id"] == "seated-neck-lateral-stretch"
     assert standard[0]["capsule"]["id"] == "neck-lateral-stretch"
+
+
+def test_bigger_programs_add_more_exercises_for_the_same_zones_without_repeating_one():
+    report = _report(trunk=4.0, neck=2.0)
+
+    ids = {
+        size: [item["capsule"]["id"] for item in build_bilan_program(report, size=size)]
+        for size in (3, 5, 10)
+    }
+
+    assert [len(ids[size]) for size in (3, 5, 10)] == [3, 5, 10]
+    assert ids[5][:3] == ids[3] and ids[10][:5] == ids[5]
+    assert len(set(ids[10])) == 10
+    assert [item["rank"] for item in build_bilan_program(report, size=5)] == [1, 2, 3, 4, 5]
+
+
+def test_program_items_explain_the_work_movement_and_the_muscles_behind_each_exercise():
+    tasks = [{
+        "name": "Soins au lit", "zones": ["neck", "trunk"], "activity_hours": 3.0,
+        "analysis_id": None, "workstation": "Penché (soins, nettoyage)",
+        "zone_cycles": {"neck": 3}, "static_seconds": 60, "load_kg": None,
+    }]
+
+    program = build_bilan_program(_report(neck=2.0), None, tasks, size=3)
+
+    # Cou (mesuré), tronc (saisi), puis un deuxième exercice pour le cou.
+    first, third = program[0]["why"], program[2]["why"]
+    assert first[0] == (
+        "Mouvements du poste qui sollicitent cou : « Soins au lit » "
+        "(3 h, penché, 3 gestes/min, maintien 1 min)."
+    )
+    assert any(line.startswith("Cet exercice fait travailler : ") for line in first)
+    assert not any("complémentaire" in line for line in first)
+    assert any("complémentaire" in line for line in third)
+
+
+def test_why_says_so_when_no_task_describes_the_movement():
+    frames = [_frame(0, 0.0, neck="changement_immediat"), _frame(1, 2.0)]
+
+    why = build_analysis_program(frames, NO_LOAD, size=1)[0]["why"]
+
+    assert why[0].startswith("Zone : cou.") and "Aucune tâche saisie" in why[0]
+
+
+def test_select_program_keeps_the_practitioner_order_and_marks_added_exercises():
+    report = _report(trunk=4.0)
+    full = build_bilan_program(report, size=200)
+    chosen = [full[2]["capsule"]["id"], "thumb-mobility", full[0]["capsule"]["id"], "nope"]
+
+    program = select_program(chosen + [chosen[0]], full)
+
+    assert [item["capsule"]["id"] for item in program] == chosen[:3]
+    assert [item["rank"] for item in program] == [1, 2, 3]
+    assert [item["basis"] for item in program] == ["measured", "manual", "measured"]
+    assert program[1]["reason"] == "Exercice ajouté par le praticien."

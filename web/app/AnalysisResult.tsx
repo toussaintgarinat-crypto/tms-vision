@@ -67,10 +67,11 @@ export function AnalysisResult({
     load: LoadInfo;
   } | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [programSize, setProgramSize] = useState(5);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/analyses/${encodeURIComponent(analysisId)}/recommendation`)
+    fetch(`${API_URL}/analyses/${encodeURIComponent(analysisId)}/recommendation?size=${programSize}`)
       .then((response) => {
         if (!response.ok) throw new Error(`Erreur ${response.status}`);
         return response.json() as Promise<Recommendation>;
@@ -86,7 +87,7 @@ export function AnalysisResult({
     return () => {
       cancelled = true;
     };
-  }, [analysisId, refreshToken]);
+  }, [analysisId, refreshToken, programSize]);
 
   const currentRecommendation =
     recommendation?.analysisId === analysisId ? recommendation.data : null;
@@ -164,6 +165,7 @@ export function AnalysisResult({
         <ProgramList
           program={currentRecommendation.program}
           gestureCorrections={currentRecommendation.gesture_corrections}
+          controls={{ size: programSize, onSizeChange: setProgramSize }}
         />
       )}
       {currentRecommendation && !currentRecommendation.program && currentRecommendation.capsule && (
