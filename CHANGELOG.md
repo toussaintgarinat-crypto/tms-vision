@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.1.0] - 2026-10-25
+
 ### Application de bureau (Windows et macOS)
 - Installation par double-clic, sans Docker : `TMS-Vision-Setup.exe` (Windows) et `.dmg` (macOS Apple
   Silicon et Intel), fabriqués par GitHub (Actions > Application de bureau). Tout tourne sur le poste
