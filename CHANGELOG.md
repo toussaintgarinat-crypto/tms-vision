@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.2.0] - 2026-10-26
+
 ### Fiche d'activité pré-remplie par la vidéo
 - Dans « Ajouter une tâche », choisir une vidéo dans « Compléter une vidéo du bilan » remplit la fiche
   d'après sa mesure : zones cochées (celles où la vidéo mesure du temps en posture à risque),
