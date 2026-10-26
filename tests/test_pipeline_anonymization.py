@@ -85,6 +85,9 @@ class RecordingWriter:
         self.frames = []
         RecordingWriter.instances.append(self)
 
+    def isOpened(self):
+        return True
+
     def write(self, frame):
         self.frames.append(frame.copy())
 
@@ -188,3 +191,49 @@ def test_a_face_detector_that_cannot_start_aborts_the_analysis_instead_of_skippi
         run()
 
     assert RecordingWriter.instances == []  # rien n'a été écrit
+
+
+def test_a_file_is_read_twice_and_keeps_no_image_in_memory_between_the_passes(monkeypatch):
+    opened = []
+    real = FakeFrameSource
+
+    class CountingSource(real):
+        def __init__(self, source, *_args, **_kwargs):
+            opened.append(source)
+
+    monkeypatch.setattr(pipeline, "FrameSource", CountingSource)
+    kept = []
+    real_replace = pipeline.replace
+
+    def spy_replace(obj, **changes):
+        clone = real_replace(obj, **changes)
+        if isinstance(obj, Frame) and "image" in changes:
+            kept.append(clone.image)
+        return clone
+
+    monkeypatch.setattr(pipeline, "replace", spy_replace)
+
+    result = analyze_video(source="clip.mp4", side="right", load_kg=0.0, wrist_twist="normal")
+
+    assert opened == ["clip.mp4", "clip.mp4"]
+    assert len(result.frame_rows) == FRAME_COUNT
+    # Première passe : les images sont retirées des frames conservées (image=None) ;
+    # seconde passe : chaque image relue est rendue à l'écriture, une à la fois.
+    assert sum(image is None for image in kept) == FRAME_COUNT
+    assert sum(image is not None for image in kept) == FRAME_COUNT
+    assert len(written_frames()) == FRAME_COUNT
+
+
+def test_the_webcam_is_read_once_because_it_cannot_be_replayed(monkeypatch):
+    opened = []
+
+    class CountingSource(FakeFrameSource):
+        def __init__(self, source, *_args, **_kwargs):
+            opened.append(source)
+
+    monkeypatch.setattr(pipeline, "FrameSource", CountingSource)
+
+    result = analyze_video(source="webcam", side="right", load_kg=0.0, wrist_twist="normal")
+
+    assert opened == ["webcam"]
+    assert len(result.frame_rows) == FRAME_COUNT

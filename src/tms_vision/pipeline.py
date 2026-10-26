@@ -100,27 +100,13 @@ def analyze_video(
     hand_estimator = HandEstimator()
     extremity_thresholds = load_extremity_thresholds()
 
-    frames = []
-    try:
-        for frame in frame_source:
-            frames.append(frame)
-    except KeyboardInterrupt:
-        print("\nCapture interrompue par l'utilisateur, traitement des frames déjà capturées...")
-    finally:
-        frame_source.release()
-
-    if not frames:
-        print("Aucune frame capturée, rien à analyser.", file=sys.stderr)
-        estimator.close()
-        hand_estimator.close()
-        return AnalysisResult(empty=True)
-
     per_frame_angles = []
     posture_load_history: list[tuple[float, float]] = []
     shoulder_key = f"{side.upper()}_SHOULDER"
     shoulder_y_baseline = _RunningMean()
+    image_shape = None
 
-    for frame in frames:
+    def estimate(frame):
         pose_result = estimator.process(frame.image)
         angles = None
         if pose_result.landmarks is not None:
@@ -141,17 +127,46 @@ def analyze_video(
             current_shoulder = pose_result.landmarks.get(shoulder_key)
             if current_shoulder is not None:
                 shoulder_y_baseline.update(current_shoulder.y)
-        per_frame_angles.append((frame, pose_result, angles))
         if angles is not None:
             posture_load = angles.trunk_flexion_deg + angles.upper_arm_flexion_deg
             posture_load_history.append((frame.timestamp_seconds, posture_load))
+        return pose_result, angles
+
+    # Un fichier vidéo est lu deux fois (mesure, puis vidéo annotée) au lieu de garder toutes ses
+    # images en mémoire : la mémoire ne dépend plus de la durée. La webcam ne se relit pas : ses
+    # images sont gardées (clip court).
+    reread = source != "webcam"
+    captured = []
+    try:
+        for frame in frame_source:
+            if image_shape is None:
+                image_shape = frame.image.shape[:2]
+            if reread:
+                pose_result, angles = estimate(frame)
+                per_frame_angles.append((replace(frame, image=None), pose_result, angles))
+            else:
+                captured.append(frame)
+    except KeyboardInterrupt:
+        print("\nCapture interrompue par l'utilisateur, traitement des frames déjà capturées...")
+    finally:
+        frame_source.release()
+
+    for frame in captured:
+        pose_result, angles = estimate(frame)
+        per_frame_angles.append((frame, pose_result, angles))
+
+    if not per_frame_angles:
+        print("Aucune frame capturée, rien à analyser.", file=sys.stderr)
+        estimator.close()
+        hand_estimator.close()
+        return AnalysisResult(empty=True)
 
     estimator.close()
     hand_estimator.close()
 
     muscle_use_score = 1 if detect_muscle_use(posture_load_history) else 0
 
-    height, width = frames[0].image.shape[:2]
+    height, width = image_shape
     exporter = ResultsExporter()
 
     raw_world_landmarks = [pose_result.world_landmarks for _, pose_result, _ in per_frame_angles]
@@ -165,6 +180,7 @@ def analyze_video(
         if anonymize else None
     )
 
+    second_source = FrameSource(source) if reread else None
     tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
     video_tmp_path = Path(tmp_video.name)
     tmp_video.close()
@@ -179,8 +195,19 @@ def analyze_video(
             str(video_tmp_path), cv2.VideoWriter_fourcc(*("mp4v" if ffmpeg else "avc1")),
             frame_source.fps() or 30.0, (width, height),
         )
+        if not writer.isOpened():
+            raise RuntimeError(
+                "Impossible d'écrire la vidéo annotée : l'encodeur vidéo H.264 est indisponible "
+                "sur cet ordinateur."
+            )
         try:
+            second_pass = iter(second_source) if second_source is not None else None
             for (frame, pose_result, angles), world_landmarks in zip(per_frame_angles, smoothed_world_landmarks):
+                if second_pass is not None:
+                    reread_frame = next(second_pass, None)
+                    if reread_frame is None:
+                        break  # le fichier a livré moins d'images la seconde fois : on s'arrête là
+                    frame = replace(frame, image=reread_frame.image)
                 score = None
                 if angles is not None:
                     score = compute_rula_score(
@@ -244,6 +271,8 @@ def analyze_video(
         video_bytes = video_tmp_path.read_bytes()
     finally:
         video_tmp_path.unlink(missing_ok=True)
+        if second_source is not None:
+            second_source.release()
         if anonymizer is not None:
             anonymizer.close()
 

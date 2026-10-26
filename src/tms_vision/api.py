@@ -42,13 +42,10 @@ from tms_vision.pose3d_export import build_pose3d_payload
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Garde-fou mémoire : analyze_video() garde toutes les frames décodées en
-# mémoire pour tout traiter par lots (voir pipeline.py). Sans ce garde-fou,
-# une vidéo HD/4K longue importée par upload (qui n'a pas la limite
-# 640x480/30s imposée à la capture caméra) peut faire monter le process à
-# plusieurs Go de RAM. Seuil choisi à partir d'une mesure empirique (revue
-# finale de la tranche 2) : ~6.4 Mo par frame en 1080p.
-MAX_ESTIMATED_MEMORY_BYTES = 2 * 1024**3  # 2 Gio
+# Garde-fou de durée : analyze_video() lit un fichier image par image (deux passes, voir pipeline.py),
+# donc la mémoire ne dépend pas de sa durée, mais le temps de calcul oui. Au-delà, le praticien est
+# invité à découper la vidéo (le protocole vise 30 secondes à 3 minutes).
+MAX_VIDEO_SECONDS = 10 * 60
 
 # Par défaut, seul le serveur de dev Next.js local est autorisé. Pour tester
 # depuis un autre appareil (ex. iPhone via un tunnel HTTPS), surcharger avec
@@ -113,23 +110,20 @@ app.add_middleware(
 )
 
 
-def _reject_if_estimated_too_large(video_path: Path) -> None:
+def _reject_if_too_long(video_path: Path) -> None:
     capture = cv2.VideoCapture(str(video_path))
     try:
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = capture.get(cv2.CAP_PROP_FPS) or 30.0
     finally:
         capture.release()
 
-    estimated_bytes = frame_count * width * height * 3 * 2
-    if estimated_bytes > MAX_ESTIMATED_MEMORY_BYTES:
+    if frame_count / fps > MAX_VIDEO_SECONDS:
         raise HTTPException(
             status_code=422,
             detail=(
-                "Vidéo trop volumineuse pour être analysée (résolution et/ou durée trop "
-                "élevées pour la mémoire disponible du serveur). Réduisez la résolution ou "
-                "la durée du clip."
+                f"Vidéo trop longue pour être analysée (plus de {MAX_VIDEO_SECONDS // 60} minutes). "
+                "Découpez-la : une séquence représentative de 30 secondes à 3 minutes suffit."
             ),
         )
 
@@ -147,7 +141,7 @@ async def _analyze_and_build_response(
     create_analysis (upload direct) et complete_upload (upload par chunks) :
     les deux finissent par produire un seul fichier vidéo local, traité de
     façon identique à partir de ce point."""
-    _reject_if_estimated_too_large(video_path)
+    _reject_if_too_long(video_path)
     try:
         result = await run_in_threadpool(
             analyze_video, source=str(video_path), side=side, load_kg=load_kg,

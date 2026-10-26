@@ -10,6 +10,14 @@ une version précise.
 
 ## [Non publié]
 
+### Analyse de vidéos plus longues
+- Une vidéo n'est plus limitée à environ 6 secondes en Full HD (13 s en 720p) : le fichier est lu image par
+  image, en deux passes, au lieu de garder toutes ses images en mémoire. Une vidéo de 40 secondes en
+  720p, ou de 3 minutes, s'analyse comme une courte ; la mémoire utilisée ne dépend plus de la durée.
+  Seule limite : 10 minutes (au-delà, l'application invite à découper la vidéo). La capture webcam
+  garde ses images en mémoire, comme avant.
+- Si l'encodeur vidéo est indisponible, l'analyse l'explique au lieu de produire une vidéo vide.
+
 ## [1.1.0] - 2026-10-25
 
 ### Application de bureau (Windows et macOS)

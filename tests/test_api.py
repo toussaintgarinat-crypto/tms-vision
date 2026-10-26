@@ -520,10 +520,10 @@ def test_complete_upload_rejects_unknown_upload_id(tmp_path, monkeypatch):
     assert response.status_code == 404
 
 
-def test_create_analysis_rejects_video_estimated_too_large(tmp_path, monkeypatch):
+def test_create_analysis_rejects_a_video_longer_than_the_limit(tmp_path, monkeypatch):
     _patch_db(tmp_path, monkeypatch)
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
-    monkeypatch.setattr("tms_vision.api.MAX_ESTIMATED_MEMORY_BYTES", 1)
+    monkeypatch.setattr("tms_vision.api.MAX_VIDEO_SECONDS", 0.1)
 
     video_path = tmp_path / "synthetic.mp4"
     _write_synthetic_video(video_path)
