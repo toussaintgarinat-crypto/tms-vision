@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.1.1] - 2026-10-26
+
 ### Analyse de vidéos plus longues
 - Une vidéo n'est plus limitée à environ 6 secondes en Full HD (13 s en 720p) : le fichier est lu image par
   image, en deux passes, au lieu de garder toutes ses images en mémoire. Une vidéo de 40 secondes en
