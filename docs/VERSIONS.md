@@ -29,8 +29,12 @@
    journal, crée le commit « Version 1.1.0 » et l'étiquette `v1.1.0`. **Il ne pousse rien.**
 4. Envoyer sur GitHub :
    ```bash
-   git push origin main && git push origin v1.1.0
+   git push origin main
    ```
+   Le changement du fichier `VERSION` sur `main` lance la construction des installateurs Windows et
+   macOS (`.github/workflows/desktop.yml`) puis crée la version GitHub `v1.1.0`, avec les installateurs
+   joints et les nouveautés du journal (comptez 15 à 20 minutes). Pas besoin de pousser l'étiquette ni de
+   créer la version à la main.
 5. (Facultatif) Sur GitHub, *Releases > Draft a new release*, choisir l'étiquette `v1.1.0` et coller
    l'entrée du journal : les clients peuvent alors suivre les versions (« Watch > Releases »).
 

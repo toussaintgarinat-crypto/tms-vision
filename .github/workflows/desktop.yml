@@ -1,20 +1,26 @@
 name: Application de bureau
 
-# Construit l'application autonome (double-clic, sans Docker) pour Windows et macOS.
-# Lancement à la main (Actions > Application de bureau > Run workflow) ou à chaque étiquette de version
-# (v1.2.0) ; les fichiers sont téléchargeables dans « Artifacts », et joints à la version GitHub pour
-# une étiquette.
+# Construit l'application autonome (double-clic, sans Docker) pour Windows et macOS, puis la publie.
+#
+# - Publication automatique : quand le fichier VERSION change sur main (deploy/release.sh), le
+#   workflow construit les installateurs et crée la version GitHub « vX.Y.Z » avec les fichiers
+#   joints et les nouveautés du CHANGELOG.
+# - Étiquette poussée (v1.2.0) : même chose, pour cette étiquette.
+# - À la main (Actions > Application de bureau > Run workflow) : fichiers dans « Artifacts » ; avec
+#   « tag », ils sont aussi joints à cette version existante.
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Version GitHub existante à laquelle joindre les installateurs (ex. v1.1.0). Vide : fichiers dans Artifacts seulement."
+        description: "Version GitHub à laquelle joindre les installateurs (ex. v1.1.0). Vide : fichiers dans Artifacts seulement."
         required: false
         default: ""
   push:
     tags: ["v*"]
+    branches: [main]
+    paths: [VERSION]
 
-# Nécessaire pour joindre les installateurs à la version (Releases).
+# Nécessaire pour créer la version et y joindre les installateurs (Releases).
 permissions:
   contents: write
 
@@ -41,11 +47,6 @@ jobs:
         with:
           name: TMS-Vision-Windows
           path: dist/TMS-Vision-Setup.exe
-      - if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          files: dist/TMS-Vision-Setup.exe
 
   macos:
     strategy:
@@ -74,8 +75,43 @@ jobs:
         with:
           name: TMS-Vision-Mac-${{ matrix.label }}
           path: dist/TMS-Vision-Mac-${{ matrix.label }}.dmg
-      - if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
-        uses: softprops/action-gh-release@v2
+
+  # Une seule publication, une fois tous les fichiers construits (pas de course entre les trois jobs).
+  publish:
+    needs: [windows, macos]
+    # Pas de publication pour un lancement à la main sans « tag ».
+    if: github.event_name != 'workflow_dispatch' || inputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          files: dist/TMS-Vision-Mac-${{ matrix.label }}.dmg
+          path: installateurs
+          merge-multiple: true
+      - name: Version et nouveautés
+        id: release
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="$GITHUB_REF_NAME"
+          elif [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="v$(tr -d ' \r\n' < VERSION)"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          # Nouveautés : la section « ## [X.Y.Z] » du CHANGELOG.
+          awk -v v="${TAG#v}" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "Version ${TAG#v}." > notes.md; fi
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: Version ${{ steps.release.outputs.tag }}
+          body_path: notes.md
+          files: installateurs/*
