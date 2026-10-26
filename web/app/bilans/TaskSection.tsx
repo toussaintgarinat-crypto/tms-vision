@@ -20,12 +20,14 @@ import {
 import { AssistantPanel } from "../assistant/AssistantPanel";
 import {
   AssistantTaskFields,
+  FIELD_LABELS,
   FilledKey,
   TaskFormState,
   applyTaskFields,
   taskFormToCurrentValues,
 } from "../assistant/taskFill";
-import { BilanItem, BilanTask, ZONES, ZONE_LABELS, Zone } from "./types";
+import { videoTaskFields } from "./videoFill";
+import { BilanItem, BilanReportAnalysis, BilanTask, ZONES, ZONE_LABELS, Zone } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -50,10 +52,12 @@ type Props = {
   workdayHours: number;
   items: BilanItem[];
   tasks: BilanTask[];
+  // Mesures des vidéos du bilan : servent à pré-remplir la fiche d'une vidéo choisie.
+  analyses?: BilanReportAnalysis[];
   onChanged: () => void;
 };
 
-export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: Props) {
+export function TaskSection({ bilanId, workdayHours, items, tasks, analyses = [], onChanged }: Props) {
   const [name, setName] = useState("");
   const [zones, setZones] = useState<Zone[]>([]);
   const [useSlots, setUseSlots] = useState(false);
@@ -75,6 +79,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
   const [error, setError] = useState<string | null>(null);
 
   const [aiFilled, setAiFilled] = useState<Set<FilledKey>>(new Set());
+  const [videoNote, setVideoNote] = useState<string | null>(null);
 
   function formState(): TaskFormState {
     return {
@@ -83,9 +88,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
     };
   }
 
-  function handleAssistantFields(fields: AssistantTaskFields, overwrite: boolean) {
-    const result = applyTaskFields(formState(), fields, overwrite);
-    const next = result.state;
+  function showForm(next: TaskFormState) {
     setName(next.name);
     setZones(next.zones);
     setUseSlots(next.useSlots);
@@ -102,8 +105,56 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
     setWorkstationOther(next.workstationOther);
     setBreaks(next.breaks);
     setBreaksOther(next.breaksOther);
+  }
+
+  function handleAssistantFields(fields: AssistantTaskFields, overwrite: boolean) {
+    const result = applyTaskFields(formState(), fields, overwrite);
+    showForm(result.state);
     setAiFilled((current) => new Set([...current, ...result.filled]));
     return result;
+  }
+
+  /** Choisir une vidéo à compléter pré-remplit la fiche d'après sa mesure (champs surlignés, à
+   *  relire). Ce que le praticien a saisi lui-même est gardé ; ce qu'une vidéo précédente avait
+   *  rempli est remplacé. */
+  function handleChooseVideo(id: string) {
+    setAnalysisId(id);
+    setVideoNote(null);
+    const analysis = analyses.find((candidate) => candidate.analysis_id === id);
+    const item = items.find((candidate) => candidate.analysis_id === id);
+    if (!analysis || !item) return;
+
+    const base = formState();
+    const cleared: TaskFormState = { ...base, frequencies: { ...base.frequencies } };
+    if (aiFilled.has("zones")) cleared.zones = [];
+    if (aiFilled.has("hours") || aiFilled.has("useSlots") || aiFilled.has("slots")) {
+      cleared.hours = "";
+      cleared.useSlots = false;
+      cleared.slots = [{ start: "", end: "" }];
+    }
+    if (aiFilled.has("frequencies")) cleared.frequencies = {};
+    if (aiFilled.has("cycleSeconds")) cleared.cycleSeconds = "";
+    if (aiFilled.has("staticSeconds")) cleared.staticSeconds = "";
+
+    const fields = videoTaskFields(analysis, item.activity_hours);
+    const result = applyTaskFields(cleared, fields, false);
+    showForm(result.state);
+    setAiFilled((current) => {
+      const next = new Set(current);
+      for (const key of ["zones", "hours", "useSlots", "slots", "frequencies", "cycleSeconds", "staticSeconds"] as FilledKey[]) {
+        next.delete(key);
+      }
+      return new Set([...next, ...result.filled]);
+    });
+
+    const parts = ["Rempli d'après la mesure de la vidéo : à relire (champs surlignés)."];
+    if (fields.zones && fields.zones.length === 0) {
+      parts.push("Aucune zone n'atteint une posture à risque sur cette vidéo : cochez les zones vous-même.");
+    }
+    if (result.kept.length > 0) {
+      parts.push(`Gardé tel que vous l'aviez saisi : ${[...new Set(result.kept.map((key) => FIELD_LABELS[key]))].join(", ")}.`);
+    }
+    setVideoNote(parts.join(" "));
   }
 
   /** Surligne un champ rempli par l'assistant, jusqu'à l'envoi de la fiche. */
@@ -213,6 +264,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
       setNotes("");
       setAnalysisId("");
       setAiFilled(new Set());
+      setVideoNote(null);
       onChanged();
     } catch {
       setError("Impossible d'ajouter la tâche (problème réseau ou serveur).");
@@ -398,7 +450,7 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Compléter une vidéo du bilan (facultatif)
-          <select value={analysisId} onChange={(e) => setAnalysisId(e.target.value)} className={input}>
+          <select value={analysisId} onChange={(e) => handleChooseVideo(e.target.value)} className={input}>
             <option value="">— Tâche sans vidéo —</option>
             {items.map((item) => (
               <option key={item.analysis_id} value={item.analysis_id}>
@@ -407,8 +459,10 @@ export function TaskSection({ bilanId, workdayHours, items, tasks, onChanged }: 
             ))}
           </select>
           <span className="text-xs text-gray-500">
-            Les répétitions saisies remplacent la mesure de la vidéo pour les zones où une valeur est donnée.
+            Choisir une vidéo pré-remplit la fiche d&apos;après sa mesure. Les répétitions saisies remplacent
+            la mesure de la vidéo pour les zones où une valeur est donnée.
           </span>
+          {videoNote && <span className="text-xs text-amber-800">{videoNote}</span>}
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Poste de travail

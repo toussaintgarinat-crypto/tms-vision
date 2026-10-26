@@ -10,6 +10,15 @@ une version précise.
 
 ## [Non publié]
 
+### Fiche d'activité pré-remplie par la vidéo
+- Dans « Ajouter une tâche », choisir une vidéo dans « Compléter une vidéo du bilan » remplit la fiche
+  d'après sa mesure : zones cochées (celles où la vidéo mesure du temps en posture à risque),
+  répétitions par minute de chaque zone, durée d'un cycle (celle de la zone qui répète le plus),
+  plus longue tenue statique et durée de la tâche (celle de la vidéo dans le bilan). Les champs remplis
+  sont surlignés pour relecture et restent modifiables ; ce que le praticien a saisi lui-même est
+  gardé, et choisir une autre vidéo remplace ce qu'une vidéo précédente avait rempli. Il reste à saisir
+  le nom, le poste de travail, les pauses et les notes.
+
 ## [1.1.1] - 2026-10-26
 
 ### Analyse de vidéos plus longues

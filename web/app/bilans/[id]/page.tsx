@@ -571,6 +571,7 @@ export default function BilanDetailPage() {
             workdayHours={loaded.bilan.workday_hours}
             items={loaded.bilan.items ?? []}
             tasks={loaded.bilan.tasks ?? []}
+            analyses={loaded.report.analyses}
             onChanged={() => setReloadToken((token) => token + 1)}
           />
 
