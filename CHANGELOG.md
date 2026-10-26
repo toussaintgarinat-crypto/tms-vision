@@ -18,6 +18,8 @@ une version précise.
   720p, ou de 3 minutes, s'analyse comme une courte ; la mémoire utilisée ne dépend plus de la durée.
   Seule limite : 10 minutes (au-delà, l'application invite à découper la vidéo). La capture webcam
   garde ses images en mémoire, comme avant.
+- Application de bureau : le journal (`logs/application.log`) note maintenant les requêtes reçues et la
+  pile d'un plantage brutal, pour faciliter le dépannage.
 - Si l'encodeur vidéo est indisponible, l'analyse l'explique au lieu de produire une vidéo vide.
 
 ## [1.1.0] - 2026-10-25

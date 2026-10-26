@@ -106,7 +106,7 @@ class Application:
 
         from tms_vision.api import app
 
-        config = uvicorn.Config(app, host=HOST, port=API_PORT, log_level="warning", log_config=None)
+        config = uvicorn.Config(app, host=HOST, port=API_PORT, log_level="info", log_config=None)
         self.api_server = uvicorn.Server(config)
         self.api_thread = threading.Thread(target=self.api_server.run, daemon=True)
         self.api_thread.start()
@@ -262,7 +262,17 @@ def main(argv: list[str] | None = None) -> int:
     if getattr(sys, "frozen", False):
         # Sans console (fenêtre seule), stdout/stderr n'existent pas : on écrit dans un journal.
         (directory / "logs").mkdir(exist_ok=True)
-        sys.stdout = sys.stderr = open(directory / "logs" / "application.log", "a", encoding="utf-8")
+        sys.stdout = sys.stderr = open(directory / "logs" / "application.log", "a", encoding="utf-8", buffering=1)
+        # Journal utile au dépannage : requêtes reçues par l'API, erreurs, et pile Python en cas de
+        # plantage brutal d'une bibliothèque native (OpenCV, MediaPipe), qui n'écrit sinon rien.
+        import faulthandler
+        import logging
+
+        faulthandler.enable(file=sys.stderr)
+        logging.basicConfig(
+            stream=sys.stderr, level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+        )
+        print(f"--- démarrage de TMS Vision {time.strftime('%Y-%m-%d %H:%M:%S')} ---", flush=True)
 
     app = Application(directory, web_dir, node)
     app.start()
