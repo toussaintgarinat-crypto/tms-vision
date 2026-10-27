@@ -7,9 +7,8 @@ from tms_vision.pose_models.registry import DEFAULT_MODEL, available_models
 
 # Fonctions prévues mais pas encore branchées dans le pipeline : refusées explicitement plutôt
 # qu'ignorées en silence (une analyse ne doit jamais prétendre avoir mesuré ce qu'elle n'a pas mesuré).
-# Retirer une entrée au fur et à mesure des étapes (mains : étape 4, whole-body : 5, custom : 6).
+# Retirer une entrée au fur et à mesure des étapes (whole-body : étape 5, custom : étape 6).
 NOT_YET_AVAILABLE = {
-    "enable_hands": "l'analyse détaillée des mains",
     "enable_wholebody": "le modèle whole-body",
     "custom_points": "les points personnalisés",
 }
@@ -23,6 +22,11 @@ class PoseOptions:
     enable_feet: bool = False
     enable_face: bool = False
     custom_points: bool = False
+
+    @property
+    def keypoint_count(self) -> int:
+        """Points par personne : 33 (Pose) + 42 (deux mains) quand les mains sont activées."""
+        return 33 + (42 if self.enable_hands else 0)
 
     @property
     def is_default(self) -> bool:

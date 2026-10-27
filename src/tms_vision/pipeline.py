@@ -25,7 +25,9 @@ from tms_vision.extremities import (
 )
 from tms_vision.hand_estimation import HandEstimator
 from tms_vision.pose_estimation import PoseEstimator
-from tms_vision.pose_models import PoseOptions, create_model
+from tms_vision.hand_metrics import GripAccumulator, finger_curl_from_keypoints
+from tms_vision.pose_models import FramePose, PoseOptions
+from tms_vision.pose_models.mediapipe_hands import MediaPipeHandsModel
 from tms_vision.angles import compute_ankle_flexion, compute_joint_angles
 from tms_vision.rula.scoring import action_level, compute_rula_score, detect_muscle_use
 from tms_vision.overlay import draw_overlay
@@ -71,6 +73,8 @@ class AnalysisResult:
     summary: dict | None = None
     pose3d_records: list[Pose3DFrameRecord] | None = None
     pose_options: PoseOptions = field(default_factory=PoseOptions)
+    keypoint_frames: list[FramePose] | None = None  # points des modèles complémentaires (mains...)
+    hands_metrics: dict | None = None  # par côté : flexion des doigts, préhensions, cadence
     keypoint_count: int = 33
 
 
@@ -102,13 +106,18 @@ def analyze_video(
     comportement est celui d'avant le sélecteur (MediaPipe Pose 33). Une option qui n'est pas encore
     branchée est refusée (ModelUnavailableError, une RuntimeError) avant tout traitement."""
     pose_options = (pose_options or PoseOptions()).validate()
-    keypoint_count = create_model(pose_options.pose_model).get_metadata().keypoint_count
+    keypoint_count = pose_options.keypoint_count
     wrist_twist_code = WRIST_TWIST_CODES[wrist_twist]
 
     frame_source = FrameSource(source)
     estimator = PoseEstimator()
-    hand_estimator = HandEstimator()
     extremity_thresholds = load_extremity_thresholds()
+    # Option « mains » : MediaPipe Hands donne les 21 points de chaque main (et la flexion des
+    # doigts du côté analysé) en une seule inférence ; sinon, mesure historique inchangée.
+    hands_model = MediaPipeHandsModel() if pose_options.enable_hands else None
+    hand_estimator = None if hands_model is not None else HandEstimator()
+    hand_poses: list[FramePose | None] = []
+    grips = {s: GripAccumulator(extremity_thresholds) for s in ("left", "right")} if hands_model else {}
 
     per_frame_angles = []
     posture_load_history: list[tuple[float, float]] = []
@@ -118,6 +127,7 @@ def analyze_video(
 
     def estimate(frame):
         pose_result = estimator.process(frame.image)
+        hand_pose = None
         angles = None
         if pose_result.landmarks is not None:
             angles = compute_joint_angles(
@@ -130,17 +140,52 @@ def analyze_video(
                         compute_ankle_flexion(pose_result.world_landmarks, side)
                         if pose_result.world_landmarks is not None else None
                     ),
-                    finger_curl_deg=hand_estimator.finger_curl(
-                        frame.image, pose_result.landmarks.get(f"{side.upper()}_WRIST")
+                    finger_curl_deg=(
+                        hand_estimator.finger_curl(
+                            frame.image, pose_result.landmarks.get(f"{side.upper()}_WRIST")
+                        ) if hand_estimator is not None else None
                     ),
                 )
             current_shoulder = pose_result.landmarks.get(shoulder_key)
             if current_shoulder is not None:
                 shoulder_y_baseline.update(current_shoulder.y)
+        if hands_model is not None:
+            hand_pose, curls = _measure_hands(frame, pose_result)
+            for hand_side, accumulator in grips.items():
+                accumulator.update(frame.timestamp_seconds, curls.get(hand_side))
+            if angles is not None:
+                angles = replace(angles, finger_curl_deg=curls.get(side))
+        hand_poses.append(hand_pose)
         if angles is not None:
             posture_load = angles.trunk_flexion_deg + angles.upper_arm_flexion_deg
             posture_load_history.append((frame.timestamp_seconds, posture_load))
         return pose_result, angles
+
+    def _measure_hands(frame, pose_result):
+        """Points des mains proches des poignets de Pose et flexion des doigts de chaque côté
+        (`None` pour une main non vue). Sans posture détectée, aucune main n'est retenue."""
+        wrists = {
+            hand_side: pose_result.landmarks.get(f"{hand_side.upper()}_WRIST")
+            for hand_side in ("left", "right")
+        } if pose_result.landmarks else {}
+        wrists = {s: w for s, w in wrists.items() if w is not None}
+        if not wrists:
+            return None, {}
+        poses = hands_model.process_frame(frame.image, frame.index, pose_wrists=wrists)
+        if not poses:
+            return None, {}
+        aspect = frame.image.shape[1] / frame.image.shape[0]
+        curls = {
+            hand_side: finger_curl_from_keypoints(poses[0].keypoints, hand_side, aspect)
+            for hand_side in wrists
+        }
+        return poses[0], {s: c for s, c in curls.items() if c is not None}
+
+    def _close_hands():
+        if hand_estimator is not None:
+            hand_estimator.close()
+        if hands_model is not None:
+            hands_model.close()
 
     # Un fichier vidéo est lu deux fois (mesure, puis vidéo annotée) au lieu de garder toutes ses
     # images en mémoire : la mémoire ne dépend plus de la durée. La webcam ne se relit pas : ses
@@ -168,11 +213,11 @@ def analyze_video(
     if not per_frame_angles:
         print("Aucune frame capturée, rien à analyser.", file=sys.stderr)
         estimator.close()
-        hand_estimator.close()
+        _close_hands()
         return AnalysisResult(empty=True)
 
     estimator.close()
-    hand_estimator.close()
+    _close_hands()
 
     muscle_use_score = 1 if detect_muscle_use(posture_load_history) else 0
 
@@ -212,7 +257,9 @@ def analyze_video(
             )
         try:
             second_pass = iter(second_source) if second_source is not None else None
-            for (frame, pose_result, angles), world_landmarks in zip(per_frame_angles, smoothed_world_landmarks):
+            for (frame, pose_result, angles), world_landmarks, hand_pose in zip(
+                per_frame_angles, smoothed_world_landmarks, hand_poses
+            ):
                 if second_pass is not None:
                     reread_frame = next(second_pass, None)
                     if reread_frame is None:
@@ -247,7 +294,10 @@ def analyze_video(
                     anonymizer.anonymize(frame.image, pose_result.landmarks)
                     if anonymizer is not None else frame.image
                 )
-                annotated = draw_overlay(image, pose_result.landmarks, score)
+                annotated = draw_overlay(
+                    image, pose_result.landmarks, score,
+                    hand_keypoints=hand_pose.keypoints if hand_pose is not None else None,
+                )
                 writer.write(annotated)
                 exporter.add_frame(
                     FrameRecord(
@@ -305,4 +355,6 @@ def analyze_video(
         pose3d_records=pose3d_records,
         pose_options=pose_options,
         keypoint_count=keypoint_count,
+        keypoint_frames=[p for p in hand_poses if p is not None] if hands_model is not None else None,
+        hands_metrics={s: g.summary() for s, g in grips.items()} if hands_model is not None else None,
     )

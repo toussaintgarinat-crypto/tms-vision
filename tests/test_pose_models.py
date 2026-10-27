@@ -123,7 +123,7 @@ def test_unknown_model_is_rejected():
         PoseOptions(pose_model="nope").validate()
 
 
-@pytest.mark.parametrize("option", ["enable_hands", "enable_wholebody", "custom_points"])
+@pytest.mark.parametrize("option", ["enable_wholebody", "custom_points"])
 def test_not_yet_available_options_are_refused_not_ignored(option):
     with pytest.raises(ModelUnavailableError, match="pas encore disponible"):
         PoseOptions(**{option: True}).validate()
@@ -132,3 +132,8 @@ def test_not_yet_available_options_are_refused_not_ignored(option):
 def test_feet_and_face_require_wholebody():
     with pytest.raises(PoseModelError, match="whole-body"):
         PoseOptions(enable_feet=True).validate()
+
+
+def test_hands_option_is_valid_and_counts_75_keypoints():
+    options = PoseOptions(enable_hands=True).validate()
+    assert options.keypoint_count == 75 and PoseOptions().keypoint_count == 33

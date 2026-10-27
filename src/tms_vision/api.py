@@ -177,6 +177,8 @@ async def _analyze_and_build_response(
         frame_rows=result.frame_rows,
         pose_model=result.pose_options.pose_model, pose_options=result.pose_options.to_json(),
         keypoint_count=result.keypoint_count,
+        hands_metrics=json.dumps(result.hands_metrics) if result.hands_metrics is not None else None,
+        keypoint_frames=[p.to_dict() for p in result.keypoint_frames or []],
     )
 
     return {
@@ -188,6 +190,8 @@ async def _analyze_and_build_response(
         "side": side,
         "pose_model": result.pose_options.pose_model,
         "keypoint_count": result.keypoint_count,
+        "keypoints_url": f"/analyses/{analysis_id}/keypoints",
+        "hands_metrics": result.hands_metrics,
     }
 
 
@@ -476,6 +480,15 @@ async def get_analysis_pose3d(analysis_id: str) -> Response:
     if pose3d_json is None:
         raise HTTPException(status_code=404, detail="Analyse introuvable.")
     return Response(content=pose3d_json, media_type="application/json")
+
+
+@app.get("/analyses/{analysis_id}/keypoints")
+async def get_analysis_keypoints(analysis_id: str) -> dict:
+    """Export JSON des points des modèles complémentaires (mains...) au format normalisé."""
+    frames = storage.get_keypoints(analysis_id)
+    if frames is None:
+        raise HTTPException(status_code=404, detail="Analyse introuvable.")
+    return {"analysis_id": analysis_id, "frames": frames}
 
 
 @app.get("/analyses/{analysis_id}/frames.csv")

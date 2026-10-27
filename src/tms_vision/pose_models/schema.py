@@ -30,7 +30,7 @@ def group_of(name: str) -> str:
     if name in _FOOT_NAMES or "toe" in name or "foot" in name:
         return "feet"
     if name in _HAND_NAMES or name.startswith(("left_hand_", "right_hand_")) \
-            or name.endswith(("_tip", "_dip", "_pip", "_mcp", "_cmc")):
+            or name.endswith(("_tip", "_dip", "_pip", "_ip", "_mcp", "_cmc")):
         return "hands"
     return "body"
 

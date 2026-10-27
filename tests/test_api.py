@@ -2118,7 +2118,7 @@ def test_analysis_records_default_pose_model(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("data,fragment", [
     ({"pose_model": "inconnu"}, "inconnu"),
-    ({"enable_hands": "true"}, "pas encore disponible"),
+    ({"enable_wholebody": "true"}, "pas encore disponible"),
     ({"enable_feet": "true"}, "whole-body"),
 ])
 def test_invalid_pose_options_return_422_before_analysis(tmp_path, monkeypatch, data, fragment):
@@ -2127,3 +2127,54 @@ def test_invalid_pose_options_return_422_before_analysis(tmp_path, monkeypatch, 
     response = _post_video(TestClient(app), tmp_path, **data)
     assert response.status_code == 422
     assert fragment in response.json()["detail"]
+
+
+def test_analysis_with_hands_stores_keypoints_and_grip_metrics(tmp_path, monkeypatch):
+    from tms_vision.landmark import Landmark
+    from tms_vision.pose_estimation import PoseEstimator, PoseResult
+    from tms_vision.pose_models import FramePose
+    from tms_vision.pose_models.mediapipe_hands import MediaPipeHandsModel
+    from tests.test_hand_metrics import hand_keypoints
+
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    landmarks = {
+        "RIGHT_SHOULDER": Landmark(0.55, 0.30, 0.0, 1.0), "LEFT_SHOULDER": Landmark(0.45, 0.30, 0.0, 1.0),
+        "RIGHT_HIP": Landmark(0.55, 0.60, 0.0, 1.0), "LEFT_HIP": Landmark(0.45, 0.60, 0.0, 1.0),
+        "NOSE": Landmark(0.55, 0.20, 0.0, 1.0), "RIGHT_EAR": Landmark(0.52, 0.21, 0.0, 1.0),
+        "RIGHT_ELBOW": Landmark(0.56, 0.45, 0.0, 1.0), "RIGHT_WRIST": Landmark(0.56, 0.60, 0.0, 1.0),
+        "RIGHT_INDEX": Landmark(0.56, 0.66, 0.0, 1.0),
+    }
+    monkeypatch.setattr(PoseEstimator, "process",
+                        lambda self, image: PoseResult(landmarks=landmarks, world_landmarks=None))
+    monkeypatch.setattr(
+        MediaPipeHandsModel, "process_frame",
+        lambda self, frame, frame_index=0, pose_wrists=None: [
+            FramePose(frame=frame_index, model="mediapipe_hands_21", keypoints=hand_keypoints("right", 90))
+        ],
+    )
+    client = TestClient(app)
+    response = _post_video(client, tmp_path, enable_hands="true")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["keypoint_count"] == 75
+    assert body["hands_metrics"]["right"]["grasp_count"] == 1
+    assert body["hands_metrics"]["left"]["detected_frame_count"] == 0  # main gauche jamais vue : pas d'erreur
+
+    record = client.get(f"/analyses/{body['analysis_id']}").json()
+    assert record["pose_options"]["enable_hands"] is True
+    assert record["hands_metrics"]["right"]["finger_curl_max_deg"] > 80
+
+    export = client.get(body["keypoints_url"]).json()
+    assert len(export["frames"]) == 3 and export["frames"][0]["model"] == "mediapipe_hands_21"
+    assert len(export["frames"][0]["keypoints"]) == 21
+    assert client.get("/analyses/inconnue/keypoints").status_code == 404
+
+
+def test_standard_analysis_has_no_extra_keypoints(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    client = TestClient(app)
+    body = _post_video(client, tmp_path).json()
+    assert body["hands_metrics"] is None
+    assert client.get(body["keypoints_url"]).json()["frames"] == []

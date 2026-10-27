@@ -204,7 +204,22 @@ _POSE_MODEL_COLUMNS = [
     ("pose_model", "VARCHAR"),
     ("pose_options", "VARCHAR"),
     ("keypoint_count", "INTEGER"),
+    ("hands_metrics", "VARCHAR"),  # JSON : par côté, flexion des doigts, préhensions, cadence
 ]
+
+# Points des modèles complémentaires (mains, plus tard whole-body et points custom), au format
+# normalisé (pose_models/schema.py) : une ligne par image et par modèle. Les 33 points de Pose
+# restent dans analyses.pose3d_json ; cette table n'est écrite que si un modèle complémentaire est
+# actif, donc une analyse standard ne coûte rien de plus.
+CREATE_ANALYSIS_KEYPOINTS_TABLE = """
+CREATE TABLE IF NOT EXISTS analysis_keypoints (
+    analysis_id VARCHAR NOT NULL REFERENCES analyses(id),
+    frame_index INTEGER NOT NULL,
+    model VARCHAR NOT NULL,
+    keypoints_json VARCHAR NOT NULL,
+    PRIMARY KEY (analysis_id, frame_index, model)
+)
+"""
 
 
 def _connect() -> "duckdb.DuckDBPyConnection":
@@ -212,6 +227,7 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn = duckdb.connect(str(DB_PATH))
     conn.execute(CREATE_ANALYSES_TABLE)
     conn.execute(CREATE_ANALYSIS_FRAMES_TABLE)
+    conn.execute(CREATE_ANALYSIS_KEYPOINTS_TABLE)
     conn.execute(CREATE_BILANS_TABLE)
     conn.execute(CREATE_BILAN_FOLDERS_TABLE)
     conn.execute(CREATE_BILAN_ANALYSES_TABLE)
@@ -260,7 +276,7 @@ FRAME_VALUE_COLUMNS = CSV_FIELDS + SEGMENT_COLUMNS
 _ANALYSIS_COLUMNS = [
     "id", "created_at", "side", "load_kg", "wrist_twist", "worker_label", "poste_label",
     "frame_count", "detected_frame_count", "max_score", "average_score", "time_by_action_level",
-    "pose_model", "pose_options", "keypoint_count",
+    "pose_model", "pose_options", "keypoint_count", "hands_metrics",
 ]
 
 
@@ -269,6 +285,7 @@ def _normalize_pose_fields(record: dict) -> None:
     record["pose_model"] = record["pose_model"] or "mediapipe_pose_33"
     record["pose_options"] = json.loads(record["pose_options"]) if record["pose_options"] else {}
     record["keypoint_count"] = record["keypoint_count"] or 33
+    record["hands_metrics"] = json.loads(record["hands_metrics"]) if record["hands_metrics"] else None
 
 
 def save_analysis(
@@ -287,7 +304,10 @@ def save_analysis(
     pose_model: str = "mediapipe_pose_33",
     pose_options: str | None = None,
     keypoint_count: int = 33,
+    hands_metrics: str | None = None,
+    keypoint_frames: list[dict] | None = None,
 ) -> None:
+    """`keypoint_frames` : points des modèles complémentaires, au format `FramePose.to_dict()`."""
     conn = _connect()
     try:
         conn.begin()
@@ -298,8 +318,8 @@ def save_analysis(
                     id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
                     frame_count, detected_frame_count, max_score, average_score,
                     time_by_action_level, video_bytes, pose3d_json,
-                    pose_model, pose_options, keypoint_count
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    pose_model, pose_options, keypoint_count, hands_metrics
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     analysis_id, _to_naive_utc(created_at), side, load_kg, wrist_twist,
@@ -308,9 +328,19 @@ def save_analysis(
                     summary["average_score"],
                     json.dumps(summary["time_by_action_level"], ensure_ascii=False),
                     video_bytes, pose3d_json,
-                    pose_model, pose_options, keypoint_count,
+                    pose_model, pose_options, keypoint_count, hands_metrics,
                 ],
             )
+            if keypoint_frames:
+                conn.executemany(
+                    "INSERT INTO analysis_keypoints (analysis_id, frame_index, model, keypoints_json) "
+                    "VALUES (?, ?, ?, ?)",
+                    [
+                        [analysis_id, entry["frame"], entry["model"],
+                         json.dumps(entry["keypoints"], ensure_ascii=False, separators=(",", ":"))]
+                        for entry in keypoint_frames
+                    ],
+                )
             if frame_rows:
                 insert_frame_sql = (
                     "INSERT INTO analysis_frames (analysis_id, "
@@ -333,6 +363,26 @@ def save_analysis(
             conn.commit()
     finally:
         conn.close()
+
+
+def get_keypoints(analysis_id: str) -> list[dict] | None:
+    """Points des modèles complémentaires d'une analyse, au format normalisé, ou `None` si
+    l'analyse n'existe pas (liste vide si aucun modèle complémentaire n'était actif)."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM analyses WHERE id = ?", [analysis_id]).fetchone() is None:
+            return None
+        rows = conn.execute(
+            "SELECT frame_index, model, keypoints_json FROM analysis_keypoints "
+            "WHERE analysis_id = ? ORDER BY frame_index, model",
+            [analysis_id],
+        ).fetchall()
+    finally:
+        conn.close()
+    return [
+        {"frame": frame, "person_id": 1, "model": model, "keypoints": json.loads(keypoints_json)}
+        for frame, model, keypoints_json in rows
+    ]
 
 
 def get_analysis(analysis_id: str) -> dict | None:

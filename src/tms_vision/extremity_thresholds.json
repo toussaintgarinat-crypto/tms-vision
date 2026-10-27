@@ -2,7 +2,9 @@
   "calibrated": false,
   "hand": {
     "finger_curl_bounds_deg": [70.0, 100.0],
-    "level_cutoffs": [1, 2, 3]
+    "level_cutoffs": [1, 2, 3],
+    "grasp_hysteresis_deg": 10.0,
+    "repetitive_grasps_per_minute": 30.0
   },
   "foot": {
     "ankle_bounds_deg": [10.0, 20.0],
