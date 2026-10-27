@@ -41,7 +41,7 @@ class MediaPipeHandsModel(BasePoseModel):
     metadata = ModelMetadata(
         id=MODEL_ID, label="MediaPipe Hands 21", keypoint_count=42, groups=("hands",),
         description="21 points par main, en complément de Pose : gestes fins, préhension.",
-        requires=("mediapipe",),
+        requires=("mediapipe",), primary=False,
     )
 
     def __init__(self, max_hands: int = 2) -> None:

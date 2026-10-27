@@ -5,6 +5,9 @@ from typing import Callable
 from tms_vision.pose_models.base import BasePoseModel, ModelMetadata, PoseModelError
 from tms_vision.pose_models.mediapipe_pose import MODEL_ID as MEDIAPIPE_POSE_33, MediaPipePoseModel
 
+from tms_vision.pose_models.mediapipe_hands import MODEL_ID as MEDIAPIPE_HANDS, MediaPipeHandsModel
+from tms_vision.pose_models.rtmpose_wholebody import MODEL_ID as RTMPOSE_WHOLEBODY, RTMPoseWholeBodyModel
+
 DEFAULT_MODEL = MEDIAPIPE_POSE_33
 
 _FACTORIES: dict[str, Callable[..., BasePoseModel]] = {}
@@ -22,6 +25,7 @@ def available_models() -> list[dict]:
         out.append({
             "id": model_id, "label": meta.label, "keypoint_count": meta.keypoint_count,
             "groups": list(meta.groups), "description": meta.description,
+            "primary": meta.primary,
             "installed": all(importlib.util.find_spec(p) is not None for p in meta.requires),
             "default": model_id == DEFAULT_MODEL,
         })
@@ -41,3 +45,5 @@ def create_model(model_id: str | None = None, **options) -> BasePoseModel:
 
 
 register(MEDIAPIPE_POSE_33, MediaPipePoseModel)
+register(MEDIAPIPE_HANDS, MediaPipeHandsModel)
+register(RTMPOSE_WHOLEBODY, RTMPoseWholeBodyModel)

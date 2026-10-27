@@ -2118,7 +2118,7 @@ def test_analysis_records_default_pose_model(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("data,fragment", [
     ({"pose_model": "inconnu"}, "inconnu"),
-    ({"enable_wholebody": "true"}, "pas encore disponible"),
+    ({"custom_points": "true"}, "pas encore disponible"),
     ({"enable_feet": "true"}, "whole-body"),
 ])
 def test_invalid_pose_options_return_422_before_analysis(tmp_path, monkeypatch, data, fragment):
@@ -2178,3 +2178,18 @@ def test_standard_analysis_has_no_extra_keypoints(tmp_path, monkeypatch):
     body = _post_video(client, tmp_path).json()
     assert body["hands_metrics"] is None
     assert client.get(body["keypoints_url"]).json()["frames"] == []
+
+
+def test_wholebody_not_installed_returns_422_with_install_hint(tmp_path, monkeypatch):
+    import importlib.util
+
+    real = importlib.util.find_spec
+    monkeypatch.setattr(
+        "tms_vision.pose_models.registry.importlib.util.find_spec",
+        lambda name, *a: None if name in ("rtmlib", "onnxruntime") else real(name, *a),
+    )
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    response = _post_video(TestClient(app), tmp_path, enable_wholebody="true")
+    assert response.status_code == 422
+    assert "requirements-wholebody" in response.json()["detail"]

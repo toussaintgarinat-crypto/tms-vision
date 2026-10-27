@@ -1,0 +1,4 @@
+# Modèle whole-body facultatif (RTMW-x, 133 points : corps, pieds, visage, mains).
+# Les poids (~130 Mo) sont téléchargés au premier usage dans ~/.cache/rtmlib.
+rtmlib>=0.0.13
+onnxruntime>=1.17

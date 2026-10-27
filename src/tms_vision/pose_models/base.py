@@ -29,6 +29,7 @@ class ModelMetadata:
     groups: tuple[str, ...]
     description: str = ""
     requires: tuple[str, ...] = field(default_factory=tuple)  # paquets Python nécessaires
+    primary: bool = True  # False : modèle complémentaire (mains), choisi par une option, pas seul
 
 
 class BasePoseModel(ABC):

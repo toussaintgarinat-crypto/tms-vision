@@ -36,7 +36,7 @@ def test_frame_pose_dict_format_and_round_trip():
 
 
 @pytest.mark.parametrize("name,group", [
-    ("left_shoulder", "body"), ("nose", "face"), ("left_heel", "feet"),
+    ("left_shoulder", "body"), ("right_ankle", "body"), ("nose", "face"), ("left_heel", "feet"),
     ("right_index_tip", "hands"), ("left_hand_wrist", "hands"), ("face_12", "face"),
     ("custom_tool", "custom"), ("right_big_toe", "feet"),
 ])
@@ -123,7 +123,7 @@ def test_unknown_model_is_rejected():
         PoseOptions(pose_model="nope").validate()
 
 
-@pytest.mark.parametrize("option", ["enable_wholebody", "custom_points"])
+@pytest.mark.parametrize("option", ["custom_points"])
 def test_not_yet_available_options_are_refused_not_ignored(option):
     with pytest.raises(ModelUnavailableError, match="pas encore disponible"):
         PoseOptions(**{option: True}).validate()

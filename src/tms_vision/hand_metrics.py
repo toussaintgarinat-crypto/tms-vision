@@ -9,17 +9,29 @@ from tms_vision.pose_models.schema import Keypoint
 
 # Une main non vue pendant plus longtemps que cela met fin à la préhension en cours.
 MAX_GAP_SECONDS = 0.5
+# Une main plus petite que cela (fraction de la hauteur de l'image) a des doigts de quelques pixels :
+# les points des articulations y sont trop imprécis pour mesurer une flexion.
+MIN_HAND_SPAN = 0.03
 # En dessous de cette durée de vidéo, une cadence (préhensions par minute) n'aurait aucun sens.
 MIN_SECONDS_FOR_RATE = 5.0
 
 
-def finger_curl_from_keypoints(keypoints: list[Keypoint], side: str, aspect: float = 1.0) -> float | None:
-    """Flexion moyenne des doigts longs de la main `side`, ou `None` si ses 21 points manquent."""
+def finger_curl_from_keypoints(
+    keypoints: list[Keypoint], side: str, aspect: float = 1.0,
+    min_span: float = MIN_HAND_SPAN,
+) -> float | None:
+    """Flexion moyenne des doigts longs de la main `side`, ou `None` si ses 21 points manquent ou
+    si la main est trop petite dans l'image pour que ses doigts soient mesurables (`min_span`,
+    fraction de la hauteur de l'image ; 0 pour ne pas filtrer)."""
     by_name = {k.name: k for k in keypoints}
     names = hand_point_names(side)
     if any(name not in by_name for name in names):
         return None
-    return finger_curl_deg([(by_name[n].x, by_name[n].y) for n in names], aspect=aspect)
+    points = [(by_name[n].x, by_name[n].y) for n in names]
+    xs, ys = zip(*points)
+    if max((max(xs) - min(xs)) * aspect, max(ys) - min(ys)) < min_span:
+        return None
+    return finger_curl_deg(points, aspect=aspect)
 
 
 class GripAccumulator:

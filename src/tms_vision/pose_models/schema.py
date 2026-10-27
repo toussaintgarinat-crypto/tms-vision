@@ -15,8 +15,8 @@ _FACE_NAMES = {
     "nose", "left_eye_inner", "left_eye", "left_eye_outer", "right_eye_inner", "right_eye",
     "right_eye_outer", "left_ear", "right_ear", "mouth_left", "mouth_right",
 }
-_FOOT_NAMES = {"left_ankle", "right_ankle", "left_heel", "right_heel",
-               "left_foot_index", "right_foot_index"}
+# La cheville fait partie du corps (squelette, angles) ; le « pied » commence au talon et aux orteils.
+_FOOT_NAMES = {"left_heel", "right_heel", "left_foot_index", "right_foot_index"}
 _HAND_NAMES = {f"{side}_{finger}" for side in ("left", "right")
                for finger in ("pinky", "index", "thumb")}  # points « main » de MediaPipe Pose
 

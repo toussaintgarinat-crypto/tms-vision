@@ -83,9 +83,9 @@ def test_repetitive_flag_from_grasp_rate():
 def test_overlay_draws_hands_only_when_given():
     image = np.zeros((100, 100, 3), np.uint8)
     plain = draw_overlay(image, None, None)
-    with_hands = draw_overlay(image, None, None, hand_keypoints=hand_keypoints("right", 30))
+    with_hands = draw_overlay(image, None, None, extra_keypoints=hand_keypoints("right", 30))
     assert plain.sum() == 0 and with_hands.sum() > 0
-    assert draw_overlay(image, None, None, hand_keypoints=[]).sum() == 0
+    assert draw_overlay(image, None, None, extra_keypoints=[]).sum() == 0
 
 
 def _fake_mediapipe(monkeypatch, hands):

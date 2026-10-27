@@ -56,19 +56,24 @@ def _draw_skeleton(image: np.ndarray, landmarks: dict[str, Landmark]) -> None:
         cv2.circle(image, end_point, 4, (255, 255, 255), -1)
 
 
-def _draw_hands(image: np.ndarray, keypoints: list[Keypoint]) -> None:
+def _draw_extra_keypoints(image: np.ndarray, keypoints: list[Keypoint]) -> None:
+    """Points hors corps, colorés par groupe : mains (avec doigts reliés), pieds, visage, custom."""
     height, width = image.shape[:2]
-    color = GROUP_COLORS["hands"]
     by_name = {k.name: k for k in keypoints}
     for side in ("left", "right"):
         points = [by_name.get(name) for name in hand_point_names(side)]
         for a, b in HAND_CONNECTIONS:
             if points[a] is not None and points[b] is not None:
                 cv2.line(image, (int(points[a].x * width), int(points[a].y * height)),
-                         (int(points[b].x * width), int(points[b].y * height)), color, 1)
-        for point in points:
-            if point is not None:
-                cv2.circle(image, (int(point.x * width), int(point.y * height)), 2, color, -1)
+                         (int(points[b].x * width), int(points[b].y * height)),
+                         GROUP_COLORS["hands"], 1)
+    for keypoint in keypoints:
+        group = keypoint.group
+        if group == "body":
+            continue
+        radius = 3 if group in ("feet", "custom") else 2
+        cv2.circle(image, (int(keypoint.x * width), int(keypoint.y * height)), radius,
+                   GROUP_COLORS[group], -1)
 
 
 def _draw_score_badge(image: np.ndarray, score: RulaScore) -> None:
@@ -87,13 +92,13 @@ def _draw_score_badge(image: np.ndarray, score: RulaScore) -> None:
 
 def draw_overlay(
     image_bgr: np.ndarray, landmarks: dict[str, Landmark] | None, score: RulaScore | None,
-    hand_keypoints: list[Keypoint] | None = None,
+    extra_keypoints: list[Keypoint] | None = None,
 ) -> np.ndarray:
     output = image_bgr.copy()
     if landmarks is not None:
         _draw_skeleton(output, landmarks)
-    if hand_keypoints:
-        _draw_hands(output, hand_keypoints)
+    if extra_keypoints:
+        _draw_extra_keypoints(output, extra_keypoints)
     if score is not None:
         _draw_score_badge(output, score)
     return output

@@ -110,14 +110,26 @@ def analyze_video(
     wrist_twist_code = WRIST_TWIST_CODES[wrist_twist]
 
     frame_source = FrameSource(source)
-    estimator = PoseEstimator()
+    # Whole-body (RTMPose) : même interface que PoseEstimator, mais en 2D et avec les points
+    # supplémentaires (mains, pieds, visage) ; sinon MediaPipe Pose, inchangé.
+    wholebody = pose_options.uses_wholebody
+    if wholebody:
+        from tms_vision.pose_models.rtmpose_wholebody import WholeBodyPoseEstimator
+        estimator = WholeBodyPoseEstimator(
+            hands=pose_options.enable_hands, feet=pose_options.enable_feet, face=pose_options.enable_face
+        )
+    else:
+        estimator = PoseEstimator()
     extremity_thresholds = load_extremity_thresholds()
     # Option « mains » : MediaPipe Hands donne les 21 points de chaque main (et la flexion des
     # doigts du côté analysé) en une seule inférence ; sinon, mesure historique inchangée.
-    hands_model = MediaPipeHandsModel() if pose_options.enable_hands else None
-    hand_estimator = None if hands_model is not None else HandEstimator()
-    hand_poses: list[FramePose | None] = []
-    grips = {s: GripAccumulator(extremity_thresholds) for s in ("left", "right")} if hands_model else {}
+    hands_model = MediaPipeHandsModel() if pose_options.enable_hands and not wholebody else None
+    hand_estimator = None if pose_options.enable_hands else HandEstimator()
+    hand_poses: list[FramePose | None] = []  # points complémentaires de chaque image
+    grips = (
+        {s: GripAccumulator(extremity_thresholds) for s in ("left", "right")}
+        if pose_options.enable_hands else {}
+    )
 
     per_frame_angles = []
     posture_load_history: list[tuple[float, float]] = []
@@ -149,8 +161,12 @@ def analyze_video(
             current_shoulder = pose_result.landmarks.get(shoulder_key)
             if current_shoulder is not None:
                 shoulder_y_baseline.update(current_shoulder.y)
-        if hands_model is not None:
+        if wholebody:
+            hand_pose = estimator.last_pose
+            curls = _curls(hand_pose, frame) if pose_options.enable_hands else {}
+        elif hands_model is not None:
             hand_pose, curls = _measure_hands(frame, pose_result)
+        if pose_options.enable_hands:
             for hand_side, accumulator in grips.items():
                 accumulator.update(frame.timestamp_seconds, curls.get(hand_side))
             if angles is not None:
@@ -160,6 +176,14 @@ def analyze_video(
             posture_load = angles.trunk_flexion_deg + angles.upper_arm_flexion_deg
             posture_load_history.append((frame.timestamp_seconds, posture_load))
         return pose_result, angles
+
+    def _curls(pose, frame):
+        """Flexion des doigts de chaque main dont les 21 points sont connus."""
+        if pose is None:
+            return {}
+        aspect = frame.image.shape[1] / frame.image.shape[0]
+        curls = {s: finger_curl_from_keypoints(pose.keypoints, s, aspect) for s in ("left", "right")}
+        return {s: c for s, c in curls.items() if c is not None}
 
     def _measure_hands(frame, pose_result):
         """Points des mains proches des poignets de Pose et flexion des doigts de chaque côté
@@ -174,12 +198,7 @@ def analyze_video(
         poses = hands_model.process_frame(frame.image, frame.index, pose_wrists=wrists)
         if not poses:
             return None, {}
-        aspect = frame.image.shape[1] / frame.image.shape[0]
-        curls = {
-            hand_side: finger_curl_from_keypoints(poses[0].keypoints, hand_side, aspect)
-            for hand_side in wrists
-        }
-        return poses[0], {s: c for s, c in curls.items() if c is not None}
+        return poses[0], _curls(poses[0], frame)
 
     def _close_hands():
         if hand_estimator is not None:
@@ -296,7 +315,7 @@ def analyze_video(
                 )
                 annotated = draw_overlay(
                     image, pose_result.landmarks, score,
-                    hand_keypoints=hand_pose.keypoints if hand_pose is not None else None,
+                    extra_keypoints=hand_pose.keypoints if hand_pose is not None else None,
                 )
                 writer.write(annotated)
                 exporter.add_frame(
@@ -355,6 +374,8 @@ def analyze_video(
         pose3d_records=pose3d_records,
         pose_options=pose_options,
         keypoint_count=keypoint_count,
-        keypoint_frames=[p for p in hand_poses if p is not None] if hands_model is not None else None,
-        hands_metrics={s: g.summary() for s, g in grips.items()} if hands_model is not None else None,
+        keypoint_frames=(
+            [p for p in hand_poses if p is not None] if (hands_model is not None or wholebody) else None
+        ),
+        hands_metrics={s: g.summary() for s, g in grips.items()} if pose_options.enable_hands else None,
     )
