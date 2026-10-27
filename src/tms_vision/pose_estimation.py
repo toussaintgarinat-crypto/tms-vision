@@ -5,13 +5,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-
-@dataclass
-class Landmark:
-    x: float
-    y: float
-    z: float
-    visibility: float
+from tms_vision.landmark import Landmark  # noqa: F401  (ré-exporté : API historique)
 
 
 @dataclass
