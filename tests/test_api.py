@@ -2085,3 +2085,45 @@ def test_update_check_is_off_unless_the_desktop_app_enables_it(tmp_path, monkeyp
     monkeypatch.setenv("TMS_CHECK_UPDATES", "1")
     monkeypatch.setattr(updates, "check", lambda current: {"available": True, "version": "9.9.9", "url": "https://x"})
     assert client.get("/update").json() == {"available": True, "version": "9.9.9", "url": "https://x"}
+
+
+def _post_video(client, tmp_path, **extra):
+    video_path = tmp_path / "synthetic.mp4"
+    _write_synthetic_video(video_path)
+    with open(video_path, "rb") as video_file:
+        return client.post(
+            "/analyses",
+            files={"file": ("synthetic.mp4", video_file, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal", **extra},
+        )
+
+
+def test_pose_models_endpoint_lists_default_model():
+    models = TestClient(app).get("/pose-models").json()
+    assert [m["id"] for m in models if m["default"]] == ["mediapipe_pose_33"]
+
+
+def test_analysis_records_default_pose_model(tmp_path, monkeypatch):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    client = TestClient(app)
+    response = _post_video(client, tmp_path)
+    assert response.status_code == 200
+    assert response.json()["pose_model"] == "mediapipe_pose_33"
+    record = client.get(f"/analyses/{response.json()['analysis_id']}").json()
+    assert record["pose_model"] == "mediapipe_pose_33"
+    assert record["keypoint_count"] == 33
+    assert record["pose_options"]["enable_hands"] is False
+
+
+@pytest.mark.parametrize("data,fragment", [
+    ({"pose_model": "inconnu"}, "inconnu"),
+    ({"enable_hands": "true"}, "pas encore disponible"),
+    ({"enable_feet": "true"}, "whole-body"),
+])
+def test_invalid_pose_options_return_422_before_analysis(tmp_path, monkeypatch, data, fragment):
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    response = _post_video(TestClient(app), tmp_path, **data)
+    assert response.status_code == 422
+    assert fragment in response.json()["detail"]

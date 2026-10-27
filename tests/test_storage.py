@@ -747,3 +747,21 @@ def test_legacy_task_with_a_single_frequency_is_read_as_one_value_per_zone(tmp_p
 
     assert task["zone_cycles"] == {"neck": 7.0, "trunk": 7.0}
     assert task["workstation"] is None
+
+
+def test_old_database_without_pose_model_columns_reads_as_mediapipe_33(tmp_path, monkeypatch):
+    import duckdb
+
+    db = tmp_path / "old.duckdb"
+    monkeypatch.setattr(storage, "DB_PATH", db)
+    conn = duckdb.connect(str(db))
+    conn.execute(storage.CREATE_ANALYSES_TABLE)
+    conn.execute(
+        "INSERT INTO analyses (id, created_at, side, load_kg, wrist_twist, frame_count, "
+        "detected_frame_count, max_score, average_score, time_by_action_level, video_bytes, "
+        "pose3d_json) VALUES ('old', now(), 'right', 0, 'normal', 1, 1, 3, 3.0, '{}', ''::BLOB, '[]')"
+    )
+    conn.close()
+    record = storage.get_analysis("old")
+    assert record["pose_model"] == "mediapipe_pose_33"
+    assert record["pose_options"] == {} and record["keypoint_count"] == 33

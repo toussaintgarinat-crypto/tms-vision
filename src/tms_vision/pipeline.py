@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import cv2
@@ -25,6 +25,7 @@ from tms_vision.extremities import (
 )
 from tms_vision.hand_estimation import HandEstimator
 from tms_vision.pose_estimation import PoseEstimator
+from tms_vision.pose_models import PoseOptions, create_model
 from tms_vision.angles import compute_ankle_flexion, compute_joint_angles
 from tms_vision.rula.scoring import action_level, compute_rula_score, detect_muscle_use
 from tms_vision.overlay import draw_overlay
@@ -69,6 +70,8 @@ class AnalysisResult:
     frame_rows: list[dict] | None = None
     summary: dict | None = None
     pose3d_records: list[Pose3DFrameRecord] | None = None
+    pose_options: PoseOptions = field(default_factory=PoseOptions)
+    keypoint_count: int = 33
 
 
 def _h264_with_ffmpeg(video_path: Path, ffmpeg: str) -> None:
@@ -88,11 +91,18 @@ def _h264_with_ffmpeg(video_path: Path, ffmpeg: str) -> None:
 
 
 def analyze_video(
-    source: str, side: str, load_kg: float, wrist_twist: str, anonymize: bool = True
+    source: str, side: str, load_kg: float, wrist_twist: str, anonymize: bool = True,
+    pose_options: PoseOptions | None = None,
 ) -> AnalysisResult:
     """`anonymize` : pixelliser les têtes de la vidéo annotée avant son écriture (voir
     face_blur.py). Actif par défaut ; ni l'API ni la CLI ne le désactivent, il n'existe que pour
-    les tests."""
+    les tests.
+
+    `pose_options` : modèle de pose et options (voir pose_models/options.py). Sans option, le
+    comportement est celui d'avant le sélecteur (MediaPipe Pose 33). Une option qui n'est pas encore
+    branchée est refusée (ModelUnavailableError, une RuntimeError) avant tout traitement."""
+    pose_options = (pose_options or PoseOptions()).validate()
+    keypoint_count = create_model(pose_options.pose_model).get_metadata().keypoint_count
     wrist_twist_code = WRIST_TWIST_CODES[wrist_twist]
 
     frame_source = FrameSource(source)
@@ -293,4 +303,6 @@ def analyze_video(
         frame_rows=frame_rows,
         summary=exporter.summary(),
         pose3d_records=pose3d_records,
+        pose_options=pose_options,
+        keypoint_count=keypoint_count,
     )

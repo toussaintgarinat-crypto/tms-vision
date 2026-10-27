@@ -198,6 +198,15 @@ _TRANCHE_5_COLUMNS = [
 ]
 
 
+# Modèle de pose utilisé (NULL = anciennes analyses : MediaPipe Pose 33), options activées (JSON)
+# et nombre de points par personne.
+_POSE_MODEL_COLUMNS = [
+    ("pose_model", "VARCHAR"),
+    ("pose_options", "VARCHAR"),
+    ("keypoint_count", "INTEGER"),
+]
+
+
 def _connect() -> "duckdb.DuckDBPyConnection":
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(DB_PATH))
@@ -225,6 +234,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     # Bases créées avant la Tranche 5 (mains et pieds) : les nouvelles colonnes restent NULL.
     for column, column_type in _TRANCHE_5_COLUMNS:
         conn.execute(f"ALTER TABLE analysis_frames ADD COLUMN IF NOT EXISTS {column} {column_type}")
+    for column, column_type in _POSE_MODEL_COLUMNS:
+        conn.execute(f"ALTER TABLE analyses ADD COLUMN IF NOT EXISTS {column} {column_type}")
     return conn
 
 
@@ -249,7 +260,15 @@ FRAME_VALUE_COLUMNS = CSV_FIELDS + SEGMENT_COLUMNS
 _ANALYSIS_COLUMNS = [
     "id", "created_at", "side", "load_kg", "wrist_twist", "worker_label", "poste_label",
     "frame_count", "detected_frame_count", "max_score", "average_score", "time_by_action_level",
+    "pose_model", "pose_options", "keypoint_count",
 ]
+
+
+def _normalize_pose_fields(record: dict) -> None:
+    """Analyses antérieures au sélecteur de modèle : MediaPipe Pose 33, aucune option."""
+    record["pose_model"] = record["pose_model"] or "mediapipe_pose_33"
+    record["pose_options"] = json.loads(record["pose_options"]) if record["pose_options"] else {}
+    record["keypoint_count"] = record["keypoint_count"] or 33
 
 
 def save_analysis(
@@ -265,6 +284,9 @@ def save_analysis(
     video_bytes: bytes,
     pose3d_json: str,
     frame_rows: list[dict],
+    pose_model: str = "mediapipe_pose_33",
+    pose_options: str | None = None,
+    keypoint_count: int = 33,
 ) -> None:
     conn = _connect()
     try:
@@ -275,8 +297,9 @@ def save_analysis(
                 INSERT INTO analyses (
                     id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
                     frame_count, detected_frame_count, max_score, average_score,
-                    time_by_action_level, video_bytes, pose3d_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    time_by_action_level, video_bytes, pose3d_json,
+                    pose_model, pose_options, keypoint_count
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     analysis_id, _to_naive_utc(created_at), side, load_kg, wrist_twist,
@@ -285,6 +308,7 @@ def save_analysis(
                     summary["average_score"],
                     json.dumps(summary["time_by_action_level"], ensure_ascii=False),
                     video_bytes, pose3d_json,
+                    pose_model, pose_options, keypoint_count,
                 ],
             )
             if frame_rows:
@@ -325,6 +349,7 @@ def get_analysis(analysis_id: str) -> dict | None:
         return None
     record = dict(zip(_ANALYSIS_COLUMNS, row))
     record["time_by_action_level"] = json.loads(record["time_by_action_level"])
+    _normalize_pose_fields(record)
     record["created_at"] = _attach_utc(record["created_at"]).isoformat()
     record["load"] = _read_load(analysis_id, record["load_kg"])
     return record
@@ -393,6 +418,7 @@ def list_analyses(
     for row in rows:
         record = dict(zip(_ANALYSIS_COLUMNS, row))
         record["time_by_action_level"] = json.loads(record["time_by_action_level"])
+        _normalize_pose_fields(record)
         record["created_at"] = _attach_utc(record["created_at"]).isoformat()
         results.append(record)
     return results

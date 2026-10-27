@@ -37,6 +37,7 @@ from tms_vision.program import (
 )
 from tms_vision.rescore import rescore_frames, summarize_for_load
 from tms_vision.pipeline import analyze_video, generate_run_id
+from tms_vision.pose_models import PoseModelError, PoseOptions, available_models
 from tms_vision.pose3d_export import build_pose3d_payload
 
 OUTPUT_DIR = Path("outputs")
@@ -135,6 +136,7 @@ async def _analyze_and_build_response(
     wrist_twist: str,
     worker_label: str | None,
     poste_label: str | None,
+    pose_options: PoseOptions | None = None,
 ) -> dict:
     """Appelle analyze_video sur un fichier déjà sur disque, persiste le
     résultat en DuckDB et construit la réponse JSON standard. Partagé par
@@ -145,7 +147,7 @@ async def _analyze_and_build_response(
     try:
         result = await run_in_threadpool(
             analyze_video, source=str(video_path), side=side, load_kg=load_kg,
-            wrist_twist=wrist_twist,
+            wrist_twist=wrist_twist, pose_options=pose_options,
         )
     except (FileNotFoundError, RuntimeError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
@@ -173,6 +175,8 @@ async def _analyze_and_build_response(
         worker_label=worker_label, poste_label=poste_label,
         summary=result.summary, video_bytes=result.video_bytes, pose3d_json=pose3d_json,
         frame_rows=result.frame_rows,
+        pose_model=result.pose_options.pose_model, pose_options=result.pose_options.to_json(),
+        keypoint_count=result.keypoint_count,
     )
 
     return {
@@ -182,7 +186,30 @@ async def _analyze_and_build_response(
         "csv_url": f"/analyses/{analysis_id}/frames.csv",
         "pose3d_url": f"/analyses/{analysis_id}/pose3d",
         "side": side,
+        "pose_model": result.pose_options.pose_model,
+        "keypoint_count": result.keypoint_count,
     }
+
+
+def _pose_options_or_422(
+    pose_model: str, enable_hands: bool, enable_wholebody: bool, enable_feet: bool,
+    enable_face: bool, custom_points: bool,
+) -> PoseOptions:
+    """Valide les options de modèle avant d'accepter la vidéo : une erreur claire (422) plutôt
+    qu'une analyse qui échoue ou ignore l'option."""
+    try:
+        return PoseOptions(
+            pose_model=pose_model, enable_hands=enable_hands, enable_wholebody=enable_wholebody,
+            enable_feet=enable_feet, enable_face=enable_face, custom_points=custom_points,
+        ).validate()
+    except PoseModelError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.get("/pose-models")
+async def list_pose_models() -> list[dict]:
+    """Modèles de pose proposés par le sélecteur de l'interface."""
+    return available_models()
 
 
 @app.post("/analyses")
@@ -193,7 +220,16 @@ async def create_analysis(
     wrist_twist: Literal["normal", "extreme"] = Form(...),
     worker_label: str | None = Form(None, max_length=200),
     poste_label: str | None = Form(None, max_length=200),
+    pose_model: str = Form("mediapipe_pose_33", max_length=60),
+    enable_hands: bool = Form(False),
+    enable_wholebody: bool = Form(False),
+    enable_feet: bool = Form(False),
+    enable_face: bool = Form(False),
+    custom_points: bool = Form(False),
 ) -> dict:
+    pose_options = _pose_options_or_422(
+        pose_model, enable_hands, enable_wholebody, enable_feet, enable_face, custom_points
+    )
     suffix = Path(file.filename or "").suffix or ".webm"
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
     upload_path = Path(tmp.name)
@@ -201,7 +237,7 @@ async def create_analysis(
         with tmp:
             shutil.copyfileobj(file.file, tmp)
         return await _analyze_and_build_response(
-            upload_path, side, load_kg, wrist_twist, worker_label, poste_label
+            upload_path, side, load_kg, wrist_twist, worker_label, poste_label, pose_options
         )
     finally:
         upload_path.unlink(missing_ok=True)
@@ -262,7 +298,16 @@ async def complete_upload(
     wrist_twist: Literal["normal", "extreme"] = Form(...),
     worker_label: str | None = Form(None, max_length=200),
     poste_label: str | None = Form(None, max_length=200),
+    pose_model: str = Form("mediapipe_pose_33", max_length=60),
+    enable_hands: bool = Form(False),
+    enable_wholebody: bool = Form(False),
+    enable_feet: bool = Form(False),
+    enable_face: bool = Form(False),
+    custom_points: bool = Form(False),
 ) -> dict:
+    pose_options = _pose_options_or_422(
+        pose_model, enable_hands, enable_wholebody, enable_feet, enable_face, custom_points
+    )
     session_dir = _resolve_session_dir(upload_id)
     meta_path = session_dir / "meta.json"
     if not meta_path.is_file():
@@ -287,7 +332,7 @@ async def complete_upload(
                 with open(chunk_path, "rb") as chunk_file:
                     shutil.copyfileobj(chunk_file, tmp)
         return await _analyze_and_build_response(
-            upload_path, side, load_kg, wrist_twist, worker_label, poste_label
+            upload_path, side, load_kg, wrist_twist, worker_label, poste_label, pose_options
         )
     finally:
         upload_path.unlink(missing_ok=True)

@@ -99,3 +99,36 @@ def test_register_custom_model_and_unreadable_video(tmp_path):
     empty.write_bytes(b"")
     with pytest.raises(VideoUnreadableError):
         model.process_video(str(empty))
+
+
+# --- Options de modèle (sélecteur) ---
+
+from tms_vision.pose_models import PoseOptions  # noqa: E402
+
+
+def test_default_options_are_valid_and_default():
+    options = PoseOptions().validate()
+    assert options.is_default and options.pose_model == "mediapipe_pose_33"
+
+
+def test_options_json_round_trip_ignores_unknown_keys():
+    options = PoseOptions(enable_feet=False)
+    assert PoseOptions.from_json(options.to_json()) == options
+    assert PoseOptions.from_json('{"pose_model": "mediapipe_pose_33", "futur": 1}') == PoseOptions()
+    assert PoseOptions.from_json(None) == PoseOptions()
+
+
+def test_unknown_model_is_rejected():
+    with pytest.raises(PoseModelError, match="inconnu"):
+        PoseOptions(pose_model="nope").validate()
+
+
+@pytest.mark.parametrize("option", ["enable_hands", "enable_wholebody", "custom_points"])
+def test_not_yet_available_options_are_refused_not_ignored(option):
+    with pytest.raises(ModelUnavailableError, match="pas encore disponible"):
+        PoseOptions(**{option: True}).validate()
+
+
+def test_feet_and_face_require_wholebody():
+    with pytest.raises(PoseModelError, match="whole-body"):
+        PoseOptions(enable_feet=True).validate()
