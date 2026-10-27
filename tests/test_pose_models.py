@@ -123,12 +123,6 @@ def test_unknown_model_is_rejected():
         PoseOptions(pose_model="nope").validate()
 
 
-@pytest.mark.parametrize("option", ["custom_points"])
-def test_not_yet_available_options_are_refused_not_ignored(option):
-    with pytest.raises(ModelUnavailableError, match="pas encore disponible"):
-        PoseOptions(**{option: True}).validate()
-
-
 def test_feet_and_face_require_wholebody():
     with pytest.raises(PoseModelError, match="whole-body"):
         PoseOptions(enable_feet=True).validate()

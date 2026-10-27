@@ -5,6 +5,7 @@ from typing import Callable
 from tms_vision.pose_models.base import BasePoseModel, ModelMetadata, PoseModelError
 from tms_vision.pose_models.mediapipe_pose import MODEL_ID as MEDIAPIPE_POSE_33, MediaPipePoseModel
 
+from tms_vision.pose_models.custom_keypoints import CustomKeypointsModel, MODEL_ID as CUSTOM_KEYPOINTS
 from tms_vision.pose_models.mediapipe_hands import MODEL_ID as MEDIAPIPE_HANDS, MediaPipeHandsModel
 from tms_vision.pose_models.rtmpose_wholebody import MODEL_ID as RTMPOSE_WHOLEBODY, RTMPoseWholeBodyModel
 
@@ -47,3 +48,4 @@ def create_model(model_id: str | None = None, **options) -> BasePoseModel:
 register(MEDIAPIPE_POSE_33, MediaPipePoseModel)
 register(MEDIAPIPE_HANDS, MediaPipeHandsModel)
 register(RTMPOSE_WHOLEBODY, RTMPoseWholeBodyModel)
+register(CUSTOM_KEYPOINTS, CustomKeypointsModel)

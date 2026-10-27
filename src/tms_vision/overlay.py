@@ -72,8 +72,12 @@ def _draw_extra_keypoints(image: np.ndarray, keypoints: list[Keypoint]) -> None:
         if group == "body":
             continue
         radius = 3 if group in ("feet", "custom") else 2
-        cv2.circle(image, (int(keypoint.x * width), int(keypoint.y * height)), radius,
-                   GROUP_COLORS[group], -1)
+        center = (int(keypoint.x * width), int(keypoint.y * height))
+        cv2.circle(image, center, radius, GROUP_COLORS[group], -1)
+        if group == "custom":
+            cv2.circle(image, center, radius + 4, GROUP_COLORS[group], 1)
+            cv2.putText(image, keypoint.name[len("custom_"):], (center[0] + 9, center[1] - 6),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, GROUP_COLORS[group], 1, cv2.LINE_AA)
 
 
 def _draw_score_badge(image: np.ndarray, score: RulaScore) -> None:

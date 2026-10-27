@@ -178,6 +178,7 @@ async def _analyze_and_build_response(
         pose_model=result.pose_options.pose_model, pose_options=result.pose_options.to_json(),
         keypoint_count=result.keypoint_count,
         hands_metrics=json.dumps(result.hands_metrics) if result.hands_metrics is not None else None,
+        custom_metrics=json.dumps(result.custom_metrics, ensure_ascii=False) if result.custom_metrics is not None else None,
         keypoint_frames=[p.to_dict() for p in result.keypoint_frames or []],
     )
 
@@ -192,19 +193,26 @@ async def _analyze_and_build_response(
         "keypoint_count": result.keypoint_count,
         "keypoints_url": f"/analyses/{analysis_id}/keypoints",
         "hands_metrics": result.hands_metrics,
+        "custom_metrics": result.custom_metrics,
     }
 
 
 def _pose_options_or_422(
     pose_model: str, enable_hands: bool, enable_wholebody: bool, enable_feet: bool,
-    enable_face: bool, custom_points: bool,
+    enable_face: bool, custom_points: bool, custom_points_json: str | None = None,
 ) -> PoseOptions:
     """Valide les options de modèle avant d'accepter la vidéo : une erreur claire (422) plutôt
-    qu'une analyse qui échoue ou ignore l'option."""
+    qu'une analyse qui échoue ou ignore l'option. `custom_points_json` : points placés par
+    l'utilisateur, {"reference_time_seconds": 1.5, "points": [{"name": "outil", "x": 0.4, "y": 0.6}]}."""
+    try:
+        custom_spec = json.loads(custom_points_json) if custom_points_json else None
+    except json.JSONDecodeError as error:
+        raise HTTPException(status_code=422, detail="Points personnalisés : JSON invalide.") from error
     try:
         return PoseOptions(
             pose_model=pose_model, enable_hands=enable_hands, enable_wholebody=enable_wholebody,
             enable_feet=enable_feet, enable_face=enable_face, custom_points=custom_points,
+            custom_spec=custom_spec,
         ).validate()
     except PoseModelError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
@@ -230,9 +238,11 @@ async def create_analysis(
     enable_feet: bool = Form(False),
     enable_face: bool = Form(False),
     custom_points: bool = Form(False),
+    custom_points_json: str | None = Form(None, max_length=20000),
 ) -> dict:
     pose_options = _pose_options_or_422(
-        pose_model, enable_hands, enable_wholebody, enable_feet, enable_face, custom_points
+        pose_model, enable_hands, enable_wholebody, enable_feet, enable_face, custom_points,
+        custom_points_json,
     )
     suffix = Path(file.filename or "").suffix or ".webm"
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
@@ -308,9 +318,11 @@ async def complete_upload(
     enable_feet: bool = Form(False),
     enable_face: bool = Form(False),
     custom_points: bool = Form(False),
+    custom_points_json: str | None = Form(None, max_length=20000),
 ) -> dict:
     pose_options = _pose_options_or_422(
-        pose_model, enable_hands, enable_wholebody, enable_feet, enable_face, custom_points
+        pose_model, enable_hands, enable_wholebody, enable_feet, enable_face, custom_points,
+        custom_points_json,
     )
     session_dir = _resolve_session_dir(upload_id)
     meta_path = session_dir / "meta.json"

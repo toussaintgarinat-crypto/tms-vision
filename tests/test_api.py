@@ -2118,7 +2118,9 @@ def test_analysis_records_default_pose_model(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("data,fragment", [
     ({"pose_model": "inconnu"}, "inconnu"),
-    ({"custom_points": "true"}, "pas encore disponible"),
+    ({"custom_points": "true"}, "au moins un point"),
+    ({"custom_points": "true", "custom_points_json": "{pas du json"}, "JSON invalide"),
+    ({"custom_points": "true", "custom_points_json": '{"points": [{"name": "a", "x": 3, "y": 0.1}]}'}, "entre 0 et 1"),
     ({"enable_feet": "true"}, "whole-body"),
 ])
 def test_invalid_pose_options_return_422_before_analysis(tmp_path, monkeypatch, data, fragment):
@@ -2193,3 +2195,30 @@ def test_wholebody_not_installed_returns_422_with_install_hint(tmp_path, monkeyp
     response = _post_video(TestClient(app), tmp_path, enable_wholebody="true")
     assert response.status_code == 422
     assert "requirements-wholebody" in response.json()["detail"]
+
+
+def test_analysis_with_custom_points_stores_metrics_and_positions(tmp_path, monkeypatch):
+    import json as _json
+
+    from tests.test_custom_points import _spec, _write_patch_video
+
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    video = tmp_path / "patch.mp4"
+    _write_patch_video(video)
+    client = TestClient(app)
+    with open(video, "rb") as handle:
+        response = client.post(
+            "/analyses", files={"file": ("patch.mp4", handle, "video/mp4")},
+            data={"side": "right", "load_kg": "0", "wrist_twist": "normal", "custom_points": "true",
+                  "custom_points_json": _json.dumps(_spec().to_dict())},
+        )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["custom_metrics"]["custom_cle_a_molette"]["tracked_ratio"] > 0.95
+    record = client.get(f"/analyses/{body['analysis_id']}").json()
+    assert record["pose_options"]["custom_points"] is True
+    assert record["custom_metrics"]["custom_cle_a_molette"]["path_length"] > 0.3
+    frames = client.get(body["keypoints_url"]).json()["frames"]
+    assert {f["model"] for f in frames} == {"custom_keypoints"}
+    assert frames[0]["keypoints"][0]["name"] == "custom_cle_a_molette"

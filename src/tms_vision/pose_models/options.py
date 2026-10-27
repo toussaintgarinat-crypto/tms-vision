@@ -3,16 +3,9 @@ import json
 from dataclasses import asdict, dataclass, replace
 
 from tms_vision.pose_models.base import ModelUnavailableError, PoseModelError
+from tms_vision.pose_models.custom_keypoints import CustomSpec
 from tms_vision.pose_models.registry import DEFAULT_MODEL, available_models
 from tms_vision.pose_models.rtmpose_wholebody import MODEL_ID as WHOLEBODY_MODEL, keypoint_count
-
-# Fonctions prévues mais pas encore branchées dans le pipeline : refusées explicitement plutôt
-# qu'ignorées en silence (une analyse ne doit jamais prétendre avoir mesuré ce qu'elle n'a pas mesuré).
-# Retirer une entrée au fur et à mesure des étapes (points custom : étape 6).
-NOT_YET_AVAILABLE = {
-    "custom_points": "les points personnalisés",
-}
-
 
 @dataclass(frozen=True)
 class PoseOptions:
@@ -22,6 +15,8 @@ class PoseOptions:
     enable_feet: bool = False
     enable_face: bool = False
     custom_points: bool = False
+    # Points à suivre (voir custom_keypoints.CustomSpec.to_dict) : requis avec `custom_points`.
+    custom_spec: dict | None = None
 
     @property
     def uses_wholebody(self) -> bool:
@@ -32,8 +27,10 @@ class PoseOptions:
         """Points par personne : 33 (Pose) + 42 (deux mains) ; en whole-body, le corps (17) plus
         les groupes demandés (mains 42, pieds 6, visage 68)."""
         if self.uses_wholebody:
-            return keypoint_count(self.enable_hands, self.enable_feet, self.enable_face)
-        return 33 + (42 if self.enable_hands else 0)
+            base = keypoint_count(self.enable_hands, self.enable_feet, self.enable_face)
+            return base + (len(self.custom_spec["points"]) if self.custom_spec else 0)
+        base = 33 + (42 if self.enable_hands else 0)
+        return base + (len(self.custom_spec["points"]) if self.custom_spec else 0)
 
     @property
     def is_default(self) -> bool:
@@ -57,9 +54,12 @@ class PoseOptions:
                 f"{self.pose_model!r} est un modèle complémentaire : activez-le avec une option "
                 "(enable_hands), ce n'est pas un modèle principal."
             )
-        for option, what in NOT_YET_AVAILABLE.items():
-            if getattr(options, option):
-                raise ModelUnavailableError(f"{what[0].upper()}{what[1:]} n'est pas encore disponible.")
+        if options.custom_points:
+            if not options.custom_spec:
+                raise PoseModelError("Points personnalisés : placez au moins un point (custom_points_json).")
+            options = replace(options, custom_spec=CustomSpec.from_dict(options.custom_spec).to_dict())
+        elif options.custom_spec:
+            raise PoseModelError("Des points personnalisés sont fournis mais custom_points n'est pas activé.")
         if (options.enable_feet or options.enable_face) and not options.enable_wholebody:
             raise PoseModelError(
                 "Les options pieds et visage nécessitent le modèle whole-body (enable_wholebody)."
