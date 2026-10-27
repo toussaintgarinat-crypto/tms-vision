@@ -16,6 +16,7 @@ import tempfile
 import time
 import uuid
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
@@ -179,6 +180,7 @@ async def _analyze_and_build_response(
         keypoint_count=result.keypoint_count,
         hands_metrics=json.dumps(result.hands_metrics) if result.hands_metrics is not None else None,
         custom_metrics=json.dumps(result.custom_metrics, ensure_ascii=False) if result.custom_metrics is not None else None,
+        detection_quality=json.dumps(result.detection_quality),
         keypoint_frames=[p.to_dict() for p in result.keypoint_frames or []],
     )
 
@@ -194,6 +196,8 @@ async def _analyze_and_build_response(
         "keypoints_url": f"/analyses/{analysis_id}/keypoints",
         "hands_metrics": result.hands_metrics,
         "custom_metrics": result.custom_metrics,
+        "detection_quality": result.detection_quality,
+        "pose_options": asdict(result.pose_options),
     }
 
 

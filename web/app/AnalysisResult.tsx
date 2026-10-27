@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { LoadEditor } from "./LoadEditor";
 import { LoadInfo, formatLoad, formatScoreRange, isVideoBadgeStale } from "./loadFormat";
+import { PoseAnalysisInfo, PoseInfoPanel, hasAvatar3D } from "./PoseInfoPanel";
 import { PostureAvatar3D, Side } from "./PostureAvatar3D";
 import { GestureCorrection, ProgramItem, ProgramList } from "./ProgramList";
 
@@ -44,6 +45,8 @@ type AnalysisResultProps = {
   videoUrl: string;
   csvUrl: string;
   pose3dUrl: string;
+  /** Modèle de pose utilisé et ses indicateurs ; absent : aucun panneau (ancien appelant). */
+  poseInfo?: PoseAnalysisInfo;
 };
 
 export function AnalysisResult({
@@ -53,6 +56,7 @@ export function AnalysisResult({
   videoUrl,
   csvUrl,
   pose3dUrl,
+  poseInfo,
 }: AnalysisResultProps) {
   const resultVideoRef = useRef<HTMLVideoElement | null>(null);
   const [recommendation, setRecommendation] = useState<{
@@ -121,8 +125,11 @@ export function AnalysisResult({
           controls
           className="w-full rounded-lg bg-black"
         />
-        <PostureAvatar3D pose3dUrl={pose3dUrl} videoRef={resultVideoRef} side={side} />
+        {hasAvatar3D(poseInfo) && (
+          <PostureAvatar3D pose3dUrl={pose3dUrl} videoRef={resultVideoRef} side={side} />
+        )}
       </div>
+      {poseInfo && <PoseInfoPanel analysisId={analysisId} info={poseInfo} />}
       <dl className="grid grid-cols-2 gap-2 text-sm">
         <dt>Frames analysées</dt>
         <dd>{summary.frame_count}</dd>

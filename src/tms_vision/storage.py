@@ -206,6 +206,7 @@ _POSE_MODEL_COLUMNS = [
     ("keypoint_count", "INTEGER"),
     ("hands_metrics", "VARCHAR"),  # JSON : par côté, flexion des doigts, préhensions, cadence
     ("custom_metrics", "VARCHAR"),  # JSON : par point personnalisé (suivi, déplacement, contact main)
+    ("detection_quality", "VARCHAR"),  # JSON : points trouvés par image, confiance moyenne
 ]
 
 # Points des modèles complémentaires (mains, plus tard whole-body et points custom), au format
@@ -278,6 +279,7 @@ _ANALYSIS_COLUMNS = [
     "id", "created_at", "side", "load_kg", "wrist_twist", "worker_label", "poste_label",
     "frame_count", "detected_frame_count", "max_score", "average_score", "time_by_action_level",
     "pose_model", "pose_options", "keypoint_count", "hands_metrics", "custom_metrics",
+    "detection_quality",
 ]
 
 
@@ -286,7 +288,7 @@ def _normalize_pose_fields(record: dict) -> None:
     record["pose_model"] = record["pose_model"] or "mediapipe_pose_33"
     record["pose_options"] = json.loads(record["pose_options"]) if record["pose_options"] else {}
     record["keypoint_count"] = record["keypoint_count"] or 33
-    for key in ("hands_metrics", "custom_metrics"):
+    for key in ("hands_metrics", "custom_metrics", "detection_quality"):
         record[key] = json.loads(record[key]) if record[key] else None
 
 
@@ -308,6 +310,7 @@ def save_analysis(
     keypoint_count: int = 33,
     hands_metrics: str | None = None,
     custom_metrics: str | None = None,
+    detection_quality: str | None = None,
     keypoint_frames: list[dict] | None = None,
 ) -> None:
     """`keypoint_frames` : points des modèles complémentaires, au format `FramePose.to_dict()`."""
@@ -321,8 +324,9 @@ def save_analysis(
                     id, created_at, side, load_kg, wrist_twist, worker_label, poste_label,
                     frame_count, detected_frame_count, max_score, average_score,
                     time_by_action_level, video_bytes, pose3d_json,
-                    pose_model, pose_options, keypoint_count, hands_metrics, custom_metrics
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    pose_model, pose_options, keypoint_count, hands_metrics, custom_metrics,
+                    detection_quality
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     analysis_id, _to_naive_utc(created_at), side, load_kg, wrist_twist,
@@ -332,6 +336,7 @@ def save_analysis(
                     json.dumps(summary["time_by_action_level"], ensure_ascii=False),
                     video_bytes, pose3d_json,
                     pose_model, pose_options, keypoint_count, hands_metrics, custom_metrics,
+                    detection_quality,
                 ],
             )
             if keypoint_frames:

@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { AnalysisResult, AnalysisSummary } from "./AnalysisResult";
+import { PoseAnalysisInfo } from "./PoseInfoPanel";
+import { PoseModelPicker } from "./PoseModelPicker";
 import { Side } from "./PostureAvatar3D";
+import { DEFAULT_POSE_SETTINGS, PoseSettings, poseFormFields, validatePoseSettings } from "./poseModels";
 import { pickVideoFile } from "./videoDrop";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -14,7 +17,7 @@ const MAX_CHUNK_RETRIES = 3;
 
 type WristTwist = "normal" | "extreme";
 
-type AnalysisResponse = {
+type AnalysisResponse = PoseAnalysisInfo & {
   analysis_id: string;
   summary: AnalysisSummary;
   annotated_video_url: string;
@@ -39,6 +42,7 @@ export default function Home() {
   const [side, setSide] = useState<Side>("right");
   const [loadKg, setLoadKg] = useState("0");
   const [wristTwist, setWristTwist] = useState<WristTwist>("normal");
+  const [poseSettings, setPoseSettings] = useState<PoseSettings>(DEFAULT_POSE_SETTINGS);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
@@ -80,7 +84,13 @@ export default function Home() {
     setError(null);
     setResult(null);
     setMode("upload");
+    clearCustomPoints();
     setRecordedFile(picked.file);
+  }
+
+  // Les points personnalisés sont posés sur une image de la vidéo : ils ne valent pas pour une autre.
+  function clearCustomPoints() {
+    setPoseSettings((settings) => ({ ...settings, customPoints: [], customReferenceTime: 0 }));
   }
 
   function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
@@ -116,6 +126,7 @@ export default function Home() {
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+        clearCustomPoints();
         setRecordedFile(new File([blob], `capture.${extension}`, { type: mimeType }));
       };
       recorder.onerror = () => {
@@ -201,7 +212,8 @@ export default function Home() {
     file: File,
     side: Side,
     loadKg: string,
-    wristTwist: WristTwist
+    wristTwist: WristTwist,
+    poseFields: Record<string, string>
   ): Promise<AnalysisResponse> {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
@@ -226,7 +238,7 @@ export default function Home() {
 
     const completeResponse = await fetch(`${API_URL}/uploads/${uploadId}/complete`, {
       method: "POST",
-      body: new URLSearchParams({ side, load_kg: loadKg, wrist_twist: wristTwist }),
+      body: new URLSearchParams({ side, load_kg: loadKg, wrist_twist: wristTwist, ...poseFields }),
     });
     if (!completeResponse.ok) {
       throw new Error(
@@ -240,13 +252,15 @@ export default function Home() {
     file: File,
     side: Side,
     loadKg: string,
-    wristTwist: WristTwist
+    wristTwist: WristTwist,
+    poseFields: Record<string, string>
   ): Promise<AnalysisResponse> {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("side", side);
     formData.append("load_kg", loadKg);
     formData.append("wrist_twist", wristTwist);
+    for (const [name, value] of Object.entries(poseFields)) formData.append(name, value);
 
     const response = await fetch(`${API_URL}/analyses`, {
       method: "POST",
@@ -266,14 +280,20 @@ export default function Home() {
       setError("Renseignez une charge en kg (0 si aucune).");
       return;
     }
+    const poseError = validatePoseSettings(poseSettings);
+    if (poseError) {
+      setError(poseError);
+      return;
+    }
+    const poseFields = poseFormFields(poseSettings);
     setAnalyzing(true);
     setError(null);
     setResult(null);
     try {
       const data =
         mode === "upload"
-          ? await analyzeViaChunkedUpload(recordedFile, side, loadKg, wristTwist)
-          : await analyzeViaCameraCapture(recordedFile, side, loadKg, wristTwist);
+          ? await analyzeViaChunkedUpload(recordedFile, side, loadKg, wristTwist, poseFields)
+          : await analyzeViaCameraCapture(recordedFile, side, loadKg, wristTwist, poseFields);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue pendant l'analyse.");
@@ -409,6 +429,13 @@ export default function Home() {
             </select>
           </label>
 
+          <PoseModelPicker
+            settings={poseSettings}
+            onChange={setPoseSettings}
+            file={recordedFile}
+            disabled={analyzing}
+          />
+
           <button
             onClick={analyze}
             disabled={analyzing}
@@ -433,6 +460,7 @@ export default function Home() {
           videoUrl={result.annotated_video_url}
           csvUrl={result.csv_url}
           pose3dUrl={result.pose3d_url}
+          poseInfo={result}
         />
       )}
     </main>

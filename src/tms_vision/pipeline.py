@@ -27,6 +27,7 @@ from tms_vision.hand_estimation import HandEstimator
 from tms_vision.pose_estimation import PoseEstimator
 from tms_vision.hand_metrics import GripAccumulator, finger_curl_from_keypoints
 from tms_vision.custom_metrics import CustomPointsAccumulator
+from tms_vision.detection_quality import DetectionQualityAccumulator
 from tms_vision.pose_models import CustomKeypointsModel, CustomSpec, FramePose, PoseOptions
 from tms_vision.pose_models.mediapipe_hands import MediaPipeHandsModel
 from tms_vision.angles import compute_ankle_flexion, compute_joint_angles
@@ -77,6 +78,7 @@ class AnalysisResult:
     keypoint_frames: list[FramePose] | None = None  # points des modèles complémentaires (mains...)
     hands_metrics: dict | None = None  # par côté : flexion des doigts, préhensions, cadence
     custom_metrics: dict | None = None  # par point personnalisé : suivi, déplacement, contact main
+    detection_quality: dict | None = None  # points trouvés par image et confiance moyenne
     keypoint_count: int = 33
 
 
@@ -133,6 +135,7 @@ def analyze_video(
         spec = CustomSpec.from_dict(pose_options.custom_spec)
         custom_tracker = CustomKeypointsModel(spec)
         custom_stats = CustomPointsAccumulator([p.keypoint_name for p in spec.points])
+    quality = DetectionQualityAccumulator()
     extra_poses: list[list[FramePose]] = []  # points complémentaires (mains, whole-body, custom) de chaque image
     grips = (
         {s: GripAccumulator(extremity_thresholds) for s in ("left", "right")}
@@ -198,6 +201,10 @@ def analyze_video(
                 frame.timestamp_seconds, frame.image.shape[1] / frame.image.shape[0], tracked, wrists
             )
         extra_poses.append(extras)
+        quality.update(
+            [lm.visibility for lm in (pose_result.landmarks or {}).values()]
+            + [k.confidence for pose in extras for k in pose.keypoints]
+        )
         if angles is not None:
             posture_load = angles.trunk_flexion_deg + angles.upper_arm_flexion_deg
             posture_load_history.append((frame.timestamp_seconds, posture_load))
@@ -408,4 +415,5 @@ def analyze_video(
         ),
         hands_metrics={s: g.summary() for s, g in grips.items()} if pose_options.enable_hands else None,
         custom_metrics=custom_stats.summary() if custom_stats is not None else None,
+        detection_quality=quality.summary(),
     )

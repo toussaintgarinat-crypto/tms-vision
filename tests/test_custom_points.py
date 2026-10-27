@@ -149,3 +149,32 @@ def _save(tmp_path, data):
     path = tmp_path / "annotated.mp4"
     path.write_bytes(data)
     return path
+
+
+def test_detection_quality_accumulator():
+    from tms_vision.detection_quality import DetectionQualityAccumulator
+
+    acc = DetectionQualityAccumulator()
+    assert acc.summary() == {"frames_with_points": 0, "avg_keypoints_per_frame": 0.0, "avg_confidence": None}
+    acc.update([0.8, 0.6])
+    acc.update([])
+    acc.update([1.0, 1.0, 1.0, 1.0])
+    s = acc.summary()
+    assert s["frames_with_points"] == 2 and s["avg_keypoints_per_frame"] == 3.0
+    assert abs(s["avg_confidence"] - (0.8 + 0.6 + 4.0) / 6) < 0.001
+
+
+def test_detection_quality_is_stored_and_returned_by_the_api(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from tests.test_api import _patch_db, _post_video
+    from tms_vision.api import app
+
+    _patch_db(tmp_path, monkeypatch)
+    monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
+    client = TestClient(app)
+    body = _post_video(client, tmp_path).json()
+    assert body["detection_quality"]["avg_confidence"] is None  # image vide : aucun point, pas d'erreur
+    assert body["pose_options"]["pose_model"] == "mediapipe_pose_33"
+    record = client.get(f"/analyses/{body['analysis_id']}").json()
+    assert record["detection_quality"] == body["detection_quality"]

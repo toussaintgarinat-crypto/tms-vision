@@ -5,11 +5,12 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { AnalysisResult, AnalysisSummary } from "../../AnalysisResult";
+import { PoseAnalysisInfo } from "../../PoseInfoPanel";
 import { Side } from "../../PostureAvatar3D";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-type StoredAnalysis = AnalysisSummary & {
+type StoredAnalysis = AnalysisSummary & PoseAnalysisInfo & {
   id: string;
   created_at: string;
   side: Side;
@@ -117,6 +118,7 @@ export default function AnalysisDetailPage() {
           videoUrl={`/analyses/${encodeURIComponent(analysis.data.id)}/video`}
           csvUrl={`/analyses/${encodeURIComponent(analysis.data.id)}/frames.csv`}
           pose3dUrl={`/analyses/${encodeURIComponent(analysis.data.id)}/pose3d`}
+          poseInfo={analysis.data}
         />
       )}
     </main>
