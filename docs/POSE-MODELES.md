@@ -9,7 +9,7 @@ options ; tout le reste (angles, score RULA, CSV, rapports, historique) fonction
 |---|---|---|---|
 | **MediaPipe Pose 33** (défaut) | 33 | Score RULA et analyse ergonomique globale | Rapide, léger, avatar 3D. Identique à ce que faisait l'application avant le sélecteur. |
 | **MediaPipe Pose + Hands** | 33 + 21 par main | Gestes fins : préhensions, flexion des doigts, gestes répétitifs | Utile quand la caméra est proche des mains. |
-| **RTMPose / DWPose Whole-body** | jusqu'à 133 | Corps, pieds, mains et visage | Installation facultative, nettement plus lent, 2D : pas d'avatar 3D ni d'angle de cheville. |
+| **RTMPose / DWPose Whole-body** | jusqu'à 133 | Corps, pieds, mains et visage | À préparer une fois sur le site (téléchargement), nettement plus lent, 2D : pas d'avatar 3D ni d'angle de cheville. |
 | **Custom keypoints** | 1 à 10 points à vous | Suivre un outil, une caisse, une pièce, une zone de danger | Vous placez les points sur une image ; ils sont suivis dans la suite de la vidéo. |
 
 Les options **mains**, **pieds** (whole-body seulement), **visage** (whole-body seulement) et **points
@@ -22,8 +22,8 @@ Le modèle whole-body est RTMW-x (famille RTMPose/DWPose, mode « performance »
 ## Dans le site
 
 1. Page d'analyse : choisir une vidéo (ou filmer), puis descendre jusqu'à **Modèle de pose**.
-2. Choisir le modèle, cocher les options voulues. Le whole-body est grisé, avec la commande
-   d'installation, s'il n'est pas installé sur le serveur.
+2. Choisir le modèle, cocher les options voulues. Le whole-body est grisé tant qu'il n'est pas
+   préparé : voir « Préparer le modèle whole-body » plus bas.
 3. **Points personnalisés** : régler l'image de référence avec le curseur, cliquer sur l'objet à
    suivre (jusqu'à 10 points), donner un nom à chaque point. L'image est figée tant que des points sont
    posés (le suivi part de cette image, vers la suite de la vidéo) ; « Effacer tous les points » permet
@@ -59,12 +59,15 @@ curl -X POST http://localhost:8000/analyses \
 `x` et `y` sont normalisés (0 à 1) sur l'image de référence ; `reference_time_seconds` est l'instant de
 cette image. Les noms sont convertis (`clé à molette` devient `custom_cle_a_molette`).
 
-Une option invalide ou un modèle non installé renvoie **422** avec un message (par exemple la commande
-d'installation), avant tout traitement. Sans aucune de ces options, l'analyse est celle d'avant.
+Une option invalide, un modèle non installé ou un whole-body pas encore préparé renvoie **422** avec un
+message en français, avant tout traitement. Sans aucune de ces options, l'analyse est celle d'avant.
 
 Autres points d'accès :
 
-- `GET /pose-models` : modèles proposés, avec `installed` (utilisé par le sélecteur) ;
+- `GET /pose-models` : modèles proposés, avec `installed` ;
+- `GET /pose-models/wholebody` : état du whole-body (`available`, `weights_ready`, `mode`, téléchargement en
+  cours) ; `PUT /pose-models/wholebody` `{"mode": "balanced"}` : choix de la vitesse ;
+  `POST /pose-models/wholebody/install` : lance le téléchargement des poids (en arrière-plan) ;
 - `GET /analyses/{id}` : en plus de l'existant, `pose_model`, `pose_options`, `keypoint_count`,
   `detection_quality`, `hands_metrics`, `custom_metrics` (anciennes analyses : MediaPipe Pose 33,
   options vides) ;
@@ -116,24 +119,29 @@ confiance moyenne.
 Les indicateurs des mains et des points sont **hors RULA** : le score RULA, le recalcul au poids et les
 niveaux par segment ne changent pas.
 
-## Installer le modèle whole-body (facultatif)
+## Préparer le modèle whole-body (depuis le site)
 
-| Installation | Comment |
-|---|---|
-| Poste de développement | `./tms setup --with-wholebody`, ou `pip install -r requirements-wholebody.txt` dans le venv |
-| Docker | `TMS_WITH_WHOLEBODY=1` dans `.env`, puis `docker compose up -d --build` (l'image est plus lourde) |
-| Application de bureau | non proposé |
+Le whole-body se règle **sur le site, sans toucher à `.env`** :
 
-Les poids (environ 130 Mo) se téléchargent à la première analyse whole-body (de l'ordre d'une minute) ;
-avec Docker ils sont gardés dans `outputs/.cache`. Sans l'installation, le modèle est grisé dans le site
-et l'API répond 422 avec la commande à lancer ; tout le reste fonctionne.
+1. Page d'analyse, bloc **Modèle whole-body** (sous le choix « RTMPose / DWPose Whole-body »).
+2. **Préparer le modèle** : télécharge les poids (environ 330 Mo en précision maximale, une seule fois,
+   de l'ordre d'une minute sur une bonne connexion). Le téléchargement tourne en arrière-plan : on peut
+   continuer à utiliser le site, l'état se met à jour tout seul et le choix se débloque quand c'est prêt.
+3. **Vitesse d'analyse** (une fois prêt) : *Précision maximale* (défaut), *Équilibré* ou *Rapide*. Chaque
+   vitesse a ses propres poids : en changer demande de les préparer une fois.
 
-Variable `TMS_WHOLEBODY_MODE` : `performance` (défaut, le plus précis), `balanced` ou `lightweight`
-(plus rapides, moins précis).
+Les paquets (rtmlib, onnxruntime) sont installés avec l'application : image Docker et `./tms setup`
+(un échec d'installation ne bloque rien : le site indique alors « non installé »). **L'application de
+bureau ne les inclut pas** : le bloc l'indique.
 
-**Vitesse mesurée** : environ 0,4 à 0,45 s par image en mode `performance` sur un processeur de 4 cœurs
-sans carte graphique, soit une douzaine de minutes pour 1 minute de vidéo à 30 images/s. Les modes
-`balanced` et `lightweight` doivent être plus rapides ; ils n'ont pas été mesurés. À titre de
+Les poids sont gardés dans le cache de rtmlib : avec Docker, `outputs/.cache` (conservé d'un
+redémarrage à l'autre) ; en installation directe, `~/.cache/rtmlib`. Le choix de la vitesse est rangé
+dans `data/pose_models.json` (sauvegardé avec `data/`). La variable `TMS_WHOLEBODY_MODE` n'est plus
+qu'une valeur par défaut pour les installations qui la définissaient déjà.
+
+**Vitesse mesurée** : environ 0,4 à 0,45 s par image en mode précision maximale sur un processeur de
+4 cœurs sans carte graphique, soit une douzaine de minutes pour 1 minute de vidéo à 30 images/s. Les
+modes *Équilibré* et *Rapide* doivent être plus rapides ; ils n'ont pas été mesurés. À titre de
 comparaison, MediaPipe analyse 227 images en environ 12 s (mesure de la tranche 5,
 `docs/superpowers/specs/2026-10-22-mains-pieds-design.md`). Pour des vidéos longues, préférer MediaPipe
 et réserver le whole-body aux séquences courtes qui en ont besoin.

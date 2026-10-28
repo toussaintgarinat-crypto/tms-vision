@@ -82,11 +82,14 @@ def test_bridge_to_mediapipe_landmarks_maps_index_heel_and_toe_and_skips_weak_po
 
 def test_missing_install_is_reported_with_the_fix(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "rtmlib", None)
-    with pytest.raises(ModelUnavailableError, match="requirements-wholebody"):
+    with pytest.raises(ModelUnavailableError, match="pas installé"):
         wb.RTMPoseWholeBodyModel().load()
 
 
-def _installed(monkeypatch, rtmlib: bool):
+def _installed(monkeypatch, rtmlib: bool, weights: bool = True):
+    """Simule les paquets du whole-body présents ou non, et les poids téléchargés ou non (sans
+    dépendre de ce que la machine de test a en cache)."""
+    monkeypatch.setattr("tms_vision.pose_models.wholebody_setup.weights_ready", lambda mode=None: weights)
     real = importlib.util.find_spec
     monkeypatch.setattr(
         "tms_vision.pose_models.registry.importlib.util.find_spec",
@@ -102,11 +105,19 @@ def test_wholebody_flag_and_model_id_are_the_same_choice(monkeypatch):
     assert a == b and a.enable_wholebody and a.pose_model == "rtmpose_wholebody_133"
 
 
-def test_wholebody_not_installed_is_refused_with_install_hint(monkeypatch):
+def test_wholebody_not_installed_is_refused_with_explanation(monkeypatch):
     _installed(monkeypatch, False)
-    with pytest.raises(ModelUnavailableError, match="requirements-wholebody"):
+    with pytest.raises(ModelUnavailableError, match="pas installé"):
         PoseOptions(enable_wholebody=True).validate()
     assert {m["id"]: m["installed"] for m in available_models()}["rtmpose_wholebody_133"] is False
+
+
+def test_wholebody_without_downloaded_weights_asks_to_prepare_the_model(monkeypatch):
+    _installed(monkeypatch, True, weights=False)
+    with pytest.raises(ModelUnavailableError, match="Préparer le modèle"):
+        PoseOptions(enable_wholebody=True).validate()
+    # sans whole-body, l'absence de poids ne concerne pas l'analyse
+    assert PoseOptions(enable_hands=True).validate().enable_hands
 
 
 def test_feet_and_face_are_accepted_with_wholebody_and_counted(monkeypatch):

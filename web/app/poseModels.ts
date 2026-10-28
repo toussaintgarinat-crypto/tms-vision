@@ -21,7 +21,6 @@ export type PoseSettings = {
 
 export const MAX_CUSTOM_POINTS = 10;
 export const WHOLEBODY_MODEL_ID = "rtmpose_wholebody_133";
-export const WHOLEBODY_INSTALL_HINT = "pip install -r requirements-wholebody.txt";
 
 export const POSE_CHOICES: { value: PoseChoice; label: string; description: string }[] = [
   {
@@ -146,14 +145,34 @@ export const GROUP_LEGEND: { group: string; label: string; color: string }[] = [
   { group: "custom", label: "Points personnalisés", color: "#e6e600" },
 ];
 
-export type PoseModelInfo = {
-  id: string;
-  label: string;
-  keypoint_count: number;
-  installed: boolean;
-  primary: boolean;
-  default: boolean;
+/** Réponse de GET /pose-models/wholebody : le modèle whole-body se prépare et se règle depuis le site. */
+export type WholebodyStatus = {
+  available: boolean; // paquets installés avec l'application
+  mode: string;
+  modes: { id: string; label: string; hint: string }[];
+  weights_ready: boolean; // poids du mode courant téléchargés
+  download: { state: "idle" | "running" | "done" | "error"; message: string | null };
+  approx_download_mb: number;
 };
+
+export type WholebodyState = "loading" | "unavailable" | "needs_download" | "downloading" | "error" | "ready";
+
+export const WHOLEBODY_POLL_MS = 2000;
+
+/** `loading` : état pas encore connu (ou illisible) ; on n'empêche alors rien, le serveur refusera proprement. */
+export function wholebodyState(status: WholebodyStatus | null): WholebodyState {
+  if (!status) return "loading";
+  if (!status.available) return "unavailable";
+  if (status.download.state === "running") return "downloading";
+  if (status.weights_ready) return "ready";
+  if (status.download.state === "error") return "error";
+  return "needs_download";
+}
+
+/** Le choix « Whole-body » n'est sélectionnable que quand le modèle est prêt (ou état inconnu). */
+export function wholebodySelectable(state: WholebodyState): boolean {
+  return state === "ready" || state === "loading";
+}
 
 export type StoredPoseOptions = {
   pose_model?: string;

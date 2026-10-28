@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 
 import { CustomPointsEditor } from "./CustomPointsEditor";
+import { WholebodySetup } from "./WholebodySetup";
 import {
   POSE_CHOICES,
   PoseChoice,
-  PoseModelInfo,
   PoseSettings,
-  WHOLEBODY_INSTALL_HINT,
-  WHOLEBODY_MODEL_ID,
+  WHOLEBODY_POLL_MS,
+  WholebodyStatus,
   applyChoice,
   expectedKeypointCount,
   isWholebody,
+  wholebodySelectable,
+  wholebodyState,
 } from "./poseModels";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -26,16 +28,27 @@ type PoseModelPickerProps = {
 };
 
 export function PoseModelPicker({ settings, onChange, file, disabled }: PoseModelPickerProps) {
-  const [models, setModels] = useState<PoseModelInfo[] | null>(null);
+  const [status, setStatus] = useState<WholebodyStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const state = wholebodyState(status);
 
-  // Modèles réellement installés sur le serveur ; si la liste n'est pas lisible, rien n'est
-  // désactivé : le serveur refusera proprement (422) une option indisponible.
+  // État du modèle whole-body (paquets, poids téléchargés, mode). Illisible : rien n'est bloqué,
+  // le serveur refusera proprement (422, message en français) une option indisponible.
+  async function refreshStatus() {
+    try {
+      const response = await fetch(`${API_URL}/pose-models/wholebody`);
+      if (response.ok) setStatus((await response.json()) as WholebodyStatus);
+    } catch {
+      // réseau indisponible : on garde l'état précédent
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/pose-models`)
-      .then((response) => (response.ok ? (response.json() as Promise<PoseModelInfo[]>) : null))
+    fetch(`${API_URL}/pose-models/wholebody`)
+      .then((response) => (response.ok ? (response.json() as Promise<WholebodyStatus>) : null))
       .then((data) => {
-        if (!cancelled && data) setModels(data);
+        if (!cancelled && data) setStatus(data);
       })
       .catch(() => {});
     return () => {
@@ -43,7 +56,34 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
     };
   }, []);
 
-  const wholebodyInstalled = models?.find((m) => m.id === WHOLEBODY_MODEL_ID)?.installed ?? true;
+  // Pendant le téléchargement des poids (plusieurs minutes), on relit l'état régulièrement.
+  useEffect(() => {
+    if (state !== "downloading") return;
+    const timer = setInterval(() => void refreshStatus(), WHOLEBODY_POLL_MS);
+    return () => clearInterval(timer);
+  }, [state]);
+
+  async function send(path: string, init: RequestInit) {
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_URL}${path}`, init);
+      if (response.ok) setStatus((await response.json()) as WholebodyStatus);
+      else await refreshStatus();
+    } catch {
+      await refreshStatus();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const install = () => send("/pose-models/wholebody/install", { method: "POST" });
+  const changeMode = (mode: string) =>
+    send("/pose-models/wholebody", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    });
+
   const wholebody = isWholebody(settings);
 
   function choose(choice: PoseChoice) {
@@ -56,35 +96,36 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
 
       <div className="flex flex-col gap-2">
         {POSE_CHOICES.map((choice) => {
-          const unavailable = choice.value === "rtmpose_wholebody" && !wholebodyInstalled;
+          const isWholebodyChoice = choice.value === "rtmpose_wholebody";
+          const unavailable = isWholebodyChoice && !wholebodySelectable(state);
           return (
-            <label
-              key={choice.value}
-              className={`flex items-start gap-2 rounded border p-2 text-sm ${
-                settings.choice === choice.value ? "border-blue-600 bg-blue-50 text-gray-900" : ""
-              } ${unavailable ? "opacity-60" : ""}`}
-            >
-              <input
-                type="radio"
-                name="pose-model"
-                value={choice.value}
-                checked={settings.choice === choice.value}
-                disabled={unavailable}
-                onChange={() => choose(choice.value)}
-                className="mt-1"
-              />
-              <span className="flex flex-col">
-                <span className="font-medium">{choice.label}</span>
-                <span className={settings.choice === choice.value ? "text-gray-700" : "text-gray-600"}>
-                  {choice.description}
-                </span>
-                {unavailable && (
-                  <span className="text-amber-800">
-                    Non installé sur ce serveur : <code>{WHOLEBODY_INSTALL_HINT}</code>
+            <div key={choice.value} className="flex flex-col gap-2">
+              <label
+                className={`flex items-start gap-2 rounded border p-2 text-sm ${
+                  settings.choice === choice.value ? "border-blue-600 bg-blue-50 text-gray-900" : ""
+                } ${unavailable ? "opacity-60" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="pose-model"
+                  value={choice.value}
+                  checked={settings.choice === choice.value}
+                  disabled={unavailable}
+                  onChange={() => choose(choice.value)}
+                  className="mt-1"
+                />
+                <span className="flex flex-col">
+                  <span className="font-medium">{choice.label}</span>
+                  <span className={settings.choice === choice.value ? "text-gray-700" : "text-gray-600"}>
+                    {choice.description}
                   </span>
-                )}
-              </span>
-            </label>
+                  {unavailable && <span className="text-amber-800">À préparer avant de pouvoir le choisir (ci-dessous).</span>}
+                </span>
+              </label>
+              {isWholebodyChoice && (
+                <WholebodySetup status={status} state={state} busy={busy} onInstall={install} onModeChange={changeMode} />
+              )}
+            </div>
           );
         })}
       </div>

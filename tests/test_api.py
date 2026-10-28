@@ -2182,7 +2182,7 @@ def test_standard_analysis_has_no_extra_keypoints(tmp_path, monkeypatch):
     assert client.get(body["keypoints_url"]).json()["frames"] == []
 
 
-def test_wholebody_not_installed_returns_422_with_install_hint(tmp_path, monkeypatch):
+def test_wholebody_not_installed_returns_422_with_explanation(tmp_path, monkeypatch):
     import importlib.util
 
     real = importlib.util.find_spec
@@ -2194,7 +2194,7 @@ def test_wholebody_not_installed_returns_422_with_install_hint(tmp_path, monkeyp
     monkeypatch.setattr("tms_vision.api.OUTPUT_DIR", tmp_path)
     response = _post_video(TestClient(app), tmp_path, enable_wholebody="true")
     assert response.status_code == 422
-    assert "requirements-wholebody" in response.json()["detail"]
+    assert "pas installé" in response.json()["detail"]
 
 
 def test_analysis_with_custom_points_stores_metrics_and_positions(tmp_path, monkeypatch):

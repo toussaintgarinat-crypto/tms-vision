@@ -992,10 +992,12 @@ Guide complet : [`docs/POSE-MODELES.md`](docs/POSE-MODELES.md).
   angles, score RULA, CSV et rapports ne dépendent pas du modèle. Un point absent est ignoré sans erreur.
 - **Sans option, rien ne change** : l'analyse est celle d'avant. Les indicateurs des mains et des points
   sont hors RULA.
-- **Whole-body** : `./tms setup --with-wholebody` (ou `TMS_WITH_WHOLEBODY=1` avec Docker). Environ 0,4 s
-  par image sur un processeur sans carte graphique : à réserver aux séquences courtes.
+- **Whole-body** : se prépare **sur le site** (bloc « Modèle whole-body » : bouton « Préparer le modèle »,
+  téléchargement unique d'environ 330 Mo, puis choix de la vitesse), sans réglage dans `.env`. Environ
+  0,4 s par image sur un processeur sans carte graphique : à réserver aux séquences courtes.
 - **API** : champs `pose_model`, `enable_hands`, `enable_wholebody`, `enable_feet`, `enable_face`,
-  `custom_points`, `custom_points_json` ; `GET /pose-models`, `GET /analyses/{id}/keypoints`.
+  `custom_points`, `custom_points_json` ; `GET /pose-models`, `GET /pose-models/wholebody`,
+  `GET /analyses/{id}/keypoints`.
 
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 

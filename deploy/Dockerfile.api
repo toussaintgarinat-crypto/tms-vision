@@ -18,11 +18,13 @@ RUN apt-get update \
 WORKDIR /app
 COPY requirements.txt requirements-wholebody.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-# Modèle whole-body facultatif (RTMPose, voir docs/POSE-MODELES.md) : docker compose build avec
-# TMS_WITH_WHOLEBODY=1 dans .env. Ses poids (~130 Mo) sont téléchargés à la première analyse et
-# gardés dans ./outputs/.cache (XDG_CACHE_HOME), donc conservés d'un redémarrage à l'autre.
-ARG WITH_WHOLEBODY=0
-RUN if [ "$WITH_WHOLEBODY" = "1" ]; then pip install --no-cache-dir -r requirements-wholebody.txt; fi
+# Modèle whole-body (RTMPose, voir docs/POSE-MODELES.md) : les paquets sont installés d'office ; il
+# s'active ensuite SUR LE SITE (« Préparer le modèle » : téléchargement des poids, ~330 Mo, une seule
+# fois). Les poids sont gardés dans ./outputs/.cache (XDG_CACHE_HOME), donc conservés d'un
+# redémarrage à l'autre. Un échec d'installation ne bloque pas la construction : le site indique
+# alors que le modèle n'est pas disponible.
+RUN pip install --no-cache-dir -r requirements-wholebody.txt \
+    || echo "Modèle whole-body non installé : le reste de l'application fonctionne sans."
 ENV XDG_CACHE_HOME=/app/outputs/.cache
 
 COPY src ./src

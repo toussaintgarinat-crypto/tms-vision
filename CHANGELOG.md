@@ -10,6 +10,21 @@ une version précise.
 
 ## [Non publié]
 
+### Whole-body : activation depuis le site
+- Le modèle whole-body se prépare et se règle **sur le site**, plus dans `.env` : page d'analyse, bloc
+  « Modèle whole-body » → « Préparer le modèle » (téléchargement unique d'environ 330 Mo, suivi en direct),
+  puis choix de la vitesse (précision maximale, équilibré, rapide). Le choix est bloqué tant que le modèle
+  n'est pas prêt, et le serveur l'explique au lieu d'échouer.
+- Les paquets du whole-body sont installés avec l'application (image Docker, `./tms setup`).
+- Les poids sont conservés d'un redémarrage à l'autre (`outputs/.cache` avec Docker).
+
+### À savoir pour la mise à jour
+- `TMS_WITH_WHOLEBODY` (introduite en 1.3.0) et l'option `./tms setup --with-wholebody` n'existent plus :
+  la ligne de `.env` est ignorée, elle peut être supprimée. `docker compose up -d --build` suffit, puis
+  « Préparer le modèle » sur le site pour utiliser le whole-body.
+- Les poids annoncés « environ 130 Mo » en 1.3.0 pèsent en réalité environ 330 Mo.
+- `TMS_WHOLEBODY_MODE` n'est plus qu'une valeur par défaut : le choix fait sur le site la remplace.
+
 ## [1.3.0] - 2026-10-28
 
 ### Modèles de pose : sélecteur, mains détaillées, whole-body, points personnalisés

@@ -12,6 +12,9 @@ import {
   poseFormFields,
   poseModelLabel,
   validatePoseSettings,
+  WholebodyStatus,
+  wholebodySelectable,
+  wholebodyState,
 } from "./poseModels";
 
 const withPoints = (settings: PoseSettings, n: number): PoseSettings => ({
@@ -140,5 +143,43 @@ describe("légende et libellés", () => {
   it("nomme le modèle, y compris pour une ancienne analyse sans modèle", () => {
     expect(poseModelLabel("rtmpose_wholebody_133")).toBe("RTMPose Whole-body");
     expect(poseModelLabel(null)).toBe("MediaPipe Pose 33");
+  });
+});
+
+describe("état du modèle whole-body", () => {
+  const status = (overrides: Partial<WholebodyStatus> = {}): WholebodyStatus => ({
+    available: true,
+    mode: "performance",
+    modes: [{ id: "performance", label: "Précision maximale", hint: "" }],
+    weights_ready: false,
+    download: { state: "idle", message: null },
+    approx_download_mb: 330,
+    ...overrides,
+  });
+
+  it("distingue les six états", () => {
+    expect(wholebodyState(null)).toBe("loading");
+    expect(wholebodyState(status({ available: false }))).toBe("unavailable");
+    expect(wholebodyState(status())).toBe("needs_download");
+    expect(wholebodyState(status({ download: { state: "running", message: "Téléchargement 1/2…" } }))).toBe("downloading");
+    expect(wholebodyState(status({ download: { state: "error", message: "réseau coupé" } }))).toBe("error");
+    expect(wholebodyState(status({ weights_ready: true }))).toBe("ready");
+  });
+
+  it("un téléchargement en cours prime sur le reste, des poids prêts priment sur une ancienne erreur", () => {
+    expect(wholebodyState(status({ weights_ready: true, download: { state: "running", message: null } }))).toBe("downloading");
+    expect(wholebodyState(status({ weights_ready: true, download: { state: "error", message: "x" } }))).toBe("ready");
+  });
+
+  it("paquets absents : indisponible même si des poids traînent", () => {
+    expect(wholebodyState(status({ available: false, weights_ready: true }))).toBe("unavailable");
+  });
+
+  it("n'autorise le choix que prêt, ou quand l'état est inconnu", () => {
+    expect(wholebodySelectable("ready")).toBe(true);
+    expect(wholebodySelectable("loading")).toBe(true);
+    for (const state of ["unavailable", "needs_download", "downloading", "error"] as const) {
+      expect(wholebodySelectable(state)).toBe(false);
+    }
   });
 });

@@ -2,17 +2,16 @@
 
 RTMW-x (famille RTMPose/DWPose distillée, la variante la plus précise de rtmlib), open source
 (Apache 2.0), exécuté par ONNX Runtime, sans PyTorch. Installation facultative :
-`pip install -r requirements-wholebody.txt`. Les poids sont téléchargés au premier usage dans le
-cache de rtmlib. Le mode `performance` (le plus précis, RTMPose-x) est celui par défaut ; le mode
-se règle avec la variable d'environnement TMS_WHOLEBODY_MODE (performance, balanced, lightweight).
+`pip install -r requirements-wholebody.txt` (inclus dans l'image Docker et par `./tms setup`). Les
+poids (environ 330 Mo) se préparent depuis le site (voir wholebody_setup.py) et sont gardés dans le
+cache de rtmlib. Le mode (précision maximale par défaut, ou équilibré / rapide) se choisit sur le site.
 
 Le modèle est 2D : pas de points « monde », donc ni avatar 3D ni angle de cheville.
 """
-import os
-
 import numpy as np
 
 from tms_vision.landmark import Landmark
+from tms_vision.pose_models import wholebody_setup
 from tms_vision.pose_models.base import BasePoseModel, ModelMetadata, ModelUnavailableError
 from tms_vision.pose_models.mediapipe_hands import hand_point_names
 from tms_vision.pose_models.schema import FramePose, Keypoint
@@ -120,7 +119,7 @@ class RTMPoseWholeBodyModel(BasePoseModel):
                  mode: str | None = None) -> None:
         super().__init__()
         self._groups = {g for g, on in (("hands", hands), ("feet", feet), ("face", face)) if on}
-        self._mode = mode or os.environ.get("TMS_WHOLEBODY_MODE", "performance")
+        self._mode = mode or wholebody_setup.get_mode()
         self._model = None
 
     def load(self) -> None:
@@ -130,8 +129,8 @@ class RTMPoseWholeBodyModel(BasePoseModel):
             from rtmlib import Wholebody
         except ImportError as error:
             raise ModelUnavailableError(
-                "Le modèle whole-body n'est pas installé : pip install -r requirements-wholebody.txt "
-                "(rtmlib + onnxruntime)."
+                "Le modèle whole-body n'est pas installé sur cette installation (rtmlib et onnxruntime "
+                "manquent : voir docs/POSE-MODELES.md)."
             ) from error
         try:
             self._model = Wholebody(mode=self._mode, backend="onnxruntime", device="cpu")

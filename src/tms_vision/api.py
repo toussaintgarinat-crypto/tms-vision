@@ -38,7 +38,7 @@ from tms_vision.program import (
 )
 from tms_vision.rescore import rescore_frames, summarize_for_load
 from tms_vision.pipeline import analyze_video, generate_run_id
-from tms_vision.pose_models import PoseModelError, PoseOptions, available_models
+from tms_vision.pose_models import PoseModelError, PoseOptions, available_models, wholebody_setup
 from tms_vision.pose3d_export import build_pose3d_payload
 
 OUTPUT_DIR = Path("outputs")
@@ -226,6 +226,37 @@ def _pose_options_or_422(
 async def list_pose_models() -> list[dict]:
     """Modèles de pose proposés par le sélecteur de l'interface."""
     return available_models()
+
+
+@app.get("/pose-models/wholebody")
+async def get_wholebody_status() -> dict:
+    """État du modèle whole-body : paquets présents, poids téléchargés, mode, téléchargement en cours."""
+    return wholebody_setup.status()
+
+
+class WholebodySettings(BaseModel):
+    mode: Literal["performance", "balanced", "lightweight"]
+
+
+@app.put("/pose-models/wholebody")
+async def put_wholebody_settings(body: WholebodySettings) -> dict:
+    """Choix de la vitesse du modèle whole-body (précision maximale, équilibré, rapide)."""
+    wholebody_setup.set_mode(body.mode)
+    return wholebody_setup.status()
+
+
+@app.post("/pose-models/wholebody/install")
+async def install_wholebody() -> dict:
+    """Télécharge les poids du modèle whole-body en arrière-plan (une seule fois). Se suit avec
+    GET /pose-models/wholebody."""
+    if not wholebody_setup.dependencies_available():
+        raise HTTPException(
+            status_code=422,
+            detail="Le modèle whole-body n'est pas installé sur cette installation (voir docs/POSE-MODELES.md).",
+        )
+    if not wholebody_setup.weights_ready():
+        wholebody_setup.start_download()
+    return wholebody_setup.status()
 
 
 @app.post("/analyses")

@@ -2,6 +2,7 @@
 import json
 from dataclasses import asdict, dataclass, replace
 
+from tms_vision.pose_models import wholebody_setup
 from tms_vision.pose_models.base import ModelUnavailableError, PoseModelError
 from tms_vision.pose_models.custom_keypoints import CustomSpec
 from tms_vision.pose_models.registry import DEFAULT_MODEL, available_models
@@ -65,8 +66,16 @@ class PoseOptions:
                 "Les options pieds et visage nécessitent le modèle whole-body (enable_wholebody)."
             )
         if not known[options.pose_model]["installed"]:
-            hint = (" (pip install -r requirements-wholebody.txt)" if options.uses_wholebody else "")
-            raise ModelUnavailableError(f"Le modèle {options.pose_model!r} n'est pas installé{hint}.")
+            raise ModelUnavailableError(
+                f"Le modèle {options.pose_model!r} n'est pas installé sur cette installation "
+                "(voir docs/POSE-MODELES.md)."
+            )
+        if options.uses_wholebody and not wholebody_setup.weights_ready():
+            raise ModelUnavailableError(
+                "Le modèle whole-body n'est pas encore préparé : cliquez sur « Préparer le modèle » "
+                "dans la page d'analyse (téléchargement unique, environ "
+                f"{wholebody_setup.APPROX_DOWNLOAD_MB} Mo)."
+            )
         return options
 
     def to_json(self) -> str:

@@ -13,8 +13,7 @@
 #   ./tms doctor             vérifie l'installation sans rien modifier
 #
 # « setup » est relançable sans risque : ce qui est déjà en place est laissé tel quel.
-# Options de setup : --no-system (n'installe aucun paquet du système, signale seulement ce qui manque) ;
-#   --with-wholebody (installe aussi le modèle whole-body facultatif, voir docs/POSE-MODELES.md).
+# Options de setup : --no-system (n'installe aucun paquet du système, signale seulement ce qui manque).
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -76,7 +75,6 @@ cmd_setup() {
   for arg in "$@"; do
     case "$arg" in
       --no-system) NO_SYSTEM=1 ;;
-      --with-wholebody) WITH_WHOLEBODY=1 ;;
       *) die "Option inconnue pour setup : $arg" ;;
     esac
   done
@@ -99,12 +97,11 @@ cmd_setup() {
   "$VENV/bin/python" -m pip install --quiet --upgrade pip || warn "Mise à jour de pip impossible (on continue)."
   "$VENV/bin/python" -m pip install --quiet -r requirements.txt || die "Installation de requirements.txt échouée."
   ok "Dépendances Python installées"
-  if [ "${WITH_WHOLEBODY:-0}" = "1" ]; then
-    if "$VENV/bin/python" -m pip install --quiet -r requirements-wholebody.txt; then
-      ok "Modèle whole-body installé (les poids, environ 130 Mo, se téléchargent à la première analyse)"
-    else
-      warn "Installation du modèle whole-body échouée : le reste fonctionne sans (voir docs/POSE-MODELES.md)."
-    fi
+  # Modèle whole-body : paquets installés d'office, activé ensuite sur le site (« Préparer le modèle »).
+  if "$VENV/bin/python" -m pip install --quiet -r requirements-wholebody.txt; then
+    ok "Modèle whole-body installé (à préparer depuis le site : téléchargement des poids, une seule fois)"
+  else
+    warn "Installation du modèle whole-body échouée : le reste fonctionne sans (voir docs/POSE-MODELES.md)."
   fi
 
   step "Node.js et site web"

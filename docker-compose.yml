@@ -15,8 +15,6 @@ services:
       context: .
       dockerfile: deploy/Dockerfile.api
       target: api
-      args:
-        WITH_WHOLEBODY: ${TMS_WITH_WHOLEBODY:-0}
     restart: unless-stopped
     environment:
       ALLOWED_ORIGINS: ${TMS_SITE_URL:?Renseignez TMS_SITE_URL dans .env}
