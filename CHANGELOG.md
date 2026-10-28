@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.3.1] - 2026-10-28
+
 ### Whole-body : activation depuis le site
 - Le modèle whole-body se prépare et se règle **sur le site**, plus dans `.env` : page d'analyse, bloc
   « Modèle whole-body » → « Préparer le modèle » (téléchargement unique d'environ 330 Mo, suivi en direct),
