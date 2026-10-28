@@ -37,11 +37,19 @@ def fetch_latest_release(url: str = RELEASES_URL) -> dict | None:
     tag, page = data.get("tag_name"), data.get("html_url")
     if parse_version(tag) is None or not isinstance(page, str) or not page.startswith("https://"):
         return None
-    return {"version": tag.lstrip("v"), "url": page}
+    assets = [
+        {"name": item["name"], "url": item["browser_download_url"], "size": item.get("size"),
+         "digest": item.get("digest")}
+        for item in data.get("assets") or []
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+        and isinstance(item.get("browser_download_url"), str)
+    ]
+    return {"version": tag.lstrip("v"), "url": page, "assets": assets}
 
 
 def check(current: str, *, now: float | None = None) -> dict:
-    """{"available": bool, "version": str | None, "url": str | None}. Le résultat est gardé 6 h
+    """{"available": bool, "version": str | None, "url": str | None} (+ "assets", les fichiers de la
+    version, quand elle est disponible : voir self_update.py). Le résultat est gardé 6 h
     pour ne pas interroger GitHub à chaque page ; un échec n'est pas gardé (nouvel essai au
     prochain appel)."""
     moment = time.monotonic() if now is None else now

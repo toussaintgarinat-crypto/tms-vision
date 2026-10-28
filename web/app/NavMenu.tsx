@@ -25,21 +25,30 @@ function useAppVersion(): string | null {
   return version;
 }
 
+type UpdateInfo = { version: string; url: string; installable: boolean };
+type UpdateStatus = { step: string; message: string; progress: number | null };
+
 // Une version plus récente est publiée (application de bureau seulement : l'API répond
-// « available: false » ailleurs). Un clic ouvre la page de téléchargement ; rien n'est installé seul.
-function useUpdate(): { version: string; url: string } | null {
-  const [update, setUpdate] = useState<{ version: string; url: string } | null>(null);
+// « available: false » ailleurs). Si elle peut s'installer seule (`installable`), un clic sauvegarde
+// les données, télécharge, installe et relance l'application ; sinon le lien ouvre la page de téléchargement.
+function useUpdate(): UpdateInfo | null {
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetch(`${API_URL}/update`)
       .then((response) =>
         response.ok
-          ? (response.json() as Promise<{ available: boolean; version: string | null; url: string | null }>)
+          ? (response.json() as Promise<{
+              available: boolean;
+              version: string | null;
+              url: string | null;
+              installable?: boolean;
+            }>)
           : null,
       )
       .then((data) => {
         if (!cancelled && data?.available && data.version && data.url) {
-          setUpdate({ version: data.version, url: data.url });
+          setUpdate({ version: data.version, url: data.url, installable: data.installable === true });
         }
       })
       .catch(() => {});
@@ -48,6 +57,67 @@ function useUpdate(): { version: string; url: string } | null {
     };
   }, []);
   return update;
+}
+
+function UpdateBanner({ update }: { update: UpdateInfo }) {
+  const [status, setStatus] = useState<UpdateStatus | null>(null);
+  const [restarting, setRestarting] = useState(false);
+
+  useEffect(() => {
+    if (!status || !["backup", "download", "install"].includes(status.step)) return;
+    const timer = setInterval(() => {
+      fetch(`${API_URL}/update/status`)
+        .then((response) => (response.ok ? (response.json() as Promise<UpdateStatus>) : null))
+        .then((data) => data && setStatus(data))
+        // L'application s'est fermée pour s'installer : la réponse n'arrive plus.
+        .catch(() => setRestarting(true));
+    }, 700);
+    return () => clearInterval(timer);
+  }, [status]);
+
+  const install = () => {
+    setStatus({ step: "backup", message: "Préparation…", progress: null });
+    fetch(`${API_URL}/update/install`, { method: "POST" })
+      .then((response) => (response.ok ? (response.json() as Promise<UpdateStatus>) : Promise.reject()))
+      .then(setStatus)
+      .catch(() =>
+        setStatus({ step: "error", message: "La mise à jour n'a pas pu démarrer.", progress: null }),
+      );
+  };
+
+  const className =
+    "rounded-full bg-amber-100 px-3 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200";
+  if (restarting) {
+    return (
+      <span className={className} role="status">
+        Installation en cours : l&apos;application va se rouvrir toute seule. Rechargez cette page dans une minute.
+      </span>
+    );
+  }
+  if (status && status.step !== "error") {
+    const percent = status.progress === null ? "" : ` ${Math.round(status.progress * 100)} %`;
+    return (
+      <span className={className} role="status">
+        {status.message}
+        {percent}
+      </span>
+    );
+  }
+  if (update.installable) {
+    return (
+      <>
+        <button type="button" onClick={install} className={className}>
+          Nouvelle version {update.version} disponible : mettre à jour (données conservées)
+        </button>
+        {status && <span className="text-xs text-red-700">{status.message}</span>}
+      </>
+    );
+  }
+  return (
+    <a href={update.url} target="_blank" rel="noopener noreferrer" className={className}>
+      Nouvelle version {update.version} disponible : télécharger
+    </a>
+  );
 }
 
 // Barre du haut avec un menu rétractable : accès à toutes les pages sans taper l'adresse.
@@ -87,16 +157,7 @@ export function NavMenu() {
         </button>
         <span className="text-sm font-semibold">TMS Vision</span>
         {appVersion && <span className="text-xs text-zinc-500" title="Version de l'application">v{appVersion}</span>}
-        {update && (
-          <a
-            href={update.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-amber-100 px-3 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200"
-          >
-            Nouvelle version {update.version} disponible : télécharger
-          </a>
-        )}
+        {update && <UpdateBanner update={update} />}
       </header>
 
       {open && (

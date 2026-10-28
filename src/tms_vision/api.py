@@ -22,14 +22,14 @@ from pathlib import Path
 from typing import Literal
 
 import cv2
-from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Response, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from tms_vision import (
-    assistant, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, storage, updates,
-    version,
+    assistant, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, self_update, storage,
+    updates, version,
 )
 from tms_vision.load import bounds, parse_load
 from tms_vision.capsules import CAPSULES, DEFAULT_PROGRAM_SIZE, MAX_PROGRAM_SIZE
@@ -1183,10 +1183,33 @@ async def get_version() -> dict:
 @app.get("/update")
 async def get_update() -> dict:
     """Une version plus récente est-elle publiée ? Seulement dans l'application de bureau
-    (TMS_CHECK_UPDATES=1) : un serveur installé par Docker se met à jour avec install.sh."""
+    (TMS_CHECK_UPDATES=1) : un serveur installé par Docker se met à jour avec install.sh.
+    `installable` : le bouton peut installer la mise à jour en un clic (application construite)."""
     if os.environ.get("TMS_CHECK_UPDATES") != "1":
-        return {"available": False, "version": None, "url": None}
-    return await run_in_threadpool(updates.check, version.get_version())
+        return {"available": False, "version": None, "url": None, "installable": False}
+    result = await run_in_threadpool(updates.check, version.get_version())
+    return {
+        "available": result["available"], "version": result["version"], "url": result["url"],
+        "installable": result["available"] and self_update.is_installable(),
+    }
+
+
+@app.post("/update/install")
+async def install_update(request: Request) -> dict:
+    """Sauvegarde les données, télécharge et installe la version publiée, puis relance l'application."""
+    if os.environ.get("TMS_CHECK_UPDATES") != "1" or not self_update.is_installable():
+        raise HTTPException(status_code=404, detail="Mise à jour en un clic indisponible ici.")
+    # Une autre page web ouverte dans le navigateur ne doit pas pouvoir la déclencher.
+    origin = request.headers.get("origin")
+    if origin is not None and origin not in ALLOWED_ORIGINS:
+        raise HTTPException(status_code=403, detail="Origine non autorisée.")
+    self_update.start()
+    return self_update.status()
+
+
+@app.get("/update/status")
+async def get_update_status() -> dict:
+    return self_update.status()
 
 
 @app.get("/library")

@@ -10,6 +10,14 @@ une version précise.
 
 ## [Non publié]
 
+### Mise à jour en un clic (application de bureau)
+- Le bandeau « Nouvelle version disponible » et la petite fenêtre proposent **Mettre à jour** : sauvegarde
+  automatique des données (`backups/`, 5 dernières), téléchargement de l'installateur depuis GitHub
+  (taille et empreinte vérifiées), installation, puis relance. Plus besoin de passer par GitHub.
+- L'installateur Windows relance l'application à la fin même en mode silencieux.
+- La première mise à jour en un clic n'est possible qu'à partir de la version qui contient cette
+  nouveauté : la précédente se fait encore à la main, une dernière fois.
+
 ## [1.3.1] - 2026-10-28
 
 ### Whole-body : activation depuis le site

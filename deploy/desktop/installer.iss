@@ -3,6 +3,8 @@
 ; Installation « pour l'utilisateur » (sans droits administrateur), dans %LOCALAPPDATA%\Programs.
 ; Les données (analyses, vidéos) sont dans %APPDATA%\TMS Vision : une mise à jour ou une
 ; désinstallation n'y touche pas.
+; La mise à jour en un clic de l'application lance cet installateur en mode silencieux
+; (/SILENT) : l'application doit donc se relancer toute seule à la fin (pas de skipifsilent).
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
@@ -35,4 +37,4 @@ Name: "{group}\TMS Vision"; Filename: "{app}\TMS Vision.exe"
 Name: "{autodesktop}\TMS Vision"; Filename: "{app}\TMS Vision.exe"
 
 [Run]
-Filename: "{app}\TMS Vision.exe"; Description: "Lancer TMS Vision"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\TMS Vision.exe"; Description: "Lancer TMS Vision"; Flags: nowait postinstall

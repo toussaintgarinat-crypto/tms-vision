@@ -97,6 +97,10 @@ class Application:
         # L'API écrit dans `data/` et `outputs/` relativement au dossier courant.
         os.chdir(self.directory)
         os.environ["TMS_CHECK_UPDATES"] = "1"
+        from tms_vision import self_update
+
+        self_update.data_directory = self.directory
+        self_update.quit_handler = self.quit_for_update
         os.environ.setdefault("ALLOWED_ORIGINS", f"http://{HOST}:{WEB_PORT},http://localhost:{WEB_PORT}")
         ffmpeg = find_ffmpeg()
         if ffmpeg:
@@ -129,6 +133,12 @@ class Application:
                 return True
             time.sleep(0.5)
         return False
+
+    def quit_for_update(self) -> None:
+        """Ferme tout : l'installateur (lancé juste avant) remplace les fichiers, puis relance."""
+        self.stop()
+        sys.stdout.flush()
+        os._exit(0)
 
     def stop(self) -> None:
         if self.web_process is not None and self.web_process.poll() is None:
@@ -164,7 +174,7 @@ def show_window(app: Application) -> None:
     import tkinter as tk
     from tkinter import ttk
 
-    from tms_vision import updates, version
+    from tms_vision import self_update, updates, version
 
     root = tk.Tk()
     root.title("TMS Vision")
@@ -194,7 +204,7 @@ def show_window(app: Application) -> None:
     update_text = tk.StringVar(value="")
     update_label = ttk.Label(frame, textvariable=update_text, foreground="#b45309")
     update_label.grid(sticky="w", pady=(10, 0))
-    update_button = ttk.Button(frame, text="Télécharger la mise à jour")
+    update_button = ttk.Button(frame, text="Mettre à jour")
     update_button.grid(sticky="w", pady=(4, 0))
     update_button.grid_remove()
     ttk.Label(
@@ -219,10 +229,26 @@ def show_window(app: Application) -> None:
     def look_for_update() -> None:
         result = updates.check(version.get_version())
 
+        def follow() -> None:
+            state = self_update.status()
+            update_text.set(state["message"] or update_text.get())
+            if state["step"] == "error":
+                update_button.state(["!disabled"])
+            elif state["step"] != "idle":
+                root.after(500, follow)
+
+        def install() -> None:
+            update_button.state(["disabled"])
+            self_update.start()
+            follow()
+
         def show() -> None:
             if result["available"]:
                 update_text.set(f"Une nouvelle version est disponible : {result['version']}")
-                update_button.configure(command=lambda: webbrowser.open(result["url"]))
+                if self_update.is_installable():
+                    update_button.configure(text="Mettre à jour (vos données sont conservées)", command=install)
+                else:
+                    update_button.configure(text="Télécharger la mise à jour", command=lambda: webbrowser.open(result["url"]))
                 update_button.grid()
 
         if result["available"]:

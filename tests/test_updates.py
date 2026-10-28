@@ -61,7 +61,7 @@ def test_fetch_latest_release_reads_the_github_answer(monkeypatch):
 
     monkeypatch.setattr(updates.urllib.request, "urlopen", fake_urlopen)
     assert updates.fetch_latest_release() == {
-        "version": "1.4.0", "url": "https://github.com/x/y/releases/tag/v1.4.0",
+        "version": "1.4.0", "url": "https://github.com/x/y/releases/tag/v1.4.0", "assets": [],
     }
 
     monkeypatch.setattr(updates.urllib.request, "urlopen", lambda r, timeout: io.BytesIO(b'{"tag_name": "x"}'))
@@ -72,3 +72,45 @@ def test_fetch_latest_release_reads_the_github_answer(monkeypatch):
 
     monkeypatch.setattr(updates.urllib.request, "urlopen", offline)
     assert updates.fetch_latest_release() is None
+
+
+# --- mise à jour en un clic (self_update) -------------------------------------------------------
+
+import zipfile  # noqa: E402
+
+from tms_vision import self_update  # noqa: E402
+
+_PREFIX = self_update.DOWNLOAD_PREFIX + "v1.4.0/"
+_ASSETS = [
+    {"name": "TMS-Vision-Setup.exe", "url": _PREFIX + "TMS-Vision-Setup.exe"},
+    {"name": "TMS-Vision-Mac-Apple-Silicon.dmg", "url": _PREFIX + "TMS-Vision-Mac-Apple-Silicon.dmg"},
+    {"name": "TMS-Vision-Mac-Intel.dmg", "url": _PREFIX + "TMS-Vision-Mac-Intel.dmg"},
+]
+
+
+def test_pick_asset_per_platform_and_processor():
+    assert self_update.pick_asset(_ASSETS, "win32", "AMD64")["name"] == "TMS-Vision-Setup.exe"
+    assert self_update.pick_asset(_ASSETS, "darwin", "arm64")["name"].endswith("Apple-Silicon.dmg")
+    assert self_update.pick_asset(_ASSETS, "darwin", "x86_64")["name"].endswith("Intel.dmg")
+    assert self_update.pick_asset(_ASSETS, "linux", "x86_64") is None
+
+
+def test_pick_asset_refuses_files_not_published_by_this_repository():
+    foreign = [{"name": "TMS-Vision-Setup.exe", "url": "https://evil.example/TMS-Vision-Setup.exe"}]
+    assert self_update.pick_asset(foreign, "win32", "AMD64") is None
+
+
+def test_backup_copies_data_and_keeps_only_the_last_five(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "tms_vision.duckdb").write_bytes(b"base")
+    assert self_update.backup_data(tmp_path / "vide", "1.0.0") is None
+    for index in range(7):
+        archive = self_update.backup_data(tmp_path, "1.0.0", now=1_700_000_000 + index * 10)
+    with zipfile.ZipFile(archive) as zipped:
+        assert zipped.read("data/tms_vision.duckdb") == b"base"
+    assert len(list((tmp_path / "backups").glob("*.zip"))) == self_update.KEEP_BACKUPS
+
+
+def test_the_one_click_update_is_only_offered_by_the_built_application(monkeypatch, tmp_path):
+    monkeypatch.setattr(self_update, "data_directory", tmp_path)
+    assert not self_update.is_installable()  # lancé depuis le dépôt : pas de mise à jour automatique
