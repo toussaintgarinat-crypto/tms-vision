@@ -16,8 +16,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements.txt requirements-wholebody.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+# Modèle whole-body facultatif (RTMPose, voir docs/POSE-MODELES.md) : docker compose build avec
+# TMS_WITH_WHOLEBODY=1 dans .env. Ses poids (~130 Mo) sont téléchargés à la première analyse et
+# gardés dans ./outputs/.cache (XDG_CACHE_HOME), donc conservés d'un redémarrage à l'autre.
+ARG WITH_WHOLEBODY=0
+RUN if [ "$WITH_WHOLEBODY" = "1" ]; then pip install --no-cache-dir -r requirements-wholebody.txt; fi
+ENV XDG_CACHE_HOME=/app/outputs/.cache
 
 COPY src ./src
 COPY exercises ./exercises

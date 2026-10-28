@@ -10,6 +10,27 @@ une version précise.
 
 ## [Non publié]
 
+### Modèles de pose : sélecteur, mains détaillées, whole-body, points personnalisés
+- **Choix du modèle avant l'analyse** (page d'analyse, « Modèle de pose ») : MediaPipe Pose 33 (par
+  défaut, l'analyse reste celle d'avant), Pose + Hands, Whole-body RTMPose/DWPose, Custom keypoints. Le
+  nombre de points suivis s'affiche avant l'envoi.
+- **Mains** (option) : 21 points par main, flexion des doigts, nombre et durée des préhensions, cadence
+  et indicateur « répétitif ». Seuils non calibrés, à valider avec l'ostéopathe.
+- **Whole-body** (option, facultatif) : jusqu'à 133 points (corps, pieds, mains, visage), en 2D donc sans
+  avatar 3D ni angle de cheville. Nettement plus lent (environ 0,4 s par image sans carte graphique).
+- **Points personnalisés** : on clique sur un outil, une caisse, une zone sur une image de la vidéo ;
+  les points sont suivis dans la suite de la vidéo (taux de suivi, trajet, temps à la main).
+- **Résultat et historique** : panneau « Modèle de pose » (modèle, points par personne, points détectés
+  par image, confiance, légende des couleurs), vidéo annotée colorée par groupe de points, export JSON des
+  points (`GET /analyses/{id}/keypoints`).
+- Guide : [`docs/POSE-MODELES.md`](docs/POSE-MODELES.md).
+
+### À savoir pour la mise à jour
+- Rien à faire : la base d'analyses est complétée au premier lancement et les anciennes analyses
+  s'affichent comme MediaPipe Pose 33.
+- Pour le whole-body : `./tms setup --with-wholebody` (installation directe) ou `TMS_WITH_WHOLEBODY=1`
+  dans `.env` puis `docker compose up -d --build`. L'application de bureau ne le propose pas.
+
 ## [1.2.0] - 2026-10-26
 
 ### Fiche d'activité pré-remplie par la vidéo

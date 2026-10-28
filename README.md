@@ -981,6 +981,22 @@ Spec : `docs/superpowers/specs/2026-10-22-mains-pieds-design.md`.
 - **Limites** : doigts non mesurés quand aucune main n'est trouvée ; poignet en 2D donc sensible à
   l'angle de prise de vue ; pieds souvent hors champ pour un poste assis.
 
+### Modèles de pose (sélecteur)
+
+Guide complet : [`docs/POSE-MODELES.md`](docs/POSE-MODELES.md).
+
+- **Choix avant l'analyse** : MediaPipe Pose 33 (défaut, comme avant), Pose + Hands (21 points par main,
+  préhensions et cadence), Whole-body RTMPose/DWPose (jusqu'à 133 points, facultatif, 2D), ou points
+  personnalisés placés à la main sur une image de la vidéo et suivis (outil, caisse, zone…).
+- **Format commun** : tous les modèles produisent des points normalisés (`left_wrist`, `right_index_tip`…) ;
+  angles, score RULA, CSV et rapports ne dépendent pas du modèle. Un point absent est ignoré sans erreur.
+- **Sans option, rien ne change** : l'analyse est celle d'avant. Les indicateurs des mains et des points
+  sont hors RULA.
+- **Whole-body** : `./tms setup --with-wholebody` (ou `TMS_WITH_WHOLEBODY=1` avec Docker). Environ 0,4 s
+  par image sur un processeur sans carte graphique : à réserver aux séquences courtes.
+- **API** : champs `pose_model`, `enable_hands`, `enable_wholebody`, `enable_feet`, `enable_face`,
+  `custom_points`, `custom_points_json` ; `GET /pose-models`, `GET /analyses/{id}/keypoints`.
+
 ### Tester depuis un iPhone (ou tout autre appareil hors du Mac)
 
 Se contenter de rejoindre l'IP locale du Mac en WiFi ne suffit pas : `getUserMedia` (accès
