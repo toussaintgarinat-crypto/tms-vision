@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.3.0] - 2026-10-28
+
 ### Modèles de pose : sélecteur, mains détaillées, whole-body, points personnalisés
 - **Choix du modèle avant l'analyse** (page d'analyse, « Modèle de pose ») : MediaPipe Pose 33 (par
   défaut, l'analyse reste celle d'avant), Pose + Hands, Whole-body RTMPose/DWPose, Custom keypoints. Le
