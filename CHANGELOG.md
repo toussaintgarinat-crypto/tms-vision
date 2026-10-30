@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.4.0] - 2026-10-30
+
 ### Mise à jour en un clic (application de bureau)
 - Le bandeau « Nouvelle version disponible » et la petite fenêtre proposent **Mettre à jour** : sauvegarde
   automatique des données (`backups/`, 5 dernières), téléchargement de l'installateur depuis GitHub
