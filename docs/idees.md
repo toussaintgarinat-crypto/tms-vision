@@ -43,3 +43,44 @@ sert tel quel ; seul le corps change.
 À ajouter : un modèle de squelette propre à chaque robot, des seuils d'usure fournis par le
 constructeur (à la place des seuils RULA), et si le robot fournit ses propres capteurs (angles
 moteurs, couples), la vidéo sert de contrôle plutôt que de source unique.
+
+## 3. Usure des robots par les données du robot lui-même
+
+Variante du §2 : au lieu de filmer le robot, un petit logiciel de collecte récupère ses mouvements
+et ses mesures (angles des articulations, vitesses, couples ou courants moteurs, températures,
+cycles) pour en déduire l'usure de chaque pièce. La vidéo du §2 reste possible comme autre source,
+par exemple pour un robot fermé ou pour contrôler les mesures.
+
+Apports par rapport à la vidéo : mesures directes et à haute fréquence, charge réelle sur chaque
+articulation (invisible à l'image), fonctionnement continu, aucune caméra à installer.
+
+Principe : **aucune marque visée au départ, le but est de s'adapter à un maximum de supports.** Le
+moteur de calcul ne connaît qu'un format commun, et chaque robot ou machine se branche par un petit
+adaptateur :
+
+1. **Format commun** : une série de mesures horodatées par articulation ou par axe (position, vitesse,
+   couple, température), avec un identifiant de robot et un modèle de robot décrivant ses
+   articulations. C'est le même rôle que le squelette pour le corps humain.
+2. **Adaptateurs interchangeables**, du plus universel au plus spécifique :
+   - fichier journal exporté par le robot (CSV, JSON), importé à la main ou déposé dans un dossier :
+     fonctionne avec presque tout, à faire en premier ;
+   - protocoles ouverts de l'industrie (OPC UA, MQTT, Modbus, ROS) ;
+   - interfaces propres à un constructeur, seulement à la demande d'un client ;
+   - vidéo (§2), qui produit le même format commun.
+3. **Description de chaque robot par un fichier** (articulations, limites, seuils d'usure du
+   constructeur ou de l'exploitant), sur le modèle du dossier `metiers/` : ajouter un robot ne demande
+   pas de programmer.
+4. **Calculs** : cumul par articulation (angle parcouru, inversions de sens, charge × durée), cycles,
+   passages près des limites, dérives dans le temps. Une évolution anormale signale une usure
+   avant la panne.
+
+Réutilisation du projet : cumuls par zone, cycles par minute, durées, bilans, tableaux de bord et
+historique ; seuils RULA remplacés par les seuils d'usure.
+
+Points d'attention : accès au contrôleur (souvent fermé ou sous garantie), sécurité (collecte en
+lecture seule, jamais de commande envoyée au robot), volume de données (agréger par minute ou par
+heure, garder le détail seulement autour des événements), calibration des seuils avec un
+exploitant réel avant de promettre une durée de vie.
+
+Première étape réaliste : l'import d'un fichier journal dans le format commun, un modèle de robot
+décrit par fichier, et le cumul d'usure par articulation sur un cas réel fourni par un client.
