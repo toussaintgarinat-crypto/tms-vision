@@ -10,6 +10,19 @@ une version précise.
 
 ## [Non publié]
 
+### Ajouts
+- **Exercices des fiches de Théo MARTIN, ostéopathe** : 173 exercices repris de ses fiches (mobilité de
+  13 zones, renforcement du cou aux chevilles, protocole d'épitrochléite) et de la « Liste des
+  exercices » (6 étirements). Chaque exercice porte le nom de sa fiche d'origine et un badge vert
+  « Fiche de Théo MARTIN, ostéopathe », pour ne pas le confondre avec les autres exercices, qui gardent
+  le badge « Brouillon » tant qu'un ostéopathe ne les a pas relus. Ils sont rangés dans chaque zone de
+  la bibliothèque, sous « Exercices des fiches de Théo MARTIN (ostéopathe) ».
+
+### À savoir
+- Le texte (consignes, dosage, précautions) suit les fiches. L'animation 3D, elle, n'a pas encore été
+  relue : quand le squelette ne sait pas montrer un geste (côté, ventre, pont, planche, mâchoire),
+  l'avatar montre le geste le plus proche, et les élastiques, haltères et ballons ne sont pas dessinés.
+
 ## [1.4.0] - 2026-10-30
 
 ### Mise à jour en un clic (application de bureau)
