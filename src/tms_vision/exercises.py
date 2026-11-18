@@ -49,7 +49,7 @@ REQUIRED_KEYS = (
     "id", "zone", "title", "description", "status", "source", "validated_by", "validated_on",
     "view", "target_segments", "poses", "keyframes", "instructions", "duration_seconds",
 )
-OPTIONAL_KEYS = ("position", "benefit")
+OPTIONAL_KEYS = ("position", "benefit", "fiche")
 _ID_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
@@ -162,6 +162,10 @@ def validate_exercise(
     _check_text(data, "description")
     if "benefit" in data:
         _check_text(data, "benefit")
+    if "fiche" in data:
+        _check_text(data, "fiche")
+        if data["source"] != "human":
+            _fail("fiche", "seul un exercice 'human' peut venir d'une fiche de l'ostéopathe.")
 
     if data["source"] == "ai" and not in_drafts:
         _fail("source", "un exercice 'ai' ne peut se trouver que dans exercises/drafts/.")

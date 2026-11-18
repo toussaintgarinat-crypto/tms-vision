@@ -400,3 +400,30 @@ def test_every_shipped_exercise_says_what_it_brings_and_a_blank_benefit_is_rejec
     assert catalog and all(exercise.get("benefit", "").strip() for exercise in catalog)
     with pytest.raises(ValueError, match="benefit"):
         validate_exercise({**_valid(), "benefit": "  "})
+
+
+# --- Exercices venant des fiches de l'ostéopathe --------------------------------------------
+
+
+def test_fiche_field_is_optional_and_must_be_text():
+    data = _valid()
+    validate_exercise(data)
+    data["fiche"] = "Fiche de Théo MARTIN, ostéopathe D.O. — Renfo bassin 1"
+    validate_exercise(data)
+    data["fiche"] = "  "
+    with pytest.raises(ValueError, match="fiche"):
+        validate_exercise(data)
+
+
+def test_fiche_exercises_are_named_fiche_and_do_not_leak_contact_details():
+    fiche_files = sorted(exercises.EXERCISES_DIR.glob("fiche-*.json"))
+    for path in fiche_files:
+        exercise = load_exercise(path)
+        assert exercise.get("fiche"), path.name
+        assert exercise["source"] == "human", path.name
+        text = path.read_text(encoding="utf-8")
+        assert "06 09" not in text and "Levant" not in text, path.name
+    # et inversement : un exercice qui n'est pas de fiche ne porte pas le champ
+    for path in exercises.EXERCISES_DIR.glob("*.json"):
+        if not path.name.startswith("fiche-"):
+            assert "fiche" not in load_exercise(path), path.name

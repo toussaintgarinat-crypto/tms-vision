@@ -6,6 +6,7 @@ import { flushSync } from "react-dom";
 import { ExerciseAvatar, ExerciseAvatarApi } from "../../ExerciseAvatar";
 import { Exercise, activeInstruction } from "../../exercisePose";
 import { MUSCLE_MODEL_CREDIT } from "../../muscleModel";
+import { FICHE_BADGE_TEXT } from "../../programFormat";
 
 // Page de rendu des vidéos d'exercice, pilotée par scripts/render-exercise.mjs :
 // elle n'est pas destinée à être ouverte par un utilisateur. Contrat :
@@ -109,7 +110,22 @@ export default function RenderPage() {
                 {formatRemaining(exercise.duration_seconds - time)}
               </div>
             </div>
-            {exercise.status === "draft" && (
+            {exercise.fiche && (
+              <div
+                style={{
+                  display: "inline-block",
+                  marginTop: 6,
+                  padding: "2px 10px",
+                  borderRadius: 4,
+                  background: "#A7F3D0",
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                {FICHE_BADGE_TEXT}
+              </div>
+            )}
+            {exercise.status === "draft" && !exercise.fiche && (
               <div
                 style={{
                   display: "inline-block",

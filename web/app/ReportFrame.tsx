@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 
 import { Exercise, POSITION_LABELS } from "./exercisePose";
 import { LiveExercise } from "./LiveExercise";
-import { DRAFT_BADGE_TEXT, capsuleVideoSrc } from "./programFormat";
+import { DRAFT_BADGE_TEXT, FICHE_BADGE_TEXT, capsuleVideoSrc } from "./programFormat";
 import { ProgramItem } from "./ProgramList";
 import { blobToDataUrl, buildStandaloneHtml, reportFileName } from "./reportExport";
 import { REPORT_CSS } from "./reportStyles";
@@ -95,7 +95,10 @@ function ExerciseBlock({
     <section className="ex">
       <h3>
         {item.rank}. {exercise.title}
-        {item.capsule.status === "draft" && <span className="badge">{DRAFT_BADGE_TEXT}</span>}
+        {exercise.fiche && <span className="badge fiche">{FICHE_BADGE_TEXT}</span>}
+        {item.capsule.status === "draft" && !exercise.fiche && (
+          <span className="badge">{DRAFT_BADGE_TEXT}</span>
+        )}
         {exercise.position && exercise.position !== "standing" && (
           <span className="badge pos">{POSITION_LABELS[exercise.position]}</span>
         )}

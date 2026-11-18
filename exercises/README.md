@@ -38,6 +38,12 @@ Les règles de validation sont dans `src/tms_vision/exercises.py` : un fichier i
   décompresse les cervicales... »). Affiché dans la bulle ⓘ du programme d'étirements. Reste
   prudent : mobilité, détente, circulation, jamais de promesse de guérison. À relire par l'ostéopathe
   comme le reste de l'exercice.
+- `fiche` (facultatif) : l'exercice vient d'une fiche rédigée par l'ostéopathe (ex. « Fiche de Théo
+  MARTIN, ostéopathe D.O. — Renfo bassin 1 : plancher pelvien (Renfo_bassin_1_plancher_pelvien),
+  niveau 1 »). L'application l'affiche avec un badge « Fiche de Théo MARTIN, ostéopathe » à la
+  place du badge « Brouillon », pour ne pas le mélanger avec les exercices pas encore relus. Les
+  fichiers concernés s'appellent `fiche-*.json`. Le texte (consignes, dosage, précautions) suit la
+  fiche ; l'animation 3D, elle, reste à relire (`status` reste `draft` jusqu'à cette relecture).
 - `position` (facultatif) : `standing` (debout, par défaut), `seated` (assis) ou `lying` (allongé sur
   le dos). Voir « Positions » plus bas.
 - `view` : `front`, `side` ou `three_quarter` (cadrage de la caméra). Le zoom est automatique : tête
@@ -140,6 +146,15 @@ sans expertise d'ostéopathe : ils ne doivent pas être présentés à un salari
 validés. Ceux ajoutés pour la bibliothèque du praticien (voir `library/body_map.json`) ne changent pas
 le programme d'étirements des salariés : l'exercice recommandé pour chaque zone mesurée est fixé par
 `PROGRAM_CAPSULE_BY_ZONE` dans `src/tms_vision/capsules.py`.
+
+## Exercices venant des fiches de l'ostéopathe
+
+Les exercices `fiche-*.json` reprennent les fiches PDF de Théo MARTIN (mobilité, renforcement,
+protocole) et la « Liste des exercices » : un fichier par niveau ou variante. Ils portent le champ
+`fiche`, qui nomme la fiche d'origine. Les autres exercices, rédigés sans expertise d'ostéopathe,
+n'ont pas ce champ et gardent le badge « Brouillon ». Quand un exercice de fiche ne peut pas être
+montré exactement par le squelette (côté, ventre, pont, mâchoire), l'animation montre le geste le
+plus proche ; le texte de la fiche, lui, n'est pas modifié.
 
 ## Générer les vidéos
 

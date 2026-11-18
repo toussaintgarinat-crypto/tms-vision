@@ -46,6 +46,8 @@ export const POSITION_LABELS: Record<Position, string> = {
 export type Exercise = {
   id: string;
   position?: Position;
+  // Fiche de l'ostéopathe d'où vient l'exercice (absent : exercice non relu, à valider).
+  fiche?: string | null;
   zone: Zone;
   title: string;
   description: string;

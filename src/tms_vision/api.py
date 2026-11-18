@@ -1160,6 +1160,7 @@ async def list_exercises() -> list[dict]:
         {
             **{key: exercise[key] for key in _EXERCISE_SUMMARY_KEYS},
             "position": exercise.get("position", exercises.DEFAULT_POSITION),
+            "fiche": exercise.get("fiche"),
         }
         for exercise in exercises.load_catalog()
     ]

@@ -15,6 +15,7 @@ export const REPORT_CSS = `
 .tms-report th,.tms-report td{text-align:left;padding:6px 8px;border-bottom:1px solid #e5e7eb}
 .tms-report .badge{display:inline-block;background:#fde68a;color:#78350f;font-size:12px;font-weight:600;border-radius:4px;padding:1px 8px;margin-left:6px}
 .tms-report .badge.pos{background:#e0f2fe;color:#0c4a6e}
+.tms-report .badge.fiche{background:#a7f3d0;color:#064e3b}
 .tms-report .ex{border:1px solid #d1d5db;border-radius:8px;padding:12px;margin:12px 0;break-inside:avoid-page}
 .tms-report .ex h3{margin-top:0}
 .tms-report .carousel .step{display:none}
