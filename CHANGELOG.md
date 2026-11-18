@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.5.0] - 2026-11-18
+
 ### Ajouts
 - **Exercices des fiches de Théo MARTIN, ostéopathe** : 173 exercices repris de ses fiches (mobilité de
   13 zones, renforcement du cou aux chevilles, protocole d'épitrochléite) et de la « Liste des
