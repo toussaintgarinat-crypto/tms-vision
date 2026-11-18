@@ -1,0 +1,87 @@
+{
+  "id": "fiche-mobilite-machoire-diduction-gauche",
+  "zone": "neck",
+  "title": "Mobilité de la mâchoire : diduction gauche, assis (approximation tête et cou)",
+  "description": "Assis face à un miroir, dents légèrement desserrées, la mâchoire du bas glisse vers la gauche. Le squelette n'a pas de mâchoire : l'avatar montre un léger mouvement de la tête à la place. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité de la mâchoire par des gestes lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité de la mâchoire (ATM) (Fiche_mobilite_machoire_ATM), diduction gauche",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "start": {},
+    "move": {
+      "head": {
+        "lateral": -8
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis face à un miroir, épaules relâchées, langue posée derrière les dents du haut, dents légèrement desserrées."
+    },
+    {
+      "t": 3,
+      "text": "Dents légèrement desserrées, faites glisser la mâchoire du bas vers la gauche."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : n'ouvrez pas jusqu'au claquement ou au blocage ; ne serrez pas les dents entre les mouvements. Arrêtez en cas de douleur vive, mâchoire qui se bloque, maux de tête ou d'oreille inhabituels."
+    }
+  ],
+  "duration_seconds": 28
+}

@@ -1,0 +1,105 @@
+{
+  "id": "fiche-mobilite-dorsale-rotation-droite",
+  "zone": "trunk",
+  "title": "Mobilité dorsale : rotation droite, debout",
+  "description": "Debout, bras croisés, les épaules et la tête tournent vers la droite, bassin et genoux face à l'avant. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité du haut du dos par des gestes lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité dorsale (Fiche_mobilite_dorsale), rotation droite",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "start": {
+      "R_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "L_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "L_upper_arm": {
+        "flexion": 82,
+        "lateral": -55
+      },
+      "spine": {
+        "twist": 40
+      },
+      "head": {
+        "twist": 10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, pieds écartés de la largeur du bassin, genoux souples, bras croisés sur la poitrine (mains sur les épaules opposées). Le bassin reste immobile."
+    },
+    {
+      "t": 3,
+      "text": "Tournez les épaules et la tête vers la droite. Le bassin et les genoux restent face à l'avant."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : pas d'à-coups ni d'élan ; ne creusez pas le bas du dos. Arrêtez en cas de douleur vive, douleur dans la poitrine ou les côtes, gêne pour respirer ou vertiges."
+    }
+  ],
+  "duration_seconds": 28
+}

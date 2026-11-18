@@ -1,0 +1,93 @@
+{
+  "id": "fiche-mobilite-epaule-rotation-externe",
+  "zone": "shoulder",
+  "title": "Mobilité de l'épaule : rotation externe, debout",
+  "description": "Debout, coude collé au corps et plié à 90°, l'avant-bras s'ouvre vers l'extérieur, comme une porte. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité de l'épaule par des gestes lents, sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité de l'épaule (Fiche_mobilite_epaule), rotation externe",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_forearm": {
+        "flexion": 90
+      }
+    },
+    "move": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "twist": 45
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, bras le long du corps, épaules relâchées. Un bras puis l'autre (animé : bras droit)."
+    },
+    {
+      "t": 3,
+      "text": "Coude collé au corps et plié à 90°, ouvrez l'avant-bras vers l'extérieur, comme une porte. Puis l'autre bras."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne haussez pas l'épaule pour gagner de l'amplitude ; pas d'élan ni de poids dans la main. Arrêtez en cas de douleur vive, épaule qui se bloque ou fourmillements dans le bras."
+    }
+  ],
+  "duration_seconds": 28
+}

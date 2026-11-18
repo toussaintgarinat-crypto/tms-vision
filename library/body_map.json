@@ -89,7 +89,18 @@
             "fiche-renfo-cervical-elevateur-scapula-n3",
             "fiche-renfo-cervical-extenseurs-n1",
             "fiche-renfo-cervical-extenseurs-n2",
-            "fiche-renfo-cervical-extenseurs-n3"
+            "fiche-renfo-cervical-extenseurs-n3",
+            "fiche-mobilite-cervicale-flexion",
+            "fiche-mobilite-cervicale-extension",
+            "fiche-mobilite-cervicale-inclinaison-droite",
+            "fiche-mobilite-cervicale-inclinaison-gauche",
+            "fiche-mobilite-cervicale-rotation-droite",
+            "fiche-mobilite-cervicale-rotation-gauche",
+            "fiche-mobilite-machoire-ouverture",
+            "fiche-mobilite-machoire-diduction-droite",
+            "fiche-mobilite-machoire-diduction-gauche",
+            "fiche-mobilite-machoire-propulsion",
+            "fiche-mobilite-machoire-retropulsion"
           ]
         }
       ]
@@ -188,7 +199,13 @@
             "fiche-renfo-epaule-deltoide-n3",
             "fiche-renfo-epaule-dentele-anterieur-n1",
             "fiche-renfo-epaule-dentele-anterieur-n2",
-            "fiche-renfo-epaule-dentele-anterieur-n3"
+            "fiche-renfo-epaule-dentele-anterieur-n3",
+            "fiche-mobilite-epaule-flexion",
+            "fiche-mobilite-epaule-extension",
+            "fiche-mobilite-epaule-abduction",
+            "fiche-mobilite-epaule-adduction",
+            "fiche-mobilite-epaule-rotation-externe",
+            "fiche-mobilite-epaule-rotation-interne"
           ]
         }
       ]
@@ -248,6 +265,16 @@
             "biceps-stretch-arm-back",
             "triceps-overhead-stretch",
             "seated-triceps-overhead-stretch"
+          ]
+        },
+        {
+          "id": "fiches-theo-martin-elbow",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-mobilite-coude-flexion",
+            "fiche-mobilite-coude-extension",
+            "fiche-mobilite-coude-pronation",
+            "fiche-mobilite-coude-supination"
           ]
         }
       ]
@@ -320,7 +347,17 @@
           "id": "fiches-theo-martin-wrist-hand",
           "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
           "exercises": [
-            "fiche-liste-flechisseurs-avant-bras"
+            "fiche-liste-flechisseurs-avant-bras",
+            "fiche-mobilite-poignet-flexion",
+            "fiche-mobilite-poignet-extension",
+            "fiche-mobilite-poignet-inclinaison-radiale",
+            "fiche-mobilite-poignet-inclinaison-ulnaire",
+            "fiche-mobilite-main-doigts-fermer-poing",
+            "fiche-mobilite-main-doigts-ouvrir-main",
+            "fiche-mobilite-main-doigts-ecarter-doigts",
+            "fiche-mobilite-main-doigts-serrer-doigts",
+            "fiche-mobilite-main-doigts-opposition-pouce",
+            "fiche-mobilite-main-doigts-ecarter-pouce"
           ]
         }
       ]
@@ -366,7 +403,13 @@
           "exercises": [
             "fiche-renfo-epaule-trapezes-rhomboides-n1",
             "fiche-renfo-epaule-trapezes-rhomboides-n2",
-            "fiche-renfo-epaule-trapezes-rhomboides-n3"
+            "fiche-renfo-epaule-trapezes-rhomboides-n3",
+            "fiche-mobilite-dorsale-flexion",
+            "fiche-mobilite-dorsale-extension",
+            "fiche-mobilite-dorsale-inclinaison-droite",
+            "fiche-mobilite-dorsale-inclinaison-gauche",
+            "fiche-mobilite-dorsale-rotation-droite",
+            "fiche-mobilite-dorsale-rotation-gauche"
           ]
         }
       ]
@@ -422,6 +465,18 @@
             "lying-knee-to-chest",
             "seated-forward-fold"
           ]
+        },
+        {
+          "id": "fiches-theo-martin-lower-back",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-mobilite-lombaire-flexion",
+            "fiche-mobilite-lombaire-extension",
+            "fiche-mobilite-lombaire-inclinaison-droite",
+            "fiche-mobilite-lombaire-inclinaison-gauche",
+            "fiche-mobilite-lombaire-rotation-droite",
+            "fiche-mobilite-lombaire-rotation-gauche"
+          ]
         }
       ]
     },
@@ -469,6 +524,18 @@
             "adductor-wide-stance",
             "hip-abduction-standing",
             "lying-butterfly-stretch"
+          ]
+        },
+        {
+          "id": "fiches-theo-martin-hip",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-mobilite-hanche-flexion",
+            "fiche-mobilite-hanche-extension",
+            "fiche-mobilite-hanche-abduction",
+            "fiche-mobilite-hanche-adduction",
+            "fiche-mobilite-hanche-rotation-externe",
+            "fiche-mobilite-hanche-rotation-interne"
           ]
         }
       ]
@@ -535,6 +602,16 @@
             "lying-heel-slide",
             "lying-straight-leg-raise"
           ]
+        },
+        {
+          "id": "fiches-theo-martin-knee",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-mobilite-genou-flexion",
+            "fiche-mobilite-genou-extension",
+            "fiche-mobilite-genou-rotation-interne",
+            "fiche-mobilite-genou-rotation-externe"
+          ]
         }
       ]
     },
@@ -585,6 +662,16 @@
             "ankle-mobility",
             "lying-ankle-pumps",
             "seated-plantar-fascia-stretch"
+          ]
+        },
+        {
+          "id": "fiches-theo-martin-ankle-foot",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-mobilite-cheville-flexion-dorsale",
+            "fiche-mobilite-cheville-flexion-plantaire",
+            "fiche-mobilite-cheville-inversion",
+            "fiche-mobilite-cheville-eversion"
           ]
         }
       ]

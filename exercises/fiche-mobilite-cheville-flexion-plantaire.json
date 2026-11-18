@@ -1,0 +1,93 @@
+{
+  "id": "fiche-mobilite-cheville-flexion-plantaire",
+  "zone": "foot",
+  "title": "Mobilité de la cheville : flexion plantaire, assis",
+  "description": "Assis, pied décollé du sol, la pointe du pied descend vers le sol, comme pour appuyer sur une pédale. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité de la cheville par des gestes lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité de la cheville (Fiche_mobilite_cheville), flexion plantaire",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "start": {
+      "R_shin": {
+        "flexion": 55
+      }
+    },
+    "move": {
+      "R_shin": {
+        "flexion": 55
+      },
+      "R_foot": {
+        "flexion": -40
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise, pied décollé du sol (ou jambe croisée sur l'autre genou) pour que la cheville bouge librement. Un pied puis l'autre (animé : pied droit)."
+    },
+    {
+      "t": 3,
+      "text": "Poussez la pointe du pied vers le bas, comme pour appuyer sur une pédale. Puis l'autre pied."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : pas de grands cercles rapides avec le pied ; ne forcez pas en fin de mouvement, surtout après une entorse. Arrêtez en cas de douleur vive, gonflement, sensation d'instabilité ou fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 28
+}

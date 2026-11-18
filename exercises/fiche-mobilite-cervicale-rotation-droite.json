@@ -1,0 +1,90 @@
+{
+  "id": "fiche-mobilite-cervicale-rotation-droite",
+  "zone": "neck",
+  "title": "Mobilité cervicale : rotation droite, assis",
+  "description": "Assis, la tête tourne vers la droite, comme pour regarder par-dessus l'épaule, menton à l'horizontale. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité du cou grâce à des mouvements lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité cervicale (Fiche_mobilite_cervicale), rotation droite",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "start": {},
+    "move": {
+      "neck": {
+        "twist": 25
+      },
+      "head": {
+        "twist": 40
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis au fond d'une chaise, pieds à plat, épaules relâchées, regard à l'horizon."
+    },
+    {
+      "t": 3,
+      "text": "Tournez la tête à droite, comme pour regarder par-dessus l'épaule. Menton à l'horizontale."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : pas d'à-coups, pas de grands cercles avec la tête, ne tirez pas sur la tête avec les mains, ne haussez pas les épaules. Arrêtez en cas de douleur, vertiges, trouble de la vue, fourmillements dans les bras ou maux de tête inhabituels."
+    }
+  ],
+  "duration_seconds": 28
+}

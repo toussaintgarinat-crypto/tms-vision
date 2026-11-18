@@ -1,0 +1,87 @@
+{
+  "id": "fiche-mobilite-genou-extension",
+  "zone": "lower_leg",
+  "title": "Mobilité du genou : extension, assis",
+  "description": "Assis, la jambe se tend devant soi jusqu'à l'horizontale, tenue 2 secondes, puis le pied est reposé. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité du genou par des gestes lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité du genou (Fiche_mobilite_genou), extension",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "lower_leg",
+    "thigh"
+  ],
+  "poses": {
+    "start": {},
+    "move": {
+      "R_shin": {
+        "flexion": 85
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis au bord d'une chaise, pieds à plat, mains posées sur les cuisses. Une jambe puis l'autre (animé : jambe droite)."
+    },
+    {
+      "t": 3,
+      "text": "Tendez la jambe devant vous jusqu'à l'horizontale, tenez 2 secondes, puis reposez. Puis l'autre jambe."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne verrouillez pas le genou en fin d'extension ; en rotation, le genou ne bouge pas, seul le pied tourne. Arrêtez en cas de douleur vive, genou qui se bloque ou se dérobe, gonflement."
+    }
+  ],
+  "duration_seconds": 28
+}

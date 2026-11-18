@@ -1,0 +1,99 @@
+{
+  "id": "fiche-mobilite-main-doigts-serrer-doigts",
+  "zone": "hand",
+  "title": "Mobilité de la main : serrer les doigts, assis",
+  "description": "Assis, les doigts tendus se ramènent les uns contre les autres. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité des doigts et du pouce par des gestes lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité de la main et des doigts (Fiche_mobilite_main_doigts), serrer les doigts",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "hand"
+  ],
+  "poses": {
+    "start": {
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "R_forearm": {
+        "flexion": 60
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 40
+      },
+      "R_forearm": {
+        "flexion": 60
+      },
+      "R_fingers": {
+        "flexion": -10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, coude posé sur la table, main à hauteur des yeux, paume face à vous. Une main puis l'autre (animé : main droite)."
+    },
+    {
+      "t": 3,
+      "text": "Ramenez les doigts tendus les uns contre les autres. Puis l'autre main."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne serrez pas le poing de toutes vos forces ; ne tirez pas sur les doigts avec l'autre main. Arrêtez en cas de douleur vive, doigt qui se bloque ou ressaute, gonflement, fourmillements."
+    }
+  ],
+  "duration_seconds": 28
+}

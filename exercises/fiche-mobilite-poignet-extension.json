@@ -1,0 +1,93 @@
+{
+  "id": "fiche-mobilite-poignet-extension",
+  "zone": "hand",
+  "title": "Mobilité du poignet : extension, assis",
+  "description": "Assis, l'avant-bras reste à plat sur la table et la main se relève vers le plafond, doigts relâchés. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité du poignet par des gestes lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité du poignet (Fiche_mobilite_poignet), extension",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "hand"
+  ],
+  "poses": {
+    "start": {
+      "R_upper_arm": {
+        "flexion": 90
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "R_hand": {
+        "flexion": 60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur une table, paume vers le bas (pour la flexion et l'extension, la main dépasse du bord). Une main puis l'autre (animé : main droite)."
+    },
+    {
+      "t": 3,
+      "text": "L'avant-bras reste à plat. Relevez la main vers le plafond, doigts relâchés. Puis l'autre main."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne forcez pas avec l'autre main ; pas de mouvements rapides ni de cercles. Arrêtez en cas de douleur vive, fourmillements ou engourdissement des doigts, gonflement du poignet."
+    }
+  ],
+  "duration_seconds": 28
+}

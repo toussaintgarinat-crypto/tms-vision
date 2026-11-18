@@ -1,0 +1,86 @@
+{
+  "id": "fiche-mobilite-hanche-rotation-externe",
+  "zone": "hip",
+  "title": "Mobilité de la hanche : rotation externe, debout",
+  "description": "Debout, talon au sol, la pointe du pied et le genou tournent vers l'extérieur. Dosage de la fiche : 10 fois chacun, gestes lents en soufflant, en tenant 2 à 3 secondes ; une légère tension, jamais de douleur.",
+  "benefit": "Entretient la mobilité de la hanche par des gestes lents et sans douleur.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Mobilité de la hanche (Fiche_mobilite_hanche), rotation externe",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "start": {},
+    "move": {
+      "R_thigh": {
+        "twist": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "move"
+    },
+    {
+      "t": 5,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, mains sur les hanches ou une main sur une chaise pour l'équilibre. Une jambe puis l'autre (animé : jambe droite)."
+    },
+    {
+      "t": 3,
+      "text": "Talon au sol, tournez la pointe du pied et le genou vers l'extérieur. Puis l'autre jambe."
+    },
+    {
+      "t": 11,
+      "text": "Gestes lents, en soufflant pendant le mouvement ; tenez 2 à 3 secondes, puis revenez au départ."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne penchez pas et ne tournez pas le buste ; pas de balancier ni d'élan avec la jambe. Arrêtez en cas de douleur vive dans l'aine, douleur qui descend dans la jambe, fourmillements ou perte d'équilibre."
+    }
+  ],
+  "duration_seconds": 28
+}
