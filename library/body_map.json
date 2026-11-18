@@ -274,7 +274,18 @@
             "fiche-mobilite-coude-flexion",
             "fiche-mobilite-coude-extension",
             "fiche-mobilite-coude-pronation",
-            "fiche-mobilite-coude-supination"
+            "fiche-mobilite-coude-supination",
+            "fiche-protocole-epitrochleite-etape1",
+            "fiche-protocole-epitrochleite-etape2",
+            "fiche-renfo-coude-biceps-n1",
+            "fiche-renfo-coude-biceps-n2",
+            "fiche-renfo-coude-biceps-n3",
+            "fiche-renfo-coude-pronosupination-n1",
+            "fiche-renfo-coude-pronosupination-n2",
+            "fiche-renfo-coude-pronosupination-n3",
+            "fiche-renfo-coude-triceps-n1",
+            "fiche-renfo-coude-triceps-n2",
+            "fiche-renfo-coude-triceps-n3"
           ]
         }
       ]
@@ -357,7 +368,16 @@
             "fiche-mobilite-main-doigts-ecarter-doigts",
             "fiche-mobilite-main-doigts-serrer-doigts",
             "fiche-mobilite-main-doigts-opposition-pouce",
-            "fiche-mobilite-main-doigts-ecarter-pouce"
+            "fiche-mobilite-main-doigts-ecarter-pouce",
+            "fiche-renfo-main-prehension-n1",
+            "fiche-renfo-main-prehension-n2",
+            "fiche-renfo-main-prehension-n3",
+            "fiche-renfo-poignet-extenseurs-n1",
+            "fiche-renfo-poignet-extenseurs-n2",
+            "fiche-renfo-poignet-extenseurs-n3",
+            "fiche-renfo-poignet-flechisseurs-n1",
+            "fiche-renfo-poignet-flechisseurs-n2",
+            "fiche-renfo-poignet-flechisseurs-n3"
           ]
         }
       ]
@@ -409,7 +429,16 @@
             "fiche-mobilite-dorsale-inclinaison-droite",
             "fiche-mobilite-dorsale-inclinaison-gauche",
             "fiche-mobilite-dorsale-rotation-droite",
-            "fiche-mobilite-dorsale-rotation-gauche"
+            "fiche-mobilite-dorsale-rotation-gauche",
+            "fiche-renfo-dos-erecteurs-n1",
+            "fiche-renfo-dos-erecteurs-n2",
+            "fiche-renfo-dos-erecteurs-n3",
+            "fiche-renfo-dos-grand-dorsal-n1",
+            "fiche-renfo-dos-grand-dorsal-n2",
+            "fiche-renfo-dos-grand-dorsal-n3",
+            "fiche-renfo-dos-rotateurs-n1",
+            "fiche-renfo-dos-rotateurs-n2",
+            "fiche-renfo-dos-rotateurs-n3"
           ]
         }
       ]
@@ -475,7 +504,19 @@
             "fiche-mobilite-lombaire-inclinaison-droite",
             "fiche-mobilite-lombaire-inclinaison-gauche",
             "fiche-mobilite-lombaire-rotation-droite",
-            "fiche-mobilite-lombaire-rotation-gauche"
+            "fiche-mobilite-lombaire-rotation-gauche",
+            "fiche-renfo-lombaire-carre-lombes-n1",
+            "fiche-renfo-lombaire-carre-lombes-n2",
+            "fiche-renfo-lombaire-carre-lombes-n3",
+            "fiche-renfo-lombaire-grand-droit-n1",
+            "fiche-renfo-lombaire-grand-droit-n2",
+            "fiche-renfo-lombaire-grand-droit-n3",
+            "fiche-renfo-lombaire-multifides-n1",
+            "fiche-renfo-lombaire-multifides-n2",
+            "fiche-renfo-lombaire-multifides-n3",
+            "fiche-renfo-lombaire-transverse-n1",
+            "fiche-renfo-lombaire-transverse-n2",
+            "fiche-renfo-lombaire-transverse-n3"
           ]
         }
       ]

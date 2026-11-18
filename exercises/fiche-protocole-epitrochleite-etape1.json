@@ -1,0 +1,88 @@
+{
+  "id": "fiche-protocole-epitrochleite-etape1",
+  "zone": "lower_arm",
+  "title": "Épitrochléite, étape 1 : tenue de l'haltère (échauffement)",
+  "description": "Protocole de remise en charge de l'épitrochlée (environ 12 semaines, 35 séances, 7 paliers). Assis, avant-bras posé sur la table, paume vers le haut, on tient l'haltère sans bouger, avec la charge du jour : 2 × 30 s, 1 min de repos. Un jour de repos entre deux séances.",
+  "benefit": "Prépare en douceur le tendon des fléchisseurs du poignet avant le renforcement ; un tendon douloureux se renforce avec une charge lente, régulière et progressive.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Protocole de remise en charge, tendinopathie des épitrochléens (Protocole_tendinopathie_epitrochleens), étape 1, échauffement",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "lower_arm",
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": 0
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": 0
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 7,
+      "pose": "move"
+    },
+    {
+      "t": 29,
+      "pose": "move"
+    },
+    {
+      "t": 31,
+      "pose": "start"
+    },
+    {
+      "t": 34,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur la table, paume vers le haut, main dans le vide, poignet dans l'axe."
+    },
+    {
+      "t": 4,
+      "text": "Tenez l'haltère sans bouger, 30 s, avec la charge du jour."
+    },
+    {
+      "t": 31,
+      "text": "Faites 2 × 30 s, avec 1 min de repos entre les deux (l'animation montre la tenue en abrégé)."
+    },
+    {
+      "t": 32,
+      "text": "À éviter : ne décollez pas l'avant-bras ni le coude de la table, ne serrez pas l'haltère plus que nécessaire, pas d'à-coup. Arrêtez et contactez l'ostéopathe en cas de douleur vive, gonflement ou fourmillements dans l'annulaire et l'auriculaire."
+    }
+  ],
+  "duration_seconds": 36
+}

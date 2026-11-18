@@ -1,0 +1,108 @@
+{
+  "id": "fiche-protocole-epitrochleite-etape2",
+  "zone": "lower_arm",
+  "title": "Épitrochléite, étape 2 : flexion lente du poignet à l'haltère",
+  "description": "Protocole de remise en charge, assis, avant-bras posé sur la table, paume vers le haut, haltère en main : seul le poignet bouge, le coude reste posé. 3 s pour monter, 3 s pour descendre. 4 × 10, 2 min de repos entre les séries, 3 fois par semaine, + 1 kg toutes les 5 séances.",
+  "benefit": "Recharge progressivement le tendon des fléchisseurs du poignet par une charge lente et régulière.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Protocole de remise en charge, tendinopathie des épitrochléens (Protocole_tendinopathie_epitrochleens), étape 2, flexion lente du poignet",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "lower_arm",
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": -30
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": 50
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 7,
+      "pose": "move"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "start"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur la table, paume vers le haut, main dans le vide, haltère en main."
+    },
+    {
+      "t": 4,
+      "text": "Laissez descendre la main, puis pliez le poignet pour la remonter : 3 s pour monter, 3 s pour descendre."
+    },
+    {
+      "t": 10,
+      "text": "Seul le poignet bouge. Départ : la charge qui permet 4 × 10 avec un effort modéré et une douleur de 3/10 au plus ; + 1 kg toutes les 5 séances si la 5e est réussie."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne décollez pas l'avant-bras ni le coude de la table, pas d'à-coup, ne sautez pas de palier. Douleur 0 à 3 sur 10 acceptable ; 6 ou plus, ou plus forte le lendemain matin : revenez au palier précédent. Arrêtez en cas de douleur vive, gonflement ou fourmillements dans l'annulaire et l'auriculaire."
+    }
+  ],
+  "duration_seconds": 33
+}
