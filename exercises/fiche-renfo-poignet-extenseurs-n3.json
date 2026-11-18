@@ -1,0 +1,100 @@
+{
+  "id": "fiche-renfo-poignet-extenseurs-n3",
+  "zone": "lower_arm",
+  "title": "Extenseurs du poignet, niveau 3 : descente lente",
+  "description": "Avec un haltère, relevez la main avec l'aide de l'autre main, puis laissez-la descendre seule en 5 s. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les extenseurs du poignet par une descente lente et contrôlée.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du poignet, extenseurs du poignet (muscles épicondyliens) (Renfo_poignet_5_extenseurs), niveau 3, descente lente",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "lower_arm",
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": -25
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": 45
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur la table ou la cuisse, paume vers le bas, haltère en main."
+    },
+    {
+      "t": 4,
+      "text": "Relevez la main avec l'aide de l'autre main (non représentée), puis laissez-la descendre seule en 5 s."
+    },
+    {
+      "t": 11,
+      "text": "La descente lente de 5 s est le temps fort de l'exercice. Soufflez pendant l'effort."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne soulevez pas l'avant-bras de la table. En cas de douleur au coude, privilégiez le niveau 3 (descente lente). Arrêtez et contactez l'ostéopathe en cas de douleur vive au poignet ou au coude, fourmillements ou engourdissement des doigts, gonflement."
+    }
+  ],
+  "duration_seconds": 30
+}

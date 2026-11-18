@@ -1,0 +1,120 @@
+{
+  "id": "fiche-renfo-bassin-plancher-pelvien-n1",
+  "zone": "hip",
+  "title": "Plancher pelvien, niveau 1 : contraction allongé",
+  "description": "Les muscles du plancher pelvien soutiennent les organes du bassin et participent à la continence ; aucun matériel. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles du périnée, qui aident à stabiliser le bas du dos avec le transverse.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Plancher pelvien (Renfo_bassin_1_plancher_pelvien), niveau 1 : contraction, allongé",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "bent": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "squeeze": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "spine": {
+        "flexion": 2
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "bent"
+    },
+    {
+      "t": 3,
+      "pose": "bent"
+    },
+    {
+      "t": 5,
+      "pose": "squeeze"
+    },
+    {
+      "t": 10,
+      "pose": "squeeze"
+    },
+    {
+      "t": 13,
+      "pose": "bent"
+    },
+    {
+      "t": 15,
+      "pose": "squeeze"
+    },
+    {
+      "t": 20,
+      "pose": "squeeze"
+    },
+    {
+      "t": 23,
+      "pose": "bent"
+    },
+    {
+      "t": 25,
+      "pose": "squeeze"
+    },
+    {
+      "t": 30,
+      "pose": "squeeze"
+    },
+    {
+      "t": 33,
+      "pose": "bent"
+    },
+    {
+      "t": 35,
+      "pose": "bent"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos sur un tapis, genoux pliés."
+    },
+    {
+      "t": 10,
+      "text": "Contractez comme pour retenir une envie d'uriner et un gaz, puis remontez vers l'intérieur, doucement, en soufflant. Tenez 5 secondes."
+    },
+    {
+      "t": 21,
+      "text": "Relâchez complètement 5 secondes entre chaque contraction."
+    },
+    {
+      "t": 31,
+      "text": "À éviter : ne serrez pas les fesses ni les cuisses, ne bloquez pas la respiration, ne poussez jamais vers le bas. Arrêtez en cas de douleur pelvienne, de fuites qui augmentent ou de pesanteur."
+    }
+  ],
+  "duration_seconds": 35
+}

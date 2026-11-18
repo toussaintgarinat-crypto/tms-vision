@@ -1,0 +1,94 @@
+{
+  "id": "fiche-renfo-bassin-plancher-pelvien-n2",
+  "zone": "hip",
+  "title": "Plancher pelvien, niveau 2 : contraction assis",
+  "description": "Les muscles du plancher pelvien soutiennent les organes du bassin et participent à la continence ; aucun matériel. Matériel : une chaise. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles du périnée, qui aident à stabiliser le bas du dos avec le transverse.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Plancher pelvien (Renfo_bassin_1_plancher_pelvien), niveau 2 : contraction, assis",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "squeeze": {
+      "spine": {
+        "flexion": -2
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "squeeze"
+    },
+    {
+      "t": 10,
+      "pose": "squeeze"
+    },
+    {
+      "t": 13,
+      "pose": "neutral"
+    },
+    {
+      "t": 15,
+      "pose": "squeeze"
+    },
+    {
+      "t": 20,
+      "pose": "squeeze"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "squeeze"
+    },
+    {
+      "t": 30,
+      "pose": "squeeze"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis bien droit sur une chaise."
+    },
+    {
+      "t": 10,
+      "text": "Même contraction : remontez le périnée en soufflant et tenez 5 secondes."
+    },
+    {
+      "t": 21,
+      "text": "Relâchez complètement avant la contraction suivante."
+    },
+    {
+      "t": 31,
+      "text": "À éviter : ne serrez pas les fesses ni les cuisses, ne bloquez pas la respiration, ne poussez jamais vers le bas. Arrêtez en cas de douleur pelvienne, de fuites qui augmentent ou de pesanteur."
+    }
+  ],
+  "duration_seconds": 35
+}

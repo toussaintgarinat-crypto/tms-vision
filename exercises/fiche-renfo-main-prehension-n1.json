@@ -1,0 +1,114 @@
+{
+  "id": "fiche-renfo-main-prehension-n1",
+  "zone": "hand",
+  "title": "Préhension, niveau 1 : serrer une balle",
+  "description": "Les muscles de la préhension ferment et ouvrent la main : serrer, pincer, rouvrir les doigts. Avec une balle souple, serrez à pleine main, tenez 3 s, relâchez complètement. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Redonne de la force pour porter, ouvrir un bocal ou écrire.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Muscles de la préhension, muscles des doigts et du pouce (Renfo_main_6_prehension), niveau 1, serrer une balle",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_fingers": {
+        "flexion": -10
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_fingers": {
+        "flexion": 85
+      },
+      "R_thumb": {
+        "flexion": 40
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "move"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "move"
+    },
+    {
+      "t": 17,
+      "pose": "move"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, coude posé sur la table, une balle souple dans la main."
+    },
+    {
+      "t": 4,
+      "text": "Serrez progressivement la balle à pleine main, tenez 3 s."
+    },
+    {
+      "t": 12,
+      "text": "Relâchez complètement entre chaque répétition. Soufflez pendant l'effort."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne serrez pas jusqu'à la crampe, ne bloquez pas la respiration en serrant. Arrêtez et contactez l'ostéopathe en cas de douleur vive, doigt qui se bloque ou ressaute, fourmillements, gonflement."
+    }
+  ],
+  "duration_seconds": 33
+}

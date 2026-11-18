@@ -1,0 +1,103 @@
+{
+  "id": "fiche-renfo-cheville-fibulaires-n3",
+  "zone": "foot",
+  "title": "Fibulaires, niveau 3 : équilibre sur un pied",
+  "description": "Les fibulaires (péroniers) tournent la plante du pied vers l'extérieur et verrouillent la cheville. Matériel : un coussin d'équilibre (facultatif). Dosage : 4 séries de 10 répétitions, 3 fois par semaine (tenue de 30 secondes), charge progressive.",
+  "benefit": "Entraîne les stabilisateurs externes de la cheville, essentiels après une entorse externe.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Fibulaires (Renfo_cheville_3_fibulaires), niveau 3 : sur un pied",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "stand": {
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_thigh": {
+        "flexion": 8
+      },
+      "R_shin": {
+        "flexion": -8
+      }
+    },
+    "wob_a": {
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_thigh": {
+        "flexion": 8
+      },
+      "R_shin": {
+        "flexion": -8
+      },
+      "R_foot": {
+        "lateral": 5
+      }
+    },
+    "wob_b": {
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_thigh": {
+        "flexion": 8
+      },
+      "R_shin": {
+        "flexion": -8
+      },
+      "R_foot": {
+        "lateral": -5
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "stand"
+    },
+    {
+      "t": 17,
+      "pose": "stand"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout sur un pied, genou légèrement fléchi, à côté d'un appui."
+    },
+    {
+      "t": 6,
+      "text": "Tenez 30 secondes, puis les yeux fermés ou sur un coussin (l'avatar ne montre que la tenue, sans les yeux fermés ni le coussin)."
+    },
+    {
+      "t": 13,
+      "text": "Posez le pied, puis changez de jambe."
+    },
+    {
+      "t": 19,
+      "text": "À éviter : ne tournez pas la jambe ou le genou à la place du pied, restez à côté d'un appui pour l'équilibre. Arrêtez en cas de douleur vive, de gonflement, d'instabilité de la cheville ou de fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 23
+}

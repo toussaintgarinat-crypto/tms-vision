@@ -1,0 +1,102 @@
+{
+  "id": "fiche-renfo-cheville-tibial-posterieur-n2",
+  "zone": "foot",
+  "title": "Tibial postérieur, niveau 2 : plante vers l'intérieur contre élastique",
+  "description": "Le tibial postérieur tourne la plante du pied vers l'intérieur et soutient l'arche du pied. Matériel : un élastique. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le muscle qui soutient la voûte plantaire.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Tibial postérieur (Renfo_cheville_4_tibial_posterieur), niveau 2 : contre élastique",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "lift": {
+      "R_shin": {
+        "flexion": 45
+      }
+    },
+    "in": {
+      "R_shin": {
+        "flexion": 45
+      },
+      "R_foot": {
+        "lateral": 15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "lift"
+    },
+    {
+      "t": 3,
+      "pose": "lift"
+    },
+    {
+      "t": 5,
+      "pose": "in"
+    },
+    {
+      "t": 7,
+      "pose": "in"
+    },
+    {
+      "t": 10,
+      "pose": "lift"
+    },
+    {
+      "t": 12,
+      "pose": "in"
+    },
+    {
+      "t": 14,
+      "pose": "in"
+    },
+    {
+      "t": 17,
+      "pose": "lift"
+    },
+    {
+      "t": 19,
+      "pose": "in"
+    },
+    {
+      "t": 21,
+      "pose": "in"
+    },
+    {
+      "t": 24,
+      "pose": "lift"
+    },
+    {
+      "t": 26,
+      "pose": "lift"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, élastique autour de l'avant du pied, fixé du côté extérieur. Le genou reste face à l'avant."
+    },
+    {
+      "t": 7,
+      "text": "Tournez la plante vers l'intérieur contre la résistance, tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Revenez en 3 secondes."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne tournez pas la jambe à la place du pied, pas de mouvement brusque. Arrêtez en cas de douleur vive, de gonflement, d'instabilité de la cheville ou de fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 26
+}

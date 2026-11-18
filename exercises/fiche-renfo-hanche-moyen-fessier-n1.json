@@ -1,0 +1,95 @@
+{
+  "id": "fiche-renfo-hanche-moyen-fessier-n1",
+  "zone": "hip",
+  "title": "Moyen fessier, niveau 1 : lever la jambe sur le côté",
+  "description": "Le moyen fessier écarte la cuisse et tient le bassin horizontal à chaque pas. Matériel : un tapis. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le stabilisateur latéral du bassin, utile pour soulager le genou et le dos.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Moyen fessier (Renfo_hanche_2_moyen_fessier), niveau 1 : lever la jambe, sur le côté",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_thigh": {
+        "lateral": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 7,
+      "pose": "up"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "up"
+    },
+    {
+      "t": 14,
+      "pose": "up"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "up"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Corps aligné, pointe du pied vers l'avant (la fiche le prévoit allongé sur le côté ; ici, démonstration sur le dos)."
+    },
+    {
+      "t": 7,
+      "text": "Levez la jambe du dessus tendue de 30°, sans rouler le bassin. Tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Redescendez en 3 secondes, puis changez de côté."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne tournez pas la pointe du pied vers le plafond, ne montez pas trop haut (30 à 40° suffisent). Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 26
+}

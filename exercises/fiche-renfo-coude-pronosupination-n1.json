@@ -1,0 +1,118 @@
+{
+  "id": "fiche-renfo-coude-pronosupination-n1",
+  "zone": "lower_arm",
+  "title": "Pronateurs et supinateurs, niveau 1 : rotation sans charge",
+  "description": "Les pronateurs et supinateurs tournent la paume vers le sol (pronation) ou vers le plafond (supination). Coude à 90°, tournez la paume vers le sol puis vers le plafond, 2 s de tenue de chaque côté. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui tournent l'avant-bras, utiles pour visser, ouvrir une porte ou tourner une clé.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du coude et de l'avant-bras, pronateurs et supinateurs (Renfo_coude_3_pronateurs_supinateurs), niveau 1, rotation sans charge",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_forearm": {
+        "flexion": 90
+      }
+    },
+    "move": {
+      "R_forearm": {
+        "flexion": 90,
+        "twist": 60
+      }
+    },
+    "move2": {
+      "R_forearm": {
+        "flexion": 90,
+        "twist": -60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 12,
+      "pose": "move2"
+    },
+    {
+      "t": 14,
+      "pose": "move2"
+    },
+    {
+      "t": 16,
+      "pose": "start"
+    },
+    {
+      "t": 18,
+      "pose": "move"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "start"
+    },
+    {
+      "t": 24,
+      "pose": "move2"
+    },
+    {
+      "t": 26,
+      "pose": "move2"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur la cuisse ou la table, coude plié à 90°."
+    },
+    {
+      "t": 4,
+      "text": "Tournez lentement la paume vers le sol, puis vers le plafond, sans bouger le coude."
+    },
+    {
+      "t": 10,
+      "text": "Tenez 2 s de chaque côté. L'animation tourne l'avant-bras d'un côté puis de l'autre."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne décollez pas le coude, ne tournez pas l'épaule, pas de mouvement rapide car le poids de l'outil entraîne vite. Arrêtez et contactez l'ostéopathe en cas de douleur vive au coude, fourmillements dans les doigts, gonflement ou coude qui se bloque."
+    }
+  ],
+  "duration_seconds": 33
+}

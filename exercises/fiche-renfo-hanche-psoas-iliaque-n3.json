@@ -1,0 +1,97 @@
+{
+  "id": "fiche-renfo-hanche-psoas-iliaque-n3",
+  "zone": "hip",
+  "title": "Psoas-iliaque, niveau 3 : lever le genou avec élastique",
+  "description": "Le psoas-iliaque est le grand fléchisseur de la hanche : il monte la cuisse vers le ventre et stabilise la colonne lombaire. Matériel : un élastique. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le muscle qui sert à marcher, monter les escaliers et se relever.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Psoas-iliaque (Renfo_bassin_2_psoas_iliaque), niveau 3 : avec élastique",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_thigh": {
+        "flexion": 80
+      },
+      "R_shin": {
+        "flexion": -80
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 7,
+      "pose": "up"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "up"
+    },
+    {
+      "t": 14,
+      "pose": "up"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "up"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Élastique à la cheville, fixé derrière vous au ras du sol. Côté droit d'abord, puis l'autre côté."
+    },
+    {
+      "t": 7,
+      "text": "Montez le genou contre la résistance, dos droit, ventre gainé, tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Redescendez lentement, en 3 secondes."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne penchez pas le buste en arrière, ne creusez pas le bas du dos. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 26
+}

@@ -1,0 +1,117 @@
+{
+  "id": "fiche-renfo-lombaire-transverse-n2",
+  "zone": "trunk",
+  "title": "Transverse, niveau 2 : lever une jambe",
+  "description": "Ventre gainé, levez une jambe genou plié à 90°, sans que le bassin bouge. Reposez, changez. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce la ceinture profonde du ventre qui stabilise les lombaires.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, transverse de l'abdomen (gainage profond) (Renfo_lombaire_1_transverse), niveau 2, lever une jambe",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "move": {
+      "R_thigh": {
+        "flexion": 90
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -90
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, genoux pliés, ventre gainé, nombril rentré."
+    },
+    {
+      "t": 4,
+      "text": "Levez une jambe, genou plié à 90°, sans que le bassin bouge."
+    },
+    {
+      "t": 11,
+      "text": "Reposez, puis changez de jambe (l'animation montre la jambe droite). Contraction légère (30 %) pendant tout l'exercice."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne creusez pas et ne plaquez pas le bas du dos, il reste neutre ; ne bloquez pas la respiration. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 30
+}

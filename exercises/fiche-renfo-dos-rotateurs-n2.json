@@ -1,0 +1,122 @@
+{
+  "id": "fiche-renfo-dos-rotateurs-n2",
+  "zone": "trunk",
+  "title": "Rotateurs du tronc, niveau 2 : rotation avec élastique",
+  "description": "Élastique fixé à votre droite, mains jointes devant la poitrine : tournez le buste vers la gauche, contre la résistance. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui tournent et stabilisent le tronc.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du dos (zone dorsale), rotateurs du tronc (multifides, rotateurs et obliques) (Renfo_dos_3_rotateurs_tronc), niveau 2, rotation avec élastique",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 70
+      },
+      "L_upper_arm": {
+        "flexion": 70
+      },
+      "R_forearm": {
+        "flexion": 80
+      },
+      "L_forearm": {
+        "flexion": 80
+      },
+      "spine": {
+        "twist": 0
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 70
+      },
+      "L_upper_arm": {
+        "flexion": 70
+      },
+      "R_forearm": {
+        "flexion": 80
+      },
+      "L_forearm": {
+        "flexion": 80
+      },
+      "spine": {
+        "twist": -40
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, élastique fixé à votre droite, mains jointes devant la poitrine, bassin face à l'avant."
+    },
+    {
+      "t": 4,
+      "text": "Tournez le buste vers la gauche, contre la résistance de l'élastique."
+    },
+    {
+      "t": 11,
+      "text": "Seul le buste tourne. Élastique : couleur au-dessus quand c'est facile."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne tournez pas le bassin ni les genoux, pas d'élan ni de torsion brusque. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans le dos, douleur qui fait le tour des côtes ou descend dans les jambes, fourmillements, gêne pour respirer."
+    }
+  ],
+  "duration_seconds": 30
+}

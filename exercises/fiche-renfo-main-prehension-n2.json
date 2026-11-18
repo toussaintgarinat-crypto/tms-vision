@@ -1,0 +1,114 @@
+{
+  "id": "fiche-renfo-main-prehension-n2",
+  "zone": "hand",
+  "title": "Préhension, niveau 2 : pincer la pâte à modeler",
+  "description": "Avec de la pâte à modeler, pincez la pâte entre le pouce et chaque doigt, l'un après l'autre. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Redonne de la force de pince pour les gestes du quotidien (écrire, saisir).",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Muscles de la préhension, muscles des doigts et du pouce (Renfo_main_6_prehension), niveau 2, pincer",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_fingers": {
+        "flexion": -10
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_fingers": {
+        "flexion": 40
+      },
+      "R_thumb": {
+        "flexion": 40
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "move"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "move"
+    },
+    {
+      "t": 17,
+      "pose": "move"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, coude posé sur la table, de la pâte à modeler dans la main."
+    },
+    {
+      "t": 4,
+      "text": "Pincez la pâte entre le pouce et chaque doigt, l'un après l'autre (l'animation montre la pince en bloc)."
+    },
+    {
+      "t": 12,
+      "text": "Serrez progressivement, tenez 3 s, relâchez complètement. Soufflez pendant l'effort."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne serrez pas jusqu'à la crampe, ne bloquez pas la respiration en serrant. Arrêtez et contactez l'ostéopathe en cas de douleur vive, doigt qui se bloque ou ressaute, fourmillements, gonflement."
+    }
+  ],
+  "duration_seconds": 33
+}

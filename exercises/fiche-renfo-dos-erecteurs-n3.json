@@ -1,0 +1,104 @@
+{
+  "id": "fiche-renfo-dos-erecteurs-n3",
+  "zone": "trunk",
+  "title": "Érecteurs du dos, niveau 3 : bras et jambe opposés",
+  "description": "À quatre pattes, tendez un bras devant et la jambe opposée derrière, dos plat. Tenez 3 s, changez de côté. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui maintiennent le dos droit.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du dos (zone dorsale), érecteurs du rachis dorsal (Renfo_dos_1_erecteurs_rachis), niveau 3, bras et jambe opposés",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "spine": {
+        "flexion": 10
+      }
+    },
+    "move": {
+      "spine": {
+        "flexion": 10
+      },
+      "R_upper_arm": {
+        "flexion": 160
+      },
+      "L_thigh": {
+        "flexion": -25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "move"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "move"
+    },
+    {
+      "t": 17,
+      "pose": "move"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "À quatre pattes sur un tapis, dos plat (l'animation montre le geste debout)."
+    },
+    {
+      "t": 4,
+      "text": "Tendez un bras devant et la jambe opposée derrière, dos plat."
+    },
+    {
+      "t": 12,
+      "text": "Tenez 3 s, puis changez de côté (l'animation montre le bras droit et la jambe gauche)."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : c'est le haut du dos qui se redresse, pas la tête ; ne creusez pas le bas du dos. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans le dos, douleur qui fait le tour des côtes ou descend dans les jambes, fourmillements, gêne pour respirer."
+    }
+  ],
+  "duration_seconds": 33
+}

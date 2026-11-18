@@ -1,0 +1,131 @@
+{
+  "id": "fiche-renfo-bassin-piriforme-rotateurs-n3",
+  "zone": "hip",
+  "title": "Piriforme et rotateurs, niveau 3 : écarter les genoux (pont)",
+  "description": "Le piriforme et les rotateurs externes, muscles profonds de la fesse, tournent la cuisse vers l'extérieur et centrent la tête du fémur. Matériel : un tapis, un élastique autour des genoux. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles qui stabilisent la hanche et le bassin à la marche et en appui sur une jambe.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Piriforme et rotateurs externes (Renfo_bassin_3_piriforme_rotateurs), niveau 3 : pont, genoux écartés",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "base": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "open": {
+      "R_thigh": {
+        "flexion": 60,
+        "lateral": 20
+      },
+      "L_thigh": {
+        "flexion": 60,
+        "lateral": 20
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "base"
+    },
+    {
+      "t": 3,
+      "pose": "base"
+    },
+    {
+      "t": 5,
+      "pose": "open"
+    },
+    {
+      "t": 7,
+      "pose": "open"
+    },
+    {
+      "t": 10,
+      "pose": "base"
+    },
+    {
+      "t": 12,
+      "pose": "open"
+    },
+    {
+      "t": 14,
+      "pose": "open"
+    },
+    {
+      "t": 17,
+      "pose": "base"
+    },
+    {
+      "t": 19,
+      "pose": "open"
+    },
+    {
+      "t": 21,
+      "pose": "open"
+    },
+    {
+      "t": 24,
+      "pose": "base"
+    },
+    {
+      "t": 26,
+      "pose": "open"
+    },
+    {
+      "t": 28,
+      "pose": "open"
+    },
+    {
+      "t": 31,
+      "pose": "base"
+    },
+    {
+      "t": 33,
+      "pose": "base"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "En pont, élastique autour des genoux (le pont n'est pas représentable : démonstration sur le dos, genoux pliés)."
+    },
+    {
+      "t": 10,
+      "text": "Écartez les genoux contre la résistance, tenez 2 secondes."
+    },
+    {
+      "t": 19,
+      "text": "Revenez lentement, en gardant le bassin stable."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne laissez pas le bassin rouler en arrière, ne décollez pas les pieds l'un de l'autre. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 33
+}

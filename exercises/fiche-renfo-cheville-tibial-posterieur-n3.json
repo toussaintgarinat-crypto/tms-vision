@@ -1,0 +1,96 @@
+{
+  "id": "fiche-renfo-cheville-tibial-posterieur-n3",
+  "zone": "foot",
+  "title": "Tibial postérieur, niveau 3 : pointes, talons serrés",
+  "description": "Le tibial postérieur tourne la plante du pied vers l'intérieur et soutient l'arche du pied. Matériel : une petite balle. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le muscle qui soutient la voûte plantaire.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Tibial postérieur (Renfo_cheville_4_tibial_posterieur), niveau 3 : pointes, talons serrés",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "foot"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_foot": {
+        "flexion": -35
+      },
+      "L_foot": {
+        "flexion": -35
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 7,
+      "pose": "up"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "up"
+    },
+    {
+      "t": 14,
+      "pose": "up"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "up"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, petite balle serrée entre les talons, voûte du pied creusée (la balle n'est pas représentée)."
+    },
+    {
+      "t": 7,
+      "text": "Montez sur la pointe des pieds sans lâcher la balle, tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Redescendez lentement."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne tournez pas la jambe à la place du pied, pas de mouvement brusque. Arrêtez en cas de douleur vive, de gonflement, d'instabilité de la cheville ou de fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 26
+}

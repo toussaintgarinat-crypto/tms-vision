@@ -1,0 +1,120 @@
+{
+  "id": "fiche-renfo-hanche-adducteurs-n2",
+  "zone": "hip",
+  "title": "Adducteurs, niveau 2 : pont avec ballon",
+  "description": "Les adducteurs, muscles de l'intérieur de la cuisse, serrent les cuisses et stabilisent le bassin et le genou. Matériel : un ballon. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles qui ramènent la cuisse vers l'intérieur, utiles à la stabilité de la hanche.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Adducteurs (Renfo_hanche_3_adducteurs), niveau 2 : pont avec ballon",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "ball": {
+      "R_thigh": {
+        "flexion": 60,
+        "lateral": 8
+      },
+      "L_thigh": {
+        "flexion": 60,
+        "lateral": 8
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "squeeze": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "ball"
+    },
+    {
+      "t": 3,
+      "pose": "ball"
+    },
+    {
+      "t": 5,
+      "pose": "squeeze"
+    },
+    {
+      "t": 8,
+      "pose": "squeeze"
+    },
+    {
+      "t": 11,
+      "pose": "ball"
+    },
+    {
+      "t": 13,
+      "pose": "squeeze"
+    },
+    {
+      "t": 16,
+      "pose": "squeeze"
+    },
+    {
+      "t": 19,
+      "pose": "ball"
+    },
+    {
+      "t": 21,
+      "pose": "squeeze"
+    },
+    {
+      "t": 24,
+      "pose": "squeeze"
+    },
+    {
+      "t": 27,
+      "pose": "ball"
+    },
+    {
+      "t": 29,
+      "pose": "ball"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "En pont, ballon entre les genoux (le pont n'est pas représentable : démonstration sur le dos, genoux pliés)."
+    },
+    {
+      "t": 8,
+      "text": "Serrez le ballon en haut du pont, sans à-coup, et tenez 3 secondes."
+    },
+    {
+      "t": 17,
+      "text": "Relâchez, en gardant le bassin immobile."
+    },
+    {
+      "t": 25,
+      "text": "À éviter : ne serrez pas brutalement, en cas de douleur au pubis restez au niveau 1. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 29
+}

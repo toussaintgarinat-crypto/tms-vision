@@ -1,0 +1,105 @@
+{
+  "id": "fiche-renfo-lombaire-multifides-n2",
+  "zone": "trunk",
+  "title": "Multifides, niveau 2 : bras et jambe opposés",
+  "description": "Dos plat, tendez un bras devant et la jambe opposée derrière. Tenez 3 s, changez de côté. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les petits muscles qui stabilisent la colonne lombaire.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, multifides lombaires (Renfo_lombaire_2_multifides), niveau 2, bras et jambe opposés",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk",
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "spine": {
+        "flexion": 10
+      }
+    },
+    "move": {
+      "spine": {
+        "flexion": 10
+      },
+      "R_upper_arm": {
+        "flexion": 160
+      },
+      "L_thigh": {
+        "flexion": -25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "move"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "move"
+    },
+    {
+      "t": 17,
+      "pose": "move"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "À quatre pattes sur un tapis, mains sous les épaules, genoux sous les hanches (l'animation montre le geste debout)."
+    },
+    {
+      "t": 4,
+      "text": "Tendez un bras devant et la jambe opposée derrière, dos plat."
+    },
+    {
+      "t": 12,
+      "text": "Tenez 3 s, puis changez de côté (l'animation montre le bras droit et la jambe gauche)."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne creusez pas le dos en levant la jambe, le bassin ne bascule pas sur le côté. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 33
+}

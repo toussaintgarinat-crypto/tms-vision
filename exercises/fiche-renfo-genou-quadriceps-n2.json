@@ -1,0 +1,94 @@
+{
+  "id": "fiche-renfo-genou-quadriceps-n2",
+  "zone": "thigh",
+  "title": "Quadriceps, niveau 2 : tendre le genou assis",
+  "description": "Le quadriceps, muscle de l'avant de la cuisse, tend le genou et l'amortit à chaque pas, dans les escaliers et en descente. Matériel : un lest de cheville de 0,5 à 3 kg. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le muscle qui tend le genou et soutient l'articulation.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Quadriceps (Renfo_genou_1_quadriceps), niveau 2 : tendre le genou, assis",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "ext": {
+      "R_shin": {
+        "flexion": 90
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "ext"
+    },
+    {
+      "t": 7,
+      "pose": "ext"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "ext"
+    },
+    {
+      "t": 14,
+      "pose": "ext"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "ext"
+    },
+    {
+      "t": 21,
+      "pose": "ext"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, lest à la cheville, genou dans l'axe du pied. Côté droit d'abord, puis l'autre côté."
+    },
+    {
+      "t": 7,
+      "text": "Tendez la jambe, contractez fort la cuisse, tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Redescendez lentement, en 3 secondes."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne verrouillez pas brutalement le genou, ne descendez pas sous 90°. Arrêtez en cas de douleur vive, de gonflement, de genou qui se dérobe ou se bloque."
+    }
+  ],
+  "duration_seconds": 26
+}

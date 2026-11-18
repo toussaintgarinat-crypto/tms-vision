@@ -1,0 +1,130 @@
+{
+  "id": "fiche-renfo-bassin-piriforme-rotateurs-n1",
+  "zone": "hip",
+  "title": "Piriforme et rotateurs, niveau 1 : le coquillage",
+  "description": "Le piriforme et les rotateurs externes, muscles profonds de la fesse, tournent la cuisse vers l'extérieur et centrent la tête du fémur. Matériel : un tapis. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles qui stabilisent la hanche et le bassin à la marche et en appui sur une jambe.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Piriforme et rotateurs externes (Renfo_bassin_3_piriforme_rotateurs), niveau 1 : le coquillage",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "base": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "open": {
+      "R_thigh": {
+        "flexion": 60,
+        "lateral": 30
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "base"
+    },
+    {
+      "t": 3,
+      "pose": "base"
+    },
+    {
+      "t": 5,
+      "pose": "open"
+    },
+    {
+      "t": 7,
+      "pose": "open"
+    },
+    {
+      "t": 10,
+      "pose": "base"
+    },
+    {
+      "t": 12,
+      "pose": "open"
+    },
+    {
+      "t": 14,
+      "pose": "open"
+    },
+    {
+      "t": 17,
+      "pose": "base"
+    },
+    {
+      "t": 19,
+      "pose": "open"
+    },
+    {
+      "t": 21,
+      "pose": "open"
+    },
+    {
+      "t": 24,
+      "pose": "base"
+    },
+    {
+      "t": 26,
+      "pose": "open"
+    },
+    {
+      "t": 28,
+      "pose": "open"
+    },
+    {
+      "t": 31,
+      "pose": "base"
+    },
+    {
+      "t": 33,
+      "pose": "base"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Hanches et genoux pliés, pieds l'un sur l'autre (la fiche le prévoit allongé sur le côté ; ici, démonstration sur le dos)."
+    },
+    {
+      "t": 10,
+      "text": "Pieds collés, ouvrez le genou du dessus comme un coquillage, tenez 2 secondes. Le bassin ne bascule pas en arrière."
+    },
+    {
+      "t": 19,
+      "text": "Refermez lentement, puis recommencez, puis changez de côté."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne laissez pas le bassin rouler en arrière, ne décollez pas les pieds l'un de l'autre. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 33
+}

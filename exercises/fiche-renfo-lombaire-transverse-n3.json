@@ -1,0 +1,129 @@
+{
+  "id": "fiche-renfo-lombaire-transverse-n3",
+  "zone": "trunk",
+  "title": "Transverse, niveau 3 : bras et jambe opposés",
+  "description": "Jambes à 90°, bras vers le plafond : tendez un bras derrière et la jambe opposée, dos immobile. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce la ceinture profonde du ventre en sollicitant la coordination bras et jambe.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, transverse de l'abdomen (gainage profond) (Renfo_lombaire_1_transverse), niveau 3, bras et jambe opposés",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_thigh": {
+        "flexion": 90
+      },
+      "L_thigh": {
+        "flexion": 90
+      },
+      "R_shin": {
+        "flexion": -90
+      },
+      "L_shin": {
+        "flexion": -90
+      },
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      }
+    },
+    "move": {
+      "R_thigh": {
+        "flexion": 90
+      },
+      "L_thigh": {
+        "flexion": 20
+      },
+      "R_shin": {
+        "flexion": -90
+      },
+      "L_shin": {
+        "flexion": 0
+      },
+      "R_upper_arm": {
+        "flexion": 170
+      },
+      "L_upper_arm": {
+        "flexion": 90
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, jambes à 90°, bras vers le plafond, nombril rentré."
+    },
+    {
+      "t": 4,
+      "text": "Tendez un bras derrière la tête et la jambe opposée, dos immobile."
+    },
+    {
+      "t": 11,
+      "text": "Revenez, puis changez de côté (l'animation montre le bras droit et la jambe gauche). Ralentissez à 4 s pour progresser."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne creusez pas et ne plaquez pas le bas du dos, il reste neutre ; ne bloquez pas la respiration. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 30
+}

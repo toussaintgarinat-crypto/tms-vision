@@ -1,0 +1,112 @@
+{
+  "id": "fiche-renfo-hanche-psoas-iliaque-n1",
+  "zone": "hip",
+  "title": "Psoas-iliaque, niveau 1 : lever le genou assis",
+  "description": "Le psoas-iliaque est le grand fléchisseur de la hanche : il monte la cuisse vers le ventre et stabilise la colonne lombaire. Matériel : une chaise. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le muscle qui sert à marcher, monter les escaliers et se relever.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Psoas-iliaque (Renfo_bassin_2_psoas_iliaque), niveau 1 : lever le genou, assis",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "r": {
+      "R_thigh": {
+        "flexion": 12
+      }
+    },
+    "l": {
+      "L_thigh": {
+        "flexion": 12
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "r"
+    },
+    {
+      "t": 7,
+      "pose": "r"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "l"
+    },
+    {
+      "t": 14,
+      "pose": "l"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "r"
+    },
+    {
+      "t": 21,
+      "pose": "r"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "l"
+    },
+    {
+      "t": 28,
+      "pose": "l"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis au bord de la chaise, dos droit, ventre gainé."
+    },
+    {
+      "t": 10,
+      "text": "Levez le genou de 10 cm, c'est la cuisse qui monte, le buste ne recule pas. Tenez 2 secondes, reposez, puis changez de jambe."
+    },
+    {
+      "t": 19,
+      "text": "Mouvement lent dans les deux sens, en soufflant pendant l'effort."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne penchez pas le buste en arrière, ne creusez pas le bas du dos. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 33
+}

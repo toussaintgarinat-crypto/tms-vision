@@ -1,0 +1,100 @@
+{
+  "id": "fiche-renfo-hanche-adducteurs-n3",
+  "zone": "hip",
+  "title": "Adducteurs, niveau 3 : ramener la jambe avec élastique",
+  "description": "Les adducteurs, muscles de l'intérieur de la cuisse, serrent les cuisses et stabilisent le bassin et le genou. Matériel : un élastique. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles qui ramènent la cuisse vers l'intérieur, utiles à la stabilité de la hanche.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Adducteurs (Renfo_hanche_3_adducteurs), niveau 3 : avec élastique",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "out": {
+      "R_thigh": {
+        "lateral": 20
+      }
+    },
+    "in": {
+      "R_thigh": {
+        "lateral": -8,
+        "flexion": 10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "out"
+    },
+    {
+      "t": 3,
+      "pose": "out"
+    },
+    {
+      "t": 5,
+      "pose": "in"
+    },
+    {
+      "t": 7,
+      "pose": "in"
+    },
+    {
+      "t": 10,
+      "pose": "out"
+    },
+    {
+      "t": 12,
+      "pose": "in"
+    },
+    {
+      "t": 14,
+      "pose": "in"
+    },
+    {
+      "t": 17,
+      "pose": "out"
+    },
+    {
+      "t": 19,
+      "pose": "in"
+    },
+    {
+      "t": 21,
+      "pose": "in"
+    },
+    {
+      "t": 24,
+      "pose": "out"
+    },
+    {
+      "t": 26,
+      "pose": "out"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, élastique à la cheville, fixé sur le côté, dos et bassin immobiles."
+    },
+    {
+      "t": 7,
+      "text": "Ramenez la jambe devant l'autre, contre la résistance, sans à-coup, en soufflant."
+    },
+    {
+      "t": 15,
+      "text": "Revenez lentement, puis changez de côté."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne serrez pas brutalement, en cas de douleur au pubis restez au niveau 1. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 26
+}

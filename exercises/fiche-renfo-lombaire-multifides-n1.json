@@ -1,0 +1,102 @@
+{
+  "id": "fiche-renfo-lombaire-multifides-n1",
+  "zone": "trunk",
+  "title": "Multifides, niveau 1 : glisser une jambe",
+  "description": "Les multifides stabilisent les vertèbres lombaires une à une. À quatre pattes, glissez une jambe tendue vers l'arrière, pied au sol, revenez, changez de côté. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les petits muscles qui stabilisent la colonne lombaire.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, multifides lombaires (Renfo_lombaire_2_multifides), niveau 1, glisser une jambe",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk",
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "spine": {
+        "flexion": 5
+      }
+    },
+    "move": {
+      "spine": {
+        "flexion": 5
+      },
+      "R_thigh": {
+        "flexion": -20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "À quatre pattes sur un tapis, mains sous les épaules, genoux sous les hanches, dos plat comme une table (l'animation montre le geste debout)."
+    },
+    {
+      "t": 4,
+      "text": "Glissez une jambe tendue vers l'arrière, pied au sol, puis revenez."
+    },
+    {
+      "t": 11,
+      "text": "Changez de côté (l'animation montre la jambe droite). Imaginez un verre d'eau posé sur le bas du dos."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne creusez pas le dos en levant la jambe, le bassin ne bascule pas sur le côté. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 30
+}

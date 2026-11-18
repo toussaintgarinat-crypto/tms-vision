@@ -1,0 +1,85 @@
+{
+  "id": "fiche-renfo-lombaire-carre-lombes-n3",
+  "zone": "trunk",
+  "title": "Carré des lombes, niveau 3 : planche latérale",
+  "description": "Même position que le niveau 2, appui sur les pieds. Tenez 10 à 30 s, puis changez de côté. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce le muscle stabilisateur latéral du bas du dos.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, carré des lombes (Renfo_lombaire_3_carre_des_lombes), niveau 3, planche latérale",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {},
+    "move": {
+      "spine": {
+        "lateral": 8
+      },
+      "R_upper_arm": {
+        "lateral": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 7,
+      "pose": "move"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "start"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 37,
+      "pose": "move"
+    },
+    {
+      "t": 40,
+      "pose": "start"
+    },
+    {
+      "t": 43,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Sur le côté, appui sur l'avant-bras et les pieds, tapis (le squelette ne montre pas la position sur le côté : l'animation montre le corps debout, aligné)."
+    },
+    {
+      "t": 4,
+      "text": "Décollez le bassin, corps aligné : épaule, hanche et pied sur une même ligne."
+    },
+    {
+      "t": 22,
+      "text": "Tenez 10 à 30 s, puis changez de côté. Ventre gainé, respiration libre. Progression : 4 × 10 s, puis + 5 s par semaine."
+    },
+    {
+      "t": 41,
+      "text": "À éviter : ne laissez pas la hanche tomber vers le sol, ne partez pas en avant ou en arrière. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 45
+}

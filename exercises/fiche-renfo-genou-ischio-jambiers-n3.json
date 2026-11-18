@@ -1,0 +1,109 @@
+{
+  "id": "fiche-renfo-genou-ischio-jambiers-n3",
+  "zone": "thigh",
+  "title": "Ischio-jambiers, niveau 3 : pont sur les talons",
+  "description": "Les ischio-jambiers, muscles de l'arrière de la cuisse, plient le genou et tendent la hanche. Matériel : un tapis. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles qui protègent le genou et freinent la jambe à la course.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Ischio-jambiers (Renfo_genou_2_ischio_jambiers), niveau 3 : pont sur les talons",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "heels": {
+      "R_thigh": {
+        "flexion": 40
+      },
+      "L_thigh": {
+        "flexion": 40
+      },
+      "R_shin": {
+        "flexion": -40
+      },
+      "L_shin": {
+        "flexion": -40
+      },
+      "R_foot": {
+        "flexion": 20
+      },
+      "L_foot": {
+        "flexion": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "heels"
+    },
+    {
+      "t": 8,
+      "pose": "heels"
+    },
+    {
+      "t": 11,
+      "pose": "neutral"
+    },
+    {
+      "t": 13,
+      "pose": "heels"
+    },
+    {
+      "t": 16,
+      "pose": "heels"
+    },
+    {
+      "t": 19,
+      "pose": "neutral"
+    },
+    {
+      "t": 21,
+      "pose": "heels"
+    },
+    {
+      "t": 24,
+      "pose": "heels"
+    },
+    {
+      "t": 27,
+      "pose": "neutral"
+    },
+    {
+      "t": 29,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, talons loin des fesses, pointes de pieds relevées, ventre gainé."
+    },
+    {
+      "t": 8,
+      "text": "Montez le bassin et tenez 3 secondes (le décollement du bassin n'est pas représentable : l'avatar montre seulement la position des jambes)."
+    },
+    {
+      "t": 17,
+      "text": "Redescendez lentement."
+    },
+    {
+      "t": 25,
+      "text": "À éviter : ne cambrez pas le dos en pliant le genou. Arrêtez en cas de crampe (étirez, puis reprenez plus doucement) ou de douleur vive au genou, de gonflement, de genou qui se dérobe ou se bloque."
+    }
+  ],
+  "duration_seconds": 29
+}

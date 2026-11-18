@@ -1,0 +1,96 @@
+{
+  "id": "fiche-renfo-cheville-triceps-sural-n2",
+  "zone": "lower_leg",
+  "title": "Triceps sural, niveau 2 : pointes sur un pied",
+  "description": "Le triceps sural (mollets : gastrocnémiens et soléaire) monte le talon et propulse le corps à la marche et au saut. Matériel : un mur ou une chaise pour l'équilibre. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les mollets, utiles pour le tendon d'Achille, l'aponévrose plantaire et l'équilibre.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Triceps sural (Renfo_cheville_1_triceps_sural), niveau 2 : pointes, un pied",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "lower_leg"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_foot": {
+        "flexion": -35
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 7,
+      "pose": "up"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "up"
+    },
+    {
+      "t": 14,
+      "pose": "up"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "up"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, une main au mur, l'autre genou plié. Pied droit d'abord, puis changez de côté."
+    },
+    {
+      "t": 7,
+      "text": "Montez droit sur la pointe du pied en 2 secondes, tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Redescendez en 3 secondes."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne laissez pas la cheville partir vers l'extérieur, ne descendez pas brutalement. Arrêtez en cas de douleur vive, de gonflement, d'instabilité de la cheville ou de fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 26
+}

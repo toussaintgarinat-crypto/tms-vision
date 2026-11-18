@@ -1,0 +1,102 @@
+{
+  "id": "fiche-renfo-coude-pronosupination-n3",
+  "zone": "lower_arm",
+  "title": "Pronateurs et supinateurs, niveau 3 : marteau, prise longue",
+  "description": "Tenez le manche plus loin de la tête : le levier est plus long, l'exercice plus difficile. Inclinez le marteau d'un côté puis de l'autre. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui tournent l'avant-bras avec une résistance plus grande.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du coude et de l'avant-bras, pronateurs et supinateurs (Renfo_coude_3_pronateurs_supinateurs), niveau 3, marteau prise longue",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_forearm": {
+        "flexion": 90
+      }
+    },
+    "move": {
+      "R_forearm": {
+        "flexion": 90,
+        "twist": 45
+      }
+    },
+    "move2": {
+      "R_forearm": {
+        "flexion": 90,
+        "twist": -45
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move2"
+    },
+    {
+      "t": 14,
+      "pose": "start"
+    },
+    {
+      "t": 16,
+      "pose": "move"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "move2"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur la cuisse ou la table, coude plié à 90°, marteau tenu par le bout du manche."
+    },
+    {
+      "t": 4,
+      "text": "Inclinez le marteau d'un côté, revenez à la verticale, puis de l'autre, lentement."
+    },
+    {
+      "t": 9,
+      "text": "Le levier plus long (non visible sur l'animation) rend le geste plus exigeant. Progressez avec un outil plus lourd seulement ensuite."
+    },
+    {
+      "t": 25,
+      "text": "À éviter : ne décollez pas le coude, ne tournez pas l'épaule, pas de mouvement rapide car le poids de l'outil entraîne vite. Arrêtez et contactez l'ostéopathe en cas de douleur vive au coude, fourmillements dans les doigts, gonflement ou coude qui se bloque."
+    }
+  ],
+  "duration_seconds": 29
+}

@@ -1,0 +1,112 @@
+{
+  "id": "fiche-renfo-poignet-extenseurs-n1",
+  "zone": "lower_arm",
+  "title": "Extenseurs du poignet, niveau 1 : extension sans charge",
+  "description": "Les extenseurs relèvent le poignet et le stabilisent quand on serre un objet. Avant-bras posé, paume vers le bas, relevez la main vers le plafond puis redescendez lentement, sans matériel. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui relèvent le poignet, utiles pour le côté externe du coude.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du poignet, extenseurs du poignet (muscles épicondyliens) (Renfo_poignet_5_extenseurs), niveau 1, extension sans charge",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "lower_arm",
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": -20
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": 45
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur la table ou la cuisse, paume vers le bas, main dans le vide. Seul le poignet bouge."
+    },
+    {
+      "t": 4,
+      "text": "Relevez la main vers le plafond, puis redescendez lentement."
+    },
+    {
+      "t": 11,
+      "text": "Rythme de la fiche : 2 s pour aller, 2 s de tenue, 3 s pour revenir. Soufflez pendant l'effort."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne soulevez pas l'avant-bras de la table. En cas de douleur au coude, privilégiez le niveau 3 (descente lente). Arrêtez et contactez l'ostéopathe en cas de douleur vive au poignet ou au coude, fourmillements ou engourdissement des doigts, gonflement."
+    }
+  ],
+  "duration_seconds": 30
+}

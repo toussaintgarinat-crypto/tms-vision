@@ -1,0 +1,120 @@
+{
+  "id": "fiche-renfo-lombaire-transverse-n1",
+  "zone": "trunk",
+  "title": "Transverse, niveau 1 : rentrer le nombril",
+  "description": "Le transverse serre le ventre comme une ceinture et stabilise les lombaires. Allongé, genoux pliés, rentrez le nombril vers la colonne en soufflant. Tenez 5 s en respirant. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Réactive en douceur la ceinture musculaire profonde qui stabilise le bas du dos.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, transverse de l'abdomen (gainage profond) (Renfo_lombaire_1_transverse), niveau 1, rentrer le nombril",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      }
+    },
+    "move": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "spine": {
+        "flexion": 5
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 14,
+      "pose": "start"
+    },
+    {
+      "t": 16,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    },
+    {
+      "t": 26,
+      "pose": "move"
+    },
+    {
+      "t": 31,
+      "pose": "move"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    },
+    {
+      "t": 37,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos sur un tapis, genoux pliés."
+    },
+    {
+      "t": 4,
+      "text": "Rentrez doucement le nombril vers la colonne en soufflant."
+    },
+    {
+      "t": 14,
+      "text": "Tenez 5 s en respirant, contraction légère (30 %). Le mouvement interne est très discret à l'image."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : ne creusez pas et ne plaquez pas le bas du dos, il reste neutre ; ne bloquez pas la respiration. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 39
+}

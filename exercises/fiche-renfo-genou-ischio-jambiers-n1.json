@@ -1,0 +1,93 @@
+{
+  "id": "fiche-renfo-genou-ischio-jambiers-n1",
+  "zone": "thigh",
+  "title": "Ischio-jambiers, niveau 1 : plier le genou debout",
+  "description": "Les ischio-jambiers, muscles de l'arrière de la cuisse, plient le genou et tendent la hanche. Matériel : une chaise. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles qui protègent le genou et freinent la jambe à la course.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Ischio-jambiers (Renfo_genou_2_ischio_jambiers), niveau 1 : plier le genou, debout",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "curl": {
+      "R_shin": {
+        "flexion": -90
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "curl"
+    },
+    {
+      "t": 7,
+      "pose": "curl"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "curl"
+    },
+    {
+      "t": 14,
+      "pose": "curl"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "curl"
+    },
+    {
+      "t": 21,
+      "pose": "curl"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, une main sur une chaise, bassin immobile, ventre gainé. Côté droit d'abord, puis l'autre côté."
+    },
+    {
+      "t": 7,
+      "text": "Ramenez le talon vers la fesse, tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Redescendez lentement, en 3 secondes."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne cambrez pas le dos en pliant le genou. Arrêtez en cas de crampe (étirez, puis reprenez plus doucement) ou de douleur vive au genou, de gonflement, de genou qui se dérobe ou se bloque."
+    }
+  ],
+  "duration_seconds": 26
+}

@@ -1,0 +1,94 @@
+{
+  "id": "fiche-renfo-genou-quadriceps-n1",
+  "zone": "thigh",
+  "title": "Quadriceps, niveau 1 : écraser la serviette",
+  "description": "Le quadriceps, muscle de l'avant de la cuisse, tend le genou et l'amortit à chaque pas, dans les escaliers et en descente. Matériel : une serviette roulée. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le muscle qui tend le genou et soutient l'articulation.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Quadriceps (Renfo_genou_1_quadriceps), niveau 1 : écraser la serviette",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "press": {
+      "R_foot": {
+        "flexion": 10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "press"
+    },
+    {
+      "t": 10,
+      "pose": "press"
+    },
+    {
+      "t": 13,
+      "pose": "neutral"
+    },
+    {
+      "t": 15,
+      "pose": "press"
+    },
+    {
+      "t": 20,
+      "pose": "press"
+    },
+    {
+      "t": 23,
+      "pose": "neutral"
+    },
+    {
+      "t": 25,
+      "pose": "press"
+    },
+    {
+      "t": 30,
+      "pose": "press"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    },
+    {
+      "t": 35,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Jambe tendue, serviette roulée sous le genou."
+    },
+    {
+      "t": 10,
+      "text": "Écrasez la serviette en contractant fort l'avant de la cuisse, rotule qui remonte. Tenez 5 secondes (la contraction est presque invisible : l'avatar relève légèrement le pied)."
+    },
+    {
+      "t": 21,
+      "text": "Relâchez lentement."
+    },
+    {
+      "t": 31,
+      "text": "À éviter : ne verrouillez pas brutalement le genou, ne descendez pas sous 90°. Arrêtez en cas de douleur vive, de gonflement, de genou qui se dérobe ou se bloque."
+    }
+  ],
+  "duration_seconds": 35
+}

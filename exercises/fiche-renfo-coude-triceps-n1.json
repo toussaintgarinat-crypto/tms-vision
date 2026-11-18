@@ -1,0 +1,111 @@
+{
+  "id": "fiche-renfo-coude-triceps-n1",
+  "zone": "upper_arm",
+  "title": "Triceps, niveau 1 : buste penché",
+  "description": "Le triceps tend le coude. Buste penché, coude collé au corps, tendez l'avant-bras vers l'arrière puis revenez lentement, sans matériel. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce le muscle qui tend le coude, utile pour pousser ou se relever d'une chaise.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du coude, triceps (extenseur du coude) (Renfo_coude_2_triceps), niveau 1, buste penché",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "upper_arm",
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "spine": {
+        "flexion": 45
+      },
+      "R_upper_arm": {
+        "flexion": -90
+      },
+      "R_forearm": {
+        "flexion": 90
+      }
+    },
+    "move": {
+      "spine": {
+        "flexion": 45
+      },
+      "R_upper_arm": {
+        "flexion": -90
+      },
+      "R_forearm": {
+        "flexion": 0
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Buste penché, le haut du bras collé au corps et immobile."
+    },
+    {
+      "t": 4,
+      "text": "Tendez l'avant-bras vers l'arrière en 2 s, puis revenez en 3 s."
+    },
+    {
+      "t": 11,
+      "text": "Seul l'avant-bras bouge. Soufflez pendant l'effort."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne donnez pas d'à-coup pour tendre le bras, ne verrouillez pas le coude en fin de mouvement. Arrêtez et contactez l'ostéopathe en cas de douleur vive au coude, fourmillements dans les doigts, gonflement ou coude qui se bloque."
+    }
+  ],
+  "duration_seconds": 30
+}

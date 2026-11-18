@@ -1,0 +1,114 @@
+{
+  "id": "fiche-renfo-main-prehension-n3",
+  "zone": "hand",
+  "title": "Préhension, niveau 3 : ouvrir la main contre un élastique",
+  "description": "Un élastique de doigts entoure les doigts tendus : ouvrez la main en grand contre la résistance. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui rouvrent la main, en équilibre avec ceux qui la ferment.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Muscles de la préhension, muscles des doigts et du pouce (Renfo_main_6_prehension), niveau 3, ouvrir la main",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_fingers": {
+        "flexion": 0
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_fingers": {
+        "flexion": -25
+      },
+      "R_thumb": {
+        "lateral": 35
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, coude posé sur la table, élastique de doigts autour des doigts tendus."
+    },
+    {
+      "t": 4,
+      "text": "Ouvrez la main en grand contre la résistance de l'élastique."
+    },
+    {
+      "t": 11,
+      "text": "Relâchez complètement entre chaque répétition. Soufflez pendant l'effort."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne serrez pas jusqu'à la crampe, ne bloquez pas la respiration en serrant. Arrêtez et contactez l'ostéopathe en cas de douleur vive, doigt qui se bloque ou ressaute, fourmillements, gonflement."
+    }
+  ],
+  "duration_seconds": 30
+}

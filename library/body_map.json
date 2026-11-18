@@ -535,7 +535,25 @@
             "fiche-mobilite-hanche-abduction",
             "fiche-mobilite-hanche-adduction",
             "fiche-mobilite-hanche-rotation-externe",
-            "fiche-mobilite-hanche-rotation-interne"
+            "fiche-mobilite-hanche-rotation-interne",
+            "fiche-renfo-bassin-piriforme-rotateurs-n1",
+            "fiche-renfo-bassin-piriforme-rotateurs-n2",
+            "fiche-renfo-bassin-piriforme-rotateurs-n3",
+            "fiche-renfo-bassin-plancher-pelvien-n1",
+            "fiche-renfo-bassin-plancher-pelvien-n2",
+            "fiche-renfo-bassin-plancher-pelvien-n3",
+            "fiche-renfo-hanche-adducteurs-n1",
+            "fiche-renfo-hanche-adducteurs-n2",
+            "fiche-renfo-hanche-adducteurs-n3",
+            "fiche-renfo-hanche-grand-fessier-n1",
+            "fiche-renfo-hanche-grand-fessier-n2",
+            "fiche-renfo-hanche-grand-fessier-n3",
+            "fiche-renfo-hanche-moyen-fessier-n1",
+            "fiche-renfo-hanche-moyen-fessier-n2",
+            "fiche-renfo-hanche-moyen-fessier-n3",
+            "fiche-renfo-hanche-psoas-iliaque-n1",
+            "fiche-renfo-hanche-psoas-iliaque-n2",
+            "fiche-renfo-hanche-psoas-iliaque-n3"
           ]
         }
       ]
@@ -610,7 +628,13 @@
             "fiche-mobilite-genou-flexion",
             "fiche-mobilite-genou-extension",
             "fiche-mobilite-genou-rotation-interne",
-            "fiche-mobilite-genou-rotation-externe"
+            "fiche-mobilite-genou-rotation-externe",
+            "fiche-renfo-genou-ischio-jambiers-n1",
+            "fiche-renfo-genou-ischio-jambiers-n2",
+            "fiche-renfo-genou-ischio-jambiers-n3",
+            "fiche-renfo-genou-quadriceps-n1",
+            "fiche-renfo-genou-quadriceps-n2",
+            "fiche-renfo-genou-quadriceps-n3"
           ]
         }
       ]
@@ -671,7 +695,19 @@
             "fiche-mobilite-cheville-flexion-dorsale",
             "fiche-mobilite-cheville-flexion-plantaire",
             "fiche-mobilite-cheville-inversion",
-            "fiche-mobilite-cheville-eversion"
+            "fiche-mobilite-cheville-eversion",
+            "fiche-renfo-cheville-fibulaires-n1",
+            "fiche-renfo-cheville-fibulaires-n2",
+            "fiche-renfo-cheville-fibulaires-n3",
+            "fiche-renfo-cheville-tibial-anterieur-n1",
+            "fiche-renfo-cheville-tibial-anterieur-n2",
+            "fiche-renfo-cheville-tibial-anterieur-n3",
+            "fiche-renfo-cheville-tibial-posterieur-n1",
+            "fiche-renfo-cheville-tibial-posterieur-n2",
+            "fiche-renfo-cheville-tibial-posterieur-n3",
+            "fiche-renfo-cheville-triceps-sural-n1",
+            "fiche-renfo-cheville-triceps-sural-n2",
+            "fiche-renfo-cheville-triceps-sural-n3"
           ]
         }
       ]

@@ -1,0 +1,95 @@
+{
+  "id": "fiche-renfo-cheville-tibial-anterieur-n1",
+  "zone": "foot",
+  "title": "Tibial antérieur, niveau 1 : relever le pied assis",
+  "description": "Le tibial antérieur, le long du tibia, relève la pointe du pied et contrôle sa pose au sol. Sans matériel. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le releveur du pied, qui évite d'accrocher le pied en marchant.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Tibial antérieur (Renfo_cheville_2_tibial_anterieur), niveau 1 : relever le pied, assis",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "foot",
+    "lower_leg"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_foot": {
+        "flexion": 25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 7,
+      "pose": "up"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "up"
+    },
+    {
+      "t": 14,
+      "pose": "up"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "up"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, talon au sol ou pied décollé, le genou reste immobile. Pied droit d'abord, puis l'autre pied."
+    },
+    {
+      "t": 7,
+      "text": "Relevez la pointe du pied vers vous en 2 secondes, tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Redescendez en 3 secondes."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne relevez pas les orteils seuls, tout le pied monte ; pas de mouvement brusque. Arrêtez en cas de douleur vive, de gonflement, d'instabilité de la cheville ou de fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 26
+}

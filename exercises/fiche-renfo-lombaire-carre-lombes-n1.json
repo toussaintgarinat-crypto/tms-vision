@@ -1,0 +1,94 @@
+{
+  "id": "fiche-renfo-lombaire-carre-lombes-n1",
+  "zone": "trunk",
+  "title": "Carré des lombes, niveau 1 : inclinaison avec charge",
+  "description": "Le carré des lombes incline le tronc sur le côté et tient le bassin à niveau. Debout, charge (haltère de 2 à 5 kg ou sac) dans la main droite, laissez-vous pencher à droite, puis redressez-vous. Changez de côté. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce le muscle stabilisateur latéral du bas du dos, utile quand on porte une charge d'un seul côté.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, carré des lombes (Renfo_lombaire_3_carre_des_lombes), niveau 1, inclinaison avec charge",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {},
+    "move": {
+      "spine": {
+        "lateral": 22
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, charge dans la main droite, ventre gainé, respiration libre."
+    },
+    {
+      "t": 4,
+      "text": "Laissez-vous pencher à droite, puis redressez-vous."
+    },
+    {
+      "t": 11,
+      "text": "Puis changez de côté. Charge : + 1 kg par palier."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne laissez pas la hanche tomber vers le sol, ne partez pas en avant ou en arrière. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 30
+}

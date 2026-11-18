@@ -1,0 +1,99 @@
+{
+  "id": "fiche-renfo-dos-erecteurs-n1",
+  "zone": "trunk",
+  "title": "Érecteurs du dos, niveau 1 : se redresser, assis",
+  "description": "Les érecteurs redressent le haut du dos et le maintiennent contre la gravité. Assis sur une chaise, laissez le dos s'arrondir, puis redressez le haut du dos vertèbre par vertèbre. Tenez 3 s. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui redressent le haut du dos, pour limiter la fatigue en position assise prolongée.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du dos (zone dorsale), érecteurs du rachis dorsal (Renfo_dos_1_erecteurs_rachis), niveau 1, se redresser assis",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "spine": {
+        "flexion": 30
+      }
+    },
+    "move": {
+      "spine": {
+        "flexion": -3
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "move"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "move"
+    },
+    {
+      "t": 17,
+      "pose": "move"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis sur une chaise. Mouvement lent et contrôlé, sans élan, menton légèrement rentré."
+    },
+    {
+      "t": 4,
+      "text": "Laissez le dos s'arrondir, puis redressez le haut du dos vertèbre par vertèbre."
+    },
+    {
+      "t": 12,
+      "text": "Tenez 3 s. Le bas du dos ne se creuse pas. Soufflez pendant l'effort."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : c'est le haut du dos qui se redresse, pas la tête ; ne creusez pas le bas du dos. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans le dos, douleur qui fait le tour des côtes ou descend dans les jambes, fourmillements, gêne pour respirer."
+    }
+  ],
+  "duration_seconds": 33
+}

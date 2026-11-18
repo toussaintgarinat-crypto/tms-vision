@@ -1,0 +1,169 @@
+{
+  "id": "fiche-renfo-lombaire-grand-droit-n2",
+  "zone": "trunk",
+  "title": "Grand droit et obliques, niveau 2 : enroulement en diagonale",
+  "description": "Même mouvement en amenant l'épaule vers le genou opposé. Alternez les côtés. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les abdominaux de surface, dont les obliques qui tournent le tronc.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, grand droit et obliques (abdominaux de surface) (Renfo_lombaire_4_grand_droit_obliques), niveau 2, enroulement en diagonale",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "front",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_upper_arm": {
+        "flexion": 70
+      },
+      "L_upper_arm": {
+        "flexion": 70
+      }
+    },
+    "move": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_upper_arm": {
+        "flexion": 70
+      },
+      "L_upper_arm": {
+        "flexion": 70
+      },
+      "spine": {
+        "flexion": 30,
+        "twist": 25
+      }
+    },
+    "move2": {
+      "R_thigh": {
+        "flexion": 60
+      },
+      "L_thigh": {
+        "flexion": 60
+      },
+      "R_shin": {
+        "flexion": -60
+      },
+      "L_shin": {
+        "flexion": -60
+      },
+      "R_upper_arm": {
+        "flexion": 70
+      },
+      "L_upper_arm": {
+        "flexion": 70
+      },
+      "spine": {
+        "flexion": 30,
+        "twist": -25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move2"
+    },
+    {
+      "t": 15,
+      "pose": "move2"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "move2"
+    },
+    {
+      "t": 29,
+      "pose": "move2"
+    },
+    {
+      "t": 32,
+      "pose": "start"
+    },
+    {
+      "t": 35,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, genoux pliés. Rentrez légèrement le nombril avant chaque mouvement, menton un peu rentré."
+    },
+    {
+      "t": 4,
+      "text": "Enroulez le buste en amenant l'épaule vers le genou opposé."
+    },
+    {
+      "t": 11,
+      "text": "Alternez les côtés (l'animation tourne d'un côté puis de l'autre). Ralentissez la descente (4 s) pour progresser."
+    },
+    {
+      "t": 33,
+      "text": "À éviter : ne tirez pas sur la nuque avec les mains, ne montez pas haut : seules les omoplates décollent. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 37
+}

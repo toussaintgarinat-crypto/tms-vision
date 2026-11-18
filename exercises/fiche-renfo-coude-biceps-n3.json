@@ -1,0 +1,95 @@
+{
+  "id": "fiche-renfo-coude-biceps-n3",
+  "zone": "upper_arm",
+  "title": "Biceps et brachial, niveau 3 : avec élastique",
+  "description": "Les muscles fléchisseurs plient le coude ; le biceps tourne aussi la paume vers le haut. Élastique sous le pied, extrémité dans la main : pliez le coude contre la résistance. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les muscles qui plient le coude, utiles pour porter, soulever et tirer au quotidien.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du coude, biceps et brachial (fléchisseurs du coude) (Renfo_coude_1_biceps_brachial), niveau 3, avec élastique",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "upper_arm",
+    "lower_arm"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {},
+    "move": {
+      "R_forearm": {
+        "flexion": 125
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 8,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "move"
+    },
+    {
+      "t": 15,
+      "pose": "move"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 20,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 28,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, coude collé au corps, épaule basse, élastique sous le pied, extrémité dans la main."
+    },
+    {
+      "t": 4,
+      "text": "Seul l'avant-bras bouge : montez en 2 s, redescendez en 3 s jusqu'au bras tendu."
+    },
+    {
+      "t": 11,
+      "text": "Soufflez pendant l'effort. Élastique : passez à la couleur au-dessus quand c'est facile."
+    },
+    {
+      "t": 26,
+      "text": "À éviter : ne balancez pas le buste ni le coude vers l'avant, ne verrouillez pas le coude en bas du mouvement. Arrêtez et contactez l'ostéopathe en cas de douleur vive au coude, fourmillements dans les doigts, gonflement ou coude qui se bloque."
+    }
+  ],
+  "duration_seconds": 30
+}

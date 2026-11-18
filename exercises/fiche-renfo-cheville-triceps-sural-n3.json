@@ -1,0 +1,107 @@
+{
+  "id": "fiche-renfo-cheville-triceps-sural-n3",
+  "zone": "lower_leg",
+  "title": "Triceps sural, niveau 3 : sur une marche",
+  "description": "Le triceps sural (mollets : gastrocnémiens et soléaire) monte le talon et propulse le corps à la marche et au saut. Matériel : une marche. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les mollets, utiles pour le tendon d'Achille, l'aponévrose plantaire et l'équilibre.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Triceps sural (Renfo_cheville_1_triceps_sural), niveau 3 : sur une marche",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "lower_leg"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_foot": {
+        "flexion": -35
+      },
+      "L_foot": {
+        "flexion": -35
+      }
+    },
+    "down": {
+      "R_foot": {
+        "flexion": 0
+      },
+      "L_shin": {
+        "flexion": -50
+      },
+      "L_foot": {
+        "flexion": -35
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 7,
+      "pose": "up"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "down"
+    },
+    {
+      "t": 14,
+      "pose": "down"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "up"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Avant du pied sur le bord d'une marche, une main en appui."
+    },
+    {
+      "t": 7,
+      "text": "Montez sur la pointe des deux pieds, puis redescendez sur un seul pied, talon sous la marche (la marche n'est pas représentée)."
+    },
+    {
+      "t": 15,
+      "text": "Ne descendez pas brutalement ; alternez les pieds."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne laissez pas la cheville partir vers l'extérieur, ne descendez pas brutalement. Arrêtez en cas de douleur vive, de gonflement, d'instabilité de la cheville ou de fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 26
+}

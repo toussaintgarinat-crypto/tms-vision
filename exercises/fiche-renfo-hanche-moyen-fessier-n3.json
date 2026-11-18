@@ -1,0 +1,94 @@
+{
+  "id": "fiche-renfo-hanche-moyen-fessier-n3",
+  "zone": "hip",
+  "title": "Moyen fessier, niveau 3 : écarter la jambe debout",
+  "description": "Le moyen fessier écarte la cuisse et tient le bassin horizontal à chaque pas. Matériel : un élastique. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le stabilisateur latéral du bassin, utile pour soulager le genou et le dos.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Moyen fessier (Renfo_hanche_2_moyen_fessier), niveau 3 : écarter debout, élastique",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "out": {
+      "R_thigh": {
+        "lateral": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "out"
+    },
+    {
+      "t": 7,
+      "pose": "out"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "out"
+    },
+    {
+      "t": 14,
+      "pose": "out"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "out"
+    },
+    {
+      "t": 21,
+      "pose": "out"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, élastique autour des chevilles, buste droit."
+    },
+    {
+      "t": 7,
+      "text": "Écartez la jambe droite sur le côté contre la résistance, sans pencher le buste. Tenez 2 secondes."
+    },
+    {
+      "t": 15,
+      "text": "Revenez lentement, puis changez de côté."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne tournez pas la pointe du pied vers le plafond, ne montez pas trop haut (30 à 40° suffisent). Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 26
+}

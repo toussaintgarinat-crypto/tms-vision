@@ -1,0 +1,85 @@
+{
+  "id": "fiche-renfo-lombaire-grand-droit-n3",
+  "zone": "trunk",
+  "title": "Grand droit et obliques, niveau 3 : planche sur les avant-bras",
+  "description": "Appui sur les avant-bras et les pointes de pieds, corps aligné, ventre rentré. Tenez 10 à 30 s. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les abdominaux de surface qui tiennent le tronc.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, grand droit et obliques (abdominaux de surface) (Renfo_lombaire_4_grand_droit_obliques), niveau 3, planche sur les avant-bras",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {},
+    "move": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 90
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 7,
+      "pose": "move"
+    },
+    {
+      "t": 19,
+      "pose": "move"
+    },
+    {
+      "t": 22,
+      "pose": "start"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 37,
+      "pose": "move"
+    },
+    {
+      "t": 40,
+      "pose": "start"
+    },
+    {
+      "t": 43,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Face au sol, appui sur les avant-bras et les pointes de pieds (le squelette ne montre pas la position sur le ventre : l'animation montre le corps debout, aligné)."
+    },
+    {
+      "t": 4,
+      "text": "Corps aligné, ventre rentré, appui sur les avant-bras."
+    },
+    {
+      "t": 22,
+      "text": "Tenez 10 à 30 s. Progression : 4 × 10 s, puis + 5 s par semaine."
+    },
+    {
+      "t": 41,
+      "text": "À éviter : ne tirez pas sur la nuque avec les mains, ne montez pas haut : seules les omoplates décollent. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 45
+}

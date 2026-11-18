@@ -1,0 +1,101 @@
+{
+  "id": "fiche-renfo-hanche-grand-fessier-n3",
+  "zone": "hip",
+  "title": "Grand fessier, niveau 3 : assis-debout",
+  "description": "Le grand fessier est le principal extenseur de la hanche : il sert à se relever, monter, pousser vers l'avant. Matériel : une chaise, des haltères de 2 à 5 kg. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne le muscle le plus puissant de la hanche, utile pour soulager le bas du dos et les genoux.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Grand fessier (Renfo_hanche_1_grand_fessier), niveau 3 : assis-debout",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "lean": {
+      "spine": {
+        "flexion": 25
+      },
+      "R_upper_arm": {
+        "flexion": 30
+      },
+      "L_upper_arm": {
+        "flexion": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "lean"
+    },
+    {
+      "t": 7,
+      "pose": "lean"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 12,
+      "pose": "lean"
+    },
+    {
+      "t": 14,
+      "pose": "lean"
+    },
+    {
+      "t": 17,
+      "pose": "neutral"
+    },
+    {
+      "t": 19,
+      "pose": "lean"
+    },
+    {
+      "t": 21,
+      "pose": "lean"
+    },
+    {
+      "t": 24,
+      "pose": "neutral"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Pieds à largeur du bassin, genoux dans l'axe des pieds, ventre gainé, un haltère dans chaque main."
+    },
+    {
+      "t": 7,
+      "text": "Descendez les fesses vers la chaise sans vous asseoir, puis remontez en serrant les fesses (le passage debout n'est pas représentable : l'avatar montre l'inclinaison du buste depuis la position assise)."
+    },
+    {
+      "t": 15,
+      "text": "Remontez sans cambrer le bas du dos."
+    },
+    {
+      "t": 22,
+      "text": "À éviter : ne cambrez pas le bas du dos, les genoux ne rentrent pas vers l'intérieur. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 26
+}

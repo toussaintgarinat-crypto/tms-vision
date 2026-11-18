@@ -1,0 +1,100 @@
+{
+  "id": "fiche-renfo-poignet-flechisseurs-n2",
+  "zone": "lower_arm",
+  "title": "Fléchisseurs du poignet, niveau 2 : avec haltère",
+  "description": "Même mouvement avec un haltère de 0,5 à 1,5 kg : descendez en 3 s, remontez en 2 s. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce progressivement les muscles qui plient le poignet.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du poignet, fléchisseurs du poignet (muscles épitrochléens) (Renfo_poignet_4_flechisseurs), niveau 2, avec haltère",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "lower_arm",
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": -30
+      }
+    },
+    "move": {
+      "R_upper_arm": {
+        "flexion": 20
+      },
+      "R_forearm": {
+        "flexion": 70
+      },
+      "R_hand": {
+        "flexion": 50
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 14,
+      "pose": "start"
+    },
+    {
+      "t": 16,
+      "pose": "move"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 22,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, avant-bras posé sur la table ou la cuisse, paume vers le haut, haltère de 0,5 à 1,5 kg en main."
+    },
+    {
+      "t": 4,
+      "text": "Descendez la main en 3 s, remontez en 2 s (l'animation commence par la montée)."
+    },
+    {
+      "t": 9,
+      "text": "Haltère : + 0,5 kg par palier, sans dépasser 2 kg. Soufflez pendant l'effort."
+    },
+    {
+      "t": 20,
+      "text": "À éviter : ne soulevez pas l'avant-bras de la table, ne serrez pas l'haltère plus que nécessaire. Arrêtez et contactez l'ostéopathe en cas de douleur vive au poignet ou au coude, fourmillements ou engourdissement des doigts, gonflement."
+    }
+  ],
+  "duration_seconds": 24
+}

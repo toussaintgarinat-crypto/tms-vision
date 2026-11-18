@@ -1,0 +1,104 @@
+{
+  "id": "fiche-renfo-dos-grand-dorsal-n1",
+  "zone": "trunk",
+  "title": "Grand dorsal, niveau 1 : bras décollés au sol",
+  "description": "Le grand dorsal ramène le bras vers le bas et l'arrière et stabilise le tronc. À plat ventre, bras le long du corps, paumes vers le haut, décollez les bras en serrant les omoplates. Tenez 3 s. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce le muscle qui tire le bras vers l'arrière et relie l'épaule au bas du dos.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement du dos (zone dorsale), grand dorsal (Renfo_dos_2_grand_dorsal), niveau 1, bras décollés au sol",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk",
+    "shoulder"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {},
+    "move": {
+      "R_upper_arm": {
+        "flexion": -40
+      },
+      "L_upper_arm": {
+        "flexion": -40
+      },
+      "R_clavicle": {
+        "twist": -14
+      },
+      "L_clavicle": {
+        "twist": -14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 9,
+      "pose": "move"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "move"
+    },
+    {
+      "t": 17,
+      "pose": "move"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 22,
+      "pose": "move"
+    },
+    {
+      "t": 25,
+      "pose": "move"
+    },
+    {
+      "t": 28,
+      "pose": "start"
+    },
+    {
+      "t": 31,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "À plat ventre sur un tapis, bras le long du corps, paumes vers le haut (l'animation montre le geste debout)."
+    },
+    {
+      "t": 4,
+      "text": "Décollez les bras en serrant les omoplates."
+    },
+    {
+      "t": 12,
+      "text": "Tenez 3 s. Épaules basses, loin des oreilles ; le tronc reste immobile et gainé."
+    },
+    {
+      "t": 29,
+      "text": "À éviter : ne haussez pas les épaules en tirant, ne tournez pas le buste pour aider le bras. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans le dos, douleur qui fait le tour des côtes ou descend dans les jambes, fourmillements, gêne pour respirer."
+    }
+  ],
+  "duration_seconds": 33
+}

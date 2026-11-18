@@ -1,0 +1,97 @@
+{
+  "id": "fiche-renfo-cheville-tibial-anterieur-n3",
+  "zone": "foot",
+  "title": "Tibial antérieur, niveau 3 : marcher sur les talons",
+  "description": "Le tibial antérieur, le long du tibia, relève la pointe du pied et contrôle sa pose au sol. Sans matériel. Dosage : 4 séries de 10 répétitions, 3 fois par semaine (10 pas par série), charge progressive.",
+  "benefit": "Entraîne le releveur du pied, qui évite d'accrocher le pied en marchant.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Tibial antérieur (Renfo_cheville_2_tibial_anterieur), niveau 3 : marcher sur les talons",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "foot",
+    "lower_leg"
+  ],
+  "poses": {
+    "neutral": {},
+    "up": {
+      "R_foot": {
+        "flexion": 25
+      },
+      "L_foot": {
+        "flexion": 25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "up"
+    },
+    {
+      "t": 8,
+      "pose": "up"
+    },
+    {
+      "t": 11,
+      "pose": "neutral"
+    },
+    {
+      "t": 13,
+      "pose": "up"
+    },
+    {
+      "t": 16,
+      "pose": "up"
+    },
+    {
+      "t": 19,
+      "pose": "neutral"
+    },
+    {
+      "t": 21,
+      "pose": "up"
+    },
+    {
+      "t": 24,
+      "pose": "up"
+    },
+    {
+      "t": 27,
+      "pose": "neutral"
+    },
+    {
+      "t": 29,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, pointes de pieds relevées (la marche n'est pas représentée : l'avatar tient la position sur place)."
+    },
+    {
+      "t": 8,
+      "text": "Marchez 10 pas sur les talons, sans mouvement brusque."
+    },
+    {
+      "t": 17,
+      "text": "Revenez en marche normale."
+    },
+    {
+      "t": 25,
+      "text": "À éviter : ne relevez pas les orteils seuls, tout le pied monte ; pas de mouvement brusque. Arrêtez en cas de douleur vive, de gonflement, d'instabilité de la cheville ou de fourmillements dans le pied."
+    }
+  ],
+  "duration_seconds": 29
+}

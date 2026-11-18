@@ -1,0 +1,105 @@
+{
+  "id": "fiche-renfo-lombaire-multifides-n3",
+  "zone": "trunk",
+  "title": "Multifides, niveau 3 : avec lest à la cheville",
+  "description": "Même exercice avec un lest léger (0,5 kg) à la cheville : tenez 5 s sans que le bassin bouge. 4 séries de 10 répétitions, 1 minute de repos entre les séries, 3 séances par semaine avec un jour de repos entre deux.",
+  "benefit": "Renforce les petits muscles qui stabilisent la colonne lombaire, avec une charge légère.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement lombaire, multifides lombaires (Renfo_lombaire_2_multifides), niveau 3, avec lest",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "trunk",
+    "hip"
+  ],
+  "poses": {
+    "neutral": {},
+    "start": {
+      "spine": {
+        "flexion": 10
+      }
+    },
+    "move": {
+      "spine": {
+        "flexion": 10
+      },
+      "R_upper_arm": {
+        "flexion": 160
+      },
+      "L_thigh": {
+        "flexion": -25
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "start"
+    },
+    {
+      "t": 6,
+      "pose": "move"
+    },
+    {
+      "t": 11,
+      "pose": "move"
+    },
+    {
+      "t": 14,
+      "pose": "start"
+    },
+    {
+      "t": 16,
+      "pose": "move"
+    },
+    {
+      "t": 21,
+      "pose": "move"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    },
+    {
+      "t": 26,
+      "pose": "move"
+    },
+    {
+      "t": 31,
+      "pose": "move"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    },
+    {
+      "t": 37,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "À quatre pattes sur un tapis, lest léger de 0,5 kg à la cheville (l'animation montre le geste debout)."
+    },
+    {
+      "t": 4,
+      "text": "Tendez un bras devant et la jambe opposée derrière, dos plat."
+    },
+    {
+      "t": 14,
+      "text": "Tenez 5 s sans que le bassin bouge, puis changez de côté. Lest : + 0,5 kg par palier, sans dépasser 1 kg."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : ne creusez pas le dos en levant la jambe, le bassin ne bascule pas sur le côté. Arrêtez et contactez l'ostéopathe en cas de douleur qui descend dans la jambe, fourmillements, perte de force, douleur vive dans le dos."
+    }
+  ],
+  "duration_seconds": 39
+}

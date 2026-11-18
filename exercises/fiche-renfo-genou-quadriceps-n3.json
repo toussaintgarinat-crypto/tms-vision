@@ -1,0 +1,85 @@
+{
+  "id": "fiche-renfo-genou-quadriceps-n3",
+  "zone": "thigh",
+  "title": "Quadriceps, niveau 3 : chaise contre le mur",
+  "description": "Le quadriceps, muscle de l'avant de la cuisse, tend le genou et l'amortit à chaque pas, dans les escaliers et en descente. Matériel : un mur. Dosage : 4 séries de 10 répétitions, 3 fois par semaine (tenue de 10 à 30 secondes), charge progressive.",
+  "benefit": "Entraîne le muscle qui tend le genou et soutient l'articulation.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Quadriceps (Renfo_genou_1_quadriceps), niveau 3 : chaise contre le mur",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "low": {
+      "R_shin": {
+        "flexion": 20
+      },
+      "L_shin": {
+        "flexion": 20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "low"
+    },
+    {
+      "t": 15,
+      "pose": "low"
+    },
+    {
+      "t": 18,
+      "pose": "neutral"
+    },
+    {
+      "t": 20,
+      "pose": "low"
+    },
+    {
+      "t": 30,
+      "pose": "low"
+    },
+    {
+      "t": 33,
+      "pose": "neutral"
+    },
+    {
+      "t": 36,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Dos au mur, genoux dans l'axe des pieds."
+    },
+    {
+      "t": 11,
+      "text": "Descendez jusqu'à 60 à 90° de flexion des genoux et tenez 10 à 30 secondes, en soufflant (la position contre le mur n'est pas représentable : l'avatar est assis, genoux à environ 70°)."
+    },
+    {
+      "t": 21,
+      "text": "Remontez lentement."
+    },
+    {
+      "t": 32,
+      "text": "À éviter : ne verrouillez pas brutalement le genou, ne descendez pas sous 90°. Arrêtez en cas de douleur vive, de gonflement, de genou qui se dérobe ou se bloque."
+    }
+  ],
+  "duration_seconds": 36
+}

@@ -1,0 +1,98 @@
+{
+  "id": "fiche-renfo-hanche-adducteurs-n1",
+  "zone": "hip",
+  "title": "Adducteurs, niveau 1 : serrer un ballon assis",
+  "description": "Les adducteurs, muscles de l'intérieur de la cuisse, serrent les cuisses et stabilisent le bassin et le genou. Matériel : un ballon ou un coussin. Dosage : 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Entraîne les muscles qui ramènent la cuisse vers l'intérieur, utiles à la stabilité de la hanche.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Adducteurs (Renfo_hanche_3_adducteurs), niveau 1 : serrer un ballon",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "front",
+  "target_segments": [
+    "hip",
+    "thigh"
+  ],
+  "poses": {
+    "neutral": {},
+    "ball": {
+      "R_thigh": {
+        "lateral": 8
+      },
+      "L_thigh": {
+        "lateral": 8
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "ball"
+    },
+    {
+      "t": 3,
+      "pose": "ball"
+    },
+    {
+      "t": 5,
+      "pose": "neutral"
+    },
+    {
+      "t": 10,
+      "pose": "neutral"
+    },
+    {
+      "t": 13,
+      "pose": "ball"
+    },
+    {
+      "t": 15,
+      "pose": "neutral"
+    },
+    {
+      "t": 20,
+      "pose": "neutral"
+    },
+    {
+      "t": 23,
+      "pose": "ball"
+    },
+    {
+      "t": 25,
+      "pose": "neutral"
+    },
+    {
+      "t": 30,
+      "pose": "neutral"
+    },
+    {
+      "t": 33,
+      "pose": "ball"
+    },
+    {
+      "t": 35,
+      "pose": "ball"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, ballon entre les genoux, dos et bassin immobiles."
+    },
+    {
+      "t": 10,
+      "text": "Serrez progressivement, sans à-coup, à 50 % de votre force, en soufflant. Tenez 5 secondes."
+    },
+    {
+      "t": 21,
+      "text": "Relâchez."
+    },
+    {
+      "t": 31,
+      "text": "À éviter : ne serrez pas brutalement, en cas de douleur au pubis restez au niveau 1. Arrêtez en cas de douleur vive dans l'aine ou la fesse, de douleur qui descend dans la jambe ou de fourmillements."
+    }
+  ],
+  "duration_seconds": 35
+}
