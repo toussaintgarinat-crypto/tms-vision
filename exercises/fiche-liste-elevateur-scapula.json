@@ -1,0 +1,62 @@
+{
+  "id": "fiche-liste-elevateur-scapula",
+  "zone": "neck",
+  "title": "Élévateur de la scapula (droit), en raccourcissement : maintien 1 min 30",
+  "description": "Technique en raccourcissement pour l'élévateur de la scapula droit : position qui diminue la douleur, maintenue pendant 1 min 30.",
+  "benefit": "Aide à relâcher le muscle entre la nuque et l'omoplate.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Liste des exercices (étirements), élévateur de la scapula",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck"
+  ],
+  "poses": {
+    "neutral": {},
+    "short": {
+      "neck": {
+        "lateral": 28,
+        "flexion": -14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "short"
+    },
+    {
+      "t": 95,
+      "pose": "short"
+    },
+    {
+      "t": 100,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Pour l'élévateur droit : amenez votre tête vers votre épaule droite et vers l'arrière."
+    },
+    {
+      "t": 5,
+      "text": "Trouvez une position qui diminue votre douleur, maintenez cette position pendant 1 min 30."
+    },
+    {
+      "t": 95,
+      "text": "Ramenez ensuite doucement votre tête dans une position neutre."
+    },
+    {
+      "t": 100,
+      "text": "Sans douleur ; arrêtez si la douleur augmente."
+    }
+  ],
+  "duration_seconds": 104
+}

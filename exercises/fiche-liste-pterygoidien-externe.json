@@ -1,0 +1,108 @@
+{
+  "id": "fiche-liste-pterygoidien-externe",
+  "zone": "head",
+  "title": "Étirement du ptérygoïdien externe (droit)",
+  "description": "Étirement du muscle ptérygoïdien externe de la mâchoire, décrit pour le côté droit : contraction de 5 secondes puis étirement. Mains sur la mâchoire.",
+  "benefit": "Aide à assouplir les muscles de la mâchoire et à détendre l'articulation de la mâchoire.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Liste des exercices (étirements), ptérygoïdiens externes",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "head"
+  ],
+  "poses": {
+    "neutral": {},
+    "hand": {
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "R_forearm": {
+        "flexion": 115
+      }
+    },
+    "left": {
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "R_forearm": {
+        "flexion": 115
+      },
+      "neck": {
+        "twist": -4
+      },
+      "head": {
+        "twist": -4
+      }
+    },
+    "stretch": {
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "R_forearm": {
+        "flexion": 115
+      },
+      "neck": {
+        "twist": -7
+      },
+      "head": {
+        "twist": -7
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "hand"
+    },
+    {
+      "t": 8,
+      "pose": "left"
+    },
+    {
+      "t": 13,
+      "pose": "left"
+    },
+    {
+      "t": 14,
+      "pose": "stretch"
+    },
+    {
+      "t": 22,
+      "pose": "stretch"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Pour un ptérygoïdien droit : amenez votre mâchoire en diduction gauche (mouvement du bas de la mâchoire vers la gauche)."
+    },
+    {
+      "t": 4,
+      "text": "Mettez vos mains sur la partie droite de la mâchoire."
+    },
+    {
+      "t": 8,
+      "text": "Exercez une contraction en diduction droite (amener la partie inférieure de la mâchoire à droite) sur 5 secondes."
+    },
+    {
+      "t": 14,
+      "text": "Étirez en augmentant la diduction gauche (mâchoire inférieure vers la gauche)."
+    },
+    {
+      "t": 23,
+      "text": "Sans douleur ; arrêtez si la douleur augmente."
+    }
+  ],
+  "duration_seconds": 28
+}

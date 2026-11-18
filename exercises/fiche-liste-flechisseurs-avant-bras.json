@@ -1,0 +1,176 @@
+{
+  "id": "fiche-liste-flechisseurs-avant-bras",
+  "zone": "lower_arm",
+  "title": "Étirement des fléchisseurs de l'avant-bras : 12 secondes ×5",
+  "description": "Étirement des fléchisseurs de l'avant-bras, debout, mains sur une table : poids du corps vers l'arrière pendant 12 secondes, à répéter 5 fois.",
+  "benefit": "Aide à assouplir les muscles de l'avant-bras côté paume, sollicités par le travail manuel.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Liste des exercices (étirements), fléchisseurs de l'avant-bras",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "lower_arm",
+    "hand"
+  ],
+  "poses": {
+    "neutral": {},
+    "table": {
+      "L_upper_arm": {
+        "flexion": 55
+      },
+      "R_upper_arm": {
+        "flexion": 55
+      },
+      "L_hand": {
+        "flexion": -70
+      },
+      "R_hand": {
+        "flexion": -70
+      }
+    },
+    "lean": {
+      "L_upper_arm": {
+        "flexion": 55
+      },
+      "R_upper_arm": {
+        "flexion": 55
+      },
+      "L_hand": {
+        "flexion": -85
+      },
+      "R_hand": {
+        "flexion": -85
+      },
+      "spine": {
+        "flexion": -8
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 3,
+      "pose": "table"
+    },
+    {
+      "t": 5,
+      "pose": "lean"
+    },
+    {
+      "t": 17,
+      "pose": "lean"
+    },
+    {
+      "t": 19,
+      "pose": "table"
+    },
+    {
+      "t": 21,
+      "pose": "lean"
+    },
+    {
+      "t": 33,
+      "pose": "lean"
+    },
+    {
+      "t": 35,
+      "pose": "table"
+    },
+    {
+      "t": 37,
+      "pose": "lean"
+    },
+    {
+      "t": 49,
+      "pose": "lean"
+    },
+    {
+      "t": 51,
+      "pose": "table"
+    },
+    {
+      "t": 53,
+      "pose": "lean"
+    },
+    {
+      "t": 65,
+      "pose": "lean"
+    },
+    {
+      "t": 67,
+      "pose": "table"
+    },
+    {
+      "t": 69,
+      "pose": "lean"
+    },
+    {
+      "t": 81,
+      "pose": "lean"
+    },
+    {
+      "t": 83,
+      "pose": "table"
+    },
+    {
+      "t": 86,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, posez les mains sur une table avec les doigts vers vous."
+    },
+    {
+      "t": 5,
+      "text": "Amenez votre poids du corps vers l'arrière sans créer de douleur pendant 12 secondes."
+    },
+    {
+      "t": 17,
+      "text": "Revenez en position neutre."
+    },
+    {
+      "t": 21,
+      "text": "Répétition 2 sur 5 : poids du corps vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 33,
+      "text": "Revenez en position neutre."
+    },
+    {
+      "t": 37,
+      "text": "Répétition 3 sur 5 : poids du corps vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 49,
+      "text": "Revenez en position neutre."
+    },
+    {
+      "t": 53,
+      "text": "Répétition 4 sur 5 : poids du corps vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 65,
+      "text": "Revenez en position neutre."
+    },
+    {
+      "t": 69,
+      "text": "Répétition 5 sur 5 : poids du corps vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 81,
+      "text": "Revenez en position neutre."
+    },
+    {
+      "t": 85,
+      "text": "Sans douleur ; arrêtez si la douleur augmente."
+    }
+  ],
+  "duration_seconds": 89
+}

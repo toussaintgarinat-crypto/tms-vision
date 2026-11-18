@@ -1,0 +1,113 @@
+{
+  "id": "fiche-liste-trapeze-superieur",
+  "zone": "neck",
+  "title": "Étirement du trapèze supérieur (gauche)",
+  "description": "Étirement du trapèze supérieur, décrit pour le côté gauche : contraction de 5 secondes contre la main puis étirement.",
+  "benefit": "Aide à détendre le haut du dos et la base de la nuque.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Liste des exercices (étirements), trapèze supérieur",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "shoulder"
+  ],
+  "poses": {
+    "neutral": {},
+    "tension": {
+      "R_upper_arm": {
+        "lateral": 100
+      },
+      "R_forearm": {
+        "flexion": 125
+      },
+      "neck": {
+        "flexion": 30,
+        "lateral": 28
+      }
+    },
+    "lift": {
+      "R_upper_arm": {
+        "lateral": 100
+      },
+      "R_forearm": {
+        "flexion": 125
+      },
+      "neck": {
+        "flexion": 14,
+        "lateral": 28
+      }
+    },
+    "stretch": {
+      "R_upper_arm": {
+        "lateral": 100
+      },
+      "R_forearm": {
+        "flexion": 125
+      },
+      "neck": {
+        "flexion": 40,
+        "lateral": 36
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 5,
+      "pose": "tension"
+    },
+    {
+      "t": 9,
+      "pose": "tension"
+    },
+    {
+      "t": 11,
+      "pose": "lift"
+    },
+    {
+      "t": 16,
+      "pose": "lift"
+    },
+    {
+      "t": 18,
+      "pose": "stretch"
+    },
+    {
+      "t": 28,
+      "pose": "stretch"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Pour un trapèze gauche : penchez votre tête vers le sol et vers la droite jusqu'à ressentir une tension dans le haut du dos à gauche."
+    },
+    {
+      "t": 9,
+      "text": "Posez votre main droite sur la partie gauche de votre crâne."
+    },
+    {
+      "t": 11,
+      "text": "Exercez une contraction musculaire en relevant doucement la tête (contre la force de votre main) sur 5 secondes."
+    },
+    {
+      "t": 18,
+      "text": "Puis étirez en amenant votre tête vers le sol et vers la droite."
+    },
+    {
+      "t": 29,
+      "text": "Sans douleur ; arrêtez si la douleur augmente."
+    }
+  ],
+  "duration_seconds": 34
+}

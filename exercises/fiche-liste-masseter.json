@@ -1,0 +1,94 @@
+{
+  "id": "fiche-liste-masseter",
+  "zone": "head",
+  "title": "Étirement du masséter",
+  "description": "Étirement du muscle masséter (muscle de la mâchoire) : contraction modérée de 5 secondes puis étirement, les doigts sur le menton.",
+  "benefit": "Aide à assouplir le muscle masséter et à détendre la mâchoire.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Liste des exercices (étirements), masséter",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "head"
+  ],
+  "poses": {
+    "neutral": {},
+    "open": {
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "R_forearm": {
+        "flexion": 115
+      },
+      "head": {
+        "flexion": -5
+      }
+    },
+    "wide": {
+      "R_upper_arm": {
+        "flexion": 50
+      },
+      "R_forearm": {
+        "flexion": 115
+      },
+      "head": {
+        "flexion": -10
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 4,
+      "pose": "open"
+    },
+    {
+      "t": 8,
+      "pose": "open"
+    },
+    {
+      "t": 13,
+      "pose": "open"
+    },
+    {
+      "t": 14,
+      "pose": "wide"
+    },
+    {
+      "t": 22,
+      "pose": "wide"
+    },
+    {
+      "t": 26,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Ouvrez la bouche."
+    },
+    {
+      "t": 4,
+      "text": "Positionnez vos doigts sur votre menton afin qu'ils maintiennent la bouche ouverte."
+    },
+    {
+      "t": 8,
+      "text": "Exercez une contraction modérée du muscle en essayant de fermer la bouche sur 5 secondes."
+    },
+    {
+      "t": 14,
+      "text": "Étirez en augmentant l'ouverture de la bouche avec vos doigts sur le menton."
+    },
+    {
+      "t": 23,
+      "text": "Sans douleur ; arrêtez si la douleur augmente."
+    }
+  ],
+  "duration_seconds": 28
+}

@@ -1,0 +1,137 @@
+{
+  "id": "fiche-liste-dentele-anterieur",
+  "zone": "shoulder",
+  "title": "Étirement du dentelé antérieur : 12 secondes ×5",
+  "description": "Étirement du dentelé antérieur : moignon de l'épaule vers l'arrière pendant 12 secondes, à répéter 5 fois.",
+  "benefit": "Aide à mobiliser la ceinture scapulaire et à détendre le côté du thorax.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Liste des exercices (étirements), dentelé antérieur",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "shoulder"
+  ],
+  "poses": {
+    "neutral": {},
+    "back": {
+      "R_clavicle": {
+        "twist": -14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "neutral"
+    },
+    {
+      "t": 2,
+      "pose": "back"
+    },
+    {
+      "t": 14,
+      "pose": "back"
+    },
+    {
+      "t": 16,
+      "pose": "neutral"
+    },
+    {
+      "t": 18,
+      "pose": "back"
+    },
+    {
+      "t": 30,
+      "pose": "back"
+    },
+    {
+      "t": 32,
+      "pose": "neutral"
+    },
+    {
+      "t": 34,
+      "pose": "back"
+    },
+    {
+      "t": 46,
+      "pose": "back"
+    },
+    {
+      "t": 48,
+      "pose": "neutral"
+    },
+    {
+      "t": 50,
+      "pose": "back"
+    },
+    {
+      "t": 62,
+      "pose": "back"
+    },
+    {
+      "t": 64,
+      "pose": "neutral"
+    },
+    {
+      "t": 66,
+      "pose": "back"
+    },
+    {
+      "t": 78,
+      "pose": "back"
+    },
+    {
+      "t": 80,
+      "pose": "neutral"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 2,
+      "text": "Amenez le moignon de votre épaule vers l'arrière pendant 12 secondes."
+    },
+    {
+      "t": 14,
+      "text": "Revenez ensuite en position neutre."
+    },
+    {
+      "t": 18,
+      "text": "Répétition 2 sur 5 : moignon de l'épaule vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 30,
+      "text": "Revenez ensuite en position neutre."
+    },
+    {
+      "t": 34,
+      "text": "Répétition 3 sur 5 : moignon de l'épaule vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 46,
+      "text": "Revenez ensuite en position neutre."
+    },
+    {
+      "t": 50,
+      "text": "Répétition 4 sur 5 : moignon de l'épaule vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 62,
+      "text": "Revenez ensuite en position neutre."
+    },
+    {
+      "t": 66,
+      "text": "Répétition 5 sur 5 : moignon de l'épaule vers l'arrière, 12 secondes."
+    },
+    {
+      "t": 78,
+      "text": "Revenez en position neutre."
+    },
+    {
+      "t": 81,
+      "text": "Sans douleur ; arrêtez si la douleur augmente."
+    }
+  ],
+  "duration_seconds": 84
+}

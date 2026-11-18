@@ -66,6 +66,16 @@
             "neck-rotation-stretch",
             "seated-neck-rotation-stretch"
           ]
+        },
+        {
+          "id": "fiches-theo-martin-neck",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-liste-pterygoidien-externe",
+            "fiche-liste-masseter",
+            "fiche-liste-trapeze-superieur",
+            "fiche-liste-elevateur-scapula"
+          ]
         }
       ]
     },
@@ -142,6 +152,13 @@
             "seated-shoulder-arm-elevation",
             "lying-arms-overhead-stretch",
             "arm-circles"
+          ]
+        },
+        {
+          "id": "fiches-theo-martin-shoulder",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-liste-dentele-anterieur"
           ]
         }
       ]
@@ -267,6 +284,13 @@
             "seated-thumb-mobility",
             "wrist-circles",
             "seated-wrist-circles"
+          ]
+        },
+        {
+          "id": "fiches-theo-martin-wrist-hand",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-liste-flechisseurs-avant-bras"
           ]
         }
       ]
