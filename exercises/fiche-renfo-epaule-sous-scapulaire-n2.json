@@ -1,0 +1,136 @@
+{
+  "id": "fiche-renfo-epaule-sous-scapulaire-n2",
+  "zone": "shoulder",
+  "title": "Sous-scapulaire, niveau 2 : rotation interne avec élastique",
+  "description": "Le sous-scapulaire tourne le bras vers l'intérieur et stabilise l'avant de l'épaule. Matériel : un élastique fixé à droite, à hauteur du coude. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à la stabilité de l'avant de l'épaule.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, sous-scapulaire (Renfo_epaule_3_sous_scapulaire), niveau 2 (avec élastique)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "twist": 40
+      }
+    },
+    "target": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "twist": -15
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Coude collé au corps et plié à 90°, élastique fixé à votre droite à hauteur du coude."
+    },
+    {
+      "t": 3,
+      "text": "Ramenez l'avant-bras vers le ventre (côté droit)."
+    },
+    {
+      "t": 5,
+      "text": "Tenez, puis revenez lentement. Puis faites l'autre côté."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : décoller le coude du corps ; pencher les épaules vers l'avant. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

@@ -1,0 +1,148 @@
+{
+  "id": "fiche-renfo-epaule-trapezes-rhomboides-n1",
+  "zone": "shoulder",
+  "title": "Stabilisateurs de l'omoplate, niveau 1 : serrer les omoplates",
+  "description": "Le trapèze moyen, le trapèze inférieur et les rhomboïdes rapprochent les omoplates de la colonne et les abaissent. Sans matériel. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à corriger les épaules enroulées vers l'avant.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, trapèzes moyen et inférieur et rhomboïdes (Renfo_epaule_6_trapezes_rhomboides), niveau 1 (serrer les omoplates, sans matériel)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 90
+      }
+    },
+    "target": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "flexion": -15
+      },
+      "L_upper_arm": {
+        "flexion": -15
+      },
+      "R_clavicle": {
+        "twist": -14
+      },
+      "L_clavicle": {
+        "twist": -14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 8,
+      "pose": "target"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "target"
+    },
+    {
+      "t": 17,
+      "pose": "target"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "start"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "target"
+    },
+    {
+      "t": 29,
+      "pose": "start"
+    },
+    {
+      "t": 30,
+      "pose": "start"
+    },
+    {
+      "t": 32,
+      "pose": "target"
+    },
+    {
+      "t": 35,
+      "pose": "target"
+    },
+    {
+      "t": 38,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Coudes pliés à 90° le long du corps."
+    },
+    {
+      "t": 3,
+      "text": "Reculez les coudes en serrant les omoplates, comme pour les glisser dans les poches arrière."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 3 secondes, puis relâchez."
+    },
+    {
+      "t": 12,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 21,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 30,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 39,
+      "text": "À éviter : hausser les épaules en tirant ; cambrer le bas du dos. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 44
+}

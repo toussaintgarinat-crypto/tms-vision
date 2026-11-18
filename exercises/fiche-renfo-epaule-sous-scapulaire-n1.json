@@ -1,0 +1,136 @@
+{
+  "id": "fiche-renfo-epaule-sous-scapulaire-n1",
+  "zone": "shoulder",
+  "title": "Sous-scapulaire, niveau 1 : pression de la main sur le ventre",
+  "description": "Le sous-scapulaire tourne le bras vers l'intérieur et stabilise l'avant de l'épaule. Sans matériel. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à la stabilité de l'avant de l'épaule.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, sous-scapulaire (Renfo_epaule_3_sous_scapulaire), niveau 1 (pression sur le ventre, sans matériel)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "twist": -12
+      }
+    },
+    "target": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "twist": -20
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "target"
+    },
+    {
+      "t": 13,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "start"
+    },
+    {
+      "t": 16,
+      "pose": "target"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "target"
+    },
+    {
+      "t": 32,
+      "pose": "target"
+    },
+    {
+      "t": 35,
+      "pose": "start"
+    },
+    {
+      "t": 36,
+      "pose": "start"
+    },
+    {
+      "t": 38,
+      "pose": "target"
+    },
+    {
+      "t": 43,
+      "pose": "target"
+    },
+    {
+      "t": 46,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Coude collé au corps et plié à 90°, paume sur le ventre, coude légèrement en avant, épaules basses."
+    },
+    {
+      "t": 3,
+      "text": "Appuyez la main contre le ventre, sans bouger."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 5 secondes sans bouger. Puis faites l'autre côté."
+    },
+    {
+      "t": 14,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 25,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 36,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 47,
+      "text": "À éviter : décoller le coude du corps ; pencher les épaules vers l'avant. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 52
+}

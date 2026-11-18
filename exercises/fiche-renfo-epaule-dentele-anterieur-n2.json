@@ -1,0 +1,134 @@
+{
+  "id": "fiche-renfo-epaule-dentele-anterieur-n2",
+  "zone": "shoulder",
+  "title": "Dentelé antérieur, niveau 2 : poing vers le haut, allongé",
+  "description": "Le dentelé antérieur avance l'omoplate et la garde plaquée contre les côtes. Matériel : un haltère de 0,5 à 2 kg. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à la stabilité de l'omoplate.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, dentelé antérieur (Renfo_epaule_5_dentele_anterieur), niveau 2 (poing vers le haut, haltère)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_upper_arm": {
+        "flexion": 90
+      }
+    },
+    "target": {
+      "R_upper_arm": {
+        "flexion": 90
+      },
+      "R_clavicle": {
+        "twist": 14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé, bras tendu vers le plafond, haltère en main."
+    },
+    {
+      "t": 3,
+      "text": "Poussez le poing vers le haut sans plier le coude (côté droit)."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 2 secondes, puis relâchez. Puis faites l'autre côté."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : plier les coudes (ce n'est pas une pompe classique) ; laisser le bas du dos se creuser. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

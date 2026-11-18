@@ -74,7 +74,22 @@
             "fiche-liste-pterygoidien-externe",
             "fiche-liste-masseter",
             "fiche-liste-trapeze-superieur",
-            "fiche-liste-elevateur-scapula"
+            "fiche-liste-elevateur-scapula",
+            "fiche-renfo-cervical-scm-n1",
+            "fiche-renfo-cervical-scm-n2",
+            "fiche-renfo-cervical-scm-n3",
+            "fiche-renfo-cervical-scalenes-n1",
+            "fiche-renfo-cervical-scalenes-n2",
+            "fiche-renfo-cervical-scalenes-n3",
+            "fiche-renfo-cervical-trapeze-superieur-n1",
+            "fiche-renfo-cervical-trapeze-superieur-n2",
+            "fiche-renfo-cervical-trapeze-superieur-n3",
+            "fiche-renfo-cervical-elevateur-scapula-n1",
+            "fiche-renfo-cervical-elevateur-scapula-n2",
+            "fiche-renfo-cervical-elevateur-scapula-n3",
+            "fiche-renfo-cervical-extenseurs-n1",
+            "fiche-renfo-cervical-extenseurs-n2",
+            "fiche-renfo-cervical-extenseurs-n3"
           ]
         }
       ]
@@ -158,7 +173,22 @@
           "id": "fiches-theo-martin-shoulder",
           "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
           "exercises": [
-            "fiche-liste-dentele-anterieur"
+            "fiche-liste-dentele-anterieur",
+            "fiche-renfo-epaule-supra-epineux-n1",
+            "fiche-renfo-epaule-supra-epineux-n2",
+            "fiche-renfo-epaule-supra-epineux-n3",
+            "fiche-renfo-epaule-infra-epineux-n1",
+            "fiche-renfo-epaule-infra-epineux-n2",
+            "fiche-renfo-epaule-infra-epineux-n3",
+            "fiche-renfo-epaule-sous-scapulaire-n1",
+            "fiche-renfo-epaule-sous-scapulaire-n2",
+            "fiche-renfo-epaule-sous-scapulaire-n3",
+            "fiche-renfo-epaule-deltoide-n1",
+            "fiche-renfo-epaule-deltoide-n2",
+            "fiche-renfo-epaule-deltoide-n3",
+            "fiche-renfo-epaule-dentele-anterieur-n1",
+            "fiche-renfo-epaule-dentele-anterieur-n2",
+            "fiche-renfo-epaule-dentele-anterieur-n3"
           ]
         }
       ]
@@ -328,6 +358,15 @@
             "seated-trunk-side-bend",
             "round-hollow-back",
             "seated-round-hollow-back"
+          ]
+        },
+        {
+          "id": "fiches-theo-martin-upper-back",
+          "label": "Exercices des fiches de Théo MARTIN (ostéopathe)",
+          "exercises": [
+            "fiche-renfo-epaule-trapezes-rhomboides-n1",
+            "fiche-renfo-epaule-trapezes-rhomboides-n2",
+            "fiche-renfo-epaule-trapezes-rhomboides-n3"
           ]
         }
       ]

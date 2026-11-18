@@ -1,0 +1,154 @@
+{
+  "id": "fiche-renfo-epaule-trapezes-rhomboides-n2",
+  "zone": "shoulder",
+  "title": "Stabilisateurs de l'omoplate, niveau 2 : tirage avec élastique",
+  "description": "Le trapèze moyen, le trapèze inférieur et les rhomboïdes rapprochent les omoplates de la colonne et les abaissent. Matériel : un élastique fixé devant soi à hauteur de poitrine. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à corriger les épaules enroulées vers l'avant.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, trapèzes moyen et inférieur et rhomboïdes (Renfo_epaule_6_trapezes_rhomboides), niveau 2 (tirage, élastique)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_upper_arm": {
+        "flexion": 80
+      },
+      "L_upper_arm": {
+        "flexion": 80
+      },
+      "R_forearm": {
+        "flexion": 10
+      },
+      "L_forearm": {
+        "flexion": 10
+      }
+    },
+    "target": {
+      "R_upper_arm": {
+        "flexion": 15
+      },
+      "L_upper_arm": {
+        "flexion": 15
+      },
+      "R_forearm": {
+        "flexion": 90
+      },
+      "L_forearm": {
+        "flexion": 90
+      },
+      "R_clavicle": {
+        "twist": -14
+      },
+      "L_clavicle": {
+        "twist": -14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Élastique fixé devant vous à hauteur de poitrine, bras vers l'avant."
+    },
+    {
+      "t": 3,
+      "text": "Tirez les coudes vers l'arrière en serrant les omoplates."
+    },
+    {
+      "t": 5,
+      "text": "Tenez, puis revenez lentement."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : hausser les épaules en tirant ; cambrer le bas du dos. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

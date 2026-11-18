@@ -1,0 +1,131 @@
+{
+  "id": "fiche-renfo-cervical-scm-n3",
+  "zone": "neck",
+  "title": "SCM, niveau 3 : diagonale contre élastique",
+  "description": "Le sterno-cléido-mastoïdien tourne la tête du côté opposé et fléchit le cou. Matériel : un élastique fixé derrière soi à droite. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Complète le travail des fléchisseurs profonds et aide à protéger le cou.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, sterno-cléido-mastoïdiens (Renfo_cervical_2_SCM), niveau 3 (diagonale, élastique)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "three_quarter",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "neck": {
+        "flexion": 14,
+        "twist": -18
+      },
+      "head": {
+        "flexion": 14,
+        "twist": -30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Élastique fixé derrière vous à droite, sur la tempe droite, menton légèrement rentré."
+    },
+    {
+      "t": 3,
+      "text": "Tournez la tête à gauche et descendez le menton en diagonale."
+    },
+    {
+      "t": 5,
+      "text": "Tenez, puis revenez lentement. Travaillez les deux côtés de façon égale."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : sortir le menton en avant, rotation rapide ou à-coups. Arrêtez et contactez l'ostéopathe en cas de vertiges, troubles de la vue, fourmillements dans les bras ou maux de tête inhabituels."
+    }
+  ],
+  "duration_seconds": 40
+}

@@ -1,0 +1,130 @@
+{
+  "id": "fiche-renfo-cervical-scm-n2",
+  "zone": "neck",
+  "title": "SCM, niveau 2 : flexion contre élastique, assis",
+  "description": "Le sterno-cléido-mastoïdien fléchit le cou. Matériel : un élastique fixé derrière soi. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Complète le travail des fléchisseurs profonds et aide à protéger le cou.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, sterno-cléido-mastoïdiens (Renfo_cervical_2_SCM), niveau 2 (flexion, élastique)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "seated",
+  "view": "side",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "neck": {
+        "flexion": 22
+      },
+      "head": {
+        "flexion": 18
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Assis, élastique sur le front et fixé derrière vous, menton légèrement rentré."
+    },
+    {
+      "t": 3,
+      "text": "Amenez le menton vers la poitrine contre la résistance de l'élastique."
+    },
+    {
+      "t": 5,
+      "text": "Tenez, puis revenez lentement."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : sortir le menton en avant, rotation rapide ou à-coups. Arrêtez et contactez l'ostéopathe en cas de vertiges, troubles de la vue, fourmillements dans les bras ou maux de tête inhabituels."
+    }
+  ],
+  "duration_seconds": 40
+}

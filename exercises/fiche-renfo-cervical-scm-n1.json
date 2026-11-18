@@ -1,0 +1,132 @@
+{
+  "id": "fiche-renfo-cervical-scm-n1",
+  "zone": "neck",
+  "title": "SCM, niveau 1 : tête tournée puis décollée, allongé",
+  "description": "Le sterno-cléido-mastoïdien fléchit le cou et tourne la tête du côté opposé. Sans matériel, 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Complète le travail des fléchisseurs profonds et aide à protéger le cou.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, sterno-cléido-mastoïdiens (Renfo_cervical_2_SCM), niveau 1 (tête tournée, décollée, sans matériel)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "three_quarter",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "neck": {
+        "flexion": 10,
+        "twist": -15
+      },
+      "head": {
+        "twist": -40,
+        "flexion": 6
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Allongé sur le dos, menton légèrement rentré."
+    },
+    {
+      "t": 3,
+      "text": "Tournez la tête à gauche, puis décollez-la de 2 cm : cela travaille le SCM droit."
+    },
+    {
+      "t": 5,
+      "text": "Tenez, puis redescendez lentement. Ensuite, faites l'autre côté, de façon égale."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : sortir le menton en avant, rotation rapide ou à-coups. Arrêtez et contactez l'ostéopathe en cas de vertiges, troubles de la vue, fourmillements dans les bras ou maux de tête inhabituels."
+    }
+  ],
+  "duration_seconds": 40
+}

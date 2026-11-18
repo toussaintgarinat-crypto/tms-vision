@@ -1,0 +1,147 @@
+{
+  "id": "fiche-renfo-epaule-trapezes-rhomboides-n3",
+  "zone": "shoulder",
+  "title": "Stabilisateurs de l'omoplate, niveau 3 : le « Y », bras décollés",
+  "description": "Le trapèze moyen, le trapèze inférieur et les rhomboïdes rapprochent les omoplates de la colonne et les abaissent. Matériel : un tapis. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à corriger les épaules enroulées vers l'avant.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, trapèzes moyen et inférieur et rhomboïdes (Renfo_epaule_6_trapezes_rhomboides), niveau 3 (le « Y », à plat ventre)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "position": "lying",
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_upper_arm": {
+        "flexion": 165,
+        "lateral": 25
+      },
+      "L_upper_arm": {
+        "flexion": 165,
+        "lateral": 25
+      }
+    },
+    "target": {
+      "R_upper_arm": {
+        "flexion": 170,
+        "lateral": 25
+      },
+      "L_upper_arm": {
+        "flexion": 170,
+        "lateral": 25
+      },
+      "R_clavicle": {
+        "twist": -14
+      },
+      "L_clavicle": {
+        "twist": -14
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "À plat ventre, bras tendus en Y au-dessus de la tête, pouces vers le haut."
+    },
+    {
+      "t": 3,
+      "text": "Décollez les bras de 3 cm."
+    },
+    {
+      "t": 5,
+      "text": "Tenez, puis redescendez lentement. Au niveau 3, vous pouvez ajouter une petite bouteille d'eau dans chaque main."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : hausser les épaules en tirant ; cambrer le bas du dos. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

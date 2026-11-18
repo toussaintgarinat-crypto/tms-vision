@@ -1,0 +1,133 @@
+{
+  "id": "fiche-renfo-epaule-infra-epineux-n1",
+  "zone": "shoulder",
+  "title": "Rotateurs externes, niveau 1 : rotation externe coude au corps",
+  "description": "L'infra-épineux et le petit rond tournent le bras vers l'extérieur et stabilisent l'épaule. Matériel : une serviette roulée sous le bras. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à équilibrer les rotateurs internes, souvent plus forts.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, infra-épineux et petit rond (Renfo_epaule_2_infra_epineux_petit_rond), niveau 1 (rotation externe, serviette)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_forearm": {
+        "flexion": 90
+      }
+    },
+    "target": {
+      "R_forearm": {
+        "flexion": 90
+      },
+      "R_upper_arm": {
+        "twist": 55
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Coude collé au corps et plié à 90°, serviette roulée sous le bras, poignet droit."
+    },
+    {
+      "t": 3,
+      "text": "Ouvrez l'avant-bras vers l'extérieur, comme une porte (côté droit)."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 2 secondes, revenez en 3 secondes. Puis faites l'autre côté."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : décoller le coude du corps ; tourner le buste pour aller plus loin. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

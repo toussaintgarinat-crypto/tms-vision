@@ -1,0 +1,129 @@
+{
+  "id": "fiche-renfo-cervical-scalenes-n3",
+  "zone": "neck",
+  "title": "Scalènes, niveau 3 : inclinaison contre élastique",
+  "description": "Les scalènes inclinent le cou sur le côté. Matériel : un élastique fixé à gauche. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Stabilise le cou sur les côtés.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, scalènes (Renfo_cervical_3_scalenes), niveau 3 (inclinaison, élastique)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "neck": {
+        "lateral": 20
+      },
+      "head": {
+        "lateral": 12
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Épaules basses et relâchées, regard droit devant, élastique fixé à votre gauche et passé au-dessus de l'oreille droite."
+    },
+    {
+      "t": 3,
+      "text": "Inclinez la tête à droite contre la résistance, sans la tourner."
+    },
+    {
+      "t": 5,
+      "text": "Tenez, puis revenez lentement. Travaillez les deux côtés."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : hausser l'épaule du côté qui travaille, tourner la tête. Arrêtez et contactez l'ostéopathe en cas de vertiges, fourmillements ou douleur dans le bras ou la main, gêne pour respirer."
+    }
+  ],
+  "duration_seconds": 40
+}

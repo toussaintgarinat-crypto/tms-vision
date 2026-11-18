@@ -1,0 +1,144 @@
+{
+  "id": "fiche-renfo-cervical-scalenes-n1",
+  "zone": "neck",
+  "title": "Scalènes, niveau 1 : poussée contre la main",
+  "description": "Les scalènes inclinent le cou sur le côté et stabilisent le cou. Matériel : votre main. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Stabilise le cou sur les côtés.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, scalènes (Renfo_cervical_3_scalenes), niveau 1 (poussée contre la main)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_upper_arm": {
+        "flexion": 50,
+        "lateral": 50
+      },
+      "R_forearm": {
+        "flexion": 125
+      }
+    },
+    "target": {
+      "R_upper_arm": {
+        "flexion": 50,
+        "lateral": 50
+      },
+      "R_forearm": {
+        "flexion": 125
+      },
+      "neck": {
+        "lateral": 5
+      },
+      "head": {
+        "lateral": 3
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "target"
+    },
+    {
+      "t": 13,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "start"
+    },
+    {
+      "t": 16,
+      "pose": "target"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 24,
+      "pose": "start"
+    },
+    {
+      "t": 25,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "target"
+    },
+    {
+      "t": 32,
+      "pose": "target"
+    },
+    {
+      "t": 35,
+      "pose": "start"
+    },
+    {
+      "t": 36,
+      "pose": "start"
+    },
+    {
+      "t": 38,
+      "pose": "target"
+    },
+    {
+      "t": 43,
+      "pose": "target"
+    },
+    {
+      "t": 46,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Épaules basses et relâchées, regard droit devant, main droite contre la tempe droite."
+    },
+    {
+      "t": 3,
+      "text": "Poussez la tête vers la main sans bouger, à 30 % de votre force."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 5 secondes sans bouger. Travaillez les deux côtés."
+    },
+    {
+      "t": 14,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 25,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 36,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 47,
+      "text": "À éviter : hausser l'épaule du côté qui travaille, tourner la tête pendant l'inclinaison. Arrêtez et contactez l'ostéopathe en cas de vertiges, fourmillements ou douleur dans le bras ou la main, gêne pour respirer."
+    }
+  ],
+  "duration_seconds": 52
+}

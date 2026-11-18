@@ -1,0 +1,129 @@
+{
+  "id": "fiche-renfo-cervical-trapeze-superieur-n3",
+  "zone": "neck",
+  "title": "Trapèze supérieur, niveau 3 : haussements avec élastique",
+  "description": "Le trapèze supérieur élève les épaules, stabilise l'omoplate et aide à incliner le cou. Matériel : un élastique. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Soulage la nuque lors du port de charges et des postures prolongées.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, trapèze supérieur (Renfo_cervical_4_trapeze_superieur), niveau 3 (avec élastique)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "shoulder"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "R_clavicle": {
+        "lateral": 16
+      },
+      "L_clavicle": {
+        "lateral": 16
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, pieds largeur du bassin, bras le long du corps, cou long."
+    },
+    {
+      "t": 3,
+      "text": "Debout sur l'élastique, une extrémité dans chaque main, montez les épaules contre la résistance."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 2 secondes, puis redescendez lentement en 3 secondes."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : rouler les épaules en cercle, pencher la tête, sortir le menton. Arrêtez et contactez l'ostéopathe en cas de douleur dans l'épaule, fourmillements dans les bras, vertiges."
+    }
+  ],
+  "duration_seconds": 40
+}

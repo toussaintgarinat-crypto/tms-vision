@@ -1,0 +1,131 @@
+{
+  "id": "fiche-renfo-epaule-supra-epineux-n1",
+  "zone": "shoulder",
+  "title": "Supra-épineux, niveau 1 : écartement léger",
+  "description": "Le supra-épineux (coiffe des rotateurs) démarre l'écartement du bras et centre la tête de l'humérus. Sans matériel. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à la stabilité de l'épaule.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, supra-épineux (Renfo_epaule_1_supra_epineux), niveau 1 (écartement léger, sans matériel)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "R_upper_arm": {
+        "flexion": 0,
+        "lateral": 30
+      },
+      "L_upper_arm": {
+        "flexion": 0,
+        "lateral": 30
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, épaules basses et en arrière, bras tendus, pouces vers le plafond."
+    },
+    {
+      "t": 3,
+      "text": "Écartez le bras tendu de 30° seulement."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 2 secondes, redescendez en 3 secondes."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : hausser l'épaule pour lever le bras ; monter au-dessus de l'horizontale. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

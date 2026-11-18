@@ -1,0 +1,132 @@
+{
+  "id": "fiche-renfo-cervical-elevateur-scapula-n1",
+  "zone": "neck",
+  "title": "Élévateur de la scapula, niveau 1 : une épaule",
+  "description": "L'élévateur de la scapula élève l'omoplate, incline et tourne le cou du même côté. Sans matériel, côté droit animé. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Peut aider en cas de gêne entre le cou et le haut de l'épaule.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, élévateur de la scapula (Renfo_cervical_5_elevateur_scapula), niveau 1 (une épaule, sans matériel)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "neck",
+    "shoulder"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "R_clavicle": {
+        "lateral": 16
+      },
+      "neck": {
+        "lateral": 8
+      },
+      "head": {
+        "lateral": 6
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Mouvement lent, sans douleur dans la nuque. Les dessins de la fiche montrent le côté droit."
+    },
+    {
+      "t": 3,
+      "text": "Montez l'épaule droite vers l'oreille en inclinant un peu la tête du même côté."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 2 secondes. Puis faites l'autre côté."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : forcer l'inclinaison de la tête (elle accompagne l'épaule), sortir le menton. Arrêtez et contactez l'ostéopathe en cas de douleur vive entre le cou et l'omoplate, fourmillements dans le bras, vertiges."
+    }
+  ],
+  "duration_seconds": 40
+}

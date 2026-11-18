@@ -1,0 +1,144 @@
+{
+  "id": "fiche-renfo-epaule-deltoide-n1",
+  "zone": "shoulder",
+  "title": "Deltoïde, niveau 1 : élévation devant",
+  "description": "Le deltoïde lève le bras devant, sur le côté et en arrière. Matériel : un haltère de 0,5 à 2 kg. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Donne de la force pour lever et porter, une fois la coiffe stable.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, deltoïde (Renfo_epaule_4_deltoide), niveau 1 (élévation devant, haltère)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {
+      "R_forearm": {
+        "flexion": 8
+      },
+      "L_forearm": {
+        "flexion": 8
+      }
+    },
+    "target": {
+      "R_upper_arm": {
+        "flexion": 90,
+        "lateral": 0
+      },
+      "L_upper_arm": {
+        "flexion": 90,
+        "lateral": 0
+      },
+      "R_forearm": {
+        "flexion": 8
+      },
+      "L_forearm": {
+        "flexion": 8
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, genoux souples, ventre gainé, bras presque tendus."
+    },
+    {
+      "t": 3,
+      "text": "Montez l'haltère devant vous jusqu'à hauteur d'épaule, sans monter plus haut."
+    },
+    {
+      "t": 5,
+      "text": "Puis redescendez en 3 secondes."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : prendre de l'élan avec le buste ; hausser les épaules en levant les bras. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

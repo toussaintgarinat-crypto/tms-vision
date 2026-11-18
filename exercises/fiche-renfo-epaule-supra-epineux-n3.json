@@ -1,0 +1,131 @@
+{
+  "id": "fiche-renfo-epaule-supra-epineux-n3",
+  "zone": "shoulder",
+  "title": "Supra-épineux, niveau 3 : élévation avec élastique",
+  "description": "Le supra-épineux (coiffe des rotateurs) démarre l'écartement du bras et centre la tête de l'humérus. Matériel : un élastique sous les pieds. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Contribue à la stabilité de l'épaule.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement de l'épaule, supra-épineux (Renfo_epaule_1_supra_epineux), niveau 3 (élévation, élastique)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "front",
+  "target_segments": [
+    "shoulder",
+    "upper_arm"
+  ],
+  "poses": {
+    "start": {},
+    "target": {
+      "R_upper_arm": {
+        "flexion": 90,
+        "lateral": 28
+      },
+      "L_upper_arm": {
+        "flexion": 90,
+        "lateral": 28
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 7,
+      "pose": "target"
+    },
+    {
+      "t": 10,
+      "pose": "start"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 13,
+      "pose": "target"
+    },
+    {
+      "t": 15,
+      "pose": "target"
+    },
+    {
+      "t": 18,
+      "pose": "start"
+    },
+    {
+      "t": 19,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "target"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "start"
+    },
+    {
+      "t": 27,
+      "pose": "start"
+    },
+    {
+      "t": 29,
+      "pose": "target"
+    },
+    {
+      "t": 31,
+      "pose": "target"
+    },
+    {
+      "t": 34,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "Debout, épaules basses et en arrière, pouces vers le plafond."
+    },
+    {
+      "t": 3,
+      "text": "Debout sur l'élastique, une extrémité dans chaque main, montez les bras un peu en avant jusqu'à hauteur d'épaule."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 2 secondes, redescendez en 3 secondes."
+    },
+    {
+      "t": 11,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 19,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 27,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 35,
+      "text": "À éviter : hausser l'épaule pour lever le bras ; monter au-dessus de l'horizontale. Arrêtez et contactez l'ostéopathe en cas de douleur vive dans l'épaule, douleur qui descend dans le bras, fourmillements, épaule qui se bloque."
+    }
+  ],
+  "duration_seconds": 40
+}

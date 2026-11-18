@@ -1,0 +1,133 @@
+{
+  "id": "fiche-renfo-cervical-extenseurs-n1",
+  "zone": "neck",
+  "title": "Extenseurs du cou, niveau 1 : front décollé",
+  "description": "Le splénius et le semi-épineux redressent la tête et la portent. Matériel : un tapis et une serviette roulée. 4 séries de 10 répétitions, 3 fois par semaine, charge progressive.",
+  "benefit": "Aide à lutter contre la tête portée en avant et la fatigue de la nuque.",
+  "fiche": "Fiche de Théo MARTIN, ostéopathe D.O. — Renforcement cervical, extenseurs du cou (Renfo_cervical_6_extenseurs), niveau 1 (front décollé, tapis et serviette)",
+  "status": "draft",
+  "source": "human",
+  "validated_by": null,
+  "validated_on": null,
+  "view": "side",
+  "target_segments": [
+    "neck",
+    "head"
+  ],
+  "poses": {
+    "start": {
+      "neck": {
+        "flexion": 4
+      }
+    },
+    "target": {
+      "neck": {
+        "flexion": -4
+      },
+      "head": {
+        "flexion": 2
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "start"
+    },
+    {
+      "t": 3,
+      "pose": "start"
+    },
+    {
+      "t": 5,
+      "pose": "target"
+    },
+    {
+      "t": 8,
+      "pose": "target"
+    },
+    {
+      "t": 11,
+      "pose": "start"
+    },
+    {
+      "t": 12,
+      "pose": "start"
+    },
+    {
+      "t": 14,
+      "pose": "target"
+    },
+    {
+      "t": 17,
+      "pose": "target"
+    },
+    {
+      "t": 20,
+      "pose": "start"
+    },
+    {
+      "t": 21,
+      "pose": "start"
+    },
+    {
+      "t": 23,
+      "pose": "target"
+    },
+    {
+      "t": 26,
+      "pose": "target"
+    },
+    {
+      "t": 29,
+      "pose": "start"
+    },
+    {
+      "t": 30,
+      "pose": "start"
+    },
+    {
+      "t": 32,
+      "pose": "target"
+    },
+    {
+      "t": 35,
+      "pose": "target"
+    },
+    {
+      "t": 38,
+      "pose": "start"
+    }
+  ],
+  "instructions": [
+    {
+      "t": 0,
+      "text": "À plat ventre, front sur une serviette roulée, menton légèrement rentré."
+    },
+    {
+      "t": 3,
+      "text": "Décollez le front de 2 cm, menton rentré."
+    },
+    {
+      "t": 5,
+      "text": "Tenez 3 secondes, puis redescendez."
+    },
+    {
+      "t": 12,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 21,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 30,
+      "text": "Recommencez doucement."
+    },
+    {
+      "t": 39,
+      "text": "À éviter : lever le regard vers le plafond, creuser le bas du dos. Arrêtez et contactez l'ostéopathe en cas de vertiges, troubles de la vue, fourmillements dans les bras ou maux de tête inhabituels."
+    }
+  ],
+  "duration_seconds": 44
+}
