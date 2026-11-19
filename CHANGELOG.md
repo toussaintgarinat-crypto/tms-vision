@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [1.5.1] - 2026-11-19
+
 ### Corrections
 - **Installateur Mac Apple Silicon (M1 à M4)** : GitHub ne propose plus la machine de construction
   `macos-14`, ce qui empêchait la publication de la 1.5.0 ; la construction utilise maintenant `macos-15`.
