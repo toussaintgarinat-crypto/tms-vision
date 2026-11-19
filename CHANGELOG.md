@@ -10,6 +10,15 @@ une version précise.
 
 ## [Non publié]
 
+### Corrections
+- **Installateur Mac Apple Silicon (M1 à M4)** : GitHub ne propose plus la machine de construction
+  `macos-14`, ce qui empêchait la publication de la 1.5.0 ; la construction utilise maintenant `macos-15`.
+
+### À savoir
+- La version 1.5.0 n'a jamais été publiée à cause de ce problème : ses nouveautés (les 173 exercices des
+  fiches de Théo MARTIN, avec leur badge « Fiche de Théo MARTIN, ostéopathe », voir plus bas) sont dans
+  cette version.
+
 ## [1.5.0] - 2026-11-18
 
 ### Ajouts
