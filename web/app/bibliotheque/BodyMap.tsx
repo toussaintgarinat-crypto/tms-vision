@@ -1,6 +1,8 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
+import { useI18n } from "../i18n/I18nProvider";
+import { zoneLabel } from "./library";
 
 export type BodyView = "front" | "back";
 
@@ -43,7 +45,8 @@ type Props = {
 };
 
 export function BodyMap({ view, selectedZone, zones, onSelect }: Props) {
-  const labels = new Map(zones.map((zone) => [zone.id, zone.label]));
+  const { t } = useI18n();
+  const labels = new Map(zones.map((zone) => [zone.id, zoneLabel(t, zone)]));
   const spots = HOTSPOTS.filter((spot) => spot.views.includes(view) && labels.has(spot.zone));
 
   const onKeyDown = (event: KeyboardEvent, zone: string) => {
@@ -57,7 +60,7 @@ export function BodyMap({ view, selectedZone, zones, onSelect }: Props) {
     <svg
       viewBox="0 0 200 420"
       role="group"
-      aria-label={view === "front" ? "Corps vu de face" : "Corps vu de dos"}
+      aria-label={t(view === "front" ? "bodymap.front" : "bodymap.back")}
       className="mx-auto h-auto w-full max-w-[220px]"
     >
       <g fill={BODY_FILL} stroke={BODY_FILL} strokeLinecap="round" strokeLinejoin="round">

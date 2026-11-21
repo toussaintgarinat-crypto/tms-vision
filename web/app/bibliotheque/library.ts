@@ -1,10 +1,19 @@
 import type { Exercise } from "../exercisePose";
+import type { TFunction } from "../i18n/translate";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type Pathology = { id: string; label: string; exercises: string[] };
 export type LibraryZone = { id: string; label: string; pathologies: Pathology[] };
 export type Library = { status: "draft" | "validated"; note?: string; zones: LibraryZone[] };
+
+// Libellé d'une zone dans la langue courante ; une zone que le catalogue ne connaît pas garde le
+// libellé envoyé par le serveur.
+export function zoneLabel(t: TFunction, zone: { id: string; label: string }): string {
+  const key = `zone.${zone.id}`;
+  const translated = t(key);
+  return translated === key ? zone.label : translated;
+}
 
 // Identifiant de la « pathologie » qui regroupe tous les exercices d'une zone.
 export const ALL_PATHOLOGIES = "all";

@@ -8,7 +8,9 @@ import {
   isValidEmail,
   setBasketNote,
   toggleInBasket,
+  zoneLabel,
 } from "./library";
+import { translator } from "../i18n/catalog";
 
 const zone: LibraryZone = {
   id: "neck",
@@ -79,5 +81,22 @@ describe("isValidEmail", () => {
     expect(isValidEmail("a@b")).toBe(false);
     expect(isValidEmail("a b@c.fr")).toBe(false);
     expect(isValidEmail("")).toBe(false);
+  });
+});
+
+describe("zoneLabel", () => {
+  it("traduit les zones connues dans la langue courante", () => {
+    expect(zoneLabel(translator("fr"), { id: "lower_back", label: "x" })).toBe("Bas du dos");
+    expect(zoneLabel(translator("en"), { id: "lower_back", label: "x" })).toBe("Lower back");
+  });
+
+  it("garde le libellé du serveur pour une zone inconnue", () => {
+    expect(zoneLabel(translator("en"), { id: "jaw", label: "Mâchoire" })).toBe("Mâchoire");
+  });
+
+  it("couvre toutes les zones de la carte du corps livrée", async () => {
+    const { readFileSync } = await import("node:fs");
+    const map = JSON.parse(readFileSync("../library/body_map.json", "utf8")) as { zones: { id: string }[] };
+    for (const { id } of map.zones) expect(translator("en")(`zone.${id}`)).not.toBe(`zone.${id}`);
   });
 });
