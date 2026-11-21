@@ -305,8 +305,8 @@ juste "finir" la Phase 1 avant de passer à la suite :
   `mp4v` du PoC ne l'était pas ; corrigé et verrouillé par un test de non-régression pendant la
   revue finale de cette tranche).
 - **Ce qui n'est pas dans cette tranche** (voir specs/plan pour le détail) : capture LiDAR/profondeur
-  (caméra 2D uniquement), base de données, authentification, déploiement, floutage RGPD des visages
-  (reste bloquant avant tout test avec de vrais salariés, voir section 7), calibrage des seuils sur
+  (caméra 2D uniquement), base de données, authentification, déploiement, floutage RGPD des visages (livré depuis, voir section 7),
+  calibrage des seuils sur
   données réelles (point 2 ci-dessus, toujours en attente).
 
 #### ✅ Tranche 2 : Upload de fichier vidéo par chunks — TERMINÉE
@@ -611,7 +611,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
   migration des runs déjà présents dans `outputs/`, authentification. Aucun mécanisme de
   suppression/purge des analyses : cette tranche rend possible, pour la première fois, le
   stockage durable d'un nom de salarié (`worker_label`, texte libre) associé à sa vidéo annotée
-  — sans floutage des visages (toujours pas implémenté, voir section 7) ni endpoint de
+  — sans floutage des visages (livré depuis, voir section 7) ni endpoint de
   suppression ni politique de rétention. À traiter avant tout test avec de vrais salariés.
   (Le support des requêtes `Range` pour le streaming vidéo, lui, est couvert : voir
   `GET /analyses/{id}/video` plus haut.)
@@ -701,9 +701,7 @@ juste "finir" la Phase 1 avant de passer à la suite :
 
 #### Reste à faire pour la suite de la Phase 2
 
-- Module de floutage automatique des visages (OpenCV, en amont de l'analyse posturale) — non
-  implémenté, c'est le principal manque de conformité RGPD à combler avant tout test avec de vrais
-  salariés (voir section 7).
+- ~~Module de floutage automatique des visages~~ — **livré** (pixellisation avant écriture de la vidéo annotée, voir section 7 et `docs/superpowers/specs/2026-10-22-face-blur-design.md`). Ce n'est pas une garantie d'anonymat : vérifier à l'œil les premières vidéos d'un pilote.
 - Tournage de la bibliothèque de micro-pauses vidéo par l'ostéopathe (30-45 vidéos courtes) — la
   recommandation de capsules par zone (ci-dessus) est prête côté logique et interface, mais tout
   son contenu vidéo reste factice tant que ce tournage n'a pas eu lieu.
