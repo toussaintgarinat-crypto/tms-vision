@@ -169,3 +169,31 @@ def test_has_users():
     assert accounts.has_users() is False
     _user()
     assert accounts.has_users() is True
+
+
+def test_email_change_keeps_login_working_and_rejects_duplicates():
+    user = _user(email="old@x.fr")
+    _user(email="taken@x.fr")
+    updated = accounts.update_user(user["id"], email="NEW@x.fr", actor=user["id"])
+    assert updated["email"] == "new@x.fr"
+    accounts.authenticate("new@x.fr", GOOD)
+    with pytest.raises(accounts.AccountError):
+        accounts.authenticate("old@x.fr", GOOD)
+    with pytest.raises(accounts.AccountError) as error:
+        accounts.update_user(user["id"], email="taken@x.fr", actor=user["id"])
+    assert error.value.code == "email_taken"
+    with pytest.raises(accounts.AccountError) as error:
+        accounts.update_user(user["id"], email="pas-un-email")
+    assert error.value.code == "invalid_email"
+    assert any("email=old@x.fr->new@x.fr" in (entry["detail"] or "") for entry in accounts.list_audit())
+
+
+def test_admin_changing_an_email_closes_that_accounts_sessions_but_self_change_keeps_them():
+    admin = _user(email="admin@x.fr", roles=("administrateur",))
+    user = _user(email="u@x.fr")
+    other = accounts.create_session(user["id"])
+    accounts.update_user(user["id"], email="u2@x.fr", actor=admin["id"])
+    assert accounts.user_for_token(other) is None
+    mine = accounts.create_session(user["id"])
+    accounts.update_user(user["id"], email="u3@x.fr", actor=user["id"])
+    assert accounts.user_for_token(mine)["email"] == "u3@x.fr"

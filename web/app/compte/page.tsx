@@ -66,6 +66,52 @@ function PasswordSection() {
   );
 }
 
+function LoginEmailSection() {
+  const { t } = useI18n();
+  const { user, refresh } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    const response = await fetch(`${API_URL}/auth/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    }).catch(() => null);
+    if (!response) return setMessage({ ok: false, text: t("auth.error.network") });
+    if (!response.ok) {
+      const problem = readProblem(await response.json().catch(() => null));
+      return setMessage({ ok: false, text: problemText(problem, t, t("auth.error.generic")) });
+    }
+    setEmail("");
+    setPassword("");
+    await refresh();
+    setMessage({ ok: true, text: t("account.loginEmail.done") });
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-3 rounded border p-4">
+      <h2 className="text-lg font-semibold">{t("account.loginEmail.title")}</h2>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">{t("account.loginEmail.help", { email: user?.email ?? "" })}</p>
+      <label className="flex flex-col gap-1 text-sm">
+        {t("account.loginEmail.new")}
+        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="rounded border p-2" />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        {t("account.password.current")}
+        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="rounded border p-2" />
+      </label>
+      <div className="flex items-center gap-3">
+        <button type="submit" className="rounded border border-black px-3 py-1 text-sm">{t("account.loginEmail.button")}</button>
+        {message && <span role="status" className={`text-sm ${message.ok ? "text-green-700" : "text-red-700"}`}>{message.text}</span>}
+      </div>
+    </form>
+  );
+}
+
 function EmailSection() {
   const { t } = useI18n();
   const [settings, setSettings] = useState<EmailSettings | null>(null);
@@ -208,6 +254,7 @@ export default function AccountPage() {
         <button type="button" onClick={() => void logout()} className="rounded border px-3 py-1 text-sm">{t("auth.logout")}</button>
       </div>
       <EmailSection />
+      <LoginEmailSection />
       <PasswordSection />
     </main>
   );

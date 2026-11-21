@@ -1212,6 +1212,10 @@ async def install_update(request: Request) -> dict:
     origin = request.headers.get("origin")
     if origin is not None and origin not in ALLOWED_ORIGINS:
         raise HTTPException(status_code=403, detail="Origine non autorisée.")
+    # Une mise à jour redémarre l'application pour tout le monde : réservée aux administrateurs.
+    user = getattr(request.state, "user", None)
+    if auth_api.auth_required() and (user is None or "administrateur" not in user["roles"]):
+        raise HTTPException(status_code=403, detail="Réservé aux administrateurs.")
     self_update.start()
     return self_update.status()
 

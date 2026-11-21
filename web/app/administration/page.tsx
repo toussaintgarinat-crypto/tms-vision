@@ -15,6 +15,7 @@ export default function AdministrationPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ id: string; email: string } | null>(null);
   const [form, setForm] = useState({ email: "", name: "", password: "", roles: ["praticien"] as string[] });
 
   const fetchAll = useCallback(async () => {
@@ -103,6 +104,13 @@ export default function AdministrationPage() {
                 ))}
                 <button
                   type="button"
+                  onClick={() => setEditing({ id: account.id, email: account.email })}
+                  className="rounded border px-2 py-0.5"
+                >
+                  {t("admin.changeEmail")}
+                </button>
+                <button
+                  type="button"
                   disabled={account.id === user?.id}
                   onClick={() => void send(`/admin/users/${account.id}`, "PATCH", { active: !account.active })}
                   className="rounded border px-2 py-0.5 disabled:opacity-40"
@@ -113,6 +121,25 @@ export default function AdministrationPage() {
             </li>
           ))}
         </ul>
+        {editing && (
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (await send(`/admin/users/${editing.id}`, "PATCH", { email: editing.email })) setEditing(null);
+            }}
+            className="flex flex-col gap-2 rounded border p-3 text-sm"
+          >
+            <label className="flex flex-col gap-1">
+              {t("admin.newEmail", { name: users.find((account) => account.id === editing.id)?.name ?? "" })}
+              <input type="email" required value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} className="rounded border p-2" />
+            </label>
+            <p className="text-xs text-zinc-500">{t("admin.changeEmailNote")}</p>
+            <div className="flex gap-3">
+              <button type="submit" className="rounded border border-black px-3 py-1">{t("common.save")}</button>
+              <button type="button" onClick={() => setEditing(null)} className="underline">{t("common.cancel")}</button>
+            </div>
+          </form>
+        )}
       </section>
       <form onSubmit={create} className="grid gap-3 rounded border p-4 sm:grid-cols-2">
         <h2 className="text-lg font-semibold sm:col-span-2">{t("admin.create")}</h2>

@@ -26,6 +26,9 @@ une version précise.
   test d'envoi, repli sur l'adresse du cabinet). Page « Administration » pour créer les comptes et lire le
   journal. La connexion devient obligatoire dès qu'un compte existe (ou avec `TMS_REQUIRE_AUTH=true`) ; la
   page du patient reste ouverte. Voir `docs/INSTALLATION-CLIENT.md` § 13.
+- **Changer l'adresse d'un compte** : chacun change son adresse de connexion dans « Mon compte » (avec son mot de passe) ;
+  l'administrateur change celle de n'importe quel compte (ses sessions sont alors fermées). La mise à jour en un clic
+  de l'application de bureau est réservée aux administrateurs.
 - **Changement à la mise à jour : fin du mot de passe commun (Caddy).** Les variables `TMS_BASIC_AUTH_*` ne
   servent plus. Le site est fermé par défaut (`TMS_REQUIRE_AUTH=true`) : après la mise à jour, lancez
   `docker compose exec api python -m tms_vision.admin_cli create-admin` pour créer l'administrateur. L'installateur

@@ -129,6 +129,11 @@ class PasswordBody(BaseModel):
     new: str = Field(max_length=256)
 
 
+class EmailChangeBody(BaseModel):
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=256)
+
+
 class ProfileBody(BaseModel):
     name: str | None = Field(default=None, max_length=120)
     language: str | None = Field(default=None, max_length=8)
@@ -210,6 +215,16 @@ def update_me(body: ProfileBody, user: dict = Depends(current_user)):
     return {"user": updated}
 
 
+@router.post("/auth/email")
+def change_my_email(body: EmailChangeBody, user: dict = Depends(current_user)):
+    """Change l'adresse de connexion du compte, après vérification du mot de passe."""
+    try:
+        accounts.authenticate(user["email"], body.password, "email-change")
+        return {"user": accounts.update_user(user["id"], email=body.email, actor=user["id"])}
+    except accounts.AccountError as error:
+        _raise(error, 429 if error.code == "too_many_attempts" else 422)
+
+
 @router.post("/auth/password")
 def change_password(body: PasswordBody, request: Request, user: dict = Depends(current_user)):
     try:
@@ -239,6 +254,7 @@ class UserPatchBody(BaseModel):
     roles: list[str] | None = None
     active: bool | None = None
     name: str | None = Field(default=None, max_length=120)
+    email: str | None = Field(default=None, max_length=254)
 
 
 class ResetPasswordBody(BaseModel):
@@ -264,10 +280,11 @@ def admin_create_user(body: NewUserBody, admin: dict = Depends(_admin)):
 def admin_update_user(user_id: str, body: UserPatchBody, admin: dict = Depends(_admin)):
     try:
         return accounts.update_user(
-            user_id, roles=body.roles, active=body.active, name=body.name, actor=admin["id"]
+            user_id, roles=body.roles, active=body.active, name=body.name, email=body.email,
+            actor=admin["id"],
         )
     except accounts.AccountError as error:
-        _raise(error, 404 if error.code == "not_found" else 422)
+        _raise(error, {"not_found": 404, "email_taken": 409}.get(error.code, 422))
 
 
 @admin_router.post("/users/{user_id}/password")

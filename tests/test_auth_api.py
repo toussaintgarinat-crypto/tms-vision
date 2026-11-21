@@ -164,3 +164,24 @@ def test_user_changes_own_password_and_keeps_the_current_session(client):
     assert client.get("/bilans").status_code == 200
     client.post("/auth/logout", headers=ORIGIN)
     assert _login(client, password="un autre mot de passe").status_code == 200
+
+
+def test_user_changes_own_login_address_with_password(client):
+    _admin()
+    _login(client)
+    assert client.post("/auth/email", headers=ORIGIN, json={"email": "nouveau@x.fr", "password": "faux"}).status_code == 422
+    done = client.post("/auth/email", headers=ORIGIN, json={"email": "Nouveau@x.fr", "password": GOOD})
+    assert done.status_code == 200 and done.json()["user"]["email"] == "nouveau@x.fr"
+    assert client.get("/auth/me").json()["user"]["email"] == "nouveau@x.fr"
+    client.post("/auth/logout", headers=ORIGIN)
+    assert _login(client, "nouveau@x.fr").status_code == 200
+    assert _login(client, "admin@x.fr").status_code == 401
+
+
+def test_admin_changes_another_accounts_address(client):
+    _admin()
+    other = accounts.create_user("o@x.fr", "Autre", GOOD, ["praticien"])
+    _login(client)
+    changed = client.patch(f"/admin/users/{other['id']}", headers=ORIGIN, json={"email": "o2@x.fr"})
+    assert changed.json()["email"] == "o2@x.fr"
+    assert client.patch(f"/admin/users/{other['id']}", headers=ORIGIN, json={"email": "admin@x.fr"}).status_code == 409

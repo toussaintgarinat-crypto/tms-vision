@@ -699,5 +699,13 @@
   "admin.audit.when": "Date",
   "admin.audit.who": "Account",
   "admin.audit.action": "Event",
-  "admin.audit.detail": "Detail"
+  "admin.audit.detail": "Detail",
+  "account.loginEmail.title": "My login address",
+  "account.loginEmail.help": "Your current address is {email}. It is used to log in; it is separate from the sending address set in “My email”.",
+  "account.loginEmail.new": "New login address",
+  "account.loginEmail.button": "Change the login address",
+  "account.loginEmail.done": "Address changed: use it the next time you log in.",
+  "admin.changeEmail": "Change address",
+  "admin.newEmail": "New address for {name}",
+  "admin.changeEmailNote": "This account's open sessions are closed: the person will have to log in again with the new address."
 }

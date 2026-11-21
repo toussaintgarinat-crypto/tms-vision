@@ -292,8 +292,12 @@ def update_user(
     active: bool | None = None,
     name: str | None = None,
     language: str | None = None,
+    email: str | None = None,
     actor: str | None = None,
 ) -> dict:
+    """Modifie un compte. Changer l'adresse (identifiant de connexion) ferme les sessions de ce
+    compte, sauf si c'est la personne elle-même qui le fait (`actor` = le compte modifié)."""
+    new_email = normalize_email(email) if email is not None else None
     conn = _connect()
     try:
         row = conn.execute(f"SELECT {_USER_COLUMNS} FROM users WHERE id = ?", [user_id]).fetchone()
@@ -313,6 +317,16 @@ def update_user(
         if language is not None and language not in LANGUAGES:
             raise AccountError("invalid_language", f"Langue attendue parmi : {', '.join(LANGUAGES)}.")
         new_language = current["language"] if language is None else language
+        email_changed = new_email is not None and new_email != current["email"]
+        if email_changed:
+            if conn.execute("SELECT 1 FROM users WHERE email = ? AND id <> ?", [new_email, user_id]).fetchone():
+                raise AccountError("email_taken", "Un compte existe déjà avec cette adresse.")
+            conn.execute("UPDATE users SET email = ? WHERE id = ?", [new_email, user_id])
+            if actor != user_id:
+                conn.execute(
+                    "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
+                    [_now(), user_id],
+                )
         conn.execute(
             "UPDATE users SET roles = ?, active = ?, name = ?, language = ? WHERE id = ?",
             [json.dumps(new_roles), new_active, new_name, new_language, user_id],
@@ -330,6 +344,8 @@ def update_user(
         changes.append("roles=" + ",".join(new_roles))
     if new_active != current["active"]:
         changes.append(f"active={new_active}")
+    if email_changed:
+        changes.append(f"email={current['email']}->{new_email}")
     audit("user.update", user_id=actor, target=user_id, detail=";".join(changes) or None)
     return _public_user(row)
 
