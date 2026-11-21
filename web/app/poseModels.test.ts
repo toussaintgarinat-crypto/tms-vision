@@ -101,9 +101,9 @@ describe("points personnalisés", () => {
 
   it("l'option cochée sans point est refusée avant l'envoi", () => {
     const s = applyChoice(DEFAULT_POSE_SETTINGS, "custom_keypoints");
-    expect(validatePoseSettings(s)).toMatch(/au moins un point/);
+    expect(validatePoseSettings(s)).toEqual({ key: "pose.error.noCustomPoint" });
     expect(validatePoseSettings(withPoints(s, 1))).toBeNull();
-    expect(validatePoseSettings(withPoints(s, MAX_CUSTOM_POINTS + 1))).toMatch(/Au plus/);
+    expect(validatePoseSettings(withPoints(s, MAX_CUSTOM_POINTS + 1))).toEqual({ key: "pose.error.tooManyPoints", vars: { max: MAX_CUSTOM_POINTS } });
   });
 
   it("noms par défaut sans doublon", () => {

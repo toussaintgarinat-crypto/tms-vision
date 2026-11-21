@@ -1,3 +1,5 @@
+import type { MessageRef, TFunction } from "./i18n/translate";
+
 export type LoadKind = "none" | "exact" | "range";
 
 export type ScoreSummary = { max_score: number; average_score: number };
@@ -22,16 +24,19 @@ export type LoadRequest = {
 // Même plafond que tms_vision/load.py::MAX_LOAD_KG.
 export const MAX_LOAD_KG = 500;
 
-function formatKg(value: number): string {
-  return value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+// `tag` : étiquette BCP 47 de la langue (« fr-FR »), pour la virgule ou le point décimal.
+function formatKg(value: number, tag: string): string {
+  return value.toLocaleString(tag, { maximumFractionDigits: 1 });
 }
 
-export function formatLoad(load: LoadInfo): string {
-  if (load.kind === "none") return "Aucun poids";
-  if (load.kind === "exact") return `${formatKg(load.kg ?? 0)} kg`;
+export function formatLoad(load: LoadInfo, t: TFunction, tag: string): string {
+  if (load.kind === "none") return t("load.kind.none");
+  if (load.kind === "exact") return t("load.kg", { value: formatKg(load.kg ?? 0, tag) });
   const low = load.kg_min ?? 0;
   const high = load.kg_max ?? 0;
-  return low === high ? `${formatKg(high)} kg` : `${formatKg(low)} à ${formatKg(high)} kg`;
+  return low === high
+    ? t("load.kg", { value: formatKg(high, tag) })
+    : t("load.kgRange", { low: formatKg(low, tag), high: formatKg(high, tag) });
 }
 
 // Poids qui a servi aux valeurs stockées : le cas défavorable (borne haute).
@@ -41,10 +46,10 @@ export function effectiveKg(load: LoadInfo): number {
   return load.kg_max ?? 0;
 }
 
-export function formatScoreRange(maxScore: number, load: LoadInfo): string {
+export function formatScoreRange(maxScore: number, load: LoadInfo, t: TFunction): string {
   const range = load.score_range;
   if (range && range.low.max_score !== range.high.max_score) {
-    return `${range.low.max_score} à ${range.high.max_score} selon la charge`;
+    return t("load.scoreRange", { low: range.low.max_score, high: range.high.max_score });
   }
   return String(maxScore);
 }
@@ -66,28 +71,28 @@ export function buildLoadRequest(
   kgText: string,
   minText: string,
   maxText: string,
-): { ok: true; request: LoadRequest } | { ok: false; error: string } {
+): { ok: true; request: LoadRequest } | { ok: false; error: MessageRef } {
   if (kind === "none") return { ok: true, request: { kind: "none" } };
 
   if (kind === "exact") {
     const kg = parseKg(kgText);
-    if (kg === null) return { ok: false, error: "Saisissez un poids (nombre en kg)." };
-    if (kg < 0) return { ok: false, error: "Le poids ne peut pas être négatif." };
-    if (kg > MAX_LOAD_KG) return { ok: false, error: `Le poids dépasse ${MAX_LOAD_KG} kg.` };
+    if (kg === null) return { ok: false, error: { key: "load.error.needWeight" } };
+    if (kg < 0) return { ok: false, error: { key: "load.error.negative" } };
+    if (kg > MAX_LOAD_KG) return { ok: false, error: { key: "load.error.tooHeavy", vars: { max: MAX_LOAD_KG } } };
     return { ok: true, request: { kind: "exact", kg } };
   }
 
   const low = parseKg(minText);
   const high = parseKg(maxText);
   if (low === null || high === null) {
-    return { ok: false, error: "Saisissez les deux bornes de la fourchette." };
+    return { ok: false, error: { key: "load.error.needBounds" } };
   }
-  if (low < 0 || high < 0) return { ok: false, error: "Les bornes ne peuvent pas être négatives." };
+  if (low < 0 || high < 0) return { ok: false, error: { key: "load.error.boundsNegative" } };
   if (low > MAX_LOAD_KG || high > MAX_LOAD_KG) {
-    return { ok: false, error: `Une borne dépasse ${MAX_LOAD_KG} kg.` };
+    return { ok: false, error: { key: "load.error.boundTooHeavy", vars: { max: MAX_LOAD_KG } } };
   }
   if (low > high) {
-    return { ok: false, error: "La borne basse ne peut pas dépasser la borne haute." };
+    return { ok: false, error: { key: "load.error.inverted" } };
   }
   return { ok: true, request: { kind: "range", kg_min: low, kg_max: high } };
 }

@@ -1,3 +1,5 @@
+import type { MessageRef } from "./i18n/translate";
+
 const VIDEO_EXTENSIONS = [".mp4", ".mov", ".m4v", ".webm", ".avi", ".mkv"];
 
 function looksLikeVideo(file: { name: string; type: string }): boolean {
@@ -7,14 +9,14 @@ function looksLikeVideo(file: { name: string; type: string }): boolean {
   return file.type === "" && VIDEO_EXTENSIONS.some((extension) => name.endsWith(extension));
 }
 
-export type PickedVideo = { file: File; error: null } | { file: null; error: string };
+export type PickedVideo = { file: File; error: null } | { file: null; error: MessageRef };
 
 /** Choisit la vidéo parmi des fichiers déposés ou sélectionnés : la première qui en est une. */
 export function pickVideoFile(files: ArrayLike<File> | null | undefined): PickedVideo {
   const list = files ? Array.from(files) : [];
-  if (list.length === 0) return { file: null, error: "Aucun fichier reçu." };
+  if (list.length === 0) return { file: null, error: { key: "video.noFile" } };
   const video = list.find(looksLikeVideo);
-  if (!video) return { file: null, error: "Ce fichier n'est pas une vidéo." };
-  if (video.size === 0) return { file: null, error: "Le fichier sélectionné est vide." };
+  if (!video) return { file: null, error: { key: "video.notVideo" } };
+  if (video.size === 0) return { file: null, error: { key: "video.empty" } };
   return { file: video, error: null };
 }

@@ -5,6 +5,8 @@
  * invalide (422), la validation d'ici ne sert qu'à prévenir plus tôt.
  */
 
+import type { MessageRef } from "./i18n/translate";
+
 export type PoseChoice = "mediapipe_pose_33" | "mediapipe_pose_hands" | "rtmpose_wholebody" | "custom_keypoints";
 
 export type CustomPoint = { name: string; x: number; y: number };
@@ -22,26 +24,27 @@ export type PoseSettings = {
 export const MAX_CUSTOM_POINTS = 10;
 export const WHOLEBODY_MODEL_ID = "rtmpose_wholebody_133";
 
-export const POSE_CHOICES: { value: PoseChoice; label: string; description: string }[] = [
+export const POSE_CHOICES: { value: PoseChoice; label: string; descriptionKey: string }[] = [
+  // `label` : nom de produit, identique dans toutes les langues ; la description se traduit.
   {
     value: "mediapipe_pose_33",
     label: "MediaPipe Pose 33",
-    description: "33 points, rapide et léger : score RULA et analyse ergonomique globale (par défaut).",
+    descriptionKey: "pose.choice.mediapipe_pose_33",
   },
   {
     value: "mediapipe_pose_hands",
     label: "MediaPipe Pose + Hands",
-    description: "Ajoute 21 points par main : préhensions, flexion des doigts, gestes répétitifs.",
+    descriptionKey: "pose.choice.mediapipe_pose_hands",
   },
   {
     value: "rtmpose_wholebody",
     label: "RTMPose / DWPose Whole-body",
-    description: "Jusqu'à 133 points (corps, pieds, mains, visage). Plus lent, en 2D : sans avatar 3D.",
+    descriptionKey: "pose.choice.rtmpose_wholebody",
   },
   {
     value: "custom_keypoints",
     label: "Custom keypoints",
-    description: "Points que vous placez sur un outil, une caisse, une zone... et qui sont suivis dans la vidéo.",
+    descriptionKey: "pose.choice.custom_keypoints",
   },
 ];
 
@@ -81,12 +84,12 @@ export function expectedKeypointCount(settings: PoseSettings): number {
 }
 
 /** Message d'erreur à afficher avant l'envoi, ou `null` si les réglages sont valides. */
-export function validatePoseSettings(settings: PoseSettings): string | null {
+export function validatePoseSettings(settings: PoseSettings): MessageRef | null {
   if (settings.customEnabled && settings.customPoints.length === 0) {
-    return "Placez au moins un point personnalisé sur l'image, ou décochez cette option.";
+    return { key: "pose.error.noCustomPoint" };
   }
   if (settings.customPoints.length > MAX_CUSTOM_POINTS) {
-    return `Au plus ${MAX_CUSTOM_POINTS} points personnalisés.`;
+    return { key: "pose.error.tooManyPoints", vars: { max: MAX_CUSTOM_POINTS } };
   }
   return null;
 }
@@ -137,12 +140,12 @@ export function defaultPointName(points: CustomPoint[]): string {
 }
 
 // Couleurs des groupes de points sur la vidéo annotée (mêmes teintes que GROUP_COLORS, overlay.py).
-export const GROUP_LEGEND: { group: string; label: string; color: string }[] = [
-  { group: "body", label: "Corps", color: "#ffffff" },
-  { group: "hands", label: "Mains", color: "#ffa500" },
-  { group: "feet", label: "Pieds", color: "#00c8ff" },
-  { group: "face", label: "Visage", color: "#ff78c8" },
-  { group: "custom", label: "Points personnalisés", color: "#e6e600" },
+export const GROUP_LEGEND: { group: string; labelKey: string; color: string }[] = [
+  { group: "body", labelKey: "pose.group.body", color: "#ffffff" },
+  { group: "hands", labelKey: "pose.group.hands", color: "#ffa500" },
+  { group: "feet", labelKey: "pose.group.feet", color: "#00c8ff" },
+  { group: "face", labelKey: "pose.group.face", color: "#ff78c8" },
+  { group: "custom", labelKey: "pose.group.custom", color: "#e6e600" },
 ];
 
 /** Réponse de GET /pose-models/wholebody : le modèle whole-body se prépare et se règle depuis le site. */

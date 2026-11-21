@@ -1,8 +1,11 @@
 import { useId, useState } from "react";
 
+import { useI18n } from "./i18n/I18nProvider";
+
 // Bulle ⓘ : explique pourquoi un exercice est proposé. S'ouvre au survol de la souris, au focus
 // clavier et au clic (pour les écrans tactiles) ; Échap la ferme.
 export function InfoTip({ lines }: { lines: string[] }) {
+  const { t } = useI18n();
   const id = useId();
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -16,7 +19,7 @@ export function InfoTip({ lines }: { lines: string[] }) {
     >
       <button
         type="button"
-        aria-label="Pourquoi cet exercice ?"
+        aria-label={t("tip.why")}
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
         onClick={() => setPinned((value) => !value)}

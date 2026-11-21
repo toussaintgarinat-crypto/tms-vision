@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { AnalysisResult, AnalysisSummary } from "../../AnalysisResult";
+import { useI18n } from "../../i18n/I18nProvider";
 import { PoseAnalysisInfo } from "../../PoseInfoPanel";
 import { Side } from "../../PostureAvatar3D";
 
@@ -21,6 +22,7 @@ type StoredAnalysis = AnalysisSummary & PoseAnalysisInfo & {
 };
 
 export default function AnalysisDetailPage() {
+  const { t } = useI18n();
   const params = useParams<{ id: string }>();
   const id = params.id;
   // État porteur de l'id auquel il correspond, comparé à `id` au rendu plutôt
@@ -47,7 +49,7 @@ export default function AnalysisDetailPage() {
           }
           return null;
         }
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json() as Promise<StoredAnalysis>;
       })
       .then((data) => {
@@ -79,36 +81,34 @@ export default function AnalysisDetailPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Analyse {id}</h1>
+        <h1 className="text-2xl font-semibold">{t("detail.title", { id })}</h1>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {isLoaded && (
             <Link href={`/historique/${encodeURIComponent(id)}/rapport`} className="text-sm text-blue-600 underline">
-              Compte rendu (PDF / HTML)
+              {t("detail.report")}
             </Link>
           )}
           <Link href="/historique" className="text-sm text-blue-600 underline">
-            ← Retour à l&apos;historique
+            {t("detail.back")}
           </Link>
         </div>
       </div>
 
-      {isNotFound && <p className="text-red-600">Analyse introuvable.</p>}
+      {isNotFound && <p className="text-red-600">{t("detail.notFound")}</p>}
 
       {isFetchError && (
         <div className="flex flex-col items-start gap-2">
-          <p className="text-red-600">
-            Impossible de charger cette analyse (problème réseau ou serveur).
-          </p>
+          <p className="text-red-600">{t("detail.loadError")}</p>
           <button
             onClick={() => setRetryToken((token) => token + 1)}
             className="rounded border border-black px-3 py-1 text-sm"
           >
-            Réessayer
+            {t("common.retry")}
           </button>
         </div>
       )}
 
-      {!isNotFound && !isFetchError && !isLoaded && <p>Chargement...</p>}
+      {!isNotFound && !isFetchError && !isLoaded && <p>{t("common.loading")}</p>}
 
       {analysis && analysis.id === id && (
         <AnalysisResult

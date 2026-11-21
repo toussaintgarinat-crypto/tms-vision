@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useI18n } from "./i18n/I18nProvider";
+import { formatDecimal } from "./poseInfoFormat";
 import { CustomPoint, MAX_CUSTOM_POINTS, clickToNormalized, defaultPointName } from "./poseModels";
 
 type CustomPointsEditorProps = {
@@ -22,6 +24,7 @@ const FALLBACK_DURATION_SECONDS = 30;
  * le premier point, jusqu'à ce qu'on les efface.
  */
 export function CustomPointsEditor({ file, points, referenceTime, onChange, disabled }: CustomPointsEditorProps) {
+  const { t, tag } = useI18n();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [duration, setDuration] = useState(FALLBACK_DURATION_SECONDS);
   const [time, setTime] = useState(referenceTime);
@@ -78,7 +81,7 @@ export function CustomPointsEditor({ file, points, referenceTime, onChange, disa
         <div
           role="button"
           tabIndex={0}
-          aria-label="Image de référence : cliquez pour poser un point"
+          aria-label={t("cp.imageLabel")}
           onClick={handlePlace}
           className={`absolute inset-0 ${disabled ? "cursor-not-allowed" : "cursor-crosshair"}`}
         >
@@ -96,12 +99,12 @@ export function CustomPointsEditor({ file, points, referenceTime, onChange, disa
 
       {loadError && (
         <p className="text-sm text-red-600">
-          Ce navigateur ne peut pas afficher cette vidéo : impossible de placer les points ici.
+          {t("cp.loadError")}
         </p>
       )}
 
       <label className="flex flex-col gap-1 text-sm">
-        Image de référence : {time.toFixed(2).replace(".", ",")} s
+        {t("cp.time", { time: formatDecimal(time, tag, 2) })}
         <input
           type="range"
           min={0}
@@ -113,14 +116,13 @@ export function CustomPointsEditor({ file, points, referenceTime, onChange, disa
         />
         {locked && (
           <span className="text-xs text-gray-600">
-            L&apos;image est figée tant que des points sont posés : effacez-les pour en choisir une autre.
+            {t("cp.locked")}
           </span>
         )}
       </label>
 
       <p className="text-xs text-gray-600">
-        Cliquez sur l&apos;image pour poser un point (jusqu&apos;à {MAX_CUSTOM_POINTS}). Le suivi part de cette image et
-        va vers la suite de la vidéo.
+        {t("cp.hint", { max: MAX_CUSTOM_POINTS })}
       </p>
 
       {points.length > 0 && (
@@ -133,7 +135,7 @@ export function CustomPointsEditor({ file, points, referenceTime, onChange, disa
                 value={point.name}
                 maxLength={60}
                 disabled={disabled}
-                aria-label={`Nom du point ${index + 1}`}
+                aria-label={t("cp.pointName", { n: index + 1 })}
                 onChange={(event) =>
                   onChange(
                     points.map((p, i) => (i === index ? { ...p, name: event.target.value } : p)),
@@ -145,11 +147,11 @@ export function CustomPointsEditor({ file, points, referenceTime, onChange, disa
               <button
                 type="button"
                 disabled={disabled}
-                aria-label={`Supprimer le point ${index + 1}`}
+                aria-label={t("cp.deletePoint", { n: index + 1 })}
                 onClick={() => onChange(points.filter((_, i) => i !== index), referenceTime)}
                 className="rounded border px-2 py-1 text-sm"
               >
-                Supprimer
+                {t("cp.delete")}
               </button>
             </li>
           ))}
@@ -160,7 +162,7 @@ export function CustomPointsEditor({ file, points, referenceTime, onChange, disa
               onClick={() => onChange([], referenceTime)}
               className="rounded border px-2 py-1 text-sm"
             >
-              Effacer tous les points
+              {t("cp.clearAll")}
             </button>
           </li>
         </ul>

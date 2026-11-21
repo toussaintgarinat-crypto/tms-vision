@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useI18n } from "../i18n/I18nProvider";
+import { formatDecimal } from "../poseInfoFormat";
 import { scoreBadgeColor, scoreBadgeTextColor } from "./scoreBadge";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -22,9 +24,8 @@ type StoredAnalysis = {
   time_by_action_level: Record<string, number>;
 };
 
-const SIDE_LABELS: Record<"left" | "right", string> = { right: "Droit", left: "Gauche" };
-
 export default function HistoriquePage() {
+  const { t, tag } = useI18n();
   const [analyses, setAnalyses] = useState<StoredAnalysis[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [workerLabel, setWorkerLabel] = useState("");
@@ -62,7 +63,7 @@ export default function HistoriquePage() {
     const query = params.toString();
     fetch(`${API_URL}/analyses${query ? `?${query}` : ""}`)
       .then((response) => {
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json() as Promise<StoredAnalysis[]>;
       })
       .then((data) => {
@@ -73,7 +74,7 @@ export default function HistoriquePage() {
       })
       .catch(() => {
         if (!cancelled) {
-          setError("Impossible de charger l'historique des analyses.");
+          setError("load");
           setAnalyses(null);
         }
       });
@@ -87,35 +88,35 @@ export default function HistoriquePage() {
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Historique des analyses</h1>
+        <h1 className="text-2xl font-semibold">{t("hist.title")}</h1>
         <Link href="/" className="text-sm text-blue-600 underline">
-          ← Nouvelle analyse
+          {t("hist.newAnalysis")}
         </Link>
       </div>
 
       <section className="grid gap-4 rounded border p-4 sm:grid-cols-4">
         <label className="flex flex-col gap-1 text-sm">
-          Salarié
+          {t("hist.worker")}
           <input
             type="text"
             value={workerLabel}
             onChange={(event) => setWorkerLabel(event.target.value)}
             className="rounded border p-2"
           />
-          <span className="text-xs text-gray-500">Correspondance exacte</span>
+          <span className="text-xs text-gray-500">{t("hist.exactMatch")}</span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Poste
+          {t("hist.position")}
           <input
             type="text"
             value={posteLabel}
             onChange={(event) => setPosteLabel(event.target.value)}
             className="rounded border p-2"
           />
-          <span className="text-xs text-gray-500">Correspondance exacte</span>
+          <span className="text-xs text-gray-500">{t("hist.exactMatch")}</span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Depuis
+          {t("hist.since")}
           <input
             type="date"
             value={since}
@@ -124,7 +125,7 @@ export default function HistoriquePage() {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Jusqu&apos;à
+          {t("hist.until")}
           <input
             type="date"
             value={until}
@@ -134,15 +135,13 @@ export default function HistoriquePage() {
         </label>
       </section>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-red-600">{t("hist.loadError")}</p>}
 
-      {analyses === null && !error && <p>Chargement...</p>}
+      {analyses === null && !error && <p>{t("common.loading")}</p>}
 
       {analyses !== null && analyses.length === 0 && (
         <p className="text-gray-600">
-          {hasFilters
-            ? "Aucune analyse ne correspond à ces filtres."
-            : "Aucune analyse enregistrée."}
+          {hasFilters ? t("hist.noMatch") : t("hist.none")}
         </p>
       )}
 
@@ -151,24 +150,24 @@ export default function HistoriquePage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b text-left">
-                <th className="p-2">Date</th>
-                <th className="p-2">Salarié</th>
-                <th className="p-2">Poste</th>
-                <th className="p-2">Côté</th>
-                <th className="p-2">Score max</th>
-                <th className="p-2">Score moyen</th>
+                <th className="p-2">{t("hist.col.date")}</th>
+                <th className="p-2">{t("hist.worker")}</th>
+                <th className="p-2">{t("hist.position")}</th>
+                <th className="p-2">{t("hist.col.side")}</th>
+                <th className="p-2">{t("hist.col.maxScore")}</th>
+                <th className="p-2">{t("hist.col.avgScore")}</th>
                 <th className="p-2">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t("hist.col.actions")}</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {analyses.map((analysis) => (
                 <tr key={analysis.id} className="border-b">
-                  <td className="p-2">{new Date(analysis.created_at).toLocaleString("fr-FR")}</td>
+                  <td className="p-2">{new Date(analysis.created_at).toLocaleString(tag)}</td>
                   <td className="p-2">{analysis.worker_label ?? "—"}</td>
                   <td className="p-2">{analysis.poste_label ?? "—"}</td>
-                  <td className="p-2">{SIDE_LABELS[analysis.side]}</td>
+                  <td className="p-2">{t(`analysis.side.${analysis.side}`)}</td>
                   <td className="p-2">
                     <span
                       className="rounded px-2 py-1"
@@ -180,13 +179,13 @@ export default function HistoriquePage() {
                       {analysis.max_score}
                     </span>
                   </td>
-                  <td className="p-2">{analysis.average_score.toFixed(1)}</td>
+                  <td className="p-2">{formatDecimal(analysis.average_score, tag)}</td>
                   <td className="p-2">
                     <a
                       href={`/historique/${encodeURIComponent(analysis.id)}`}
                       className="text-blue-600 underline"
                     >
-                      Voir
+                      {t("hist.view")}
                     </a>
                   </td>
                 </tr>

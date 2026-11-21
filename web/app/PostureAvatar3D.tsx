@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "./i18n/I18nProvider";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
@@ -238,6 +240,7 @@ export function PostureAvatar3D({
   videoRef: React.RefObject<HTMLVideoElement | null>;
   side: Side;
 }) {
+  const { t } = useI18n();
   const [frames, setFrames] = useState<Pose3DFrame[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -252,14 +255,14 @@ export function PostureAvatar3D({
     setError(null);
     fetch(`${API_URL}${pose3dUrl}`)
       .then((response) => {
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json() as Promise<Pose3DFrame[]>;
       })
       .then((data) => {
         if (!cancelled) setFrames(data);
       })
       .catch(() => {
-        if (!cancelled) setError("Impossible de charger les données de posture 3D.");
+        if (!cancelled) setError("load");
       });
     return () => {
       cancelled = true;
@@ -267,13 +270,13 @@ export function PostureAvatar3D({
   }, [pose3dUrl]);
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-red-600">{t("avatar.loadError")}</p>;
   }
   if (!frames) {
-    return <p className="text-sm text-gray-500">Chargement de l&apos;avatar 3D...</p>;
+    return <p className="text-sm text-gray-500">{t("avatar.loading")}</p>;
   }
   if (!frames.some((frame) => frame.landmarks !== null)) {
-    return <p className="text-sm text-gray-500">Aucune posture détectée sur cette vidéo.</p>;
+    return <p className="text-sm text-gray-500">{t("avatar.noPose")}</p>;
   }
 
   return (
@@ -287,8 +290,7 @@ export function PostureAvatar3D({
         </Canvas>
       </div>
       <p className="mt-1 text-xs text-gray-400">
-        Modèle musculaire dérivé de Z-Anatomy (BodyParts3D), licence CC BY-SA 4.0.
-        Voir NOTICE.md.
+        {t("muscle.credit")} NOTICE.md.
       </p>
     </div>
   );

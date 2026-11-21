@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ExerciseAvatar, ExerciseAvatarApi } from "../ExerciseAvatar";
 import { Exercise, activeInstruction } from "../exercisePose";
 import { useI18n } from "../i18n/I18nProvider";
-import { MUSCLE_MODEL_CREDIT } from "../muscleModel";
 
 // Un seul canvas WebGL pour tout le carrousel : le mannequin rejoue l'exercice de la carte
 // affichée en boucle, au rythme réel (les navigateurs limitent le nombre de contextes WebGL, un
@@ -77,7 +76,7 @@ export function ExercisePlayer({ exercise }: { exercise: Exercise }) {
       <p className="mt-2 min-h-12 text-sm text-zinc-700 dark:text-zinc-300" aria-live="off">
         {instruction?.text ?? ""}
       </p>
-      <p className="text-[10px] text-zinc-400">{MUSCLE_MODEL_CREDIT}</p>
+      <p className="text-[10px] text-zinc-400">{t("muscle.credit")}</p>
     </div>
   );
 }

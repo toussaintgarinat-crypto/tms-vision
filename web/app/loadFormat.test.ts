@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { translator } from "./i18n/catalog";
+
 import {
   LoadInfo,
   buildLoadRequest,
@@ -8,6 +10,9 @@ import {
   formatScoreRange,
   isVideoBadgeStale,
 } from "./loadFormat";
+
+const tFr = translator("fr");
+const tEn = translator("en");
 
 function load(overrides: Partial<LoadInfo> = {}): LoadInfo {
   return {
@@ -34,14 +39,20 @@ const RANGE = {
 
 describe("formatLoad", () => {
   it("formats each kind", () => {
-    expect(formatLoad(load({ kind: "none", kg: null }))).toBe("Aucun poids");
-    expect(formatLoad(load({ kg: 12 }))).toBe("12 kg");
-    expect(formatLoad(load({ kg: 7.5 }))).toBe("7,5 kg");
-    expect(formatLoad(load(RANGE))).toBe("8 à 12 kg");
+    expect(formatLoad(load({ kind: "none", kg: null }), tFr, "fr-FR")).toBe("Aucun poids");
+    expect(formatLoad(load({ kg: 12 }), tFr, "fr-FR")).toBe("12 kg");
+    expect(formatLoad(load({ kg: 7.5 }), tFr, "fr-FR")).toBe("7,5 kg");
+    expect(formatLoad(load(RANGE), tFr, "fr-FR")).toBe("8 à 12 kg");
+  });
+
+  it("uses the decimal separator and wording of the language", () => {
+    expect(formatLoad(load({ kg: 7.5 }), tEn, "en-GB")).toBe("7.5 kg");
+    expect(formatLoad(load(RANGE), tEn, "en-GB")).toBe("8 to 12 kg");
+    expect(formatLoad(load({ kind: "none", kg: null }), tEn, "en-GB")).toBe("No weight");
   });
 
   it("collapses a degenerate range to a single value", () => {
-    expect(formatLoad(load({ kind: "range", kg: null, kg_min: 5, kg_max: 5 }))).toBe("5 kg");
+    expect(formatLoad(load({ kind: "range", kg: null, kg_min: 5, kg_max: 5 }), tFr, "fr-FR")).toBe("5 kg");
   });
 });
 
@@ -55,7 +66,11 @@ describe("effectiveKg", () => {
 
 describe("formatScoreRange", () => {
   it("shows an interval only when the two bounds give different scores", () => {
-    expect(formatScoreRange(6, load(RANGE))).toBe("4 à 6 selon la charge");
+    expect(formatScoreRange(6, load(RANGE), tFr)).toBe("4 à 6 selon la charge");
+  });
+
+  it("words the interval in the current language", () => {
+    expect(formatScoreRange(6, load(RANGE), tEn)).toBe("4 to 6 depending on the load");
   });
 
   it("shows a single score when both bounds agree or there is no range", () => {
@@ -63,8 +78,8 @@ describe("formatScoreRange", () => {
       ...RANGE,
       score_range: { low: { max_score: 5, average_score: 5 }, high: { max_score: 5, average_score: 5 } },
     });
-    expect(formatScoreRange(5, sameScores)).toBe("5");
-    expect(formatScoreRange(3, load({ kg: 10 }))).toBe("3");
+    expect(formatScoreRange(5, sameScores, tFr)).toBe("5");
+    expect(formatScoreRange(3, load({ kg: 10 }), tFr)).toBe("3");
   });
 });
 
@@ -119,9 +134,18 @@ describe("buildLoadRequest", () => {
     }
   });
 
-  it("explains an inverted range in French", () => {
+  it("explains an inverted range with a message key, translated by the screen", () => {
     const result = buildLoadRequest("range", "", "12", "8");
-    expect(result).toEqual({ ok: false, error: "La borne basse ne peut pas dépasser la borne haute." });
+    expect(result).toEqual({ ok: false, error: { key: "load.error.inverted" } });
+    expect(tFr("load.error.inverted")).toBe("La borne basse ne peut pas dépasser la borne haute.");
+    expect(tEn("load.error.inverted")).toBe("The lower bound cannot exceed the upper bound.");
+  });
+
+  it("passes the limit to the message of a too heavy weight", () => {
+    expect(buildLoadRequest("exact", "501", "", "")).toEqual({
+      ok: false,
+      error: { key: "load.error.tooHeavy", vars: { max: 500 } },
+    });
   });
 
   it("accepts a degenerate range", () => {

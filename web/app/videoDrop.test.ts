@@ -15,9 +15,9 @@ describe("pickVideoFile", () => {
   });
 
   it("refuses non-video files, empty files and nothing at all", () => {
-    expect(pickVideoFile([file("photo.png", "image/png")]).error).toBe("Ce fichier n'est pas une vidéo.");
-    expect(pickVideoFile([file("v.mp4", "video/mp4", "")]).error).toBe("Le fichier sélectionné est vide.");
-    expect(pickVideoFile([]).error).toBe("Aucun fichier reçu.");
-    expect(pickVideoFile(null).error).toBe("Aucun fichier reçu.");
+    expect(pickVideoFile([file("photo.png", "image/png")]).error).toEqual({ key: "video.notVideo" });
+    expect(pickVideoFile([file("v.mp4", "video/mp4", "")]).error).toEqual({ key: "video.empty" });
+    expect(pickVideoFile([]).error).toEqual({ key: "video.noFile" });
+    expect(pickVideoFile(null).error).toEqual({ key: "video.noFile" });
   });
 });

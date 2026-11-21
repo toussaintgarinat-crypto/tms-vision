@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { AnalysisResult, AnalysisSummary } from "./AnalysisResult";
+import { useI18n } from "./i18n/I18nProvider";
 import { PoseAnalysisInfo } from "./PoseInfoPanel";
 import { PoseModelPicker } from "./PoseModelPicker";
 import { Side } from "./PostureAvatar3D";
@@ -27,6 +28,7 @@ type AnalysisResponse = PoseAnalysisInfo & {
 };
 
 export default function Home() {
+  const { t } = useI18n();
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -69,16 +71,14 @@ export default function Home() {
       setCameraReady(true);
       setMode("camera");
     } catch {
-      setError(
-        "Impossible d'accéder à la caméra. Vérifiez les permissions du navigateur et que la page est servie en HTTPS ou localhost."
-      );
+      setError(t("analysis.error.camera"));
     }
   }
 
   function acceptVideo(files: ArrayLike<File> | null | undefined) {
     const picked = pickVideoFile(files);
     if (picked.file === null) {
-      setError(picked.error);
+      setError(t(picked.error.key, picked.error.vars));
       return;
     }
     setError(null);
@@ -135,7 +135,7 @@ export default function Home() {
           recordingTimeoutRef.current = null;
         }
         setRecording(false);
-        setError("Erreur pendant l'enregistrement, réessayez.");
+        setError(t("analysis.error.recording"));
       };
       recorder.start();
       recorderRef.current = recorder;
@@ -146,9 +146,7 @@ export default function Home() {
         stopRecording();
       }, MAX_RECORDING_MS);
     } catch {
-      setError(
-        "L'enregistrement vidéo n'est pas supporté par ce navigateur. Essayez avec un navigateur à jour (Chrome, Firefox, Edge)."
-      );
+      setError(t("analysis.error.recorderUnsupported"));
     }
   }
 
@@ -183,7 +181,7 @@ export default function Home() {
           const retryable =
             response.status >= 500 || response.status === 408 || response.status === 429;
           throw new ChunkUploadError(
-            `Échec de l'envoi du morceau ${index + 1} (code ${response.status}).`,
+            t("analysis.error.chunkFailed", { index: index + 1, status: response.status }),
             retryable
           );
         }
@@ -199,7 +197,7 @@ export default function Home() {
       }
     }
     console.error(lastError);
-    throw new Error("Envoi interrompu, réessayez l'import du fichier.");
+    throw new Error(t("analysis.error.uploadInterrupted"));
   }
 
   async function readErrorMessage(response: Response, fallback: string): Promise<string> {
@@ -223,7 +221,7 @@ export default function Home() {
     });
     if (!startResponse.ok) {
       throw new Error(
-        await readErrorMessage(startResponse, "Impossible de démarrer l'envoi du fichier.")
+        await readErrorMessage(startResponse, t("analysis.error.uploadStart"))
       );
     }
     const { upload_id: uploadId } = (await startResponse.json()) as { upload_id: string };
@@ -242,7 +240,10 @@ export default function Home() {
     });
     if (!completeResponse.ok) {
       throw new Error(
-        await readErrorMessage(completeResponse, `Erreur de validation (code ${completeResponse.status}).`)
+        await readErrorMessage(
+          completeResponse,
+          t("analysis.error.validation", { status: completeResponse.status }),
+        )
       );
     }
     return (await completeResponse.json()) as AnalysisResponse;
@@ -268,7 +269,9 @@ export default function Home() {
     });
 
     if (!response.ok) {
-      throw new Error(await readErrorMessage(response, `Erreur de validation (code ${response.status}).`));
+      throw new Error(
+        await readErrorMessage(response, t("analysis.error.validation", { status: response.status })),
+      );
     }
 
     return (await response.json()) as AnalysisResponse;
@@ -277,12 +280,12 @@ export default function Home() {
   async function analyze() {
     if (!recordedFile) return;
     if (loadKg.trim() === "") {
-      setError("Renseignez une charge en kg (0 si aucune).");
+      setError(t("analysis.error.loadRequired"));
       return;
     }
     const poseError = validatePoseSettings(poseSettings);
     if (poseError) {
-      setError(poseError);
+      setError(t(poseError.key, poseError.vars));
       return;
     }
     const poseFields = poseFormFields(poseSettings);
@@ -296,7 +299,7 @@ export default function Home() {
           : await analyzeViaCameraCapture(recordedFile, side, loadKg, wristTwist, poseFields);
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue pendant l'analyse.");
+      setError(err instanceof Error ? err.message : t("analysis.error.unknown"));
     } finally {
       setAnalyzing(false);
       setUploadProgress(null);
@@ -306,16 +309,16 @@ export default function Home() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-        <h1 className="text-2xl font-semibold">TMS Vision — Vérification RULA</h1>
+        <h1 className="text-2xl font-semibold">{t("analysis.title")}</h1>
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           <Link href="/historique" className="text-sm text-blue-600 underline">
-            Historique
+            {t("nav.history")}
           </Link>
           <Link href="/bilans" className="text-sm text-blue-600 underline">
-            Bilans de poste
+            {t("nav.bilans")}
           </Link>
           <Link href="/bibliotheque" className="text-sm text-blue-600 underline">
-            Bibliothèque d&apos;exercices
+            {t("nav.exerciseLibrary")}
           </Link>
         </div>
       </div>
@@ -355,13 +358,15 @@ export default function Home() {
           }`}
         >
           <span className="font-medium">
-            {dragging ? "Déposez la vidéo ici" : "Glissez-déposez une vidéo ici"}
+            {dragging ? t("analysis.drop.dragging") : t("analysis.drop.idle")}
           </span>
           <span className={dragging ? "text-blue-900" : "text-gray-600"}>
-            ou cliquez pour choisir un fichier
+            {t("analysis.drop.orClick")}
           </span>
           {mode === "upload" && recordedFile && (
-            <span className="mt-2 text-gray-600">Fichier sélectionné : {recordedFile.name}</span>
+            <span className="mt-2 text-gray-600">
+              {t("analysis.drop.selected", { name: recordedFile.name })}
+            </span>
           )}
         </div>
       )}
@@ -369,7 +374,7 @@ export default function Home() {
       {mode === null && (
         <div className="flex gap-2">
           <button onClick={startCamera} className="rounded bg-black px-4 py-2 text-white">
-            Démarrer la caméra
+            {t("analysis.startCamera")}
           </button>
         </div>
       )}
@@ -377,36 +382,34 @@ export default function Home() {
       {cameraReady && !recording && (
         <div className="flex flex-col gap-1">
           <button onClick={startRecording} className="rounded bg-red-600 px-4 py-2 text-white">
-            Démarrer l&apos;enregistrement
+            {t("analysis.startRecording")}
           </button>
-          <span className="text-sm text-gray-500">
-            Enregistrement limité à 30 secondes.
-          </span>
+          <span className="text-sm text-gray-500">{t("analysis.recordingLimit")}</span>
         </div>
       )}
 
       {recording && (
         <button onClick={stopRecording} className="rounded bg-gray-700 px-4 py-2 text-white">
-          Arrêter l&apos;enregistrement
+          {t("analysis.stopRecording")}
         </button>
       )}
 
       {recordedFile && !recording && (
         <section className="flex flex-col gap-4 rounded border p-4">
           <label className="flex flex-col gap-1">
-            Côté filmé
+            {t("analysis.side")}
             <select
               value={side}
               onChange={(event) => setSide(event.target.value as Side)}
               className="rounded border p-2"
             >
-              <option value="right">Droit</option>
-              <option value="left">Gauche</option>
+              <option value="right">{t("analysis.side.right")}</option>
+              <option value="left">{t("analysis.side.left")}</option>
             </select>
           </label>
 
           <label className="flex flex-col gap-1">
-            Charge tenue (kg)
+            {t("analysis.load")}
             <input
               type="number"
               min="0"
@@ -418,14 +421,14 @@ export default function Home() {
           </label>
 
           <label className="flex flex-col gap-1">
-            Torsion du poignet
+            {t("analysis.wristTwist")}
             <select
               value={wristTwist}
               onChange={(event) => setWristTwist(event.target.value as WristTwist)}
               className="rounded border p-2"
             >
-              <option value="normal">Normale</option>
-              <option value="extreme">Extrême</option>
+              <option value="normal">{t("analysis.wristTwist.normal")}</option>
+              <option value="extreme">{t("analysis.wristTwist.extreme")}</option>
             </select>
           </label>
 
@@ -442,10 +445,10 @@ export default function Home() {
             className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
           >
             {uploadProgress
-              ? `Envoi du fichier : ${uploadProgress.current}/${uploadProgress.total}...`
+              ? t("analysis.uploading", uploadProgress)
               : analyzing
-                ? "Analyse en cours..."
-                : "Analyser"}
+                ? t("analysis.analyzing")
+                : t("analysis.analyze")}
           </button>
         </section>
       )}

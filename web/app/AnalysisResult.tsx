@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useI18n } from "./i18n/I18nProvider";
 import { LoadEditor } from "./LoadEditor";
 import { LoadInfo, formatLoad, formatScoreRange, isVideoBadgeStale } from "./loadFormat";
+import { formatDecimal } from "./poseInfoFormat";
 import { PoseAnalysisInfo, PoseInfoPanel, hasAvatar3D } from "./PoseInfoPanel";
 import { PostureAvatar3D, Side } from "./PostureAvatar3D";
 import { GestureCorrection, ProgramItem, ProgramList } from "./ProgramList";
@@ -29,14 +31,8 @@ type Recommendation = {
 // Réponse de PUT /analyses/{id}/load : l'analyse mise à jour.
 type UpdatedAnalysis = AnalysisSummary & { load: LoadInfo };
 
-const ZONE_LABELS: Record<string, string> = {
-  neck: "cou",
-  trunk: "tronc",
-  upper_arm: "bras",
-  lower_arm: "avant-bras",
-  hand: "main",
-  foot: "pied",
-};
+// Zones RULA : leur libellé court se traduit par la clé `zone.short.<zone>`.
+const RULA_ZONES = ["neck", "trunk", "upper_arm", "lower_arm", "hand", "foot"];
 
 type AnalysisResultProps = {
   analysisId: string;
@@ -58,6 +54,7 @@ export function AnalysisResult({
   pose3dUrl,
   poseInfo,
 }: AnalysisResultProps) {
+  const { t, tag } = useI18n();
   const resultVideoRef = useRef<HTMLVideoElement | null>(null);
   const [recommendation, setRecommendation] = useState<{
     analysisId: string;
@@ -77,7 +74,7 @@ export function AnalysisResult({
     let cancelled = false;
     fetch(`${API_URL}/analyses/${encodeURIComponent(analysisId)}/recommendation?size=${programSize}`)
       .then((response) => {
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json() as Promise<Recommendation>;
       })
       .then((data) => {
@@ -117,7 +114,7 @@ export function AnalysisResult({
 
   return (
     <section className="flex flex-col gap-4 rounded border p-4">
-      <h2 className="text-lg font-semibold">Résultat</h2>
+      <h2 className="text-lg font-semibold">{t("result.title")}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <video
           ref={resultVideoRef}
@@ -131,30 +128,32 @@ export function AnalysisResult({
       </div>
       {poseInfo && <PoseInfoPanel analysisId={analysisId} info={poseInfo} />}
       <dl className="grid grid-cols-2 gap-2 text-sm">
-        <dt>Frames analysées</dt>
+        <dt>{t("result.frames")}</dt>
         <dd>{summary.frame_count}</dd>
-        <dt>Frames avec pose détectée</dt>
+        <dt>{t("result.framesDetected")}</dt>
         <dd>{summary.detected_frame_count}</dd>
-        <dt>Score RULA max</dt>
-        <dd>{load ? formatScoreRange(shownSummary.max_score, load) : shownSummary.max_score}</dd>
-        <dt>Score RULA moyen</dt>
-        <dd>{shownSummary.average_score.toFixed(1)}</dd>
+        <dt>{t("result.maxScore")}</dt>
+        <dd>{load ? formatScoreRange(shownSummary.max_score, load, t) : shownSummary.max_score}</dd>
+        <dt>{t("result.avgScore")}</dt>
+        <dd>{formatDecimal(shownSummary.average_score, tag)}</dd>
         {load && (
           <>
-            <dt>Poids manipulé</dt>
-            <dd>{formatLoad(load)}</dd>
+            <dt>{t("result.load")}</dt>
+            <dd>{formatLoad(load, t, tag)}</dd>
           </>
         )}
       </dl>
       {load?.score_range && (
         <p className="text-xs text-gray-600">
-          Les valeurs stockées (CSV, score moyen) correspondent au cas défavorable de la fourchette.
+          {t("result.storedNote")}
         </p>
       )}
       {load && isVideoBadgeStale(load) && (
         <p className="rounded border border-amber-400 bg-amber-50 p-2 text-sm text-amber-900">
-          La vidéo annotée affiche le score calculé avec {load.original_load_kg} kg, le poids
-          saisi à l&apos;analyse ; le résumé ci-dessus tient compte de {formatLoad(load)}.
+          {t("result.staleBadge", {
+            original: t("load.kg", { value: load.original_load_kg }),
+            current: formatLoad(load, t, tag),
+          })}
         </p>
       )}
       {load && (
@@ -166,7 +165,7 @@ export function AnalysisResult({
         />
       )}
       <a href={`${API_URL}${csvUrl}`} className="text-blue-600 underline">
-        Télécharger le CSV détaillé
+        {t("result.downloadCsv")}
       </a>
       {currentRecommendation && currentRecommendation.program && (
         <ProgramList
@@ -178,8 +177,11 @@ export function AnalysisResult({
       {currentRecommendation && !currentRecommendation.program && currentRecommendation.capsule && (
         <div className="rounded border border-blue-200 bg-blue-50 p-3 text-gray-900">
           <p className="text-sm font-semibold">
-            Recommandation : zone{" "}
-            {ZONE_LABELS[currentRecommendation.zone ?? ""] ?? currentRecommendation.zone}
+            {t("result.recommendation", {
+              zone: RULA_ZONES.includes(currentRecommendation.zone ?? "")
+                ? t(`zone.short.${currentRecommendation.zone}`)
+                : (currentRecommendation.zone ?? ""),
+            })}
           </p>
           <p className="font-medium">{currentRecommendation.capsule.title}</p>
           <p className="text-sm text-gray-700">{currentRecommendation.capsule.description}</p>

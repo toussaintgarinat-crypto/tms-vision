@@ -9,13 +9,11 @@ export function capsuleVideoSrc(capsule: CapsuleVideoInfo, apiUrl: string): stri
   return capsule.video_available ? `${apiUrl}${capsule.video_url}` : null;
 }
 
-export const DRAFT_BADGE_TEXT = "Brouillon, à valider par l'ostéopathe";
+// Clés de traduction (voir i18n/messages) : l'écran traduit, ce module ne porte plus de texte.
+export const DRAFT_BADGE_KEY = "program.badge.draft";
 
 // Exercice repris d'une fiche de l'ostéopathe : on l'affiche à la place du badge « Brouillon » pour
 // ne pas le mélanger avec les exercices pas encore relus.
-export const FICHE_BADGE_TEXT = "Fiche de Théo MARTIN, ostéopathe";
+export const FICHE_BADGE_KEY = "exercise.badge.fiche";
 
-export const NO_PROGRAM_TEXT =
-  "Aucun étirement proposé : sur cet échantillon, aucune zone n'atteint un niveau de posture à " +
-  "risque (investigation et changement bientôt, ou plus). Les exercices restent consultables " +
-  "dans la bibliothèque.";
+export const NO_PROGRAM_KEY = "program.none";

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { CustomPointsEditor } from "./CustomPointsEditor";
+import { useI18n } from "./i18n/I18nProvider";
 import { WholebodySetup } from "./WholebodySetup";
 import {
   POSE_CHOICES,
@@ -28,12 +29,13 @@ type PoseModelPickerProps = {
 };
 
 export function PoseModelPicker({ settings, onChange, file, disabled }: PoseModelPickerProps) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<WholebodyStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const state = wholebodyState(status);
 
   // État du modèle whole-body (paquets, poids téléchargés, mode). Illisible : rien n'est bloqué,
-  // le serveur refusera proprement (422, message en français) une option indisponible.
+  // le serveur refusera proprement (422) une option indisponible.
   async function refreshStatus() {
     try {
       const response = await fetch(`${API_URL}/pose-models/wholebody`);
@@ -92,7 +94,7 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
 
   return (
     <fieldset className="flex flex-col gap-3" disabled={disabled}>
-      <legend className="mb-1 font-medium">Modèle de pose</legend>
+      <legend className="mb-1 font-medium">{t("pose.title")}</legend>
 
       <div className="flex flex-col gap-2">
         {POSE_CHOICES.map((choice) => {
@@ -117,9 +119,9 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
                 <span className="flex flex-col">
                   <span className="font-medium">{choice.label}</span>
                   <span className={settings.choice === choice.value ? "text-gray-700" : "text-gray-600"}>
-                    {choice.description}
+                    {t(choice.descriptionKey)}
                   </span>
-                  {unavailable && <span className="text-amber-800">À préparer avant de pouvoir le choisir (ci-dessous).</span>}
+                  {unavailable && <span className="text-amber-800">{t("pose.needsPrep")}</span>}
                 </span>
               </label>
               {isWholebodyChoice && (
@@ -137,7 +139,7 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
             checked={settings.hands}
             onChange={(event) => onChange({ ...settings, hands: event.target.checked })}
           />
-          Analyser les mains (préhensions, flexion des doigts)
+          {t("pose.opt.hands")}
         </label>
         {wholebody && (
           <>
@@ -147,7 +149,7 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
                 checked={settings.feet}
                 onChange={(event) => onChange({ ...settings, feet: event.target.checked })}
               />
-              Analyser les pieds
+              {t("pose.opt.feet")}
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -155,7 +157,7 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
                 checked={settings.face}
                 onChange={(event) => onChange({ ...settings, face: event.target.checked })}
               />
-              Analyser le visage (68 points)
+              {t("pose.opt.face")}
             </label>
           </>
         )}
@@ -165,15 +167,12 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
             checked={settings.customEnabled}
             onChange={(event) => onChange({ ...settings, customEnabled: event.target.checked })}
           />
-          Suivre des points personnalisés (outil, caisse, zone...)
+          {t("pose.opt.custom")}
         </label>
       </div>
 
       {wholebody && (
-        <p className="text-xs text-gray-600">
-          Le whole-body est nettement plus lent (plusieurs fois la durée de la vidéo sur un ordinateur sans carte
-          graphique).
-        </p>
+        <p className="text-xs text-gray-600">{t("pose.wholebodySlow")}</p>
       )}
 
       {settings.customEnabled && (
@@ -187,7 +186,7 @@ export function PoseModelPicker({ settings, onChange, file, disabled }: PoseMode
       )}
 
       <p className="text-xs text-gray-600" aria-live="polite">
-        Points suivis par personne : {expectedKeypointCount(settings)}
+        {t("pose.keypointCount", { count: expectedKeypointCount(settings) })}
       </p>
     </fieldset>
   );

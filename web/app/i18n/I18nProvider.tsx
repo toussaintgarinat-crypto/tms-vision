@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { CATALOG } from "./catalog";
+import { translator } from "./catalog";
 import { DEFAULT_LOCALE, LOCALE_TAGS, STORAGE_KEY, detectLocale, type Locale } from "./locales";
-import { translate, type Vars } from "./translate";
+import type { Vars } from "./translate";
 
 type I18n = {
   locale: Locale;
@@ -17,7 +17,7 @@ const FALLBACK: I18n = {
   locale: DEFAULT_LOCALE,
   tag: LOCALE_TAGS[DEFAULT_LOCALE],
   setLocale: () => {},
-  t: (key, vars) => translate(CATALOG, DEFAULT_LOCALE, key, vars),
+  t: translator(DEFAULT_LOCALE),
 };
 
 const I18nContext = createContext<I18n>(FALLBACK);
@@ -70,7 +70,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       locale,
       tag: LOCALE_TAGS[locale],
       setLocale: chooseLocale,
-      t: (key, vars) => translate(CATALOG, locale, key, vars),
+      t: translator(locale),
     }),
     [locale],
   );

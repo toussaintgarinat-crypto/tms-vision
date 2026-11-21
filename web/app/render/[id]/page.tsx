@@ -6,7 +6,11 @@ import { flushSync } from "react-dom";
 import { ExerciseAvatar, ExerciseAvatarApi } from "../../ExerciseAvatar";
 import { Exercise, activeInstruction } from "../../exercisePose";
 import { MUSCLE_MODEL_CREDIT } from "../../muscleModel";
-import { FICHE_BADGE_TEXT } from "../../programFormat";
+import { translator } from "../../i18n/catalog";
+import { FICHE_BADGE_KEY } from "../../programFormat";
+
+// Les vidéos sont produites une fois pour toutes, en français, quelle que soit la langue du site.
+const FICHE_BADGE_TEXT = translator("fr")(FICHE_BADGE_KEY);
 
 // Page de rendu des vidéos d'exercice, pilotée par scripts/render-exercise.mjs :
 // elle n'est pas destinée à être ouverte par un utilisateur. Contrat :

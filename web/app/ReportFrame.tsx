@@ -4,7 +4,8 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 
 import { Exercise, POSITION_LABELS } from "./exercisePose";
 import { LiveExercise } from "./LiveExercise";
-import { DRAFT_BADGE_TEXT, FICHE_BADGE_TEXT, capsuleVideoSrc } from "./programFormat";
+import { useI18n } from "./i18n/I18nProvider";
+import { DRAFT_BADGE_KEY, FICHE_BADGE_KEY, capsuleVideoSrc } from "./programFormat";
 import { ProgramItem } from "./ProgramList";
 import { blobToDataUrl, buildStandaloneHtml, reportFileName } from "./reportExport";
 import { REPORT_CSS } from "./reportStyles";
@@ -90,14 +91,15 @@ function ExerciseBlock({
   stills: Still[];
   animated: boolean;
 }) {
+  const { t } = useI18n();
   const videoSrc = capsuleVideoSrc(item.capsule, API_URL);
   return (
     <section className="ex">
       <h3>
         {item.rank}. {exercise.title}
-        {exercise.fiche && <span className="badge fiche">{FICHE_BADGE_TEXT}</span>}
+        {exercise.fiche && <span className="badge fiche">{t(FICHE_BADGE_KEY)}</span>}
         {item.capsule.status === "draft" && !exercise.fiche && (
-          <span className="badge">{DRAFT_BADGE_TEXT}</span>
+          <span className="badge">{t(DRAFT_BADGE_KEY)}</span>
         )}
         {exercise.position && exercise.position !== "standing" && (
           <span className="badge pos">{POSITION_LABELS[exercise.position]}</span>

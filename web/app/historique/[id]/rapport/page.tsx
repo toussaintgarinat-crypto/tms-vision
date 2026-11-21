@@ -5,12 +5,16 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AnalysisSummary } from "../../../AnalysisResult";
+import { translator } from "../../../i18n/catalog";
 import { LoadInfo, formatLoad } from "../../../loadFormat";
 import { ProgramItem } from "../../../ProgramList";
 import { ReportFrame } from "../../../ReportFrame";
 import { formatSampleDuration } from "../../../bilans/recurrenceFormat";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// Le compte rendu reste en français tant que ses textes ne sont pas traduits (avec ceux des bilans).
+const tFr = translator("fr");
 
 const ACTION_LEVEL_LABELS: Record<string, string> = {
   acceptable: "Acceptable",
@@ -92,7 +96,7 @@ export default function AnalysisReportPage() {
               {current.recommendation.load && (
                 <tr>
                   <td>Poids manipulé</td>
-                  <td>{formatLoad(current.recommendation.load)}</td>
+                  <td>{formatLoad(current.recommendation.load, tFr, "fr-FR")}</td>
                 </tr>
               )}
             </tbody>
