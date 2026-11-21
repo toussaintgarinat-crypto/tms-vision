@@ -26,6 +26,10 @@ une version précise.
   test d'envoi, repli sur l'adresse du cabinet). Page « Administration » pour créer les comptes et lire le
   journal. La connexion devient obligatoire dès qu'un compte existe (ou avec `TMS_REQUIRE_AUTH=true`) ; la
   page du patient reste ouverte. Voir `docs/INSTALLATION-CLIENT.md` § 13.
+- **Application de bureau : « Mot de passe oublié ».** À la création du compte, un code de récupération est
+  montré une seule fois (à noter) ; il permet de choisir un nouveau mot de passe depuis l'écran de connexion,
+  sans email ni terminal. Un nouveau code est alors émis. « Mon compte » permet d'en générer un autre.
+  L'administrateur peut aussi réinitialiser le mot de passe d'un compte depuis « Administration ».
 - **Application de bureau : « Créer votre compte » au premier lancement.** Les comptes sont obligatoires aussi sur
   le poste local ; au premier lancement (ou après une mise à jour d'une version sans comptes), un écran crée
   l'administrateur sans terminal. Cet écran n'existe que dans l'application de bureau, tant qu'aucun compte

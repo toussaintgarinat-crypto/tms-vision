@@ -197,3 +197,52 @@ def test_admin_changing_an_email_closes_that_accounts_sessions_but_self_change_k
     mine = accounts.create_session(user["id"])
     accounts.update_user(user["id"], email="u3@x.fr", actor=user["id"])
     assert accounts.user_for_token(mine)["email"] == "u3@x.fr"
+
+
+def test_recovery_code_resets_the_password_once_and_issues_a_new_code():
+    user = _user()
+    token = accounts.create_session(user["id"])
+    code = accounts.new_recovery_code(user["id"])
+    assert len(code) == 19 and code.count("-") == 3
+    conn = accounts._connect()
+    stored = conn.execute("SELECT recovery_hash FROM users").fetchone()[0]
+    conn.close()
+    assert stored.startswith("$argon2id$") and code.replace("-", "") not in stored
+    # saisie tolérante : minuscules, espaces
+    new_code = accounts.reset_with_recovery_code(user["email"], code.lower().replace("-", " "), "un nouveau mot de passe")
+    assert new_code != code
+    assert accounts.user_for_token(token) is None
+    accounts.authenticate(user["email"], "un nouveau mot de passe")
+    with pytest.raises(accounts.AccountError) as error:  # l'ancien code est brûlé
+        accounts.reset_with_recovery_code(user["email"], code, "encore un autre mot de passe")
+    assert error.value.code == "invalid_recovery"
+    accounts.reset_with_recovery_code(user["email"], new_code, "encore un autre mot de passe")
+
+
+def test_recovery_failures_are_uniform_and_throttled():
+    user = _user()
+    accounts.new_recovery_code(user["id"])
+    messages = set()
+    for email in (user["email"], "inconnu@x.fr"):
+        with pytest.raises(accounts.AccountError) as error:
+            accounts.reset_with_recovery_code(email, "AAAA-BBBB-CCCC-DDDD", "un nouveau mot de passe")
+        messages.add((error.value.code, str(error.value)))
+    assert len(messages) == 1
+    for _ in range(accounts.ACCOUNT_FREE_ATTEMPTS):
+        with pytest.raises(accounts.AccountError):
+            accounts.reset_with_recovery_code(user["email"], "AAAA-BBBB-CCCC-DDDD", "un nouveau mot de passe")
+    with pytest.raises(accounts.AccountError) as error:
+        accounts.reset_with_recovery_code(user["email"], "AAAA-BBBB-CCCC-DDDD", "un nouveau mot de passe")
+    assert error.value.code == "too_many_attempts"
+
+
+def test_account_without_a_code_cannot_recover_and_weak_new_password_is_refused():
+    user = _user()
+    with pytest.raises(accounts.AccountError) as error:
+        accounts.reset_with_recovery_code(user["email"], "AAAA-BBBB-CCCC-DDDD", "un nouveau mot de passe")
+    assert error.value.code == "invalid_recovery"
+    code = accounts.new_recovery_code(user["id"])
+    with pytest.raises(accounts.AccountError) as error:
+        accounts.reset_with_recovery_code(user["email"], code, "court")
+    assert error.value.code == "password_too_short"
+    accounts.reset_with_recovery_code(user["email"], code, "un nouveau mot de passe")  # le code n'a pas été brûlé

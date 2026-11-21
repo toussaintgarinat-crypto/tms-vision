@@ -19,6 +19,8 @@ export type AuthStatus = {
   setup_required: boolean;
   // Application de bureau, premier lancement : l'écran « Créer votre compte » est ouvert.
   local_setup?: boolean;
+  // Application de bureau : « mot de passe oublié » par code de récupération.
+  desktop?: boolean;
   authenticated: boolean;
   user: AuthUser | null;
 };

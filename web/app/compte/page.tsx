@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { API_URL, problemText, readProblem } from "../auth/authFetch";
 import { useAuth } from "../auth/AuthProvider";
+import { RecoveryCode } from "../auth/RecoveryCode";
 import { useI18n } from "../i18n/I18nProvider";
 
 type EmailSettings = {
@@ -107,6 +108,46 @@ function LoginEmailSection() {
       <div className="flex items-center gap-3">
         <button type="submit" className="rounded border border-black px-3 py-1 text-sm">{t("account.loginEmail.button")}</button>
         {message && <span role="status" className={`text-sm ${message.ok ? "text-green-700" : "text-red-700"}`}>{message.text}</span>}
+      </div>
+    </form>
+  );
+}
+
+// Application de bureau : nouveau code de récupération (« mot de passe oublié » sans email).
+function RecoverySection() {
+  const { t } = useI18n();
+  const { status } = useAuth();
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  if (!status?.desktop) return null;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    const response = await fetch(`${API_URL}/auth/recovery-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    }).catch(() => null);
+    if (!response) return setError(t("auth.error.network"));
+    if (!response.ok) return setError(problemText(readProblem(await response.json().catch(() => null)), t, t("auth.error.generic")));
+    setPassword("");
+    setCode(((await response.json()) as { recovery_code: string }).recovery_code);
+  }
+
+  if (code) return <RecoveryCode code={code} onDone={() => setCode(null)} />;
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-3 rounded border p-4">
+      <h2 className="text-lg font-semibold">{t("recovery.section")}</h2>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">{t("recovery.sectionHelp")}</p>
+      <label className="flex flex-col gap-1 text-sm">
+        {t("account.password.current")}
+        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="rounded border p-2" />
+      </label>
+      <div className="flex items-center gap-3">
+        <button type="submit" className="rounded border border-black px-3 py-1 text-sm">{t("recovery.new")}</button>
+        {error && <span role="alert" className="text-sm text-red-700">{error}</span>}
       </div>
     </form>
   );
@@ -256,6 +297,7 @@ export default function AccountPage() {
       <EmailSection />
       <LoginEmailSection />
       <PasswordSection />
+      <RecoverySection />
     </main>
   );
 }

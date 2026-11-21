@@ -26,7 +26,7 @@ _PUBLIC_PATTERNS = (
     re.compile(r"^/library/shares/[^/]+$"),
     re.compile(r"^/capsules/[^/]+/video$"),
 )
-_ALWAYS_PUBLIC = {"/auth/login", "/auth/status", "/auth/setup", "/docs", "/openapi.json"}
+_ALWAYS_PUBLIC = {"/auth/login", "/auth/status", "/auth/setup", "/auth/recover", "/docs", "/openapi.json"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 _users_exist = False
@@ -58,12 +58,20 @@ def _is_public(method: str, path: str) -> bool:
 def local_setup_open(request: Request | None = None) -> bool:
     """L'écran « Créer votre compte » est ouvert : application de bureau (TMS_LOCAL_SETUP, l'API
     n'écoute que sur 127.0.0.1), aucun compte, et requête venue de cette machine."""
-    if os.environ.get("TMS_LOCAL_SETUP", "").strip().lower() not in _TRUE or accounts.has_users():
+    if not desktop_mode() or accounts.has_users():
         return False
-    if request is None:
-        return True
+    return request is None or local_setup_origin(request)
+
+
+def local_setup_origin(request: Request) -> bool:
+    """La requête vient de cette machine (et n'a pas été relayée par un proxy)."""
     host = request.client.host if request.client else ""
     return host in ("127.0.0.1", "::1", "localhost", "testclient") and not request.headers.get("x-forwarded-for")
+
+
+def desktop_mode() -> bool:
+    """Application de bureau (TMS_LOCAL_SETUP) : l'API n'écoute que sur cette machine."""
+    return os.environ.get("TMS_LOCAL_SETUP", "").strip().lower() in _TRUE
 
 
 def _client_address(request: Request) -> str:
@@ -140,6 +148,10 @@ class PasswordBody(BaseModel):
     new: str = Field(max_length=256)
 
 
+class PasswordOnlyBody(BaseModel):
+    password: str = Field(max_length=256)
+
+
 class EmailChangeBody(BaseModel):
     email: str = Field(max_length=254)
     password: str = Field(max_length=256)
@@ -184,6 +196,7 @@ def auth_status(request: Request):
         "auth_required": required,
         "setup_required": not accounts.has_users(),
         "local_setup": local_setup_open(request),
+        "desktop": desktop_mode(),
         "authenticated": getattr(request.state, "user", None) is not None,
         "user": getattr(request.state, "user", None),
     }
@@ -219,7 +232,38 @@ def setup_first_account(body: SetupBody, request: Request, response: Response):
     accounts.audit("login.success", user_id=user["id"], email=user["email"], address=_client_address(request))
     _set_cookie(request, response, accounts.create_session(user["id"]))
     reset_cache()
-    return {"user": user}
+    return {"user": user, "recovery_code": accounts.new_recovery_code(user["id"])}
+
+
+class RecoverBody(BaseModel):
+    email: str = Field(max_length=254)
+    code: str = Field(max_length=64)
+    password: str = Field(max_length=256)
+
+
+@router.post("/auth/recover")
+def recover_password(body: RecoverBody, request: Request):
+    """« Mot de passe oublié » de l'application de bureau : nouveau mot de passe avec le code de
+    récupération montré à la création du compte. Fermé sur un serveur (l'administrateur réinitialise)."""
+    if not desktop_mode() or not local_setup_origin(request):
+        raise HTTPException(status_code=403, detail={"message": "Réinitialisation par code indisponible ici.", "code": "recover_closed"})
+    try:
+        code = accounts.reset_with_recovery_code(body.email, body.code, body.password, _client_address(request))
+    except accounts.AccountError as error:
+        _raise(error, 429 if error.code == "too_many_attempts" else 401 if error.code == "invalid_recovery" else 422)
+    return {"recovery_code": code}
+
+
+@router.post("/auth/recovery-code")
+def regenerate_recovery_code(body: PasswordOnlyBody, user: dict = Depends(current_user)):
+    """Nouveau code de récupération (l'ancien cesse de valoir), après vérification du mot de passe."""
+    if not desktop_mode():
+        raise HTTPException(status_code=403, detail={"message": "Code de récupération indisponible ici.", "code": "recover_closed"})
+    try:
+        accounts.authenticate(user["email"], body.password, "recovery-code")
+        return {"recovery_code": accounts.new_recovery_code(user["id"])}
+    except accounts.AccountError as error:
+        _raise(error, 429 if error.code == "too_many_attempts" else 422)
 
 
 @router.post("/auth/logout")

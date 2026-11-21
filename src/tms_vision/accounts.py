@@ -121,6 +121,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_SESSIONS_TABLE)
     conn.execute(CREATE_LOGIN_FAILURES_TABLE)
     conn.execute(CREATE_AUDIT_LOG_TABLE)
+    # Code de récupération (application de bureau) : empreinte Argon2id, jamais le code lui-même.
+    conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_hash VARCHAR")
     return conn
 
 
@@ -249,7 +251,8 @@ def create_user(
         if conn.execute("SELECT 1 FROM users WHERE email = ?", [email]).fetchone():
             raise AccountError("email_taken", "Un compte existe déjà avec cette adresse.")
         conn.execute(
-            "INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO users (id, email, name, password_hash, roles, language, active, created_at, password_changed_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [user_id, email, name, hash_password(password), json.dumps(roles), language, True, now, now],
         )
         row = conn.execute(f"SELECT {_USER_COLUMNS} FROM users WHERE id = ?", [user_id]).fetchone()
@@ -257,6 +260,68 @@ def create_user(
         conn.close()
     audit("user.create", user_id=actor, target=user_id, detail=",".join(roles))
     return _public_user(row)
+
+
+# Sans 0/O, 1/I/L : le code se recopie à la main depuis une feuille.
+_RECOVERY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+_DUMMY_RECOVERY_HASH = _hasher.hash("code factice, jamais utilisé")
+
+
+def _normalize_code(code: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", (code or "").upper())
+
+
+def new_recovery_code(user_id: str) -> str:
+    """Génère (et enregistre, haché) un code de récupération « XXXX-XXXX-XXXX-XXXX » ; l'ancien cesse
+    de valoir. Le code n'est montré qu'une fois : il ne peut pas être relu ensuite."""
+    raw = "".join(secrets.choice(_RECOVERY_ALPHABET) for _ in range(16))
+    conn = _connect()
+    try:
+        if not conn.execute("SELECT 1 FROM users WHERE id = ?", [user_id]).fetchone():
+            raise AccountError("not_found", "Compte introuvable.")
+        conn.execute("UPDATE users SET recovery_hash = ? WHERE id = ?", [_hasher.hash(raw), user_id])
+    finally:
+        conn.close()
+    audit("recovery.new_code", user_id=user_id, target=user_id)
+    return "-".join(raw[i : i + 4] for i in range(0, 16, 4))
+
+
+def reset_with_recovery_code(email: str, code: str, new_password: str, address: str = "") -> str:
+    """Pose un nouveau mot de passe avec le code de récupération ; ferme toutes les sessions du compte
+    et renvoie un NOUVEAU code (l'ancien est brûlé). Mêmes ralentissements que la connexion."""
+    account = f"recovery:{(email or '').strip().lower()[:254]}"
+    address = address or "-"
+    now = _now()
+    conn = _connect()
+    try:
+        wait = _throttle_wait(conn, account, address, now)
+        if wait:
+            raise AccountError("too_many_attempts", "Trop de tentatives : patientez avant de réessayer.", retry_after=wait)
+        row = conn.execute(
+            "SELECT id, recovery_hash, active, email FROM users WHERE email = ?", [(email or "").strip().lower()]
+        ).fetchone()
+        stored = row[1] if row and row[1] else _DUMMY_RECOVERY_HASH
+        valid = verify_password(stored, _normalize_code(code))
+        if not (row and row[1] and valid and row[2]):
+            conn.execute("INSERT INTO login_failures VALUES (?, ?, ?)", [account, address, now])
+            user_id = row[0] if row else None
+            conn.close()
+            conn = None
+            audit("recovery.failed", user_id=user_id, email=(email or "")[:254], address=address)
+            raise AccountError("invalid_recovery", "Adresse ou code de récupération incorrect.")
+        check_password_strength(new_password, row[3])
+        conn.execute("DELETE FROM login_failures WHERE account = ?", [account])
+        conn.execute(
+            "UPDATE users SET password_hash = ?, password_changed_at = ? WHERE id = ?",
+            [hash_password(new_password), now, row[0]],
+        )
+        user_id = row[0]
+    finally:
+        if conn is not None:
+            conn.close()
+    revoke_user_sessions(user_id)
+    audit("password.recovery", user_id=user_id, target=user_id, address=address)
+    return new_recovery_code(user_id)
 
 
 def create_first_admin(email: str, name: str, password: str, *, language: str | None = None) -> dict:

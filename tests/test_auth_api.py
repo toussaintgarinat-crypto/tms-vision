@@ -220,3 +220,31 @@ def test_setup_refuses_a_request_forwarded_from_elsewhere(client, monkeypatch):
     )
     assert response.status_code == 403
     assert accounts.has_users() is False
+
+
+def test_setup_gives_a_recovery_code_that_resets_the_password_on_the_desktop(client, monkeypatch):
+    monkeypatch.setenv("TMS_LOCAL_SETUP", "1")
+    code = client.post("/auth/setup", headers=ORIGIN, json={"email": "dr@x.fr", "name": "Dr", "password": GOOD}).json()["recovery_code"]
+    client.post("/auth/logout", headers=ORIGIN)
+    assert client.get("/auth/status").json()["desktop"] is True
+    wrong = client.post("/auth/recover", json={"email": "dr@x.fr", "code": "AAAA-BBBB-CCCC-DDDD", "password": "un nouveau mot de passe"})
+    assert wrong.status_code == 401
+    done = client.post("/auth/recover", json={"email": "dr@x.fr", "code": code, "password": "un nouveau mot de passe"})
+    assert done.status_code == 200 and done.json()["recovery_code"] != code
+    assert _login(client, "dr@x.fr", "un nouveau mot de passe").status_code == 200
+
+
+def test_recovery_is_closed_on_a_server_and_for_forwarded_requests(client, monkeypatch):
+    user = _admin()
+    code = accounts.new_recovery_code(user["id"])
+    body = {"email": "admin@x.fr", "code": code, "password": "un nouveau mot de passe"}
+    assert client.post("/auth/recover", json=body).status_code == 403
+    monkeypatch.setenv("TMS_LOCAL_SETUP", "1")
+    assert client.post("/auth/recover", json=body, headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 403
+    assert client.get("/auth/status").json()["desktop"] is True
+    _login(client)
+    assert client.post("/auth/recovery-code", headers=ORIGIN, json={"password": "faux"}).status_code == 422
+    fresh = client.post("/auth/recovery-code", headers=ORIGIN, json={"password": GOOD}).json()["recovery_code"]
+    assert fresh != code
+    monkeypatch.delenv("TMS_LOCAL_SETUP")
+    assert client.post("/auth/recovery-code", headers=ORIGIN, json={"password": GOOD}).status_code == 403

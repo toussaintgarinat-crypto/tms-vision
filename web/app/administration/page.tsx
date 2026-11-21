@@ -15,6 +15,7 @@ export default function AdministrationPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<{ id: string; password: string } | null>(null);
   const [editing, setEditing] = useState<{ id: string; email: string } | null>(null);
   const [form, setForm] = useState({ email: "", name: "", password: "", roles: ["praticien"] as string[] });
 
@@ -111,6 +112,13 @@ export default function AdministrationPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setResetting({ id: account.id, password: "" })}
+                  className="rounded border px-2 py-0.5"
+                >
+                  {t("admin.resetPassword")}
+                </button>
+                <button
+                  type="button"
                   disabled={account.id === user?.id}
                   onClick={() => void send(`/admin/users/${account.id}`, "PATCH", { active: !account.active })}
                   className="rounded border px-2 py-0.5 disabled:opacity-40"
@@ -121,6 +129,25 @@ export default function AdministrationPage() {
             </li>
           ))}
         </ul>
+        {resetting && (
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (await send(`/admin/users/${resetting.id}/password`, "POST", { password: resetting.password })) setResetting(null);
+            }}
+            className="flex flex-col gap-2 rounded border p-3 text-sm"
+          >
+            <label className="flex flex-col gap-1">
+              {t("admin.newPasswordFor", { name: users.find((account) => account.id === resetting.id)?.name ?? "" })}
+              <input type="password" autoComplete="new-password" required value={resetting.password} onChange={(e) => setResetting({ ...resetting, password: e.target.value })} className="rounded border p-2" />
+            </label>
+            <p className="text-xs text-zinc-500">{t("admin.resetNote")}</p>
+            <div className="flex gap-3">
+              <button type="submit" className="rounded border border-black px-3 py-1">{t("common.save")}</button>
+              <button type="button" onClick={() => setResetting(null)} className="underline">{t("common.cancel")}</button>
+            </div>
+          </form>
+        )}
         {editing && (
           <form
             onSubmit={async (event) => {
