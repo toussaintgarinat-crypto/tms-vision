@@ -14,13 +14,18 @@ export type MetierDomain =
   | "tertiaire-autres";
 
 // Ordre d'affichage des domaines d'activité dans la bibliothèque.
-export const DOMAIN_LABELS: Record<MetierDomain, string> = {
-  "terrain-btp": "Terrain et BTP",
-  "industrie-logistique": "Industrie et logistique",
-  "alimentaire-commerce": "Alimentaire et commerce",
-  "sante-soins": "Santé et soins",
-  "tertiaire-autres": "Tertiaire et autres",
-};
+export const DOMAINS: MetierDomain[] = [
+  "terrain-btp",
+  "industrie-logistique",
+  "alimentaire-commerce",
+  "sante-soins",
+  "tertiaire-autres",
+];
+
+// Clé de message du nom d'un domaine (à traduire avec `t`).
+export function domainKey(domain: MetierDomain): string {
+  return `metiers.domain.${domain}`;
+}
 
 export type MetierModel = {
   id: string;
