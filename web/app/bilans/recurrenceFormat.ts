@@ -7,12 +7,12 @@ export function formatHours(hours: number): string {
   return `${wholeHours} h ${String(minutes).padStart(2, "0")}`;
 }
 
-export function formatCycles(cycles: number): string {
-  return Math.round(cycles).toLocaleString("fr-FR");
+export function formatCycles(cycles: number, tag = "fr-FR"): string {
+  return Math.round(cycles).toLocaleString(tag);
 }
 
-export function formatSampleDuration(seconds: number): string {
+export function formatSampleDuration(seconds: number, tag = "fr-FR"): string {
   if (seconds < 60) return `${Math.round(seconds)} s`;
-  const minutes = (seconds / 60).toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+  const minutes = (seconds / 60).toLocaleString(tag, { maximumFractionDigits: 1 });
   return `${minutes} min`;
 }

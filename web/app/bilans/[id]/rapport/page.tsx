@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useI18n } from "../../../i18n/I18nProvider";
 import { ProgramItem } from "../../../ProgramList";
 import { ReportFrame } from "../../../ReportFrame";
 import { formatCycles, formatHours } from "../../recurrenceFormat";
-import { SOURCE_LABELS, formatSlots, formatZoneCycles } from "../../taskForm";
-import { BilanReport, StoredBilan, ZONES, ZONE_LABELS } from "../../types";
+import { choiceLabel, formatSlots, formatZoneCycles, sourceKey } from "../../taskForm";
+import { BilanReport, StoredBilan, ZONES, zoneKey } from "../../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -20,6 +21,7 @@ type Loaded = { id: string; bilan: StoredBilan; report: BilanReport; program: Bi
 // le demande.
 export default function BilanReportPage() {
   const params = useParams<{ id: string }>();
+  const { t } = useI18n();
   const id = params.id;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [failedFor, setFailedFor] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export default function BilanReportPage() {
     ])
       .then(async ([bilanResponse, reportResponse, programResponse]) => {
         if (!bilanResponse.ok || !reportResponse.ok || !programResponse.ok) {
-          throw new Error("Erreur serveur");
+          throw new Error(t("bilan.error.server"));
         }
         const bilan = (await bilanResponse.json()) as StoredBilan;
         const report = (await reportResponse.json()) as BilanReport;
@@ -48,29 +50,29 @@ export default function BilanReportPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, t]);
 
   const current = loaded && loaded.id === id ? loaded : null;
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-4 p-8">
       <div className="tms-toolbar flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Compte rendu du bilan</h1>
+        <h1 className="text-2xl font-semibold">{t("bilanReport.pageTitle")}</h1>
         <Link href={`/bilans/${encodeURIComponent(id)}`} className="text-sm text-blue-600 underline">
-          ← Retour au bilan
+          {t("bilanReport.back")}
         </Link>
       </div>
 
-      {failedFor === id && <p className="text-red-600">Impossible de charger ce bilan.</p>}
-      {!current && failedFor !== id && <p>Chargement...</p>}
+      {failedFor === id && <p className="text-red-600">{t("bilanReport.loadError")}</p>}
+      {!current && failedFor !== id && <p>{t("common.loading")}</p>}
 
       {current && (
         <>
           <label className="tms-toolbar flex items-center gap-2 text-sm">
             <input type="checkbox" checked={includeLabel} onChange={(e) => setIncludeLabel(e.target.checked)} />
-            Inclure le libellé du bilan (« {current.bilan.label ?? "sans libellé"} ») dans le compte rendu
+            {t("bilanReport.includeLabel", { label: current.bilan.label ?? t("bilanReport.noLabel") })}
           </label>
-          <ReportFrame title="Compte rendu de bilan de poste" program={current.program.program}>
+          <ReportFrame title={t("bilanReport.title")} program={current.program.program}>
             <BilanReportBody loaded={current} includeLabel={includeLabel} />
           </ReportFrame>
         </>
@@ -80,26 +82,31 @@ export default function BilanReportPage() {
 }
 
 function BilanReportBody({ loaded, includeLabel }: { loaded: Loaded; includeLabel: boolean }) {
+  const { t, tag } = useI18n();
   const { bilan, report, program } = loaded;
   const tasks = bilan.tasks ?? [];
   const warnings = [...report.warnings, ...program.warnings.filter((w) => !report.warnings.includes(w))];
   return (
     <>
-      <h1>Compte rendu de bilan de poste</h1>
+      <h1>{t("bilanReport.title")}</h1>
       <p className="muted">
-        {new Date().toLocaleDateString("fr-FR")}
+        {new Date().toLocaleDateString(tag)}
         {includeLabel && bilan.label ? ` · ${bilan.label}` : ""}
       </p>
 
-      <h2>Journée de travail</h2>
+      <h2>{t("bilanReport.workday")}</h2>
       <p>
-        Journée de {formatHours(report.workday_hours)} : {formatHours(report.documented_hours)} documentées
-        {report.undocumented_hours > 0 && <>, {formatHours(report.undocumented_hours)} non documentées</>}.
+        {t("recurrence.workday", {
+          workday: formatHours(report.workday_hours),
+          documented: formatHours(report.documented_hours),
+        })}
+        {report.undocumented_hours > 0 &&
+          t("recurrence.undocumented", { hours: formatHours(report.undocumented_hours) })}
+        .
       </p>
       {!report.thresholds_calibrated && (
         <p className="warn">
-          Seuils non calibrés : les chiffres sont des mesures brutes, aucune zone n&apos;est classée
-          « répétitive » ou « acceptable ».
+          {t("bilanReport.uncalibrated")}
         </p>
       )}
       {warnings.map((warning) => (
@@ -108,28 +115,28 @@ function BilanReportBody({ loaded, includeLabel }: { loaded: Loaded; includeLabe
         </p>
       ))}
 
-      <h2>Tâches du poste</h2>
+      <h2>{t("bilanReport.tasks")}</h2>
       <table>
         <thead>
           <tr>
-            <th>Tâche</th>
-            <th>Origine</th>
-            <th>Durée</th>
-            <th>Répétitions</th>
+            <th>{t("bilanReport.col.task")}</th>
+            <th>{t("bilanReport.col.source")}</th>
+            <th>{t("bilanReport.col.duration")}</th>
+            <th>{t("bilanReport.col.repetitions")}</th>
           </tr>
         </thead>
         <tbody>
           {report.analyses.map((analysis, index) => (
             <tr key={analysis.analysis_id}>
-              <td>Activité filmée {index + 1}</td>
-              <td>{SOURCE_LABELS.measured}</td>
+              <td>{t("bilanReport.filmedActivity", { index: index + 1 })}</td>
+              <td>{t(sourceKey("measured"))}</td>
               <td>{formatHours(analysis.activity_hours)}</td>
               <td>
                 {analysis.declared.length > 0
                   ? analysis.declared
-                      .map((declared) => `${declared.name} (${SOURCE_LABELS[declared.source]}) : ${formatZoneCycles(declared.zone_cycles)}`)
+                      .map((declared) => `${declared.name} (${t(sourceKey(declared.source))}) : ${formatZoneCycles(declared.zone_cycles, t, tag)}`)
                       .join(" ; ")
-                  : "mesurées sur la vidéo"}
+                  : t("bilanReport.measuredOnVideo")}
               </td>
             </tr>
           ))}
@@ -140,45 +147,50 @@ function BilanReportBody({ loaded, includeLabel }: { loaded: Loaded; includeLabe
                 <td>
                   {task.name}
                   {(task.workstation || task.breaks) && (
-                    <div className="muted">{[task.workstation, task.breaks].filter(Boolean).join(" · ")}</div>
+                    <div className="muted">{[
+                        task.workstation && choiceLabel(t, "workstation", task.workstation),
+                        task.breaks && choiceLabel(t, "breaks", task.breaks),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}</div>
                   )}
                 </td>
-                <td>{SOURCE_LABELS[task.source]}</td>
+                <td>{t(sourceKey(task.source))}</td>
                 <td>
                   {formatHours(task.activity_hours)}
                   {task.time_slots && <div className="muted">{formatSlots(task.time_slots)}</div>}
                 </td>
                 <td>
                   {Object.keys(task.zone_cycles).length > 0
-                    ? formatZoneCycles(task.zone_cycles)
-                    : `${task.zones.map((zone) => ZONE_LABELS[zone]).join(", ")} : répétitions non renseignées`}
+                    ? formatZoneCycles(task.zone_cycles, t, tag)
+                    : t("bilanReport.cyclesMissing", { zones: task.zones.map((zone) => t(zoneKey(zone))).join(", ") })}
                 </td>
               </tr>
             ))}
         </tbody>
       </table>
 
-      <h2>Cycles et temps en posture à risque</h2>
+      <h2>{t("bilanReport.cyclesTitle")}</h2>
       <table>
         <thead>
           <tr>
-            <th>Zone</th>
-            <th>Cycles estimés sur la journée</th>
-            <th>Temps estimé en posture à risque</th>
+            <th>{t("recurrence.col.zone")}</th>
+            <th>{t("recurrence.col.cycles")}</th>
+            <th>{t("recurrence.col.riskTime")}</th>
           </tr>
         </thead>
         <tbody>
           {ZONES.map((zone) => (
             <tr key={zone}>
-              <td>{ZONE_LABELS[zone]}</td>
-              <td>{formatCycles(report.zones[zone].projected_cycles)}</td>
+              <td>{t(zoneKey(zone))}</td>
+              <td>{formatCycles(report.zones[zone].projected_cycles, tag)}</td>
               <td>{formatHours(report.zones[zone].projected_elevated_hours)}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <p className="muted">
-        Les tâches saisies sans vidéo n&apos;ont ni score RULA ni temps en posture à risque mesurés.
+        {t("bilanReport.noVideoNote")}
       </p>
       {program.position_note && <p className="muted">{program.position_note}</p>}
     </>

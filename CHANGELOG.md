@@ -13,7 +13,8 @@ une version précise.
 ### Ajouts
 - **Interface en français et en anglais (en cours)** : un sélecteur de langue en haut du site. La page que
   reçoit le patient, l'écran d'analyse (vidéo, modèle de pose, poids, programme d'étirements), l'historique et la
-  bibliothèque d'exercices (zones du corps, panier, envoi au patient) s'affichent dans la langue choisie ; les dates, les virgules décimales et les pourcentages suivent la langue. Sans choix, la langue du navigateur est utilisée, puis le français. Le choix est mémorisé.
+  bibliothèque d'exercices (zones du corps, panier, envoi au patient) et les bilans de poste (liste,
+  dossiers, tâches, récurrence, compte rendu) s'affichent dans la langue choisie ; les dates, les virgules décimales et les pourcentages suivent la langue. Sans choix, la langue du navigateur est utilisée, puis le français. Le choix est mémorisé.
   Les autres écrans passent en anglais au fil des prochaines versions ; ajouter une langue ensuite revient à
   ajouter un fichier (voir `web/app/i18n/`).
 - **Envoi d'emails par SMTP** : `TMS_MAILER=smtp` envoie les exercices au patient par le serveur du cabinet,

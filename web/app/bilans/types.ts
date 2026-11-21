@@ -1,14 +1,10 @@
 export const ZONES = ["neck", "trunk", "upper_arm", "lower_arm", "hand", "foot"] as const;
 export type Zone = (typeof ZONES)[number];
 
-export const ZONE_LABELS: Record<Zone, string> = {
-  neck: "Cou",
-  trunk: "Tronc",
-  upper_arm: "Épaule / bras",
-  lower_arm: "Avant-bras / coude",
-  hand: "Main / poignet",
-  foot: "Pied / cheville",
-};
+// Clé de message du nom d'une zone (à traduire avec `t`).
+export function zoneKey(zone: Zone): string {
+  return `bilans.zone.${zone}`;
+}
 
 export type ZoneRecurrence = {
   cycles: number;

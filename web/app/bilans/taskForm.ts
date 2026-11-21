@@ -1,12 +1,13 @@
-import { ZONE_LABELS, ZONES, Zone } from "./types";
+import type { TFunction } from "../i18n/translate";
+import { ZONES, Zone, zoneKey } from "./types";
 
 export type FrequencyUnit = "minute" | "hour" | "day";
 
-export const FREQUENCY_UNIT_LABELS: Record<FrequencyUnit, string> = {
-  minute: "par minute",
-  hour: "par heure",
-  day: "par jour",
-};
+export const FREQUENCY_UNITS: FrequencyUnit[] = ["minute", "hour", "day"];
+
+export function frequencyUnitKey(unit: FrequencyUnit): string {
+  return `bilans.unit.${unit}`;
+}
 
 export type TimeSlot = { start: string; end: string };
 
@@ -50,21 +51,25 @@ export function formatSlots(slots: TimeSlot[]): string {
   return slots.map((slot) => `${slot.start}–${slot.end}`).join(", ");
 }
 
-export const SOURCE_LABELS = {
-  measured: "Mesuré",
-  practitioner: "Saisi par le praticien",
-  patient: "Déclaré par le patient",
-} as const;
-export type Source = keyof typeof SOURCE_LABELS;
+export type Source = "measured" | "practitioner" | "patient";
 
-export function formatZoneCycles(zoneCycles: Partial<Record<Zone, number>>): string {
-  const parts = ZONES.filter((zone) => zoneCycles[zone] !== undefined).map(
-    (zone) =>
-      `${ZONE_LABELS[zone]} : ${(zoneCycles[zone] as number).toLocaleString("fr-FR", {
-        maximumFractionDigits: 2,
-      })}/min`,
+// Clé de message de l'origine d'une donnée (à traduire avec `t`).
+export function sourceKey(source: Source): string {
+  return `bilans.source.${source}`;
+}
+
+export function formatZoneCycles(
+  zoneCycles: Partial<Record<Zone, number>>,
+  t: TFunction,
+  tag = "fr-FR",
+): string {
+  const parts = ZONES.filter((zone) => zoneCycles[zone] !== undefined).map((zone) =>
+    t("bilans.zoneCycles", {
+      zone: t(zoneKey(zone)),
+      value: (zoneCycles[zone] as number).toLocaleString(tag, { maximumFractionDigits: 2 }),
+    }),
   );
-  return parts.length > 0 ? parts.join(" · ") : "répétitions non renseignées";
+  return parts.length > 0 ? parts.join(" · ") : t("bilans.cyclesMissing");
 }
 
 export const OTHER_OPTION = "Autre";
@@ -89,6 +94,15 @@ export const BREAK_OPTIONS = [
   "Micro-pauses fréquentes",
   "Rotation de poste",
 ] as const;
+
+/** Libellé d'un choix de poste ou de pause dans la langue courante. Les valeurs enregistrées
+ *  restent celles de la liste (en français) : l'assistant et les anciens bilans s'y réfèrent ; une
+ *  valeur libre (« Autre ») s'affiche telle quelle. */
+export function choiceLabel(t: TFunction, kind: "workstation" | "breaks", value: string): string {
+  const options: readonly string[] = kind === "workstation" ? WORKSTATION_OPTIONS : BREAK_OPTIONS;
+  const index = options.indexOf(value);
+  return index < 0 ? value : t(`bilans.${kind}.${index}`);
+}
 
 /** Valeur à envoyer pour une liste à choix + « Autre » : null si rien n'est choisi. */
 export function choiceValue(choice: string, otherText: string): string | null {

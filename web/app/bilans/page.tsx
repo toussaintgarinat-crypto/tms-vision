@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useState } from "react";
 
+import { useI18n } from "../i18n/I18nProvider";
+import type { TFunction } from "../i18n/translate";
 import { childrenOf, descendantIds, folderOptions, totalCount } from "./folderTree";
 import { formatHours } from "./recurrenceFormat";
 import { BilanFolder, StoredBilan } from "./types";
@@ -13,18 +15,19 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 // Zone de dépôt « sans dossier » (les dossiers utilisent leur identifiant).
 const NO_FOLDER = "none";
 
-async function errorMessage(response: Response): Promise<string> {
+async function errorMessage(response: Response, t: TFunction): Promise<string> {
   try {
     const body = (await response.json()) as { detail?: unknown };
     if (typeof body.detail === "string") return body.detail;
   } catch {
     // corps non JSON : message générique.
   }
-  return `Erreur ${response.status}`;
+  return t("bilans.error.httpStatus", { status: response.status });
 }
 
 export default function BilansPage() {
   const router = useRouter();
+  const { t, tag } = useI18n();
   const [bilans, setBilans] = useState<StoredBilan[] | null>(null);
   const [archives, setArchives] = useState<StoredBilan[] | null>(null);
   const [folders, setFolders] = useState<BilanFolder[]>([]);
@@ -49,7 +52,7 @@ export default function BilansPage() {
     let cancelled = false;
     const load = <T,>(path: string) =>
       fetch(`${API_URL}${path}`).then((response) => {
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        if (!response.ok) throw new Error(t("bilans.error.httpStatus", { status: response.status }));
         return response.json() as Promise<T>;
       });
     Promise.all([
@@ -69,13 +72,13 @@ export default function BilansPage() {
         if (!cancelled) {
           setBilans(null);
           setArchives(null);
-          setError("Impossible de charger les bilans (problème réseau ou serveur).");
+          setError(t("bilans.error.load"));
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
+  }, [reloadToken, t]);
 
   // Envoie une requête d'action, puis recharge les listes. Un message d'erreur lisible sinon.
   async function run(request: () => Promise<Response>, busy: string | null = null): Promise<boolean> {
@@ -84,13 +87,13 @@ export default function BilansPage() {
     try {
       const response = await request();
       if (!response.ok) {
-        setActionError(await errorMessage(response));
+        setActionError(await errorMessage(response, t));
         return false;
       }
       setReloadToken((token) => token + 1);
       return true;
     } catch {
-      setActionError("L'action a échoué (problème réseau ou serveur). Réessayez.");
+      setActionError(t("bilans.error.action"));
       return false;
     } finally {
       setBusyId(null);
@@ -158,18 +161,18 @@ export default function BilansPage() {
     event.preventDefault();
     const hours = Number(workdayHours);
     if (!Number.isFinite(hours) || hours <= 0 || hours > 24) {
-      setSubmitError("La durée de journée doit être comprise entre 0 et 24 heures.");
+      setSubmitError(t("bilans.error.workdayRange"));
       return;
     }
     setSubmitting(true);
     setSubmitError(null);
     try {
       const response = await post("/bilans", { label: label.trim() || null, workday_hours: hours });
-      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      if (!response.ok) throw new Error(t("bilans.error.httpStatus", { status: response.status }));
       const created = (await response.json()) as StoredBilan;
       router.push(`/bilans/${encodeURIComponent(created.id)}`);
     } catch {
-      setSubmitError("Impossible de créer le bilan (problème réseau ou serveur).");
+      setSubmitError(t("bilans.error.create"));
       setSubmitting(false);
     }
   }
@@ -217,29 +220,29 @@ export default function BilansPage() {
       >
         <span>
           <span aria-hidden="true" className="mr-2 text-zinc-400">⠿</span>
-          {bilan.label ?? "Sans libellé"} · {formatHours(bilan.workday_hours)} ·{" "}
-          {new Date(bilan.created_at).toLocaleString("fr-FR")}
+          {bilan.label ?? t("bilans.noLabel")} · {formatHours(bilan.workday_hours)} ·{" "}
+          {new Date(bilan.created_at).toLocaleString(tag)}
           {bilan.archived_at && (
             <span className="text-gray-500">
-              {" "}· archivé le {new Date(bilan.archived_at).toLocaleDateString("fr-FR")}
+              {" "}· {t("bilans.archivedOn", { date: new Date(bilan.archived_at).toLocaleDateString(tag) })}
             </span>
           )}
         </span>
         <span className="flex flex-wrap items-center gap-3">
           <select
-            aria-label={`Déplacer « ${bilan.label ?? "Sans libellé"} » vers un dossier`}
+            aria-label={t("bilans.moveToFolder", { name: bilan.label ?? t("bilans.noLabel") })}
             value={bilan.folder_id && folders.some((f) => f.id === bilan.folder_id) ? bilan.folder_id : NO_FOLDER}
             disabled={busyId === bilan.id}
             onChange={(event) => void moveBilan(bilan.id, event.target.value)}
             className="max-w-[10rem] rounded border p-1 text-xs"
           >
-            <option value={NO_FOLDER}>Sans dossier</option>
+            <option value={NO_FOLDER}>{t("bilans.noFolder")}</option>
             {options.map((option) => (
               <option key={option.id} value={option.id}>{option.label}</option>
             ))}
           </select>
           <a href={`/bilans/${encodeURIComponent(bilan.id)}`} className="text-blue-600 underline">
-            Ouvrir
+            {t("bilans.open")}
           </a>
           <button
             type="button"
@@ -247,7 +250,7 @@ export default function BilansPage() {
             onClick={() => handleAction(bilan, showArchives ? "unarchive" : "archive")}
             className="text-blue-600 underline disabled:opacity-50"
           >
-            {showArchives ? "Restaurer" : "Archiver"}
+            {showArchives ? t("bilans.restore") : t("bilans.archive")}
           </button>
           {confirmDeleteId === bilan.id ? (
             <span className="flex items-center gap-2">
@@ -257,15 +260,15 @@ export default function BilansPage() {
                 onClick={() => handleAction(bilan, "delete")}
                 className="rounded border border-red-600 px-2 py-0.5 text-red-600 disabled:opacity-50"
               >
-                Supprimer définitivement
+                {t("bilans.deleteForever")}
               </button>
               <button type="button" onClick={() => setConfirmDeleteId(null)} className="underline">
-                Annuler
+                {t("common.cancel")}
               </button>
             </span>
           ) : (
             <button type="button" onClick={() => setConfirmDeleteId(bilan.id)} className="text-red-600 underline">
-              Supprimer
+              {t("bilans.delete")}
             </button>
           )}
         </span>
@@ -302,7 +305,7 @@ export default function BilansPage() {
           {folder.name}{" "}
           <span className="font-normal text-gray-500">
             ({items.length}
-            {total !== items.length ? `, ${total} avec les sous-dossiers` : ""})
+            {total !== items.length ? t("bilans.withSubfolders", { total }) : ""})
           </span>
         </summary>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
@@ -312,13 +315,13 @@ export default function BilansPage() {
                 autoFocus
                 value={renameValue}
                 onChange={(event) => setRenameValue(event.target.value)}
-                aria-label="Nouveau nom du dossier"
+                aria-label={t("bilans.folder.newName")}
                 maxLength={80}
                 className="rounded border p-1"
               />
-              <button type="submit" className="text-blue-600 underline">Enregistrer</button>
+              <button type="submit" className="text-blue-600 underline">{t("common.save")}</button>
               <button type="button" onClick={() => setRenamingId(null)} className="underline">
-                Annuler
+                {t("common.cancel")}
               </button>
             </form>
           ) : (
@@ -327,17 +330,17 @@ export default function BilansPage() {
               onClick={() => { setRenamingId(folder.id); setRenameValue(folder.name); }}
               className="text-blue-600 underline"
             >
-              Renommer le dossier
+              {t("bilans.folder.rename")}
             </button>
           )}
           <select
-            aria-label={`Placer le dossier « ${folder.name} » dans un autre dossier`}
+            aria-label={t("bilans.folder.moveInto", { name: folder.name })}
             value={folder.parent_id && knownFolderIds.has(folder.parent_id) ? folder.parent_id : NO_FOLDER}
             disabled={busyId === folder.id}
             onChange={(event) => void moveFolder(folder.id, event.target.value)}
             className="max-w-[12rem] rounded border p-1 text-xs"
           >
-            <option value={NO_FOLDER}>À la racine</option>
+            <option value={NO_FOLDER}>{t("bilans.folder.root")}</option>
             {destinations.map((option) => (
               <option key={option.id} value={option.id}>{option.label}</option>
             ))}
@@ -349,33 +352,33 @@ export default function BilansPage() {
                 onClick={() => handleDeleteFolder(folder)}
                 className="rounded border border-red-600 px-2 py-0.5 text-red-600"
               >
-                Supprimer le dossier
+                {t("bilans.folder.delete")}
               </button>
               <button type="button" onClick={() => setConfirmDeleteFolderId(null)} className="underline">
-                Annuler
+                {t("common.cancel")}
               </button>
             </span>
           ) : (
             <button type="button" onClick={() => setConfirmDeleteFolderId(folder.id)} className="text-red-600 underline">
-              Supprimer le dossier
+              {t("bilans.folder.delete")}
             </button>
           )}
         </div>
         {confirmDeleteFolderId === folder.id && (
           <p className="mt-2 text-sm text-gray-600">
-            Ses bilans et ses sous-dossiers ne sont pas supprimés : ils montent d&apos;un niveau.
+            {t("bilans.folder.deleteNote")}
           </p>
         )}
         <form onSubmit={(event) => handleCreateFolder(event, folder.id)} className="mt-2 flex flex-wrap items-center gap-2 text-sm">
           <input
             value={subFolderNames[folder.id] ?? ""}
             onChange={(event) => setSubFolderNames((names) => ({ ...names, [folder.id]: event.target.value }))}
-            aria-label={`Nouveau sous-dossier de ${folder.name}`}
-            placeholder="Nouveau sous-dossier (service, poste…)"
+            aria-label={t("bilans.folder.newSub", { name: folder.name })}
+            placeholder={t("bilans.folder.newSubPlaceholder")}
             maxLength={80}
             className="min-w-[14rem] flex-1 rounded border p-1"
           />
-          <button type="submit" className="rounded border px-2 py-1">Ajouter</button>
+          <button type="submit" className="rounded border px-2 py-1">{t("common.add")}</button>
         </form>
         <div className="mt-3 flex flex-col gap-3 border-l-2 pl-3">
           {subFolders.map(renderFolder)}
@@ -384,7 +387,7 @@ export default function BilansPage() {
               {items.map(renderRow)}
               {items.length === 0 && (
                 <li className="rounded border border-dashed p-3 text-sm text-gray-500">
-                  Dossier vide : glissez un bilan ou un dossier ici.
+                  {t("bilans.folder.empty")}
                 </li>
               )}
             </ul>
@@ -397,15 +400,15 @@ export default function BilansPage() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Bilans de poste</h1>
+        <h1 className="text-2xl font-semibold">{t("nav.bilans")}</h1>
         <Link href="/" className="text-sm text-blue-600 underline">
-          ← Nouvelle analyse
+          {t("bilans.newAnalysis")}
         </Link>
       </div>
 
       <form onSubmit={handleCreate} className="grid gap-4 rounded border p-4 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          Libellé du poste
+          {t("bilans.form.label")}
           <input
             type="text"
             value={label}
@@ -414,7 +417,7 @@ export default function BilansPage() {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Journée de travail (heures)
+          {t("bilans.form.workday")}
           <input
             type="number"
             min="0.5"
@@ -431,17 +434,17 @@ export default function BilansPage() {
             disabled={submitting}
             className="rounded border border-black px-3 py-1 text-sm disabled:opacity-50"
           >
-            Créer un bilan
+            {t("bilans.form.create")}
           </button>
           {submitError && <p className="mt-2 text-red-600">{submitError}</p>}
         </div>
       </form>
 
       {error && <p className="text-red-600">{error}</p>}
-      {bilans === null && !error && <p>Chargement...</p>}
+      {bilans === null && !error && <p>{t("common.loading")}</p>}
       {bilans !== null && archives !== null && (
         <>
-          <div className="flex gap-2 border-b" role="tablist" aria-label="Bilans">
+          <div className="flex gap-2 border-b" role="tablist" aria-label={t("bilans.tabs")}>
             <button
               type="button"
               role="tab"
@@ -449,7 +452,7 @@ export default function BilansPage() {
               onClick={() => setShowArchives(false)}
               className={`-mb-px border-b-2 px-3 py-2 text-sm ${!showArchives ? "border-black font-semibold" : "border-transparent text-gray-600"}`}
             >
-              Bilans ({bilans.length})
+              {t("bilans.tab.active", { count: bilans.length })}
             </button>
             <button
               type="button"
@@ -458,29 +461,27 @@ export default function BilansPage() {
               onClick={() => setShowArchives(true)}
               className={`-mb-px border-b-2 px-3 py-2 text-sm ${showArchives ? "border-black font-semibold" : "border-transparent text-gray-600"}`}
             >
-              Archives ({archives.length})
+              {t("bilans.tab.archives", { count: archives.length })}
             </button>
           </div>
 
           <form onSubmit={(event) => handleCreateFolder(event)} className="flex flex-wrap items-end gap-3">
             <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
-              Nouveau dossier (par exemple une entreprise)
+              {t("bilans.newFolder.label")}
               <input
                 value={newFolderName}
                 onChange={(event) => setNewFolderName(event.target.value)}
                 maxLength={80}
-                placeholder="Ex. Acme Industrie"
+                placeholder={t("bilans.newFolder.placeholder")}
                 className="rounded border p-2"
               />
             </label>
             <button type="submit" className="rounded border border-black px-3 py-2 text-sm">
-              Créer le dossier
+              {t("bilans.newFolder.create")}
             </button>
           </form>
           <p className="-mt-3 text-xs text-gray-500">
-            Un dossier peut en contenir d&apos;autres (entreprise, service, poste). Glissez un bilan ou un
-            dossier sur un dossier pour l&apos;y ranger, ou choisissez sa place dans la liste de sa ligne.
-            Les dossiers sont communs aux bilans et aux archives.
+            {t("bilans.folder.help")}
           </p>
 
           {actionError && <p className="text-red-600">{actionError}</p>}
@@ -490,7 +491,7 @@ export default function BilansPage() {
             <section className={zoneClass(NO_FOLDER)} {...dropProps(NO_FOLDER)}>
               {folders.length > 0 && (
                 <h2 className="mb-3 font-semibold">
-                  Sans dossier <span className="font-normal text-gray-500">({withoutFolder.length})</span>
+                  {t("bilans.noFolder")} <span className="font-normal text-gray-500">({withoutFolder.length})</span>
                 </h2>
               )}
               <ul className="flex flex-col gap-2">
@@ -498,8 +499,8 @@ export default function BilansPage() {
                 {withoutFolder.length === 0 && (
                   <li className="text-sm text-gray-600">
                     {showArchives
-                      ? "Aucun bilan archivé hors dossier. Archivez un bilan pour le ranger sans le perdre."
-                      : folders.length > 0 ? "Aucun bilan hors dossier." : "Aucun bilan enregistré."}
+                      ? t("bilans.empty.archives")
+                      : folders.length > 0 ? t("bilans.empty.noFolder") : t("bilans.empty.none")}
                   </li>
                 )}
               </ul>

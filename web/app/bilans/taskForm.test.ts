@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import { translator } from "../i18n/catalog";
+import { FIELD_LABEL_KEYS, EMPTY_TASK_FORM } from "../assistant/taskFill";
+import { ZONES, zoneKey } from "./types";
 import {
+  BREAK_OPTIONS,
+  FREQUENCY_UNITS,
+  WORKSTATION_OPTIONS,
+  choiceLabel,
   choiceValue,
+  frequencyUnitKey,
+  sourceKey,
   formatSlots,
   formatZoneCycles,
   slotsTotalHours,
@@ -59,14 +68,48 @@ describe("formatSlots", () => {
 });
 
 describe("formatZoneCycles", () => {
+  const fr = translator("fr");
+  const en = translator("en");
+
   it("lists zones in body order with their own frequency", () => {
-    expect(formatZoneCycles({ lower_arm: 20, neck: 6 })).toBe(
-      "Cou : 6/min · Avant-bras / coude : 20/min",
-    );
+    expect(formatZoneCycles({ lower_arm: 20, neck: 6 }, fr)).toBe("Cou : 6/min · Avant-bras / coude : 20/min");
+    expect(formatZoneCycles({ lower_arm: 20, neck: 6 }, en, "en-GB")).toBe("Neck: 6/min · Forearm / elbow: 20/min");
+  });
+
+  it("uses the decimal separator of the language", () => {
+    expect(formatZoneCycles({ neck: 1.5 }, fr, "fr-FR")).toBe("Cou : 1,5/min");
+    expect(formatZoneCycles({ neck: 1.5 }, en, "en-GB")).toBe("Neck: 1.5/min");
   });
 
   it("says when nothing is filled in", () => {
-    expect(formatZoneCycles({})).toBe("répétitions non renseignées");
+    expect(formatZoneCycles({}, fr)).toBe("répétitions non renseignées");
+    expect(formatZoneCycles({}, en)).toBe("repetitions not provided");
+  });
+});
+
+describe("translated labels", () => {
+  const en = translator("en");
+  const known = (key: string) => en(key) !== key;
+
+  it("exist for zones, units, sources and form fields", () => {
+    expect(ZONES.filter((zone) => !known(zoneKey(zone)))).toEqual([]);
+    expect(FREQUENCY_UNITS.filter((unit) => !known(frequencyUnitKey(unit)))).toEqual([]);
+    for (const source of ["measured", "practitioner", "patient"] as const) expect(known(sourceKey(source))).toBe(true);
+    expect(Object.values(FIELD_LABEL_KEYS).filter((key) => !known(key))).toEqual([]);
+    expect(Object.keys(EMPTY_TASK_FORM)).toEqual(Object.keys(FIELD_LABEL_KEYS));
+  });
+
+  it("choiceLabel translates listed choices, keeps the stored French value, and leaves free text alone", () => {
+    expect(choiceLabel(en, "workstation", "Conduite")).toBe("Driving");
+    expect(choiceLabel(translator("fr"), "workstation", "Conduite")).toBe("Conduite");
+    expect(choiceLabel(en, "breaks", "Rotation de poste")).toBe("Job rotation");
+    expect(choiceLabel(en, "breaks", "Chariot élévateur")).toBe("Chariot élévateur");
+  });
+
+  it("has a translation for every listed workstation and break", () => {
+    for (const [kind, list] of [["workstation", WORKSTATION_OPTIONS], ["breaks", BREAK_OPTIONS]] as const) {
+      list.forEach((_, index) => expect(known(`bilans.${kind}.${index}`)).toBe(true));
+    }
   });
 });
 

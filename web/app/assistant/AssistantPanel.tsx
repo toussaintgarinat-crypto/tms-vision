@@ -13,7 +13,9 @@ import {
   settingsSnapshot,
   subscribeSettings,
 } from "./assistantSettings";
-import { ApplyResult, AssistantTaskFields, FIELD_LABELS, FilledKey } from "./taskFill";
+import { ApplyResult, AssistantTaskFields, FIELD_LABEL_KEYS, FilledKey } from "./taskFill";
+import { useI18n } from "../i18n/I18nProvider";
+import type { TFunction } from "../i18n/translate";
 import { AssistantSettingsPanel } from "./AssistantSettingsPanel";
 import { useSpeech } from "./useSpeech";
 
@@ -42,8 +44,8 @@ type Props = {
   onFields: (fields: AssistantTaskFields, overwrite: boolean) => ApplyResult;
 };
 
-function labels(keys: FilledKey[]): string {
-  return [...new Set(keys.map((key) => FIELD_LABELS[key]))].join(", ");
+function labels(keys: FilledKey[], t: TFunction): string {
+  return [...new Set(keys.map((key) => t(FIELD_LABEL_KEYS[key])))].join(", ");
 }
 
 function speakAloud(text: string, onEnd: () => void) {
@@ -57,6 +59,7 @@ function speakAloud(text: string, onEnd: () => void) {
 }
 
 export function AssistantPanel({ values, onFields }: Props) {
+  const { t } = useI18n();
   const rawSettings = useSyncExternalStore(subscribeSettings, settingsSnapshot, serverSettingsSnapshot);
   const settings = parseSettings(rawSettings);
   const [config, setConfig] = useState<ServerConfig | null>(null);
@@ -117,9 +120,9 @@ export function AssistantPanel({ values, onFields }: Props) {
         const result = (await response.json()) as ExtractResponse;
         const applied = onFields(result.fields, overwrite);
         const notes: string[] = [];
-        if (applied.filled.length > 0) notes.push(`Champs remplis : ${labels(applied.filled)}.`);
+        if (applied.filled.length > 0) notes.push(`Champs remplis : ${labels(applied.filled, t)}.`);
         if (applied.kept.length > 0) {
-          notes.push(`Déjà saisis, laissés tels quels : ${labels(applied.kept)}.`);
+          notes.push(`Déjà saisis, laissés tels quels : ${labels(applied.kept, t)}.`);
         }
         if (applied.filled.length === 0 && applied.kept.length === 0) {
           notes.push("Je n'ai rien compris d'exploitable. Reformulez ou précisez.");
@@ -141,7 +144,7 @@ export function AssistantPanel({ values, onFields }: Props) {
         setSending(false);
       }
     },
-    [values, history, onFields, overwrite],
+    [values, history, onFields, overwrite, t],
   );
 
   const speech = useSpeech(settings.engine, (spoken) => {

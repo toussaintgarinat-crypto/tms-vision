@@ -65,23 +65,24 @@ export const EMPTY_TASK_FORM: TaskFormState = {
 /** Clés du formulaire que l'assistant a remplies (pour le surlignage « IA »). */
 export type FilledKey = keyof TaskFormState;
 
-export const FIELD_LABELS: Record<FilledKey, string> = {
-  name: "nom",
-  zones: "zones",
-  useSlots: "horaires",
-  slots: "horaires",
-  hours: "durée",
-  frequencies: "répétitions",
-  unit: "unité",
-  cycleSeconds: "durée d'un cycle",
-  staticSeconds: "tenue statique",
-  loadKg: "charge",
-  daysPerWeek: "jours par semaine",
-  notes: "notes",
-  workstation: "poste de travail",
-  workstationOther: "poste de travail",
-  breaks: "pauses",
-  breaksOther: "pauses",
+// Clés de message du nom de chaque champ.
+export const FIELD_LABEL_KEYS: Record<FilledKey, string> = {
+  name: "taskfield.name",
+  zones: "taskfield.zones",
+  useSlots: "taskfield.slots",
+  slots: "taskfield.slots",
+  hours: "taskfield.hours",
+  frequencies: "taskfield.frequencies",
+  unit: "taskfield.unit",
+  cycleSeconds: "taskfield.cycleSeconds",
+  staticSeconds: "taskfield.staticSeconds",
+  loadKg: "taskfield.loadKg",
+  daysPerWeek: "taskfield.daysPerWeek",
+  notes: "taskfield.notes",
+  workstation: "taskfield.workstation",
+  workstationOther: "taskfield.workstation",
+  breaks: "taskfield.breaks",
+  breaksOther: "taskfield.breaks",
 };
 
 export type ApplyResult = {

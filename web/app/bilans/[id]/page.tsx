@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import { useI18n } from "../../i18n/I18nProvider";
 import {
   AvailableExercise,
   GestureCorrection,
@@ -43,6 +44,7 @@ type LoadedBilan = { id: string; bilan: StoredBilan; report: BilanReport; progra
 export default function BilanDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { t, tag } = useI18n();
   const id = params.id;
   // État porteur de l'id auquel il correspond, comparé à `id` au rendu (même
   // motif que historique/[id]/page.tsx, pour satisfaire
@@ -93,7 +95,7 @@ export default function BilanDetailPage() {
           return;
         }
         if (!bilanResponse.ok || !reportResponse.ok || !programResponse.ok) {
-          throw new Error("Erreur serveur");
+          throw new Error(t("bilan.error.server"));
         }
         const bilan = (await bilanResponse.json()) as StoredBilan;
         const report = (await reportResponse.json()) as BilanReport;
@@ -113,13 +115,13 @@ export default function BilanDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, reloadToken]);
+  }, [id, reloadToken, t]);
 
   useEffect(() => {
     let cancelled = false;
     fetch(`${API_URL}/analyses`)
       .then((response) => {
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        if (!response.ok) throw new Error(t("bilans.error.httpStatus", { status: response.status }));
         return response.json() as Promise<AnalysisOption[]>;
       })
       .then((data) => {
@@ -131,7 +133,7 @@ export default function BilanDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,11 +163,11 @@ export default function BilanDetailPage() {
     event.preventDefault();
     const hours = Number(activityHours);
     if (!selectedAnalysisId) {
-      setSubmitError("Choisissez une analyse.");
+      setSubmitError(t("bilan.error.chooseAnalysis"));
       return;
     }
     if (!Number.isFinite(hours) || hours <= 0) {
-      setSubmitError("La durée d'activité doit être supérieure à 0.");
+      setSubmitError(t("bilan.error.activityHours"));
       return;
     }
     setSubmitting(true);
@@ -183,7 +185,7 @@ export default function BilanDetailPage() {
       if (!response.ok) {
         // 404, 409 et 422 portent un `detail` lisible en français ; les 422 de
         // validation Pydantic ont un `detail` en liste, donc pas de texte à afficher.
-        let message = `Erreur ${response.status}`;
+        let message = t("bilans.error.httpStatus", { status: response.status });
         try {
           const body = (await response.json()) as { detail?: unknown };
           if (typeof body.detail === "string") message = body.detail;
@@ -198,7 +200,7 @@ export default function BilanDetailPage() {
       setRepresentative(false);
       setReloadToken((token) => token + 1);
     } catch {
-      setSubmitError("Impossible d'ajouter l'analyse (problème réseau ou serveur).");
+      setSubmitError(t("bilan.error.attach"));
     } finally {
       setSubmitting(false);
     }
@@ -217,7 +219,7 @@ export default function BilanDetailPage() {
         body: JSON.stringify({ label: copyLabel.trim() || null }),
       });
       if (!response.ok) {
-        let message = `Erreur ${response.status}`;
+        let message = t("bilans.error.httpStatus", { status: response.status });
         try {
           const body = (await response.json()) as { detail?: unknown };
           if (typeof body.detail === "string") message = body.detail;
@@ -231,7 +233,7 @@ export default function BilanDetailPage() {
       setCopyLabel("");
       router.push(`/bilans/${encodeURIComponent(copy.id)}`);
     } catch {
-      setCopyError("Impossible de dupliquer le bilan (problème réseau ou serveur).");
+      setCopyError(t("bilan.error.duplicate"));
     } finally {
       setCopying(false);
     }
@@ -243,7 +245,7 @@ export default function BilanDetailPage() {
     event.preventDefault();
     const title = modelTitle.trim();
     if (!title) {
-      setModelError("Donnez un nom au modèle.");
+      setModelError(t("bilan.error.modelName"));
       return;
     }
     setSavingModel(true);
@@ -256,7 +258,7 @@ export default function BilanDetailPage() {
         body: JSON.stringify({ title }),
       });
       if (!response.ok) {
-        let message = `Erreur ${response.status}`;
+        let message = t("bilans.error.httpStatus", { status: response.status });
         try {
           const body = (await response.json()) as { detail?: unknown };
           if (typeof body.detail === "string") message = body.detail;
@@ -269,7 +271,7 @@ export default function BilanDetailPage() {
       setSavedModelTitle(title);
       setModelTitle("");
     } catch {
-      setModelError("Impossible d'enregistrer le modèle (problème réseau ou serveur).");
+      setModelError(t("bilan.error.saveModel"));
     } finally {
       setSavingModel(false);
     }
@@ -285,10 +287,10 @@ export default function BilanDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ size, exercise_ids: exerciseIds }),
       });
-      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      if (!response.ok) throw new Error(t("bilans.error.httpStatus", { status: response.status }));
       setReloadToken((token) => token + 1);
     } catch {
-      setProgramError("Impossible d'enregistrer le programme (problème réseau ou serveur).");
+      setProgramError(t("bilan.error.saveProgram"));
     } finally {
       setProgramBusy(false);
     }
@@ -304,10 +306,10 @@ export default function BilanDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder_id: folderId || null }),
       });
-      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      if (!response.ok) throw new Error(t("bilans.error.httpStatus", { status: response.status }));
       setReloadToken((token) => token + 1);
     } catch {
-      setFileError("Impossible de déplacer le bilan (problème réseau ou serveur).");
+      setFileError(t("bilan.error.move"));
     } finally {
       setFiling(false);
     }
@@ -323,14 +325,14 @@ export default function BilanDetailPage() {
         action === "delete"
           ? await fetch(url, { method: "DELETE" })
           : await fetch(`${url}/${action}`, { method: "POST" });
-      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      if (!response.ok) throw new Error(t("bilans.error.httpStatus", { status: response.status }));
       if (action === "unarchive") {
         setReloadToken((token) => token + 1);
       } else {
         router.push("/bilans");
       }
     } catch {
-      setFileError("L'action a échoué (problème réseau ou serveur). Réessayez.");
+      setFileError(t("bilans.error.action"));
     } finally {
       setFiling(false);
     }
@@ -340,16 +342,16 @@ export default function BilanDetailPage() {
     <main className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">
-          {isLoaded ? (loaded.bilan.label ?? "Bilan sans libellé") : "Bilan de poste"}
+          {isLoaded ? (loaded.bilan.label ?? t("bilan.untitled")) : t("bilan.title")}
         </h1>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {isLoaded && (
             <Link href={`/bilans/${encodeURIComponent(id)}/rapport`} className="text-sm text-blue-600 underline">
-              Compte rendu (PDF / HTML)
+              {t("detail.report")}
             </Link>
           )}
           <Link href="/bilans" className="text-sm text-blue-600 underline">
-            ← Retour aux bilans
+            {t("bilan.back")}
           </Link>
         </div>
       </div>
@@ -359,7 +361,7 @@ export default function BilanDetailPage() {
           {loaded.bilan.archived_at ? (
             <>
               <span className="rounded bg-amber-100 px-2 py-1 font-semibold text-amber-900">
-                Bilan archivé le {new Date(loaded.bilan.archived_at).toLocaleDateString("fr-FR")}
+                {t("bilan.archivedOn", { date: new Date(loaded.bilan.archived_at).toLocaleDateString(tag) })}
               </span>
               <button
                 type="button"
@@ -367,7 +369,7 @@ export default function BilanDetailPage() {
                 onClick={() => handleFile("unarchive")}
                 className="rounded border border-black px-3 py-1 disabled:opacity-50"
               >
-                Restaurer
+                {t("bilans.restore")}
               </button>
             </>
           ) : (
@@ -377,11 +379,11 @@ export default function BilanDetailPage() {
               onClick={() => handleFile("archive")}
               className="rounded border border-black px-3 py-1 disabled:opacity-50"
             >
-              Archiver ce bilan
+              {t("bilan.archiveThis")}
             </button>
           )}
           <label className="flex items-center gap-2">
-            Dossier
+            {t("bilan.folder")}
             <select
               value={
                 loaded.bilan.folder_id && folders.some((folder) => folder.id === loaded.bilan.folder_id)
@@ -392,7 +394,7 @@ export default function BilanDetailPage() {
               onChange={(event) => handleMove(event.target.value)}
               className="rounded border p-1"
             >
-              <option value="">Sans dossier</option>
+              <option value="">{t("bilans.noFolder")}</option>
               {folderOptions(folders).map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.label}
@@ -408,10 +410,10 @@ export default function BilanDetailPage() {
                 onClick={() => handleFile("delete")}
                 className="rounded border border-red-600 px-3 py-1 text-red-600 disabled:opacity-50"
               >
-                Supprimer définitivement
+                {t("bilans.deleteForever")}
               </button>
               <button type="button" onClick={() => setConfirmDelete(false)} className="underline">
-                Annuler
+                {t("common.cancel")}
               </button>
             </span>
           ) : (
@@ -420,47 +422,45 @@ export default function BilanDetailPage() {
               onClick={() => setConfirmDelete(true)}
               className="rounded border px-3 py-1 text-red-600"
             >
-              Supprimer
+              {t("bilans.delete")}
             </button>
           )}
           {fileError && <span className="text-red-600">{fileError}</span>}
         </div>
       )}
 
-      {isNotFound && <p className="text-red-600">Bilan introuvable.</p>}
+      {isNotFound && <p className="text-red-600">{t("bilan.notFound")}</p>}
 
       {isFetchError && (
         <div className="flex flex-col items-start gap-2">
           <p className="text-red-600">
-            Impossible de charger ce bilan (problème réseau ou serveur).
+            {t("bilan.error.load")}
           </p>
           <button
             onClick={() => setReloadToken((token) => token + 1)}
             className="rounded border border-black px-3 py-1 text-sm"
           >
-            Réessayer
+            {t("common.retry")}
           </button>
         </div>
       )}
 
-      {!isNotFound && !isFetchError && !isLoaded && <p>Chargement...</p>}
+      {!isNotFound && !isFetchError && !isLoaded && <p>{t("common.loading")}</p>}
 
       {loaded && loaded.id === id && (
         <>
           <form onSubmit={handleDuplicate} className="flex flex-col gap-2 rounded border p-4">
-            <h2 className="text-lg font-semibold">Reprendre ce bilan pour une autre personne</h2>
+            <h2 className="text-lg font-semibold">{t("bilan.copy.title")}</h2>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Copie les fiches d&apos;activité et la durée de la journée. Les vidéos de la
-              personne d&apos;origine ne sont pas copiées : ajoutez celles de la nouvelle personne
-              sur la copie.
+              {t("bilan.copy.help")}
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
-                Nom de la copie
+                {t("bilan.copy.name")}
                 <input
                   value={copyLabel}
                   onChange={(event) => setCopyLabel(event.target.value)}
-                  placeholder={`Copie de ${loaded.bilan.label ?? "bilan"}`}
+                  placeholder={t("bilan.copy.placeholder", { name: loaded.bilan.label ?? t("bilan.copy.defaultName") })}
                   className="rounded border p-2"
                 />
               </label>
@@ -469,7 +469,7 @@ export default function BilanDetailPage() {
                 disabled={copying}
                 className="rounded border border-black px-3 py-2 text-sm disabled:opacity-50"
               >
-                {copying ? "Copie en cours..." : "Dupliquer ce bilan"}
+                {copying ? t("bilan.copy.busy") : t("bilan.copy.button")}
               </button>
             </div>
             {copyError && <p className="text-sm text-red-600">{copyError}</p>}
@@ -477,19 +477,17 @@ export default function BilanDetailPage() {
 
           {(loaded.bilan.tasks ?? []).length > 0 && (
             <form onSubmit={handleSaveModel} className="flex flex-col gap-2 rounded border p-4">
-              <h2 className="text-lg font-semibold">Enregistrer comme modèle de métier</h2>
+              <h2 className="text-lg font-semibold">{t("bilan.model.title")}</h2>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Garde les fiches d&apos;activité de ce bilan dans la bibliothèque de métiers, pour
-                créer d&apos;autres bilans à partir de lui. Les vidéos et les mesures ne sont pas
-                conservées.
+                {t("bilan.model.help")}
               </p>
               <div className="flex flex-wrap items-end gap-3">
                 <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
-                  Nom du modèle
+                  {t("bilan.model.name")}
                   <input
                     value={modelTitle}
                     onChange={(event) => setModelTitle(event.target.value)}
-                    placeholder="Ex. Opérateur de découpe laser"
+                    placeholder={t("bilan.model.placeholder")}
                     className="rounded border p-2"
                   />
                 </label>
@@ -498,15 +496,15 @@ export default function BilanDetailPage() {
                   disabled={savingModel}
                   className="rounded border border-black px-3 py-2 text-sm disabled:opacity-50"
                 >
-                  {savingModel ? "Enregistrement..." : "Enregistrer le modèle"}
+                  {savingModel ? t("bilan.model.busy") : t("bilan.model.button")}
                 </button>
               </div>
               {modelError && <p className="text-sm text-red-600">{modelError}</p>}
               {savedModelTitle && (
                 <p className="text-sm text-green-700 dark:text-green-400">
-                  Modèle « {savedModelTitle} » enregistré.{" "}
+                  {t("bilan.model.saved", { title: savedModelTitle })}{" "}
                   <Link href="/metiers" className="underline">
-                    Ouvrir la bibliothèque de métiers
+                    {t("bilan.model.open")}
                   </Link>
                 </p>
               )}
@@ -514,26 +512,27 @@ export default function BilanDetailPage() {
           )}
 
           <form onSubmit={handleAttach} className="grid gap-4 rounded border p-4 sm:grid-cols-3">
-            <h2 className="text-lg font-semibold sm:col-span-3">Ajouter une vidéo au bilan</h2>
+            <h2 className="text-lg font-semibold sm:col-span-3">{t("bilan.attach.title")}</h2>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              Analyse
+              {t("bilan.attach.analysis")}
               <select
                 value={selectedAnalysisId}
                 onChange={(event) => setSelectedAnalysisId(event.target.value)}
                 className="rounded border p-2"
               >
-                <option value="">— Choisir —</option>
+                <option value="">{t("bilan.attach.choose")}</option>
                 {availableOptions.map((option) => (
                   <option key={option.id} value={option.id}>
-                    {new Date(option.created_at).toLocaleString("fr-FR")} ·{" "}
-                    {option.poste_label ?? "poste ?"} / {option.worker_label ?? "salarié ?"} · score
-                    max {option.max_score}
+                    {new Date(option.created_at).toLocaleString(tag)} ·{" "}
+                    {option.poste_label ?? t("bilan.attach.unknownPost")} /{" "}
+                    {option.worker_label ?? t("bilan.attach.unknownWorker")} ·{" "}
+                    {t("bilan.attach.maxScore", { score: option.max_score })}
                   </option>
                 ))}
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              Durée de cette activité dans la journée (heures)
+              {t("bilan.attach.hours")}
               <input
                 type="number"
                 min="0.25"
@@ -543,7 +542,7 @@ export default function BilanDetailPage() {
                 className="rounded border p-2"
               />
               <span className="text-xs text-gray-500">
-                Journée de {formatHours(loaded.bilan.workday_hours)}
+                {t("bilan.attach.workday", { hours: formatHours(loaded.bilan.workday_hours) })}
               </span>
             </label>
             <label className="flex items-center gap-2 text-sm sm:col-span-3">
@@ -552,7 +551,7 @@ export default function BilanDetailPage() {
                 checked={representative}
                 onChange={(event) => setRepresentative(event.target.checked)}
               />
-              Cette séquence est représentative de cette activité
+              {t("bilan.attach.representative")}
             </label>
             <div className="sm:col-span-3">
               <button
@@ -560,7 +559,7 @@ export default function BilanDetailPage() {
                 disabled={submitting}
                 className="rounded border border-black px-3 py-1 text-sm disabled:opacity-50"
               >
-                Ajouter au bilan
+                {t("bilan.attach.button")}
               </button>
               {submitError && <p className="mt-2 text-red-600">{submitError}</p>}
             </div>
@@ -581,7 +580,7 @@ export default function BilanDetailPage() {
             loaded.program.gesture_corrections.length > 0 ||
             loaded.program.selection !== null) && (
             <section className="flex flex-col gap-3">
-              <h2 className="text-xl font-semibold">Programme d&apos;étirements du poste</h2>
+              <h2 className="text-xl font-semibold">{t("bilan.program.title")}</h2>
               {loaded.program.position_note && (
                 <p className="text-sm text-gray-600">{loaded.program.position_note}</p>
               )}

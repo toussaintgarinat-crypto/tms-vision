@@ -44,3 +44,15 @@ describe("formatSampleDuration", () => {
     expect(formatSampleDuration(150)).toBe("2,5 min");
   });
 });
+
+describe("number formatting follows the language tag", () => {
+  it("formatCycles", () => {
+    expect(normalizeSpaces(formatCycles(12345.4))).toBe("12 345");
+    expect(formatCycles(12345.4, "en-GB")).toBe("12,345");
+  });
+
+  it("formatSampleDuration", () => {
+    expect(formatSampleDuration(90)).toBe("1,5 min");
+    expect(formatSampleDuration(90, "en-GB")).toBe("1.5 min");
+  });
+});
