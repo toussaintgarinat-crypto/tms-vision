@@ -38,16 +38,21 @@ une version précise.
 - **Changer l'adresse d'un compte** : chacun change son adresse de connexion dans « Mon compte » (avec son mot de passe) ;
   l'administrateur change celle de n'importe quel compte (ses sessions sont alors fermées). La mise à jour en un clic
   de l'application de bureau est réservée aux administrateurs.
-- **Changement à la mise à jour : fin du mot de passe commun (Caddy).** Les variables `TMS_BASIC_AUTH_*` ne
-  servent plus. Le site est fermé par défaut (`TMS_REQUIRE_AUTH=true`) : après la mise à jour, lancez
-  `docker compose exec api python -m tms_vision.admin_cli create-admin` pour créer l'administrateur. L'installateur
-  ne demande plus de mot de passe commun, génère `TMS_SECRET_KEY` et propose de créer l'administrateur.
 - **Envoi d'emails par SMTP** : `TMS_MAILER=smtp` envoie les exercices au patient par le serveur du cabinet,
   Gmail, Outlook, OVH, Brevo ou tout service SMTP, avec le message en texte et en version mise en forme.
   Réglages `TMS_SMTP_*` dans `.env` (voir `docs/INSTALLATION-CLIENT.md` § 8). Sans réglage, rien ne change :
   le lien reste à transmettre à la main. Si l'envoi échoue, le praticien n'est jamais bloqué.
 
 ## [1.5.1] - 2026-11-19
+
+### À faire à la mise à jour (version 2.0.0)
+- **Serveur (Docker)** : le mot de passe commun (Caddy) disparaît, la connexion passe par des comptes. Le site reste
+  fermé tant qu'aucun administrateur n'existe : lancez, juste après la mise à jour,
+  `docker compose exec api python -m tms_vision.admin_cli create-admin`. Ajoutez aussi `TMS_SECRET_KEY` dans `.env`
+  (`openssl rand -base64 24`, à conserver à part des sauvegardes) pour que « Mon email » puisse enregistrer des mots de
+  passe. Les lignes `TMS_BASIC_AUTH_*` de `.env` ne servent plus. Voir `docs/INSTALLATION-CLIENT.md` § 13.
+- **Application de bureau** : au premier lancement, l'écran « Créer votre compte » crée l'administrateur ; **notez le
+  code de récupération affiché**, il sert si le mot de passe est oublié. Les analyses et bilans existants sont conservés.
 
 ### Corrections
 - **Installateur Mac Apple Silicon (M1 à M4)** : GitHub ne propose plus la machine de construction
