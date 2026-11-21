@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useRef, useState } from "react";
 
-import { Exercise, POSITION_LABELS } from "./exercisePose";
+import { Exercise } from "./exercisePose";
 import { LiveExercise } from "./LiveExercise";
 import { useI18n } from "./i18n/I18nProvider";
 import { DRAFT_BADGE_KEY, FICHE_BADGE_KEY, capsuleVideoSrc } from "./programFormat";
@@ -15,16 +15,13 @@ import { MUSCLE_MODEL_CREDIT } from "./muscleModel";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type Mode = "carousel" | "animation" | "video";
-const MODE_LABELS: Record<Mode, string> = {
-  carousel: "Carrousel (images)",
-  animation: "Animation 3D",
-  video: "Vidéo",
-};
+const MODES: Mode[] = ["carousel", "animation", "video"];
 
 // À l'impression, l'application (menu, barre d'outils) disparaît : seul le compte rendu reste.
 const PRINT_CSS = `@media print{header,.tms-toolbar{display:none!important}}`;
 
 function Carousel({ steps, title }: { steps: Still[]; title: string }) {
+  const { t } = useI18n();
   const [index, setIndex] = useState(0);
   const count = steps.length;
   return (
@@ -32,7 +29,7 @@ function Carousel({ steps, title }: { steps: Still[]; title: string }) {
       {steps.map((step, position) => (
         <div key={step.t} className={`step${position === index ? " active" : ""}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={step.image} alt={`${title}, étape ${position + 1}`} />
+          <img src={step.image} alt={t("report.stepAlt", { title, step: position + 1 })} />
           <p>
             <strong>
               {position + 1}/{count}
@@ -102,7 +99,7 @@ function ExerciseBlock({
           <span className="badge">{t(DRAFT_BADGE_KEY)}</span>
         )}
         {exercise.position && exercise.position !== "standing" && (
-          <span className="badge pos">{POSITION_LABELS[exercise.position]}</span>
+          <span className="badge pos">{t(`position.${exercise.position}`)}</span>
         )}
       </h3>
       <p className="muted">{item.reason}</p>
@@ -139,6 +136,7 @@ export function ReportFrame({
   program: ProgramItem[];
   children: ReactNode;
 }) {
+  const { t, locale } = useI18n();
   const key = program.map((item) => item.capsule.id).join(",");
   const [mode, setMode] = useState<Mode>("carousel");
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -153,7 +151,7 @@ export function ReportFrame({
     Promise.all(
       key.split(",").map((id) =>
         fetch(`${API_URL}/exercises/${encodeURIComponent(id)}`).then((response) => {
-          if (!response.ok) throw new Error(`Erreur ${response.status}`);
+          if (!response.ok) throw new Error(t("bilans.error.httpStatus", { status: response.status }));
           return response.json() as Promise<Exercise>;
         }),
       ),
@@ -167,7 +165,7 @@ export function ReportFrame({
     return () => {
       cancelled = true;
     };
-  }, [key]);
+  }, [key, t]);
 
   const exercises = loaded && loaded.key === key ? loaded.exercises : undefined;
   const stills = stillsState && stillsState.key === key ? stillsState.stills : undefined;
@@ -193,21 +191,21 @@ export function ReportFrame({
       if (kind === "video") {
         for (const video of videos) {
           const response = await fetch(video.getAttribute("src") ?? "");
-          if (!response.ok) throw new Error(`Vidéo introuvable (${response.status})`);
+          if (!response.ok) throw new Error(t("report.error.videoMissing", { status: response.status }));
           video.setAttribute("src", await blobToDataUrl(await response.blob()));
           video.removeAttribute("preload");
         }
       } else {
         videos.forEach((video) => video.parentElement?.remove());
       }
-      const blob = new Blob([buildStandaloneHtml(title, clone.outerHTML)], { type: "text/html" });
+      const blob = new Blob([buildStandaloneHtml(title, clone.outerHTML, locale)], { type: "text/html" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = reportFileName(kind, new Date());
+      link.download = reportFileName(kind, new Date(), t("report.filePrefix"));
       link.click();
       URL.revokeObjectURL(link.href);
     } catch {
-      setError("Impossible de créer le fichier HTML (vidéo introuvable ou problème réseau).");
+      setError(t("report.error.html"));
     } finally {
       setBusy(null);
     }
@@ -220,31 +218,30 @@ export function ReportFrame({
       <style>{PRINT_CSS}</style>
       <div className="tms-toolbar flex flex-col gap-3 rounded border p-4">
         <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <legend className="mb-1 font-medium">Exercices affichés à l&apos;écran</legend>
-          {(Object.keys(MODE_LABELS) as Mode[]).map((value) => (
+          <legend className="mb-1 font-medium">{t("report.display")}</legend>
+          {MODES.map((value) => (
             <label key={value} className="flex items-center gap-1">
               <input type="radio" name="report-mode" checked={mode === value} onChange={() => setMode(value)} />
-              {MODE_LABELS[value]}
+              {t(`report.mode.${value}`)}
             </label>
           ))}
         </fieldset>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={button} disabled={!ready} onClick={() => window.print()}>
-            Enregistrer en PDF (avec les carrousels)
+            {t("report.savePdf")}
           </button>
           <button type="button" className={button} disabled={!ready || busy !== null} onClick={() => download("carousel")}>
-            Télécharger en HTML (carrousels)
+            {t("report.htmlCarousels")}
           </button>
           <button type="button" className={button} disabled={!ready || busy !== null} onClick={() => download("video")}>
-            {busy === "video" ? "Préparation des vidéos…" : "Télécharger en HTML (vidéos)"}
+            {busy === "video" ? t("report.preparingVideos") : t("report.htmlVideos")}
           </button>
         </div>
         <p className="text-xs text-gray-600">
-          PDF : dans la fenêtre d&apos;impression, choisissez « Enregistrer au format PDF ». Le PDF et le
-          HTML ne contiennent ni nom, ni identifiant, ni vidéo d&apos;origine du salarié.
-          {!ready && !failed && " Préparation des images en cours…"}
+          {t("report.pdfHelp")}
+          {!ready && !failed && ` ${t("report.preparingImages")}`}
         </p>
-        {failed && <p className="text-sm text-red-600">Impossible de charger les exercices.</p>}
+        {failed && <p className="text-sm text-red-600">{t("report.error.exercises")}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
 
@@ -259,10 +256,10 @@ export function ReportFrame({
       <div ref={containerRef} className="tms-report" data-mode={mode}>
         <style>{REPORT_CSS}</style>
         {children}
-        <h2>Programme d&apos;étirements</h2>
+        <h2>{t("report.program")}</h2>
         {program.length === 0 && (
           <p className="muted">
-            Aucune zone n&apos;atteint un niveau de posture à risque : pas d&apos;étirement ciblé proposé.
+            {t("report.noProgram")}
           </p>
         )}
         {ready &&
@@ -282,8 +279,7 @@ export function ReportFrame({
           })}
         <footer className="muted">
           <p>
-            Document anonyme : il ne contient ni nom, ni identifiant de salarié, ni vidéo d&apos;origine.
-            Exercices en brouillon : à valider par un professionnel de santé avant usage.
+            {t("report.footer")}
           </p>
           <p>{MUSCLE_MODEL_CREDIT}</p>
         </footer>

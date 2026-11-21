@@ -11,13 +11,14 @@ une version précise.
 ## [Non publié]
 
 ### Ajouts
-- **Interface en français et en anglais (en cours)** : un sélecteur de langue en haut du site. La page que
-  reçoit le patient, l'écran d'analyse (vidéo, modèle de pose, poids, programme d'étirements), l'historique et la
-  bibliothèque d'exercices (zones du corps, panier, envoi au patient) et les bilans de poste (liste,
-  dossiers, tâches, récurrence, compte rendu), la bibliothèque de métiers et l'assistant vocal (réglages, dictée, lecture à voix haute dans la langue
-  choisie) s'affichent dans la langue choisie ; les dates, les virgules décimales et les pourcentages suivent la langue. Sans choix, la langue du navigateur est utilisée, puis le français. Le choix est mémorisé.
-  Les autres écrans passent en anglais au fil des prochaines versions ; ajouter une langue ensuite revient à
-  ajouter un fichier (voir `web/app/i18n/`).
+- **Interface en français et en anglais** : un sélecteur de langue en haut du site. Tous les écrans (page
+  patient, analyse, historique, bibliothèque d'exercices, bilans de poste, bibliothèque de métiers,
+  assistant vocal) et les comptes rendus (PDF et HTML, analyse et bilan) s'affichent dans la langue choisie ;
+  les dates, les virgules décimales, les pourcentages, la dictée et la lecture à voix haute la suivent.
+  Sans choix, la langue du navigateur est utilisée, puis le français. Le choix est mémorisé. Restent en
+  français, car ils viennent du serveur : les titres et descriptions d'exercices, les pathologies, les
+  métiers, les messages d'erreur du serveur et les questions de l'assistant. Ajouter une langue revient
+  à ajouter un fichier (voir `web/app/i18n/`).
 - **Envoi d'emails par SMTP** : `TMS_MAILER=smtp` envoie les exercices au patient par le serveur du cabinet,
   Gmail, Outlook, OVH, Brevo ou tout service SMTP, avec le message en texte et en version mise en forme.
   Réglages `TMS_SMTP_*` dans `.env` (voir `docs/INSTALLATION-CLIENT.md` § 8). Sans réglage, rien ne change :

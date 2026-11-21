@@ -16,6 +16,11 @@ describe("buildStandaloneHtml", () => {
     expect(html).toContain("<main>corps</main>");
     expect(html).toContain(CAROUSEL_SCRIPT);
     expect(html).toContain('<meta charset="utf-8">');
+    expect(html).toContain('<html lang="fr">');
+  });
+
+  it("declares the language of the report", () => {
+    expect(buildStandaloneHtml("Report", "<main/>", "en")).toContain('<html lang="en">');
   });
 });
 
@@ -24,5 +29,11 @@ describe("reportFileName", () => {
     const date = new Date("2026-10-22T10:00:00Z");
     expect(reportFileName("carousel", date)).toBe("compte-rendu-carrousels-2026-10-22.html");
     expect(reportFileName("video", date)).toBe("compte-rendu-videos-2026-10-22.html");
+  });
+
+  it("takes its prefix from the report's language", () => {
+    expect(reportFileName("carousel", new Date("2026-10-22T10:00:00Z"), "report")).toBe(
+      "report-carrousels-2026-10-22.html",
+    );
   });
 });

@@ -20,9 +20,9 @@ var n=(i+Number(b.getAttribute("data-dir"))+s.length)%s.length;
 s.forEach(function(x,k){x.classList.toggle("active",k===n);});
 var t=c.querySelector(".count");if(t)t.textContent=(n+1)+" / "+s.length;});`;
 
-export function buildStandaloneHtml(title: string, bodyHtml: string): string {
+export function buildStandaloneHtml(title: string, bodyHtml: string, lang = "fr"): string {
   return `<!doctype html>
-<html lang="fr">
+<html lang="${escapeHtml(lang)}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,9 +36,10 @@ ${bodyHtml}
 `;
 }
 
-export function reportFileName(kind: "carousel" | "video", date: Date): string {
+// `prefix` : début du nom de fichier, dans la langue du compte rendu (« compte-rendu », « report »).
+export function reportFileName(kind: "carousel" | "video", date: Date, prefix = "compte-rendu"): string {
   const day = date.toISOString().slice(0, 10);
-  return `compte-rendu-${kind === "video" ? "videos" : "carrousels"}-${day}.html`;
+  return `${prefix}-${kind === "video" ? "videos" : "carrousels"}-${day}.html`;
 }
 
 export async function blobToDataUrl(blob: Blob): Promise<string> {
