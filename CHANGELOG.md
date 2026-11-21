@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [2.0.1] - 2026-11-21
+
 ### Corrections
 - **Application de bureau : « Mon email » enregistre maintenant le mot de passe.** Sans fichier `.env`, la clé de
   chiffrement manquait et l'enregistrement était refusé ; elle est créée au premier lancement. La page d'envoi
