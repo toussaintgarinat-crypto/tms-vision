@@ -38,8 +38,13 @@ def test_the_shipped_library_is_valid_and_complete():
 
 def test_library_domains_match_the_page_labels_and_each_one_has_jobs():
     source = (Path(__file__).resolve().parents[1] / "web" / "app" / "metiers" / "types.ts")
-    block = re.search(r"DOMAIN_LABELS[^{]*\{(.*?)\};", source.read_text(encoding="utf-8"), re.S)
-    labelled = set(re.findall(r'"([a-z-]+)":', block.group(1)))
+    block = re.search(r"DOMAINS: MetierDomain\[\] = \[(.*?)\];", source.read_text(encoding="utf-8"), re.S)
+    labelled = set(re.findall(r'"([a-z-]+)"', block.group(1)))
+    # Chaque domaine a aussi son nom traduit (clé metiers.domain.<id>) dans les deux langues.
+    messages = Path(__file__).resolve().parents[1] / "web" / "app" / "i18n" / "messages"
+    for language in ("fr", "en"):
+        names = (messages / f"{language}.json").read_text(encoding="utf-8")
+        assert all(f'"metiers.domain.{domain}"' in names for domain in metiers.DOMAINS), language
 
     assert labelled == set(metiers.DOMAINS)
     assert {model["domain"] for model in metiers.load_library()} == set(metiers.DOMAINS)
