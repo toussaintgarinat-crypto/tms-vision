@@ -732,5 +732,6 @@
   "auth.error.recover_closed": "Reset by code is not available here: ask your administrator.",
   "admin.resetPassword": "Reset password",
   "admin.newPasswordFor": "New temporary password for {name}",
-  "admin.resetNote": "This account's open sessions are closed. Give the password to the person, who will change it in “My account”."
+  "admin.resetNote": "This account's open sessions are closed. Give the password to the person, who will change it in “My account”.",
+  "library.send.desktopWarning": "Desktop app: the link you send only opens on this computer. For a patient to open their exercises at home, use the practice's server installation."
 }

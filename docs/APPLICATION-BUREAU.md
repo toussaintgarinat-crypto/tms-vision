@@ -38,7 +38,11 @@ l'application puis installer la nouvelle version par-dessus (aucune désinstalla
 **Compte** : au premier lancement, l'écran « Créer votre compte » demande une adresse, un nom et un mot de
 passe, puis affiche un **code de récupération à noter** (il ne sera plus montré). Il sert à retrouver le mot de
 passe depuis l'écran de connexion (« Mot de passe oublié ? »), sans email ni terminal ; « Mon compte » permet d'en
-générer un nouveau. L'application n'est joignable que depuis l'ordinateur lui-même. Les comptes supplémentaires
+générer un nouveau. L'application n'est joignable que depuis l'ordinateur lui-même. **Envoyer des exercices à un patient** : « Mon email » (menu *Mon compte*) fonctionne aussi ici ; la clé qui
+chiffre le mot de passe est créée au premier lancement (fichier `secret.key` du dossier des données, à ne pas
+diffuser). Mais le lien contenu dans l'email pointe vers cet ordinateur (`http://127.0.0.1:13000`) : un patient ne
+peut pas l'ouvrir de chez lui. Pour cet usage, installez le serveur du cabinet (voir `README.md`).
+Les comptes supplémentaires
 (un ostéopathe, un collègue) se créent dans le menu *Administration*. Pas de vidéos
 d'étirement pré-générées (outil `capsules`) : les exercices s'animent directement dans le navigateur.
 

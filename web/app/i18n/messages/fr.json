@@ -732,5 +732,6 @@
   "auth.error.recover_closed": "Réinitialisation par code indisponible ici : demandez à votre administrateur.",
   "admin.resetPassword": "Réinitialiser le mot de passe",
   "admin.newPasswordFor": "Nouveau mot de passe provisoire de {name}",
-  "admin.resetNote": "Les sessions ouvertes de ce compte sont fermées. Communiquez le mot de passe à la personne, qui le changera dans « Mon compte »."
+  "admin.resetNote": "Les sessions ouvertes de ce compte sont fermées. Communiquez le mot de passe à la personne, qui le changera dans « Mon compte ».",
+  "library.send.desktopWarning": "Application de bureau : le lien envoyé ne s'ouvre que sur cet ordinateur. Pour qu'un patient ouvre ses exercices chez lui, utilisez l'installation serveur du cabinet."
 }

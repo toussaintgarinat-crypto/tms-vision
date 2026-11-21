@@ -12,7 +12,7 @@ données ne se partagent pas entre les deux.
 | Compétences requises | aucune : double-clic | savoir ouvrir un terminal ; un nom de domaine pour l'accès à distance |
 | Où tournent les données | sur l'ordinateur du praticien | sur le serveur du cabinet (dossier `data/`) |
 | Accès | depuis cet ordinateur seulement | depuis tout appareil (ordinateur, tablette, téléphone), en HTTPS |
-| Liens et emails aux patients | le lien pointe vers l'ordinateur : le patient ne peut pas l'ouvrir de chez lui | oui : le patient ouvre sa page d'exercices depuis chez lui |
+| Envoi d'emails aux patients | l'email part bien (réglage « Mon email »), mais le lien qu'il contient pointe vers l'ordinateur du praticien : **le patient ne peut pas l'ouvrir de chez lui** | oui : l'email part et le patient ouvre sa page d'exercices depuis chez lui |
 | Premier compte | écran « Créer votre compte » au premier lancement (**noter le code de récupération**) | `docker compose exec api python -m tms_vision.admin_cli create-admin` |
 | Mise à jour | bouton jaune « Mettre à jour » dans l'application, en un clic | relancer la commande d'installation |
 

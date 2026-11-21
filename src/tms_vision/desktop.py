@@ -13,6 +13,7 @@ développement, `python -m tms_vision.desktop --web-dir web/.next/standalone` fa
 le Node.js du système."""
 import argparse
 import os
+import secrets
 import shutil
 import socket
 import subprocess
@@ -41,6 +42,25 @@ def data_dir() -> Path:
     if sys.platform == "darwin":
         return Path.home() / "Library" / "Application Support" / "TMS Vision"
     return Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share") / "tms-vision"
+
+
+def ensure_secret_key(directory: Path) -> str:
+    """Clé qui chiffre les mots de passe d'envoi (« Mon email ») : sur le poste local il n'y a pas de
+    `.env`, la clé est donc créée au premier lancement et gardée dans le dossier des données (lisible par
+    son propriétaire seulement)."""
+    path = directory / "secret.key"
+    if path.exists():
+        key = path.read_text(encoding="utf-8").strip()
+        if len(key) >= 16:
+            return key
+    key = secrets.token_urlsafe(32)
+    directory.mkdir(parents=True, exist_ok=True)
+    path.write_text(key, encoding="utf-8")
+    try:
+        path.chmod(0o600)
+    except OSError:
+        pass  # Windows : le dossier de l'utilisateur est déjà privé.
+    return key
 
 
 def port_in_use(port: int) -> bool:
@@ -100,6 +120,9 @@ class Application:
         # Comptes obligatoires ici aussi : au premier lancement, l'écran « Créer votre compte » (l'API
         # n'écoute que sur cette machine) crée l'administrateur sans terminal.
         os.environ["TMS_REQUIRE_AUTH"] = "1"
+        os.environ.setdefault("TMS_SECRET_KEY", ensure_secret_key(self.directory))
+        # Adresse des liens envoyés aux patients : celle de ce poste (inutilisable depuis un autre appareil).
+        os.environ.setdefault("TMS_PUBLIC_WEB_URL", f"http://{HOST}:{WEB_PORT}")
         os.environ["TMS_LOCAL_SETUP"] = "1"
         from tms_vision import self_update
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Exercise } from "../exercisePose";
+import { useAuth } from "../auth/AuthProvider";
 import { useI18n } from "../i18n/I18nProvider";
 import { BodyMap, BodyView } from "./BodyMap";
 import { ExerciseCarousel } from "./ExerciseCarousel";
@@ -23,6 +24,7 @@ import {
 
 export default function LibraryPage() {
   const { t } = useI18n();
+  const { status } = useAuth();
   const [library, setLibrary] = useState<Library | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [view, setView] = useState<BodyView>("front");
@@ -260,6 +262,9 @@ export default function LibraryPage() {
 
         <aside className="h-fit rounded-xl border border-zinc-200 p-4 dark:border-zinc-700" aria-label={t("library.send.region")}>
           <h2 className="mb-2 font-semibold">{t("library.send.title", { count: basket.length })}</h2>
+          {status?.desktop && (
+            <p className="mb-2 rounded bg-amber-100 px-2 py-1 text-xs text-amber-950">{t("library.send.desktopWarning")}</p>
+          )}
           {basket.length === 0 ? (
             <p className="text-sm text-zinc-500">{t("library.send.empty")}</p>
           ) : (

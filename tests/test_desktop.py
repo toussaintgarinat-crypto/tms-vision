@@ -61,3 +61,17 @@ def test_the_desktop_app_requires_accounts_and_opens_the_first_run_screen():
     source = (Path(__file__).resolve().parents[1] / "src" / "tms_vision" / "desktop.py").read_text(encoding="utf-8")
     assert 'os.environ["TMS_REQUIRE_AUTH"] = "1"' in source
     assert 'os.environ["TMS_LOCAL_SETUP"] = "1"' in source
+
+
+def test_the_desktop_app_creates_and_keeps_its_own_secret_key(tmp_path):
+    first = desktop.ensure_secret_key(tmp_path / "data")
+    assert len(first) >= 16
+    assert desktop.ensure_secret_key(tmp_path / "data") == first  # stable d'un lancement à l'autre
+    (tmp_path / "data" / "secret.key").write_text("court", encoding="utf-8")
+    assert len(desktop.ensure_secret_key(tmp_path / "data")) >= 16  # clé trop courte : refaite
+
+
+def test_the_desktop_app_wires_the_key_and_the_local_link():
+    source = (Path(__file__).resolve().parents[1] / "src" / "tms_vision" / "desktop.py").read_text(encoding="utf-8")
+    assert 'os.environ.setdefault("TMS_SECRET_KEY", ensure_secret_key(self.directory))' in source
+    assert "TMS_PUBLIC_WEB_URL" in source

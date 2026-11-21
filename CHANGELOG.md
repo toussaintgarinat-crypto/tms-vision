@@ -57,6 +57,9 @@ une version précise.
   code de récupération affiché**, il sert si le mot de passe est oublié. Les analyses et bilans existants sont conservés.
 
 ### Corrections
+- **Application de bureau : « Mon email » enregistre maintenant le mot de passe.** Sans fichier `.env`, la clé de
+  chiffrement manquait et l'enregistrement était refusé ; elle est créée au premier lancement. La page d'envoi
+  prévient aussi que le lien n'est ouvrable que sur cet ordinateur.
 - **Installateur Mac Apple Silicon (M1 à M4)** : GitHub ne propose plus la machine de construction
   `macos-14`, ce qui empêchait la publication de la 1.5.0 ; la construction utilise maintenant `macos-15`.
 
