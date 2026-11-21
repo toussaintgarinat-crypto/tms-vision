@@ -35,7 +35,11 @@ l'application puis installer la nouvelle version par-dessus (aucune désinstalla
 (« Download ZIP ») : dans ce cas les données sont dans ce dossier et disparaissent si on le remplace.
 **Journaux** (en cas de problème) : sous-dossier `logs` des données.
 
-Pas de mot de passe : l'application n'est joignable que depuis l'ordinateur lui-même. Pas de vidéos
+**Compte** : au premier lancement, l'écran « Créer votre compte » demande une adresse, un nom et un mot de
+passe, puis affiche un **code de récupération à noter** (il ne sera plus montré). Il sert à retrouver le mot de
+passe depuis l'écran de connexion (« Mot de passe oublié ? »), sans email ni terminal ; « Mon compte » permet d'en
+générer un nouveau. L'application n'est joignable que depuis l'ordinateur lui-même. Les comptes supplémentaires
+(un ostéopathe, un collègue) se créent dans le menu *Administration*. Pas de vidéos
 d'étirement pré-générées (outil `capsules`) : les exercices s'animent directement dans le navigateur.
 
 ## Construire les fichiers (côté développeur)

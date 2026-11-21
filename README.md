@@ -1,8 +1,29 @@
 # Plateforme de Vision par Ordinateur pour la Prévention des TMS et l'Ergonomie au Travail
 
-## Installation en une commande
+## Quelle installation choisir ?
 
-**Serveur ou poste client (Docker : HTTPS, mot de passe, démarrage automatique).** Sur une machine
+Deux installations pour les clients, selon l'usage. C'est le même logiciel et le même contenu, mais les
+données ne se partagent pas entre les deux.
+
+| | **Application de bureau** | **Serveur (Docker)** |
+|---|---|---|
+| Pour qui | un praticien seul, sur son ordinateur | un cabinet : plusieurs praticiens et ostéopathes, chacun avec son compte |
+| Comment l'obtenir | télécharger l'installateur de la [dernière version](https://github.com/toussaintgarinat-crypto/tms-vision/releases/latest) : `TMS-Vision-Setup.exe` (Windows) ou `.dmg` (Mac) | une commande d'installation sur une machine du cabinet (voir plus bas) |
+| Compétences requises | aucune : double-clic | savoir ouvrir un terminal ; un nom de domaine pour l'accès à distance |
+| Où tournent les données | sur l'ordinateur du praticien | sur le serveur du cabinet (dossier `data/`) |
+| Accès | depuis cet ordinateur seulement | depuis tout appareil (ordinateur, tablette, téléphone), en HTTPS |
+| Liens et emails aux patients | le lien pointe vers l'ordinateur : le patient ne peut pas l'ouvrir de chez lui | oui : le patient ouvre sa page d'exercices depuis chez lui |
+| Premier compte | écran « Créer votre compte » au premier lancement (**noter le code de récupération**) | `docker compose exec api python -m tms_vision.admin_cli create-admin` |
+| Mise à jour | bouton jaune « Mettre à jour » dans l'application, en un clic | relancer la commande d'installation |
+
+**En résumé : un praticien seul qui analyse sur son poste choisit l'application de bureau ; dès que
+plusieurs personnes travaillent ensemble, ou que les patients doivent ouvrir leurs exercices à distance, il
+faut le serveur.** Détails de l'application de bureau : [`docs/APPLICATION-BUREAU.md`](docs/APPLICATION-BUREAU.md).
+Une troisième voie existe pour les développeurs : cloner le dépôt et lancer `./tms setup` (voir plus bas).
+
+## Serveur (Docker) : installation en une commande
+
+**Serveur ou poste client (Docker : HTTPS, comptes, démarrage automatique).** Sur une machine
 Linux avec accès à Internet, une seule commande installe tout, et la relancer plus tard met à jour :
 
 ```bash
@@ -37,7 +58,7 @@ Détails, prérequis, mise à jour et sauvegarde : [`docs/INSTALLATION-CLIENT.md
 
 ## Mise en place chez un client (production)
 
-Docker (HTTPS, mot de passe, démarrage automatique, sauvegarde) ou installation directe avec
+Docker (HTTPS, comptes, démarrage automatique, sauvegarde) ou installation directe avec
 systemd : voir [`docs/INSTALLATION-CLIENT.md`](docs/INSTALLATION-CLIENT.md). Tout en une commande
 (relancée plus tard, elle met à jour) :
 
@@ -48,8 +69,9 @@ curl -fsSL https://raw.githubusercontent.com/toussaintgarinat-crypto/tms-vision/
 Ou pas à pas :
 
 ```bash
-cp .env.example .env && nano .env     # adresse du site, identifiant et mot de passe haché
+cp .env.example .env && nano .env     # adresse du site, clé secrète (TMS_SECRET_KEY)
 docker compose up -d --build          # site + API + HTTPS
+docker compose exec api python -m tms_vision.admin_cli create-admin   # premier administrateur
 docker compose run --rm capsules      # vidéos d'étirement
 deploy/backup.sh                      # sauvegarde de data/
 ```

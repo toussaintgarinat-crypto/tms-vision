@@ -1,6 +1,10 @@
 # Installer, mettre à jour et sauvegarder TMS Vision chez un client
 
-Deux façons d'installer, au choix :
+Ce guide concerne le **serveur** d'un cabinet. Pour un praticien seul sur son ordinateur, l'application de
+bureau (installateur Windows ou Mac, sans Docker) suffit : voir `README.md` (« Quelle installation choisir ? »)
+et `docs/APPLICATION-BUREAU.md`.
+
+Pour le serveur, deux façons d'installer, au choix :
 
 | | Docker (recommandée) | Sans Docker |
 |---|---|---|
