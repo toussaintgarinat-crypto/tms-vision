@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [2.0.0] - 2026-11-21
+
 ### Ajouts
 - **Interface en français et en anglais** : un sélecteur de langue en haut du site. Tous les écrans (page
   patient, analyse, historique, bibliothèque d'exercices, bilans de poste, bibliothèque de métiers,
