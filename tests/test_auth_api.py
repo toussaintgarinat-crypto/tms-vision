@@ -185,3 +185,38 @@ def test_admin_changes_another_accounts_address(client):
     changed = client.patch(f"/admin/users/{other['id']}", headers=ORIGIN, json={"email": "o2@x.fr"})
     assert changed.json()["email"] == "o2@x.fr"
     assert client.patch(f"/admin/users/{other['id']}", headers=ORIGIN, json={"email": "admin@x.fr"}).status_code == 409
+
+
+def _setup_client(client, monkeypatch, enabled=True):
+    if enabled:
+        monkeypatch.setenv("TMS_LOCAL_SETUP", "1")
+    return client
+
+
+def test_first_run_setup_creates_the_admin_and_logs_in(client, monkeypatch):
+    _setup_client(client, monkeypatch)
+    assert client.get("/auth/status").json()["local_setup"] is True
+    weak = client.post("/auth/setup", headers=ORIGIN, json={"email": "dr@x.fr", "name": "Dr", "password": "court"})
+    assert weak.status_code == 422
+    done = client.post("/auth/setup", headers=ORIGIN, json={"email": "dr@x.fr", "name": "Dr", "password": GOOD})
+    assert done.status_code == 200 and done.json()["user"]["roles"] == ["praticien", "administrateur"]
+    assert client.get("/auth/me").json()["user"]["email"] == "dr@x.fr"
+    assert client.get("/auth/status").json()["local_setup"] is False
+    again = client.post("/auth/setup", headers=ORIGIN, json={"email": "b@x.fr", "name": "B", "password": GOOD})
+    assert again.status_code == 403
+
+
+def test_setup_is_closed_on_a_server(client):
+    assert client.get("/auth/status").json()["local_setup"] is False
+    response = client.post("/auth/setup", json={"email": "dr@x.fr", "name": "Dr", "password": GOOD})
+    assert response.status_code == 403 and response.json()["detail"]["code"] == "setup_closed"
+    assert accounts.has_users() is False
+
+
+def test_setup_refuses_a_request_forwarded_from_elsewhere(client, monkeypatch):
+    _setup_client(client, monkeypatch)
+    response = client.post(
+        "/auth/setup", json={"email": "dr@x.fr", "name": "Dr", "password": GOOD}, headers={"X-Forwarded-For": "8.8.8.8"}
+    )
+    assert response.status_code == 403
+    assert accounts.has_users() is False

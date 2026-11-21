@@ -97,6 +97,10 @@ class Application:
         # L'API écrit dans `data/` et `outputs/` relativement au dossier courant.
         os.chdir(self.directory)
         os.environ["TMS_CHECK_UPDATES"] = "1"
+        # Comptes obligatoires ici aussi : au premier lancement, l'écran « Créer votre compte » (l'API
+        # n'écoute que sur cette machine) crée l'administrateur sans terminal.
+        os.environ["TMS_REQUIRE_AUTH"] = "1"
+        os.environ["TMS_LOCAL_SETUP"] = "1"
         from tms_vision import self_update
 
         self_update.data_directory = self.directory

@@ -17,6 +17,8 @@ export function isPublicPath(pathname: string): boolean {
 export type AuthStatus = {
   auth_required: boolean;
   setup_required: boolean;
+  // Application de bureau, premier lancement : l'écran « Créer votre compte » est ouvert.
+  local_setup?: boolean;
   authenticated: boolean;
   user: AuthUser | null;
 };

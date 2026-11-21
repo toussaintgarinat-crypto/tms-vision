@@ -55,3 +55,9 @@ def test_find_node_prefers_the_bundled_one(tmp_path, monkeypatch):
 def test_ports_are_uncommon_and_distinct_and_the_site_is_allowed_by_default_cors():
     assert desktop.API_PORT != desktop.WEB_PORT
     assert {desktop.API_PORT, desktop.WEB_PORT}.isdisjoint({3000, 8000, 80, 443})
+
+
+def test_the_desktop_app_requires_accounts_and_opens_the_first_run_screen():
+    source = (Path(__file__).resolve().parents[1] / "src" / "tms_vision" / "desktop.py").read_text(encoding="utf-8")
+    assert 'os.environ["TMS_REQUIRE_AUTH"] = "1"' in source
+    assert 'os.environ["TMS_LOCAL_SETUP"] = "1"' in source

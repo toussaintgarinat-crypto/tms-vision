@@ -707,5 +707,12 @@
   "account.loginEmail.done": "Address changed: use it the next time you log in.",
   "admin.changeEmail": "Change address",
   "admin.newEmail": "New address for {name}",
-  "admin.changeEmailNote": "This account's open sessions are closed: the person will have to log in again with the new address."
+  "admin.changeEmailNote": "This account's open sessions are closed: the person will have to log in again with the new address.",
+  "auth.setup.title": "Create your account",
+  "auth.setup.help": "First use: create this application's administrator account. You will use it to log in from now on; note the password carefully, it cannot be recovered.",
+  "auth.setup.confirm": "Confirm the password",
+  "auth.setup.button": "Create my account",
+  "auth.setup.mismatch": "The two passwords do not match.",
+  "auth.error.setup_done": "An account already exists: log in.",
+  "auth.error.setup_closed": "Creating the first account is not available here."
 }

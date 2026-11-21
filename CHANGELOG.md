@@ -26,6 +26,11 @@ une version précise.
   test d'envoi, repli sur l'adresse du cabinet). Page « Administration » pour créer les comptes et lire le
   journal. La connexion devient obligatoire dès qu'un compte existe (ou avec `TMS_REQUIRE_AUTH=true`) ; la
   page du patient reste ouverte. Voir `docs/INSTALLATION-CLIENT.md` § 13.
+- **Application de bureau : « Créer votre compte » au premier lancement.** Les comptes sont obligatoires aussi sur
+  le poste local ; au premier lancement (ou après une mise à jour d'une version sans comptes), un écran crée
+  l'administrateur sans terminal. Cet écran n'existe que dans l'application de bureau, tant qu'aucun compte
+  n'existe, et refuse toute requête qui ne vient pas de la machine ; un serveur garde `create-admin`. Les
+  données existantes sont conservées.
 - **Changer l'adresse d'un compte** : chacun change son adresse de connexion dans « Mon compte » (avec son mot de passe) ;
   l'administrateur change celle de n'importe quel compte (ses sessions sont alors fermées). La mise à jour en un clic
   de l'application de bureau est réservée aux administrateurs.

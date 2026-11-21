@@ -259,6 +259,24 @@ def create_user(
     return _public_user(row)
 
 
+def create_first_admin(email: str, name: str, password: str, *, language: str | None = None) -> dict:
+    """Crée le tout premier compte (administrateur et praticien). Refuse s'il existe déjà un compte :
+    réservé à l'écran de première utilisation de l'application de bureau."""
+    if has_users():
+        raise AccountError("setup_done", "Un compte existe déjà : connectez-vous.")
+    user = create_user(email, name, password, ["praticien", "administrateur"], language=language)
+    # Deux créations simultanées : si une autre est passée entre-temps, on retire celle-ci.
+    if sum(1 for account in list_users() if "administrateur" in account["roles"]) > 1:
+        conn = _connect()
+        try:
+            conn.execute("DELETE FROM users WHERE id = ?", [user["id"]])
+        finally:
+            conn.close()
+        raise AccountError("setup_done", "Un compte existe déjà : connectez-vous.")
+    audit("admin.create_setup", target=user["id"])
+    return user
+
+
 def get_user(user_id: str) -> dict | None:
     conn = _connect()
     try:

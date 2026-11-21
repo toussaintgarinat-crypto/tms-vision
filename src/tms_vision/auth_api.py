@@ -26,7 +26,7 @@ _PUBLIC_PATTERNS = (
     re.compile(r"^/library/shares/[^/]+$"),
     re.compile(r"^/capsules/[^/]+/video$"),
 )
-_ALWAYS_PUBLIC = {"/auth/login", "/auth/status", "/docs", "/openapi.json"}
+_ALWAYS_PUBLIC = {"/auth/login", "/auth/status", "/auth/setup", "/docs", "/openapi.json"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 _users_exist = False
@@ -53,6 +53,17 @@ def _is_public(method: str, path: str) -> bool:
     if path in _ALWAYS_PUBLIC:
         return True
     return method in ("GET", "HEAD") and any(pattern.match(path) for pattern in _PUBLIC_PATTERNS)
+
+
+def local_setup_open(request: Request | None = None) -> bool:
+    """L'écran « Créer votre compte » est ouvert : application de bureau (TMS_LOCAL_SETUP, l'API
+    n'écoute que sur 127.0.0.1), aucun compte, et requête venue de cette machine."""
+    if os.environ.get("TMS_LOCAL_SETUP", "").strip().lower() not in _TRUE or accounts.has_users():
+        return False
+    if request is None:
+        return True
+    host = request.client.host if request.client else ""
+    return host in ("127.0.0.1", "::1", "localhost", "testclient") and not request.headers.get("x-forwarded-for")
 
 
 def _client_address(request: Request) -> str:
@@ -172,6 +183,7 @@ def auth_status(request: Request):
     return {
         "auth_required": required,
         "setup_required": not accounts.has_users(),
+        "local_setup": local_setup_open(request),
         "authenticated": getattr(request.state, "user", None) is not None,
         "user": getattr(request.state, "user", None),
     }
@@ -183,6 +195,28 @@ def login(body: LoginBody, request: Request, response: Response):
         user = accounts.authenticate(body.email, body.password, _client_address(request))
     except accounts.AccountError as error:
         _raise(error, 429 if error.code == "too_many_attempts" else 401)
+    _set_cookie(request, response, accounts.create_session(user["id"]))
+    reset_cache()
+    return {"user": user}
+
+
+class SetupBody(BaseModel):
+    email: str = Field(max_length=254)
+    name: str = Field(max_length=120)
+    password: str = Field(max_length=256)
+
+
+@router.post("/auth/setup")
+def setup_first_account(body: SetupBody, request: Request, response: Response):
+    """Première utilisation de l'application de bureau : crée le compte administrateur, sans terminal.
+    Fermé sur un serveur (là, `create-admin`) et dès qu'un compte existe."""
+    if not local_setup_open(request):
+        raise HTTPException(status_code=403, detail={"message": "Création du premier compte indisponible ici.", "code": "setup_closed"})
+    try:
+        user = accounts.create_first_admin(body.email, body.name, body.password)
+    except accounts.AccountError as error:
+        _raise(error, 409 if error.code == "setup_done" else 422)
+    accounts.audit("login.success", user_id=user["id"], email=user["email"], address=_client_address(request))
     _set_cookie(request, response, accounts.create_session(user["id"]))
     reset_cache()
     return {"user": user}

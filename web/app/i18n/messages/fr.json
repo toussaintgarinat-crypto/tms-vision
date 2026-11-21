@@ -707,5 +707,12 @@
   "account.loginEmail.done": "Adresse modifiée : utilisez-la dès votre prochaine connexion.",
   "admin.changeEmail": "Changer l'adresse",
   "admin.newEmail": "Nouvelle adresse de {name}",
-  "admin.changeEmailNote": "Les sessions ouvertes de ce compte sont fermées : la personne devra se reconnecter avec la nouvelle adresse."
+  "admin.changeEmailNote": "Les sessions ouvertes de ce compte sont fermées : la personne devra se reconnecter avec la nouvelle adresse.",
+  "auth.setup.title": "Créer votre compte",
+  "auth.setup.help": "Première utilisation : créez le compte administrateur de cette application. Il vous servira à vous connecter ensuite ; notez bien le mot de passe, il ne peut pas être retrouvé.",
+  "auth.setup.confirm": "Confirmez le mot de passe",
+  "auth.setup.button": "Créer mon compte",
+  "auth.setup.mismatch": "Les deux mots de passe diffèrent.",
+  "auth.error.setup_done": "Un compte existe déjà : connectez-vous.",
+  "auth.error.setup_closed": "Création du premier compte indisponible ici."
 }
