@@ -22,6 +22,7 @@ export function isMenuHidden(pathname: string): boolean {
   return (
     pathname === "/render" ||
     pathname.startsWith("/render/") ||
-    pathname.startsWith("/bibliotheque/envoi/")
+    pathname.startsWith("/bibliotheque/envoi/") ||
+    pathname === "/connexion"
   );
 }

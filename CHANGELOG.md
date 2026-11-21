@@ -19,6 +19,13 @@ une version précise.
   français, car ils viennent du serveur : les titres et descriptions d'exercices, les pathologies, les
   métiers, les messages d'erreur du serveur et les questions de l'assistant. Ajouter une langue revient
   à ajouter un fichier (voir `web/app/i18n/`).
+- **Comptes et connexion** : chaque personne a son compte (praticien, ostéopathe, administrateur), mot de
+  passe haché (Argon2id), sessions par cookie, tentatives de connexion ralenties, journal des connexions et des
+  changements de droits. Premier administrateur : `./tms create-admin`. Page « Mon compte » : changement de
+  mot de passe et « Mon email » (adresse et mot de passe d'application de chacun, chiffré par `TMS_SECRET_KEY`,
+  test d'envoi, repli sur l'adresse du cabinet). Page « Administration » pour créer les comptes et lire le
+  journal. La connexion devient obligatoire dès qu'un compte existe (ou avec `TMS_REQUIRE_AUTH=true`) ; la
+  page du patient reste ouverte. Voir `docs/INSTALLATION-CLIENT.md` § 13.
 - **Envoi d'emails par SMTP** : `TMS_MAILER=smtp` envoie les exercices au patient par le serveur du cabinet,
   Gmail, Outlook, OVH, Brevo ou tout service SMTP, avec le message en texte et en version mise en forme.
   Réglages `TMS_SMTP_*` dans `.env` (voir `docs/INSTALLATION-CLIENT.md` § 8). Sans réglage, rien ne change :

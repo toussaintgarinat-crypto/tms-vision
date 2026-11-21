@@ -471,3 +471,32 @@ si elle traîne dans un `.env`, elle est ignorée (vous pouvez la supprimer).
 **Confidentialité.** Les propos concernent la santé et le travail d'un salarié. L'interface rappelle
 où partent la voix et le texte ; demander au praticien de ne pas citer de nom. À mentionner dans le
 registre des traitements du client.
+
+## 13. Comptes et connexion
+
+Chaque personne a son compte (adresse email et mot de passe) avec un ou plusieurs rôles : **praticien**
+(réalise les bilans), **ostéopathe** (valide et crée des fiches) et **administrateur** (gère les comptes).
+
+**Premier administrateur.** Il se crée sur le serveur, jamais par une page publique :
+
+```bash
+./tms create-admin                                     # sans Docker
+docker compose exec api python -m tms_vision.admin_cli create-admin   # avec Docker
+```
+
+La commande demande l'adresse, le nom et le mot de passe (12 caractères au moins, sans écho). Elle refuse
+de créer un second administrateur : les autres comptes se créent ensuite depuis le menu
+**Administration** du site. Mot de passe perdu : `./tms reset-password --email adresse` (toutes les
+sessions du compte sont fermées).
+
+**Quand la connexion devient obligatoire.** Dès qu'un compte existe, l'API refuse toute requête sans
+session, sauf la page que reçoit le patient et ses vidéos. Pour l'exiger même avant le premier compte,
+mettre `TMS_REQUIRE_AUTH=true` dans `.env`. Les tentatives de connexion échouées sont ralenties, et
+chaque connexion, échec ou changement de droits est inscrit au journal (menu Administration).
+
+**Mon email.** Chacun peut régler, dans **Mon compte**, l'adresse depuis laquelle partent ses exercices
+(avec Gmail ou Outlook : un mot de passe d'application). Le mot de passe est chiffré dans la base avec
+`TMS_SECRET_KEY` (`.env`, 16 caractères au moins, par exemple `openssl rand -base64 24`). **Conservez cette
+clé à part des sauvegardes de `data/`** : si elle est perdue, chacun ressaisit son mot de passe. Sans
+réglage personnel, le message part de l'adresse du cabinet (§ 8) avec le nom du praticien et son adresse
+en réponse.

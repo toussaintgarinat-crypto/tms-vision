@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "./auth/AuthProvider";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { NavMenu } from "./NavMenu";
 import "./globals.css";
@@ -28,8 +29,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <I18nProvider>
-          <NavMenu />
-          {children}
+          <AuthProvider>
+            <NavMenu />
+            {children}
+          </AuthProvider>
         </I18nProvider>
       </body>
     </html>

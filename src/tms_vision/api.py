@@ -108,6 +108,8 @@ app.add_middleware(auth_api.AuthMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    # Le cookie de session accompagne les requêtes du site (origines listées, jamais « * »).
+    allow_credentials=True,
     # GET est volontairement absent : une requête GET "simple" (sans en-tête
     # personnalisé) ne déclenche pas de preflight CORS, donc pas besoin de la
     # lister ici -- ça vaut pour les routes GET /analyses/... (vidéo/CSV/

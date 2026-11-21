@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "./auth/AuthProvider";
 import { LanguageSwitcher } from "./i18n/LanguageSwitcher";
 import { useI18n } from "./i18n/I18nProvider";
 import { NAV_ITEMS, isActive, isMenuHidden } from "./navItems";
@@ -126,6 +127,7 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
 // Barre du haut avec un menu rétractable : accès à toutes les pages sans taper l'adresse.
 export function NavMenu() {
   const { t } = useI18n();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -163,6 +165,11 @@ export function NavMenu() {
         {appVersion && <span className="text-xs text-zinc-500" title={t("nav.versionTitle")}>v{appVersion}</span>}
         {update && <UpdateBanner update={update} />}
         <LanguageSwitcher className="ml-auto" />
+        {user && (
+          <Link href="/compte" className="text-sm underline" title={user.email}>
+            {user.name}
+          </Link>
+        )}
       </header>
 
       {open && (
@@ -209,6 +216,35 @@ export function NavMenu() {
                 </Link>
               );
             })}
+            {user && (
+              <div className="mt-auto flex flex-col gap-1 border-t border-zinc-200 pt-3 dark:border-zinc-700">
+                {[
+                  { href: "/compte", label: t("nav.account"), show: true },
+                  { href: "/administration", label: t("nav.admin"), show: user.roles.includes("administrateur") },
+                ]
+                  .filter((entry) => entry.show)
+                  .map((entry) => (
+                    <Link
+                      key={entry.href}
+                      href={entry.href}
+                      onClick={() => setOpen(false)}
+                      className="rounded-lg px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      {entry.label}
+                    </Link>
+                  ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    void logout();
+                  }}
+                  className="rounded-lg px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  {t("auth.logout")}
+                </button>
+              </div>
+            )}
           </nav>
         </>
       )}
