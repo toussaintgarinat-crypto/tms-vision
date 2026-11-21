@@ -105,7 +105,7 @@ cp .env.example .env
   docker run --rm caddy:2-alpine caddy hash-password --plaintext 'LeMotDePasseChoisi'
   ```
   Exemple de ligne obtenue : `TMS_BASIC_AUTH_HASH='$2a$14$Zkx...'`.
-- `TMS_MAILER` : laisser `none` tant qu'aucun service d'email n'est branché (voir § 8).
+- `TMS_MAILER` : laisser `none` tant qu'aucun service d'email n'est branché, sinon `smtp` (voir § 8).
 
 ```bash
 # 4. Construire et lancer (la première fois : 10 à 20 minutes)
@@ -278,10 +278,48 @@ sudo -u tms -H bash -c 'cd /opt/tms-vision && ./tms capsules'   # seulement si d
 ## 8. Envoi d'emails aux patients
 
 Par défaut (`TMS_MAILER=none`) **aucun email ne part** : l'écran affiche le lien à transmettre au
-patient. Pour envoyer de vrais emails, il faut un petit module Python qui implémente l'interface
-`Mailer` de `src/tms_vision/mailer.py` (par exemple via le SMTP du client), puis indiquer
-`TMS_MAILER=module.chemin:Classe` dans `.env`. En Docker, le module doit être dans l'image (le placer
-sous `src/` puis reconstruire). `TMS_SITE_URL` fixe l'adresse mise dans le lien.
+patient. Pour envoyer de vrais emails, mettre `TMS_MAILER=smtp` dans `.env` et renseigner le serveur
+d'envoi. Rien d'autre à installer : cela fonctionne avec le serveur du cabinet, Gmail, Outlook, OVH,
+Brevo, Resend ou tout autre service qui propose le SMTP. `TMS_SITE_URL` fixe l'adresse mise dans le lien.
+
+```bash
+TMS_MAILER=smtp
+TMS_SMTP_HOST=smtp.gmail.com        # serveur d'envoi
+TMS_SMTP_PORT=587                   # 587 (STARTTLS) ou 465 (TLS direct)
+TMS_SMTP_SECURE=false               # true pour le port 465
+TMS_SMTP_STARTTLS=true              # true pour le port 587
+TMS_SMTP_USER=contact@cabinet-martin.fr
+TMS_SMTP_PASS='le-mot-de-passe'     # mot de passe d'application, voir ci-dessous
+TMS_SMTP_FROM='Cabinet Martin <contact@cabinet-martin.fr>'
+```
+
+Après modification du `.env`, relancer : `docker compose up -d` (Docker), ou `./tms stop` puis `./tms start --prod` (sans Docker).
+
+**Avec Gmail ou Outlook**, le mot de passe habituel du compte est refusé : il faut un *mot de passe
+d'application*. Gmail : compte Google, Sécurité, activer la validation en 2 étapes, puis « Mots de passe
+des applications » (16 caractères). Outlook : mêmes principes, depuis les paramètres de sécurité du compte.
+Le mot de passe ne se met que dans `.env`, jamais ailleurs ; ce fichier ne doit pas être partagé.
+
+**Pour que les emails n'arrivent pas en spam**, l'adresse d'expédition doit appartenir au service qui
+envoie (une adresse Gmail envoyée par le serveur Gmail est acceptée). Avec une adresse sur le domaine du
+cabinet, le fournisseur d'envoi donne les enregistrements SPF et DKIM à ajouter chez l'hébergeur du domaine.
+Gmail limite à environ 500 envois par jour : au-delà, préférer un service d'envoi dédié (Brevo, Resend,
+Postmark, Amazon SES).
+
+**Essayer sans rien envoyer** : Mailpit est un faux serveur qui affiche les emails sur une page locale.
+
+```bash
+docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
+# .env : TMS_MAILER=smtp  TMS_SMTP_HOST=localhost  TMS_SMTP_PORT=1025
+#        TMS_SMTP_STARTTLS=false  TMS_SMTP_FROM=cabinet@test.local
+# les emails apparaissent sur http://localhost:8025
+```
+
+Quand l'envoi échoue, l'écran affiche le lien à transmettre à la main et le praticien n'est jamais
+bloqué. La cause se lit dans les journaux de l'API (identifiant refusé, serveur injoignable).
+
+Pour un autre fournisseur que le SMTP, écrire un module Python qui implémente l'interface `Mailer` de
+`src/tms_vision/mailer.py` et indiquer `TMS_MAILER=module.chemin:Classe`.
 
 ---
 

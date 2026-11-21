@@ -10,6 +10,12 @@ une version précise.
 
 ## [Non publié]
 
+### Ajouts
+- **Envoi d'emails par SMTP** : `TMS_MAILER=smtp` envoie les exercices au patient par le serveur du cabinet,
+  Gmail, Outlook, OVH, Brevo ou tout service SMTP, avec le message en texte et en version mise en forme.
+  Réglages `TMS_SMTP_*` dans `.env` (voir `docs/INSTALLATION-CLIENT.md` § 8). Sans réglage, rien ne change :
+  le lien reste à transmettre à la main. Si l'envoi échoue, le praticien n'est jamais bloqué.
+
 ## [1.5.1] - 2026-11-19
 
 ### Corrections
