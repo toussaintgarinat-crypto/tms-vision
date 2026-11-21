@@ -113,8 +113,9 @@ def build_mime(settings: SmtpSettings, message: OutgoingMessage) -> EmailMessage
 class SmtpMailer(Mailer):
     name = "smtp"
 
-    def __init__(self) -> None:
-        self.settings = SmtpSettings.from_env()
+    def __init__(self, settings: SmtpSettings | None = None) -> None:
+        # Sans réglages donnés : ceux du cabinet, lus dans le `.env`.
+        self.settings = settings or SmtpSettings.from_env()
 
     def send(self, message: OutgoingMessage) -> None:
         settings = self.settings

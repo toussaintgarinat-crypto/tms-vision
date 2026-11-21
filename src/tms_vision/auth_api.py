@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from tms_vision import accounts
+from tms_vision import accounts, user_email
 
 COOKIE_NAME = "tms_session"
 _TRUE = {"1", "true", "yes", "oui", "on"}
@@ -282,3 +282,50 @@ def admin_reset_password(user_id: str, body: ResetPasswordBody, admin: dict = De
 @admin_router.get("/audit")
 def admin_audit(limit: int = 200, _: dict = Depends(_admin)):
     return accounts.list_audit(limit)
+
+
+# --- Mon email (adresse d'envoi du compte) ---------------------------------------------------
+
+me_email_router = APIRouter(prefix="/me/email", tags=["email"])
+
+
+class EmailSettingsBody(BaseModel):
+    address: str = Field(max_length=254)
+    host: str = Field(max_length=253)
+    port: int
+    security: str = Field(max_length=10)
+    username: str = Field(default="", max_length=254)
+    # Vide : on garde le mot de passe déjà enregistré.
+    password: str | None = Field(default=None, max_length=256)
+
+
+@me_email_router.get("")
+def get_email_settings(user: dict = Depends(current_user)):
+    return user_email.get_settings(user["id"])
+
+
+@me_email_router.get("/suggest")
+def suggest_email_settings(address: str, _: dict = Depends(current_user)):
+    return {"suggestion": user_email.suggest(address)}
+
+
+@me_email_router.put("")
+def save_email_settings(body: EmailSettingsBody, user: dict = Depends(current_user)):
+    try:
+        return user_email.save_settings(user["id"], **body.model_dump())
+    except accounts.AccountError as error:
+        _raise(error, 422)
+
+
+@me_email_router.delete("")
+def delete_email_settings(user: dict = Depends(current_user)):
+    user_email.delete_settings(user["id"])
+    return user_email.get_settings(user["id"])
+
+
+@me_email_router.post("/test")
+def test_email_settings(user: dict = Depends(current_user)):
+    try:
+        return user_email.send_test(user)
+    except accounts.AccountError as error:
+        _raise(error, 422)

@@ -7,6 +7,7 @@ les liens vers les ressources produites (voir
 docs/superpowers/specs/2026-09-14-web-capture-fastapi-design.md,
 docs/superpowers/specs/2026-09-15-web-upload-chunked-design.md et
 docs/superpowers/specs/2026-09-22-duckdb-analysis-storage-design.md)."""
+import dataclasses
 import json
 import os
 import re
@@ -29,7 +30,7 @@ from starlette.concurrency import run_in_threadpool
 
 from tms_vision import (
     assistant, auth_api, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, self_update, storage,
-    updates, version,
+    updates, user_email, version,
 )
 from tms_vision.load import bounds, parse_load
 from tms_vision.capsules import CAPSULES, DEFAULT_PROGRAM_SIZE, MAX_PROGRAM_SIZE
@@ -100,6 +101,7 @@ app = FastAPI(lifespan=_lifespan)
 app.include_router(assistant.router)
 app.include_router(auth_api.router)
 app.include_router(auth_api.admin_router)
+app.include_router(auth_api.me_email_router)
 # Ajouté avant CORS : CORS reste le plus extérieur, les réponses 401 portent donc ses en-têtes.
 app.add_middleware(auth_api.AuthMiddleware)
 
@@ -1246,7 +1248,7 @@ def _blank_to_none(value: str | None) -> str | None:
 
 
 @app.post("/library/shares")
-async def create_library_share(body: LibraryShareCreate) -> dict:
+async def create_library_share(body: LibraryShareCreate, request: Request) -> dict:
     recipient = body.recipient_email.strip()
     if not _EMAIL_PATTERN.match(recipient):
         raise HTTPException(status_code=422, detail="Adresse email invalide.")
@@ -1258,7 +1260,8 @@ async def create_library_share(body: LibraryShareCreate) -> dict:
     if len({item.exercise_id for item in body.items}) != len(body.items):
         raise HTTPException(status_code=422, detail="Exercice en double dans l'envoi.")
 
-    practitioner_name = _blank_to_none(body.practitioner_name)
+    user = getattr(request.state, "user", None)
+    practitioner_name = _blank_to_none(body.practitioner_name) or (user["name"] if user else None)
     message = _blank_to_none(body.message)
     items = [
         {"exercise_id": item.exercise_id, "note": _blank_to_none(item.note)}
@@ -1274,11 +1277,14 @@ async def create_library_share(body: LibraryShareCreate) -> dict:
         exercise_titles=[catalog[item["exercise_id"]]["title"] for item in items],
     )
 
+    # Réglages personnels du compte s'il en a, sinon l'adresse du cabinet avec le compte en Reply-To.
     try:
-        service = mailer.get_mailer()
+        service, reply_to = user_email.mailer_for(user)
     except mailer.MailerError:
         email_status = "failed"
     else:
+        if reply_to:
+            outgoing = dataclasses.replace(outgoing, reply_to=reply_to)
         try:
             await run_in_threadpool(service.send, outgoing)
             email_status = "sent"
