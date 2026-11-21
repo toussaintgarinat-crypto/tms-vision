@@ -28,7 +28,7 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from tms_vision import (
-    assistant, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, self_update, storage,
+    assistant, auth_api, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, self_update, storage,
     updates, version,
 )
 from tms_vision.load import bounds, parse_load
@@ -98,6 +98,10 @@ async def _lifespan(_app: FastAPI):
 
 app = FastAPI(lifespan=_lifespan)
 app.include_router(assistant.router)
+app.include_router(auth_api.router)
+app.include_router(auth_api.admin_router)
+# Ajouté avant CORS : CORS reste le plus extérieur, les réponses 401 portent donc ses en-têtes.
+app.add_middleware(auth_api.AuthMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
