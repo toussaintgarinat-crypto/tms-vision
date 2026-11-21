@@ -11,6 +11,8 @@
 #   ./tms capsules [options] génère les vidéos d'étirement (ex. --id neck-lateral-stretch)
 #   ./tms test               lance les tests Python et web
 #   ./tms doctor             vérifie l'installation sans rien modifier
+#   ./tms create-admin       crée le premier compte administrateur (avec Docker : voir docs/INSTALLATION-CLIENT.md)
+#   ./tms reset-password --email ADRESSE   pose un nouveau mot de passe
 #
 # « setup » est relançable sans risque : ce qui est déjà en place est laissé tel quel.
 # Options de setup : --no-system (n'installe aucun paquet du système, signale seulement ce qui manque).
@@ -291,6 +293,7 @@ case "${1:-}" in
   capsules) shift; cmd_capsules "$@" ;;
   test)     cmd_test ;;
   doctor)   cmd_doctor ;;
-  ""|-h|--help|help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
+  create-admin|reset-password) PYTHONPATH=src exec "$VENV/bin/python" -m tms_vision.admin_cli "$@" ;;
+  ""|-h|--help|help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "Commande inconnue : $1 (essayez ./tms help)" ;;
 esac
