@@ -21,7 +21,8 @@ services:
       TMS_PUBLIC_WEB_URL: ${TMS_SITE_URL}
       TMS_MAILER: ${TMS_MAILER:-none}
       TMS_SECRET_KEY: ${TMS_SECRET_KEY:-}
-      TMS_REQUIRE_AUTH: ${TMS_REQUIRE_AUTH:-false}
+      # Fermé par défaut : sans administrateur, seule la page de connexion répond (./tms create-admin).
+      TMS_REQUIRE_AUTH: ${TMS_REQUIRE_AUTH:-true}
       TMS_SMTP_HOST: ${TMS_SMTP_HOST:-}
       TMS_SMTP_PORT: ${TMS_SMTP_PORT:-}
       TMS_SMTP_SECURE: ${TMS_SMTP_SECURE:-}
@@ -78,8 +79,6 @@ services:
       - "${TMS_HTTPS_PORT:-443}:443"
     environment:
       TMS_SITE_ADDRESS: ${TMS_SITE_ADDRESS:-localhost}
-      TMS_BASIC_AUTH_USER: ${TMS_BASIC_AUTH_USER:?Renseignez TMS_BASIC_AUTH_USER dans .env}
-      TMS_BASIC_AUTH_HASH: ${TMS_BASIC_AUTH_HASH:?Renseignez TMS_BASIC_AUTH_HASH dans .env}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

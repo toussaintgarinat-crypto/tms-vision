@@ -26,6 +26,10 @@ une version précise.
   test d'envoi, repli sur l'adresse du cabinet). Page « Administration » pour créer les comptes et lire le
   journal. La connexion devient obligatoire dès qu'un compte existe (ou avec `TMS_REQUIRE_AUTH=true`) ; la
   page du patient reste ouverte. Voir `docs/INSTALLATION-CLIENT.md` § 13.
+- **Changement à la mise à jour : fin du mot de passe commun (Caddy).** Les variables `TMS_BASIC_AUTH_*` ne
+  servent plus. Le site est fermé par défaut (`TMS_REQUIRE_AUTH=true`) : après la mise à jour, lancez
+  `docker compose exec api python -m tms_vision.admin_cli create-admin` pour créer l'administrateur. L'installateur
+  ne demande plus de mot de passe commun, génère `TMS_SECRET_KEY` et propose de créer l'administrateur.
 - **Envoi d'emails par SMTP** : `TMS_MAILER=smtp` envoie les exercices au patient par le serveur du cabinet,
   Gmail, Outlook, OVH, Brevo ou tout service SMTP, avec le message en texte et en version mise en forme.
   Réglages `TMS_SMTP_*` dans `.env` (voir `docs/INSTALLATION-CLIENT.md` § 8). Sans réglage, rien ne change :

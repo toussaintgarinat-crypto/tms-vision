@@ -9,7 +9,7 @@
 #                                   --version X     installe/met à jour vers la version X (ex. 1.2.0) au lieu de la dernière
 #                                   --check         dit seulement si une mise à jour est disponible, sans rien modifier
 # Variables : TMS_VERSION (comme --version), TMS_DIR (dossier, défaut ~/tms-vision), TMS_REPO (adresse Git du dépôt),
-#             TMS_DOMAIN, TMS_USER, TMS_PASSWORD (évitent les questions).
+#             TMS_DOMAIN (évite la question).
 #
 # Relançable sans risque : si l'installation existe déjà, c'est une MISE À JOUR (sauvegarde de data/,
 # git pull, reconstruction) ; le .env et data/ ne sont jamais écrasés.
@@ -140,35 +140,16 @@ else
     warn "« $DOMAIN » n'est pas une adresse valide : tapez un nom de domaine (tms.client.fr), une adresse IP ou localhost (pas un numéro de port)."
     if [ -n "${TMS_DOMAIN:-}" ] || [ "$ASSUME_YES" = "1" ] || [ -z "$TTY" ]; then die "Adresse du site invalide."; fi
   done
-  USER_NAME="${TMS_USER:-$(ask "Identifiant du praticien" "praticien")}"
-  PASSWORD="${TMS_PASSWORD:-}"
-  GENERATED=0
-  if [ -z "$PASSWORD" ] && [ "$ASSUME_YES" = "0" ] && [ -n "$TTY" ]; then
-    read -r -s -p "Mot de passe du praticien (vide = en générer un) : " PASSWORD < "$TTY" || true; echo
-  fi
-  if [ -z "$PASSWORD" ]; then
-    PASSWORD="$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)"; GENERATED=1
-  fi
-  [[ "$PASSWORD" != *\'* ]] || die "Le mot de passe ne doit pas contenir d'apostrophe."
-  HASH="$($DOCKER run --rm caddy:2-alpine caddy hash-password --plaintext "$PASSWORD")" \
-    || die "Impossible de hacher le mot de passe (image caddy:2-alpine non téléchargeable ?)."
-  [[ "$HASH" == \$2* ]] || die "Hash inattendu produit par Caddy : $HASH"
-
   SCHEME="https"
   SITE_URL="$SCHEME://$DOMAIN"
   sed -e "s|^TMS_SITE_ADDRESS=.*|TMS_SITE_ADDRESS=$DOMAIN|" \
       -e "s|^TMS_SITE_URL=.*|TMS_SITE_URL=$SITE_URL|" \
-      -e "s|^TMS_BASIC_AUTH_USER=.*|TMS_BASIC_AUTH_USER=$USER_NAME|" \
       .env.example > .env
-  # Le hash contient des « $ » : écrit à part, entre apostrophes, sans interprétation par sed.
-  { grep -v '^TMS_BASIC_AUTH_HASH=' .env; echo "TMS_BASIC_AUTH_HASH='$HASH'"; } > .env.tmp && mv .env.tmp .env
+  # Clé qui chiffre les mots de passe d'envoi des praticiens (« Mon email »).
+  SECRET="$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)"
+  sed -i.bak "s|^TMS_SECRET_KEY=.*|TMS_SECRET_KEY=$SECRET|" .env && rm -f .env.bak
   chmod 600 .env
-  ok ".env créé (site : $SITE_URL, identifiant : $USER_NAME)"
-  if [ "$GENERATED" = "1" ]; then
-    echo
-    echo "${BOLD}Mot de passe généré : $PASSWORD${RESET}"
-    echo "Notez-le maintenant : il n'est pas conservé en clair (seul son hash est dans .env)."
-  fi
+  ok ".env créé (site : $SITE_URL)"
 fi
 
 [ "$NO_START" = "0" ] || { echo; ok "Préparation terminée (--no-start). Lancer avec : cd $DIR && docker compose up -d --build"; exit 0; }
@@ -196,5 +177,13 @@ echo
 VERSION_NOW="$(cat VERSION 2>/dev/null || echo inconnue)"
 if [ "$UPDATE" = "1" ]; then ok "${BOLD}Mise à jour terminée : version $VERSION_NOW.${RESET}"; else ok "${BOLD}Installation terminée : version $VERSION_NOW.${RESET}"; fi
 echo "Site : $SITE"
+# Premier administrateur : sans lui, le site n'affiche que la page de connexion.
+if [ "$($DOCKER compose exec -T api python -c 'from tms_vision import accounts; print(accounts.has_users())' 2>/dev/null | tail -1)" != "True" ]; then
+  if [ "$ASSUME_YES" = "0" ] && [ -n "$TTY" ]; then
+    step "Création du premier administrateur"
+    $DOCKER compose exec api python -m tms_vision.admin_cli create-admin < "$TTY" || warn "Création non terminée : relancez la commande ci-dessous."
+  fi
+  echo "${BOLD}Premier administrateur (si pas encore créé) :${RESET} cd $DIR && $DOCKER compose exec api python -m tms_vision.admin_cli create-admin"
+fi
 [ "$WITH_VIDEOS" = "1" ] || echo "Vidéos d'étirement (à faire une fois) : cd $DIR && docker compose run --rm capsules"
 echo "Sauvegarde : cd $DIR && deploy/backup.sh      Guide complet : $DIR/docs/INSTALLATION-CLIENT.md"

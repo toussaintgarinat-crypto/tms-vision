@@ -5,7 +5,7 @@ Deux façons d'installer, au choix :
 | | Docker (recommandée) | Sans Docker |
 |---|---|---|
 | Installation | 1 commande, identique partout | `./tms setup` (Python, Node, ffmpeg, Chromium) |
-| HTTPS + mot de passe | inclus (Caddy) | à prévoir soi-même (proxy) |
+| HTTPS | inclus (Caddy) | à prévoir soi-même (proxy) |
 | Démarrage automatique | inclus (`restart: unless-stopped`) | services systemd fournis (Linux) |
 | Mise à jour | `git pull` + `docker compose up -d --build` | `git pull` + `./tms setup` + `./tms build` |
 
@@ -33,10 +33,10 @@ Avec options : `& ([scriptblock]::Create((irm https://raw.githubusercontent.com/
 (`-NoStart`, `-Yes` existent aussi). Voir § 11 pour les particularités de Windows.
 
 Le script installe Docker s'il manque (après confirmation), récupère le code dans `~/tms-vision`,
-pose les questions utiles (adresse du site, identifiant, mot de passe, ou en génère un), crée le
+pose les questions utiles (adresse du site, puis les coordonnées du premier administrateur), crée le
 `.env`, puis construit et lance tout. Options : `bash -s -- --with-videos` (génère aussi les vidéos
 d'étirement), `--no-start` (prépare sans lancer), `--yes` (aucune question). Sans question, on peut
-tout passer par variables : `TMS_DOMAIN=tms.client.fr TMS_USER=dr TMS_PASSWORD=... bash`. (Sous
+tout passer par variables : `TMS_DOMAIN=tms.client.fr bash`. (Sous
 macOS, Docker Desktop doit être installé avant : le script ne l'installe que sous Linux.)
 
 **Relancer la même commande plus tard fait la mise à jour** : sauvegarde de `data/`, `git pull`,
@@ -98,13 +98,8 @@ cp .env.example .env
 - `TMS_SITE_ADDRESS` : le nom de domaine du client, ex. `tms.cabinet-martin.fr`.
 - `TMS_SITE_URL` : la même adresse précédée de `https://`, ex. `https://tms.cabinet-martin.fr`.
   Elle sert aux liens envoyés aux patients.
-- `TMS_BASIC_AUTH_USER` : l'identifiant du praticien.
-- `TMS_BASIC_AUTH_HASH` : le mot de passe **haché**. Le produire ainsi, puis coller le résultat
-  **entre apostrophes** dans `.env` :
-  ```bash
-  docker run --rm caddy:2-alpine caddy hash-password --plaintext 'LeMotDePasseChoisi'
-  ```
-  Exemple de ligne obtenue : `TMS_BASIC_AUTH_HASH='$2a$14$Zkx...'`.
+- `TMS_SECRET_KEY` : une clé secrète au hasard (`openssl rand -base64 24`), pour chiffrer les mots de
+  passe d'envoi des praticiens (§ 13). La noter à part des sauvegardes.
 - `TMS_MAILER` : laisser `none` tant qu'aucun service d'email n'est branché, sinon `smtp` (voir § 8).
 
 ```bash
@@ -119,10 +114,10 @@ docker compose run --rm capsules              # tous les exercices
 docker compose run --rm capsules --id neck-lateral-stretch   # un seul
 ```
 
-Ouvrir `https://<adresse du site>` : le navigateur demande l'identifiant et le mot de passe.
+Créer le premier administrateur (§ 13), puis ouvrir `https://<adresse du site>` : la page de connexion s'affiche.
 
-**Ce qui est protégé par mot de passe et ce qui ne l'est pas.** Tout le site praticien (analyses,
-bilans, historique, bibliothèque) demande le mot de passe. Seule la page que reçoit le patient
+**Ce qui est protégé et ce qui ne l'est pas.** Tout le site praticien (analyses,
+bilans, historique, bibliothèque) demande une connexion par compte. Seule la page que reçoit le patient
 (`/bibliotheque/envoi/<jeton>`) est ouverte, ainsi que ses données : son adresse contient un jeton
 aléatoire, et elle ne montre que les exercices choisis par le praticien.
 
@@ -264,7 +259,7 @@ sudo -u tms -H bash -c 'cd /opt/tms-vision && ./tms capsules'   # seulement si d
 
 ## 7. Vérifications après une installation ou une mise à jour
 
-- [ ] `https://<site>` demande le mot de passe, puis affiche l'application.
+- [ ] `https://<site>` affiche la page de connexion ; après connexion, l'application.
 - [ ] Analyser une courte vidéo de test : le résultat s'affiche et apparaît dans l'historique.
 - [ ] Bibliothèque : choisir une zone, voir les images, l'animation 3D, et la vidéo si elle existe.
 - [ ] Envoyer des exercices à une adresse de test, ouvrir le lien **depuis un téléphone, sans être
@@ -327,7 +322,7 @@ Pour un autre fournisseur que le SMTP, écrire un module Python qui implémente 
 
 | Symptôme | Piste |
 |---|---|
-| `docker compose up` refuse : « Renseignez … dans .env » | une variable obligatoire est vide : `TMS_SITE_URL`, `TMS_BASIC_AUTH_USER` ou `TMS_BASIC_AUTH_HASH`. |
+| `docker compose up` refuse : « Renseignez … dans .env » | une variable obligatoire est vide : `TMS_SITE_URL`. |
 | Mot de passe refusé | le hash doit être entre apostrophes dans `.env`. Le regénérer et vérifier qu'il commence par `$2a$`. |
 | Pas de certificat HTTPS (domaine) | le nom doit pointer vers le serveur, ports 80 et 443 ouverts ; voir `docker compose logs caddy`. |
 | Avertissement de certificat (adresse IP ou `localhost`) | normal : certificat local. Récupérer le certificat racine avec `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt .` puis l'installer comme autorité de confiance sur l'appareil. |
@@ -489,9 +484,14 @@ de créer un second administrateur : les autres comptes se créent ensuite depui
 **Administration** du site. Mot de passe perdu : `./tms reset-password --email adresse` (toutes les
 sessions du compte sont fermées).
 
-**Quand la connexion devient obligatoire.** Dès qu'un compte existe, l'API refuse toute requête sans
-session, sauf la page que reçoit le patient et ses vidéos. Pour l'exiger même avant le premier compte,
-mettre `TMS_REQUIRE_AUTH=true` dans `.env`. Les tentatives de connexion échouées sont ralenties, et
+**Connexion obligatoire.** Le mot de passe commun d'autrefois (Caddy) n'existe plus : l'API refuse toute
+requête sans session, sauf la page que reçoit le patient et ses vidéos. Tant qu'aucun administrateur n'existe
+(`TMS_REQUIRE_AUTH=true`, valeur par défaut), le site n'affiche que la page de connexion, qui rappelle la
+commande à lancer. **Mise à jour d'une installation existante : lancez `create-admin` juste après la mise à
+jour.** Les anciennes lignes `TMS_BASIC_AUTH_*` de `.env` ne servent plus et peuvent être supprimées.
+
+**Changer d'administrateur.** Créez le nouveau compte (menu Administration, rôle administrateur), puis
+désactivez l'ancien depuis la même page. Le dernier administrateur actif ne peut jamais être retiré. Les tentatives de connexion échouées sont ralenties, et
 chaque connexion, échec ou changement de droits est inscrit au journal (menu Administration).
 
 **Mon email.** Chacun peut régler, dans **Mon compte**, l'adresse depuis laquelle partent ses exercices

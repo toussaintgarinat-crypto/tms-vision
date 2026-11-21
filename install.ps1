@@ -11,7 +11,7 @@
 #     -Version X    installe / met à jour vers la version X (ex. 1.2.0) au lieu de la dernière
 #     -Check        dit seulement si une mise à jour est disponible, sans rien modifier
 # Variables d'environnement : TMS_VERSION (comme -Version), TMS_DIR (dossier, défaut %USERPROFILE%\tms-vision), TMS_REPO,
-#   TMS_DOMAIN, TMS_USER, TMS_PASSWORD (évitent les questions), TMS_WITH_VIDEOS=1, TMS_NO_START=1, TMS_YES=1.
+#   TMS_DOMAIN (évite la question), TMS_WITH_VIDEOS=1, TMS_NO_START=1, TMS_YES=1.
 #
 # Relançable sans risque : si l'installation existe déjà, c'est une MISE À JOUR (sauvegarde de data\,
 # git pull, reconstruction) ; le .env et data\ ne sont jamais écrasés.
@@ -163,40 +163,19 @@ if (Test-Path '.env') {
         Warn "« $Domain » n'est pas une adresse valide : tapez un nom de domaine (tms.client.fr), une adresse IP ou localhost (pas un numéro de port)."
         if ($env:TMS_DOMAIN -or $Yes) { Fail 'Adresse du site invalide.' }
     }
-    $UserName = if ($env:TMS_USER) { $env:TMS_USER } else { Ask 'Identifiant du praticien' 'praticien' }
-    $Password = $env:TMS_PASSWORD
-    $Generated = $false
-    if (-not $Password -and -not $Yes) {
-        $secure = Read-Host 'Mot de passe du praticien (vide = en générer un)' -AsSecureString
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-        try { $Password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-    }
-    if (-not $Password) {
-        $chars = [char[]]('abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
-        $Password = -join (1..16 | ForEach-Object { $chars[[Security.Cryptography.RandomNumberGenerator]::GetInt32($chars.Length)] })
-        $Generated = $true
-    }
-    if ($Password.Contains("'")) { Fail 'Le mot de passe ne doit pas contenir d''apostrophe.' }
-
-    $Hash = (& docker run --rm caddy:2-alpine caddy hash-password --plaintext $Password | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or -not $Hash.StartsWith('$2')) { Fail "Impossible de hacher le mot de passe (image caddy:2-alpine ?). Reçu : $Hash" }
-
     $SiteUrl = "https://$Domain"
+    # Clé qui chiffre les mots de passe d'envoi des praticiens (« Mon email »).
+    $secretChars = [char[]]('abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
+    $Secret = -join (1..32 | ForEach-Object { $secretChars[[Security.Cryptography.RandomNumberGenerator]::GetInt32($secretChars.Length)] })
     $lines = foreach ($line in (Get-Content '.env.example')) {
         if     ($line -match '^TMS_SITE_ADDRESS=')    { "TMS_SITE_ADDRESS=$Domain" }
         elseif ($line -match '^TMS_SITE_URL=')        { "TMS_SITE_URL=$SiteUrl" }
-        elseif ($line -match '^TMS_BASIC_AUTH_USER=') { "TMS_BASIC_AUTH_USER=$UserName" }
-        elseif ($line -match '^TMS_BASIC_AUTH_HASH=') { "TMS_BASIC_AUTH_HASH='$Hash'" }
+        elseif ($line -match '^TMS_SECRET_KEY=')      { "TMS_SECRET_KEY=$Secret" }
         else   { $line }
     }
     # UTF-8 sans BOM et fins de ligne LF : un BOM en tête de .env fausserait le nom de la 1re variable.
     [IO.File]::WriteAllText((Join-Path (Get-Location) '.env'), (($lines -join "`n") + "`n"), (New-Object Text.UTF8Encoding($false)))
-    Ok ".env créé (site : $SiteUrl, identifiant : $UserName)"
-    if ($Generated) {
-        Write-Host ""
-        Write-Host "Mot de passe généré : $Password" -ForegroundColor White
-        Write-Host "Notez-le maintenant : il n'est pas conservé en clair (seul son hash est dans .env)."
-    }
+    Ok ".env créé (site : $SiteUrl)"
 }
 
 if ($NoStart) {
@@ -230,5 +209,7 @@ Add-Content -Path '.tms-updates.log' -Value ("{0} | {1} | {2} | {3}" -f (Get-Dat
 Write-Host ""
 if ($Update) { Ok "Mise à jour terminée : version $Now." } else { Ok "Installation terminée : version $Now." }
 Write-Host "Site : $Site"
+Write-Host "Premier administrateur (sans lui, le site n'affiche que la page de connexion) :"
+Write-Host "  cd $Dir ; docker compose exec api python -m tms_vision.admin_cli create-admin" -ForegroundColor White
 if (-not $WithVideos) { Write-Host "Vidéos d'étirement (à faire une fois) : cd $Dir ; docker compose run --rm capsules" }
 Write-Host "Sauvegarde : cd $Dir ; .\deploy\backup.ps1      Guide complet : $Dir\docs\INSTALLATION-CLIENT.md"
