@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { useI18n } from "../i18n/I18nProvider";
+import type { TFunction } from "../i18n/translate";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type Provider = {
@@ -31,12 +34,13 @@ type Props = {
   onSaved: () => void;
 };
 
-async function detail(response: Response): Promise<string> {
+async function detail(response: Response, t: TFunction): Promise<string> {
   const body = (await response.json().catch(() => ({}))) as { detail?: string };
-  return body.detail ?? `Erreur ${response.status}`;
+  return body.detail ?? t("bilans.error.httpStatus", { status: response.status });
 }
 
 export function AssistantSettingsPanel({ onSaved }: Props) {
+  const { t } = useI18n();
   const [server, setServer] = useState<ServerSettings | null>(null);
   const [provider, setProvider] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -58,8 +62,8 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
         setModel(data.model);
         setTranscriptionUrl(data.transcription_url);
       })
-      .catch(() => setMessage({ ok: false, text: "Impossible de lire les réglages du serveur." }));
-  }, []);
+      .catch(() => setMessage({ ok: false, text: t("assistantSettings.error.read") }));
+  }, [t]);
 
   // La liste des modèles se charge toute seule dès que le fournisseur et l'adresse sont connus.
   const [reload, setReload] = useState(0);
@@ -88,17 +92,17 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           if (cancelled) return;
           setModels([]);
           setModelsStatus("error");
-          setModelsMessage("Impossible de joindre le serveur TMS Vision.");
+          setModelsMessage(t("assistantSettings.error.unreachable"));
         });
     }, 400);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [server, provider, baseUrl, reload]);
+  }, [server, provider, baseUrl, reload, t]);
 
   if (server === null) {
-    return <p className="text-xs text-gray-600">{message?.text ?? "Chargement des réglages…"}</p>;
+    return <p className="text-xs text-gray-600">{message?.text ?? t("assistantSettings.loading")}</p>;
   }
 
   const current = server.providers.find((p) => p.id === provider);
@@ -127,12 +131,12 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           transcription_url: transcriptionUrl,
         }),
       });
-      if (!response.ok) return setMessage({ ok: false, text: await detail(response) });
+      if (!response.ok) return setMessage({ ok: false, text: await detail(response, t) });
       setServer((await response.json()) as ServerSettings);
-      setMessage({ ok: true, text: "Réglages enregistrés." });
+      setMessage({ ok: true, text: t("assistantSettings.saved") });
       onSaved();
     } catch {
-      setMessage({ ok: false, text: "Impossible d'enregistrer (problème réseau ou serveur)." });
+      setMessage({ ok: false, text: t("assistantSettings.error.save") });
     } finally {
       setSaving(false);
     }
@@ -147,11 +151,11 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: next }),
       });
-      if (!response.ok) return setMessage({ ok: false, text: await detail(response) });
+      if (!response.ok) return setMessage({ ok: false, text: await detail(response, t) });
       setServer((await response.json()) as ServerSettings);
       onSaved();
     } catch {
-      setMessage({ ok: false, text: "Impossible de modifier l'activation (problème réseau ou serveur)." });
+      setMessage({ ok: false, text: t("assistantSettings.error.toggle") });
     } finally {
       setSaving(false);
     }
@@ -162,7 +166,7 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
 
   return (
     <div className="flex flex-col gap-3 rounded border bg-gray-50 p-3 text-gray-900 dark:bg-transparent dark:text-inherit">
-      <h4 className="font-semibold">Réglages de l&apos;assistant</h4>
+      <h4 className="font-semibold">{t("assistant.settings")}</h4>
       <label className="flex items-center gap-2 font-medium">
         <input
           type="checkbox"
@@ -170,16 +174,16 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           disabled={saving}
           onChange={(e) => void toggleEnabled(e.target.checked)}
         />
-        Assistant vocal activé
+        {t("assistantSettings.enabled")}
         <span className={`text-xs font-normal ${server.enabled ? "text-green-700" : "text-gray-600"}`}>
-          {server.enabled ? "(les praticiens peuvent l'utiliser)" : "(désactivé : rien n'est écouté ni envoyé)"}
+          {server.enabled ? t("assistantSettings.enabledHelp") : t("assistantSettings.disabledHelp")}
         </span>
       </label>
 
       <label className="flex flex-col gap-1">
-        Fournisseur d&apos;IA
+        {t("assistantSettings.provider")}
         <select value={provider} onChange={(e) => chooseProvider(e.target.value)} className={input}>
-          <option value="">— Choisir —</option>
+          <option value="">{t("bilan.attach.choose")}</option>
           {server.providers.map((p) => (
             <option key={p.id} value={p.id}>
               {p.label}
@@ -190,7 +194,7 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
       </label>
 
       <label className="flex flex-col gap-1">
-        Adresse du serveur
+        {t("assistantSettings.address")}
         <input
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
@@ -199,7 +203,7 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
         />
         {current?.local && (
           <span className="text-xs text-gray-600">
-            Sous Docker, « localhost » est converti automatiquement vers votre machine.
+            {t("assistantSettings.docker")}
           </span>
         )}
       </label>
@@ -207,13 +211,11 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
       {current && (current.key_required || provider === "custom") && (
         <div className="text-xs" role="status">
           {server.key_set ? (
-            <span className="text-green-700">✓ Clé API trouvée dans le fichier .env ({server.key_env}).</span>
+            <span className="text-green-700">{t("assistantSettings.keyFound", { env: server.key_env })}</span>
           ) : (
             <span className={missingKey ? "text-amber-700" : "text-gray-600"}>
-              {missingKey ? "Clé API manquante. " : "Clé API (si le serveur en demande une). "}
-              Ajoutez dans le fichier <code>.env</code> la ligne <code>{server.key_env}=votre_clé</code>,
-              puis lancez <code>docker compose up -d</code>. La clé reste sur votre serveur : elle n&apos;est
-              jamais enregistrée par le site ni envoyée sur GitHub.
+              {t(missingKey ? "assistantSettings.keyMissing" : "assistantSettings.keyOptional")}{" "}
+              {t("assistantSettings.keyHowTo", { env: server.key_env })}
             </span>
           )}
         </div>
@@ -221,15 +223,15 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
 
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <label htmlFor="assistant-model">Modèle</label>
-          {modelsStatus === "loading" && <span className="text-xs text-gray-600">Chargement…</span>}
+          <label htmlFor="assistant-model">{t("assistantSettings.model")}</label>
+          {modelsStatus === "loading" && <span className="text-xs text-gray-600">{t("assistantSettings.modelsLoading")}</span>}
           {provider !== "" && modelsStatus !== "loading" && (
             <button
               type="button"
               onClick={() => setReload((n) => n + 1)}
               className="text-xs text-blue-600 underline"
             >
-              Actualiser la liste
+              {t("assistantSettings.refresh")}
             </button>
           )}
         </div>
@@ -240,7 +242,7 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           disabled={provider === ""}
           className={input}
         >
-          <option value="">Automatique (premier modèle du serveur)</option>
+          <option value="">{t("assistantSettings.modelAuto")}</option>
           {model !== "" && !models.includes(model) && <option value={model}>{model}</option>}
           {models.map((name) => (
             <option key={name} value={name}>
@@ -248,7 +250,7 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
             </option>
           ))}
         </select>
-        {provider === "" && <span className="text-xs text-gray-600">Choisissez d&apos;abord un fournisseur.</span>}
+        {provider === "" && <span className="text-xs text-gray-600">{t("assistantSettings.chooseProviderFirst")}</span>}
         {modelsStatus !== "idle" && modelsStatus !== "loading" && (
           <span className={`text-xs ${modelsStatus === "ok" ? "text-green-700" : "text-red-600"}`} role="status">
             {modelsMessage}
@@ -257,10 +259,10 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
       </div>
 
       <details className="rounded border p-2">
-        <summary className="cursor-pointer">Transcription souveraine (facultatif)</summary>
+        <summary className="cursor-pointer">{t("assistantSettings.transcription")}</summary>
         <div className="mt-2 flex flex-col gap-2">
           <label className="flex flex-col gap-1">
-            Adresse du service de transcription
+            {t("assistantSettings.transcriptionAddress")}
             <input
               value={transcriptionUrl}
               onChange={(e) => setTranscriptionUrl(e.target.value)}
@@ -270,8 +272,8 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           </label>
           <p className="text-xs text-gray-600">
             {server.transcription_key_set
-              ? `✓ Clé trouvée dans le fichier .env (${server.transcription_key_env}).`
-              : `Si le service demande une clé : ajoutez ${server.transcription_key_env}=… dans le fichier .env.`}
+              ? t("assistantSettings.transcriptionKeyFound", { env: server.transcription_key_env })
+              : t("assistantSettings.transcriptionKeyHowTo", { env: server.transcription_key_env })}
           </p>
         </div>
       </details>
@@ -283,7 +285,7 @@ export function AssistantSettingsPanel({ onSaved }: Props) {
           disabled={saving || provider === ""}
           className="rounded border border-black px-3 py-1 disabled:opacity-50"
         >
-          Enregistrer
+          {t("common.save")}
         </button>
         {message && (
           <span className={message.ok ? "text-green-700" : "text-red-600"} role="status">

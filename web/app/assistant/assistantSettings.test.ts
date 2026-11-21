@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { translator } from "../i18n/catalog";
 import { DEFAULT_SETTINGS, parseSettings, privacyNotice } from "./assistantSettings";
 
 describe("parseSettings", () => {
@@ -18,9 +19,19 @@ describe("parseSettings", () => {
 
 describe("privacyNotice", () => {
   it("says where the data goes", () => {
-    expect(privacyNotice("browser", true)).toContain("navigateur");
-    expect(privacyNotice("browser", true)).toContain("ne quitte pas la machine");
-    expect(privacyNotice("server", false)).toContain("service de transcription");
-    expect(privacyNotice("server", false)).toContain("modèle d'IA configuré");
+    const fr = translator("fr");
+    expect(privacyNotice(fr, "browser", true)).toContain("navigateur");
+    expect(privacyNotice(fr, "browser", true)).toContain("ne quitte pas la machine");
+    expect(privacyNotice(fr, "server", false)).toContain("service de transcription");
+    expect(privacyNotice(fr, "server", false)).toContain("modèle d'IA configuré");
+  });
+
+  it("says it in English too", () => {
+    const en = translator("en");
+    expect(privacyNotice(en, "browser", true)).toContain("browser");
+    expect(privacyNotice(en, "browser", true)).toContain("does not leave the machine");
+    expect(privacyNotice(en, "server", false)).toContain("transcription service");
+    expect(privacyNotice(en, "server", false)).toContain("configured AI model");
+    expect(privacyNotice(en, "server", false)).toContain("identify the employee");
   });
 });

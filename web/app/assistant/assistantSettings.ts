@@ -1,3 +1,5 @@
+import type { TFunction } from "../i18n/translate";
+
 export type SpeechEngine = "browser" | "server";
 export type AssistantMode = "dictation" | "guided";
 
@@ -66,13 +68,8 @@ export function saveSettings(settings: AssistantSettings): void {
 }
 
 /** Phrase de confidentialité à afficher selon les moteurs réellement utilisés. */
-export function privacyNotice(engine: SpeechEngine, llmLocal: boolean): string {
-  const ear =
-    engine === "browser"
-      ? "La dictée passe par le service de reconnaissance vocale de votre navigateur (souvent un serveur distant)."
-      : "L'enregistrement est envoyé au service de transcription configuré sur ce serveur.";
-  const brain = llmLocal
-    ? "Le texte est analysé par un modèle local : il ne quitte pas la machine."
-    : "Le texte dicté est envoyé au modèle d'IA configuré sur ce serveur.";
-  return `${ear} ${brain} Ne dictez pas de nom ni de donnée permettant d'identifier le salarié.`;
+export function privacyNotice(t: TFunction, engine: SpeechEngine, llmLocal: boolean): string {
+  const ear = t(engine === "browser" ? "assistant.privacy.browser" : "assistant.privacy.server");
+  const brain = t(llmLocal ? "assistant.privacy.local" : "assistant.privacy.remote");
+  return `${ear} ${brain} ${t("assistant.privacy.noNames")}`;
 }

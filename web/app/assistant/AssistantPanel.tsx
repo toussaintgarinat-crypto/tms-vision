@@ -48,10 +48,10 @@ function labels(keys: FilledKey[], t: TFunction): string {
   return [...new Set(keys.map((key) => t(FIELD_LABEL_KEYS[key])))].join(", ");
 }
 
-function speakAloud(text: string, onEnd: () => void) {
+function speakAloud(text: string, lang: string, onEnd: () => void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return onEnd();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "fr-FR";
+  utterance.lang = lang;
   utterance.onend = onEnd;
   utterance.onerror = onEnd;
   window.speechSynthesis.cancel();
@@ -59,7 +59,7 @@ function speakAloud(text: string, onEnd: () => void) {
 }
 
 export function AssistantPanel({ values, onFields }: Props) {
-  const { t } = useI18n();
+  const { t, tag } = useI18n();
   const rawSettings = useSyncExternalStore(subscribeSettings, settingsSnapshot, serverSettingsSnapshot);
   const settings = parseSettings(rawSettings);
   const [config, setConfig] = useState<ServerConfig | null>(null);
@@ -115,17 +115,17 @@ export function AssistantPanel({ values, onFields }: Props) {
         });
         if (!response.ok) {
           const body = (await response.json().catch(() => ({}))) as { detail?: string };
-          return setError(body.detail ?? `Erreur ${response.status}`);
+          return setError(body.detail ?? t("bilans.error.httpStatus", { status: response.status }));
         }
         const result = (await response.json()) as ExtractResponse;
         const applied = onFields(result.fields, overwrite);
         const notes: string[] = [];
-        if (applied.filled.length > 0) notes.push(`Champs remplis : ${labels(applied.filled, t)}.`);
+        if (applied.filled.length > 0) notes.push(t("assistant.filled", { fields: labels(applied.filled, t) }));
         if (applied.kept.length > 0) {
-          notes.push(`Déjà saisis, laissés tels quels : ${labels(applied.kept, t)}.`);
+          notes.push(t("assistant.kept", { fields: labels(applied.kept, t) }));
         }
         if (applied.filled.length === 0 && applied.kept.length === 0) {
-          notes.push("Je n'ai rien compris d'exploitable. Reformulez ou précisez.");
+          notes.push(t("assistant.understoodNothing"));
         }
         setSummary([...notes, ...result.warnings]);
         const turns: Turn[] = [...history, { role: "user", content: spoken }];
@@ -134,17 +134,17 @@ export function AssistantPanel({ values, onFields }: Props) {
         setQuestion(result.next_question);
         setText("");
         if (result.next_question && settingsRef.current.speak) {
-          speakAloud(result.next_question, () => {
+          speakAloud(result.next_question, tag, () => {
             if (settingsRef.current.mode === "guided") startListeningRef.current();
           });
         }
       } catch {
-        setError("Impossible de joindre l'assistant (problème réseau ou serveur).");
+        setError(t("assistant.error.unreachable"));
       } finally {
         setSending(false);
       }
     },
-    [values, history, onFields, overwrite, t],
+    [values, history, onFields, overwrite, t, tag],
   );
 
   const speech = useSpeech(settings.engine, (spoken) => {
@@ -162,12 +162,12 @@ export function AssistantPanel({ values, onFields }: Props) {
     <section className="flex flex-col gap-3 rounded border border-dashed p-4 text-sm sm:col-span-2">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 font-medium">
-          Assistant vocal (remplit la fiche à partir de ce que vous dites)
+          {t("assistant.title")}
           {config && (
             <span
               className={`rounded px-2 py-0.5 text-xs font-normal ${assistantOn ? "bg-green-100 text-green-900" : "bg-gray-200 text-gray-900"}`}
             >
-              {assistantOn ? "Activé" : "Désactivé"}
+              {assistantOn ? t("assistant.on") : t("assistant.off")}
             </span>
           )}
         </span>
@@ -175,8 +175,8 @@ export function AssistantPanel({ values, onFields }: Props) {
           type="button"
           onClick={() => setShowSettings((open) => !open)}
           aria-expanded={showSettings}
-          aria-label="Réglages de l'assistant"
-          title="Réglages de l'assistant (activation, fournisseur d'IA, modèle)"
+          aria-label={t("assistant.settings")}
+          title={t("assistant.settingsTitle")}
           className={`rounded border px-2 py-1 text-base leading-none ${showSettings ? "bg-gray-200 text-gray-900" : ""}`}
         >
           ⚙
@@ -188,51 +188,51 @@ export function AssistantPanel({ values, onFields }: Props) {
       )}
 
       {configError && (
-        <p className="text-red-600">Impossible de joindre le serveur de l&apos;assistant.</p>
+        <p className="text-red-600">{t("assistant.error.server")}</p>
       )}
       {config && !assistantOn && (
         <p className="text-xs text-gray-600">
-          L&apos;assistant est désactivé. Pour l&apos;utiliser, ouvrez la roue ⚙ et activez-le.
+          {t("assistant.disabledHelp")}
         </p>
       )}
       {assistantOn && (
         <>
           {!config.llm_configured && (
             <p className="text-amber-700">
-              Aucun modèle d&apos;IA n&apos;est configuré : ouvrez la roue ⚙ (par exemple Ollama ou
-              OpenRouter).
+              {t("assistant.noModel")}
             </p>
           )}
 
           {config.llm_configured && (
             <>
               <p className="text-xs text-gray-600">
-                {privacyNotice(settings.engine, config.llm_local)}
+                {privacyNotice(t, settings.engine, config.llm_local)}
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-1">
-                  Écoute
+                  {t("assistant.listen")}
                   <select
                     value={settings.engine}
                     onChange={(e) => update({ engine: e.target.value as SpeechEngine })}
                     className={input}
                   >
-                    <option value="browser">Dictée du navigateur</option>
+                    <option value="browser">{t("assistant.engine.browser")}</option>
                     <option value="server" disabled={!config.transcription_configured}>
-                      Transcription souveraine{config.transcription_configured ? "" : " (non configurée)"}
+                      {t("assistant.engine.server")}
+                      {config.transcription_configured ? "" : ` ${t("assistant.engine.notConfigured")}`}
                     </option>
                   </select>
                 </label>
                 <label className="flex items-center gap-1">
-                  Mode
+                  {t("assistant.mode")}
                   <select
                     value={settings.mode}
                     onChange={(e) => update({ mode: e.target.value as AssistantMode })}
                     className={input}
                   >
-                    <option value="dictation">Dictée libre (je dis tout d&apos;un coup)</option>
-                    <option value="guided">Guidé (l&apos;assistant pose les questions)</option>
+                    <option value="dictation">{t("assistant.mode.dictation")}</option>
+                    <option value="guided">{t("assistant.mode.guided")}</option>
                   </select>
                 </label>
                 <label className="flex items-center gap-1">
@@ -241,7 +241,7 @@ export function AssistantPanel({ values, onFields }: Props) {
                     checked={settings.speak}
                     onChange={(e) => update({ speak: e.target.checked })}
                   />
-                  Lire les questions à voix haute
+                  {t("assistant.speak")}
                 </label>
               </div>
 
@@ -256,9 +256,9 @@ export function AssistantPanel({ values, onFields }: Props) {
                   value={speech.interim !== "" ? `${text} ${speech.interim}` : text}
                   onChange={(e) => setText(e.target.value)}
                   rows={2}
-                  placeholder="Parlez, ou écrivez ici : « le matin de 8 h à 12 h il peint des plafonds, bras levés… »"
+                  placeholder={t("assistant.placeholder")}
                   className={input}
-                  aria-label="Ce que vous dites à l'assistant"
+                  aria-label={t("assistant.inputLabel")}
                 />
                 <div className="flex flex-wrap items-center gap-2">
                   {speech.supported && (
@@ -268,7 +268,7 @@ export function AssistantPanel({ values, onFields }: Props) {
                       disabled={speech.busy || sending}
                       className={`rounded border px-3 py-1 ${speech.listening ? "border-red-600 text-red-600" : "border-black"}`}
                     >
-                      {speech.listening ? "■ Arrêter" : "🎤 Parler"}
+                      {speech.listening ? t("assistant.stop") : t("assistant.speakButton")}
                     </button>
                   )}
                   <button
@@ -277,7 +277,7 @@ export function AssistantPanel({ values, onFields }: Props) {
                     disabled={sending || speech.busy || text.trim() === ""}
                     className="rounded border border-black px-3 py-1 disabled:opacity-50"
                   >
-                    {sending ? "Analyse…" : "Remplir la fiche"}
+                    {sending ? t("assistant.analysing") : t("assistant.fill")}
                   </button>
                   <label className="flex items-center gap-1 text-xs text-gray-600">
                     <input
@@ -285,12 +285,12 @@ export function AssistantPanel({ values, onFields }: Props) {
                       checked={overwrite}
                       onChange={(e) => setOverwrite(e.target.checked)}
                     />
-                    Remplacer aussi ce que j&apos;ai déjà saisi
+                    {t("assistant.overwrite")}
                   </label>
-                  {speech.busy && <span className="text-xs text-gray-600">Transcription…</span>}
+                  {speech.busy && <span className="text-xs text-gray-600">{t("assistant.transcribing")}</span>}
                   {!speech.supported && (
                     <span className="text-xs text-gray-600">
-                      Micro indisponible avec ce moteur : écrivez dans la zone ci-dessus.
+                      {t("assistant.noMic")}
                     </span>
                   )}
                 </div>
@@ -305,8 +305,7 @@ export function AssistantPanel({ values, onFields }: Props) {
                 </ul>
               )}
               <p className="text-xs text-gray-500">
-                L&apos;assistant ne fait que pré-remplir : relisez les champs surlignés, puis cliquez sur
-                « Ajouter la tâche ».
+                {t("assistant.prefillNote")}
               </p>
             </>
           )}
