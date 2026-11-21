@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { I18nProvider } from "./i18n/I18nProvider";
 import { NavMenu } from "./NavMenu";
 import "./globals.css";
 
@@ -22,12 +23,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <NavMenu />
-        {children}
+        <I18nProvider>
+          <NavMenu />
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );

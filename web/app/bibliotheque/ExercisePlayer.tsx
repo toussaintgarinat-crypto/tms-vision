@@ -4,12 +4,14 @@ import { Canvas } from "@react-three/fiber";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExerciseAvatar, ExerciseAvatarApi } from "../ExerciseAvatar";
 import { Exercise, activeInstruction } from "../exercisePose";
+import { useI18n } from "../i18n/I18nProvider";
 import { MUSCLE_MODEL_CREDIT } from "../muscleModel";
 
 // Un seul canvas WebGL pour tout le carrousel : le mannequin rejoue l'exercice de la carte
 // affichée en boucle, au rythme réel (les navigateurs limitent le nombre de contextes WebGL, un
 // canvas par carte les épuiserait).
 export function ExercisePlayer({ exercise }: { exercise: Exercise }) {
+  const { t } = useI18n();
   const apiRef = useRef<ExerciseAvatarApi | null>(null);
   const timeRef = useRef(0);
   const [ready, setReady] = useState(false);
@@ -57,16 +59,16 @@ export function ExercisePlayer({ exercise }: { exercise: Exercise }) {
         </Canvas>
         {!ready && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-500">
-            Chargement du mannequin…
+            {t("player.loading")}
           </div>
         )}
         <button
           type="button"
           onClick={() => setPlaying((value) => !value)}
-          aria-label={playing ? "Mettre en pause" : "Reprendre"}
+          aria-label={playing ? t("player.pauseLabel") : t("player.resumeLabel")}
           className="absolute right-2 top-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-800 shadow hover:bg-white"
         >
-          {playing ? "Pause" : "Lecture"}
+          {playing ? t("player.pause") : t("player.play")}
         </button>
         <div className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs tabular-nums text-zinc-800 shadow">
           {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}

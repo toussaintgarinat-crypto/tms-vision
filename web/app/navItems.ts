@@ -1,11 +1,12 @@
-export type NavItem = { href: string; label: string };
+// `labelKey` : clé de traduction du libellé (voir i18n/messages).
+export type NavItem = { href: string; labelKey: string };
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Analyse" },
-  { href: "/historique", label: "Historique" },
-  { href: "/bilans", label: "Bilans de poste" },
-  { href: "/bibliotheque", label: "Bibliothèque d'exercices" },
-  { href: "/metiers", label: "Bibliothèque de métiers" },
+  { href: "/", labelKey: "nav.analysis" },
+  { href: "/historique", labelKey: "nav.history" },
+  { href: "/bilans", labelKey: "nav.bilans" },
+  { href: "/bibliotheque", labelKey: "nav.exerciseLibrary" },
+  { href: "/metiers", labelKey: "nav.jobLibrary" },
 ];
 
 // Page de l'élément du menu en cours : « / » n'est actif que sur l'accueil, les autres aussi sur

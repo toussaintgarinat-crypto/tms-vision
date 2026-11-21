@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LanguageSwitcher } from "./i18n/LanguageSwitcher";
+import { useI18n } from "./i18n/I18nProvider";
 import { NAV_ITEMS, isActive, isMenuHidden } from "./navItems";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -60,6 +62,7 @@ function useUpdate(): UpdateInfo | null {
 }
 
 function UpdateBanner({ update }: { update: UpdateInfo }) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<UpdateStatus | null>(null);
   const [restarting, setRestarting] = useState(false);
 
@@ -76,12 +79,12 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
   }, [status]);
 
   const install = () => {
-    setStatus({ step: "backup", message: "Préparation…", progress: null });
+    setStatus({ step: "backup", message: t("update.preparing"), progress: null });
     fetch(`${API_URL}/update/install`, { method: "POST" })
       .then((response) => (response.ok ? (response.json() as Promise<UpdateStatus>) : Promise.reject()))
       .then(setStatus)
       .catch(() =>
-        setStatus({ step: "error", message: "La mise à jour n'a pas pu démarrer.", progress: null }),
+        setStatus({ step: "error", message: t("update.failedToStart"), progress: null }),
       );
   };
 
@@ -90,7 +93,7 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
   if (restarting) {
     return (
       <span className={className} role="status">
-        Installation en cours : l&apos;application va se rouvrir toute seule. Rechargez cette page dans une minute.
+        {t("update.restarting")}
       </span>
     );
   }
@@ -107,7 +110,7 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
     return (
       <>
         <button type="button" onClick={install} className={className}>
-          Nouvelle version {update.version} disponible : mettre à jour (données conservées)
+          {t("update.install", { version: update.version })}
         </button>
         {status && <span className="text-xs text-red-700">{status.message}</span>}
       </>
@@ -115,13 +118,14 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
   }
   return (
     <a href={update.url} target="_blank" rel="noopener noreferrer" className={className}>
-      Nouvelle version {update.version} disponible : télécharger
+      {t("update.download", { version: update.version })}
     </a>
   );
 }
 
 // Barre du haut avec un menu rétractable : accès à toutes les pages sans taper l'adresse.
 export function NavMenu() {
+  const { t } = useI18n();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -153,25 +157,26 @@ export function NavMenu() {
           aria-controls="navigation-principale"
           className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
         >
-          <span aria-hidden="true">☰</span> Menu
+          <span aria-hidden="true">☰</span> {t("nav.menu")}
         </button>
         <span className="text-sm font-semibold">TMS Vision</span>
-        {appVersion && <span className="text-xs text-zinc-500" title="Version de l'application">v{appVersion}</span>}
+        {appVersion && <span className="text-xs text-zinc-500" title={t("nav.versionTitle")}>v{appVersion}</span>}
         {update && <UpdateBanner update={update} />}
+        <LanguageSwitcher className="ml-auto" />
       </header>
 
       {open && (
         <>
           <button
             type="button"
-            aria-label="Fermer le menu"
+            aria-label={t("nav.closeMenu")}
             tabIndex={-1}
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 cursor-default bg-black/30"
           />
           <nav
             id="navigation-principale"
-            aria-label="Navigation principale"
+            aria-label={t("nav.main")}
             className="fixed left-0 top-0 z-50 flex h-full w-72 max-w-[85vw] flex-col gap-1 border-r border-zinc-200 bg-background p-4 shadow-xl dark:border-zinc-700"
           >
             <div className="mb-3 flex items-center justify-between">
@@ -182,7 +187,7 @@ export function NavMenu() {
                   setOpen(false);
                   buttonRef.current?.focus();
                 }}
-                aria-label="Fermer le menu"
+                aria-label={t("nav.closeMenu")}
                 className="rounded px-2 py-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 ✕
@@ -200,7 +205,7 @@ export function NavMenu() {
                     active ? "bg-blue-600 font-semibold text-white" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}

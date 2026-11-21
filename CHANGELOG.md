@@ -11,6 +11,11 @@ une version précise.
 ## [Non publié]
 
 ### Ajouts
+- **Interface en français et en anglais (première partie)** : un sélecteur de langue en haut du site, et la
+  page que reçoit le patient (menu, mise à jour, carrousel d'exercices, images, animation) s'affichent dans
+  la langue choisie. Sans choix, la langue du navigateur est utilisée, puis le français. Le choix est mémorisé.
+  Les autres écrans passent en anglais au fil des prochaines versions ; ajouter une langue ensuite revient à
+  ajouter un fichier (voir `web/app/i18n/`).
 - **Envoi d'emails par SMTP** : `TMS_MAILER=smtp` envoie les exercices au patient par le serveur du cabinet,
   Gmail, Outlook, OVH, Brevo ou tout service SMTP, avec le message en texte et en version mise en forme.
   Réglages `TMS_SMTP_*` dans `.env` (voir `docs/INSTALLATION-CLIENT.md` § 8). Sans réglage, rien ne change :

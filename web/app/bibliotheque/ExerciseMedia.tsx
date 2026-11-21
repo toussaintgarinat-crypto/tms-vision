@@ -2,16 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Exercise } from "../exercisePose";
+import { useI18n } from "../i18n/I18nProvider";
 import { ExerciseStills, Still, StillsRenderer } from "../StillsRenderer";
 import { ExercisePlayer } from "./ExercisePlayer";
 import { API_URL } from "./library";
 
 type Mode = "images" | "animation" | "video";
-const MODE_LABELS: Record<Mode, string> = {
-  images: "Images",
-  animation: "Animation 3D",
-  video: "Vidéo",
-};
+const MODES: Mode[] = ["images", "animation", "video"];
 
 // La vidéo d'un exercice n'existe que si elle a été générée (capsule_build) : on sonde le premier
 // octet pour savoir s'il faut proposer l'onglet « Vidéo ».
@@ -34,33 +31,34 @@ function useVideoAvailable(exerciseId: string): boolean {
 }
 
 function StillsCarousel({ steps, title }: { steps: Still[]; title: string }) {
+  const { t } = useI18n();
   const [position, setPosition] = useState(0);
   const count = steps.length;
-  if (count === 0) return <p className="text-sm text-zinc-500">Aucune image pour cet exercice.</p>;
+  if (count === 0) return <p className="text-sm text-zinc-500">{t("media.noImages")}</p>;
   const step = steps[Math.min(position, count - 1)];
   const go = (delta: number) => setPosition((previous) => (previous + delta + count) % count);
   return (
     <div>
       <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-[#EEF1F4]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={step.image} alt={`${title}, étape ${position + 1}`} className="h-full w-full object-contain" />
+        <img src={step.image} alt={t("media.stillAlt", { title, step: position + 1 })} className="h-full w-full object-contain" />
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => go(-1)}
-          aria-label="Étape précédente"
+          aria-label={t("media.previousStep")}
           className="rounded-full border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
         >
           ←
         </button>
         <span className="text-xs tabular-nums text-zinc-500">
-          Étape {position + 1} / {count}
+          {t("media.step", { step: position + 1, total: count })}
         </span>
         <button
           type="button"
           onClick={() => go(1)}
-          aria-label="Étape suivante"
+          aria-label={t("media.nextStep")}
           className="rounded-full border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
         >
           →
@@ -74,18 +72,19 @@ function StillsCarousel({ steps, title }: { steps: Still[]; title: string }) {
 // Média d'un exercice, au choix : images fixes par étape (par défaut, plus rapide à contrôler),
 // animation 3D en boucle ou vidéo générée quand elle existe.
 export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
+  const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("images");
   const [stills, setStills] = useState<ExerciseStills>({});
   const videoAvailable = useVideoAvailable(exercise.id);
 
-  const modes = (Object.keys(MODE_LABELS) as Mode[]).filter((value) => value !== "video" || videoAvailable);
+  const modes = MODES.filter((value) => value !== "video" || videoAvailable);
   const active: Mode = modes.includes(mode) ? mode : "images";
   const toRender = useMemo(() => [exercise], [exercise]);
   const exerciseStills = stills[exercise.id];
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap gap-1" role="group" aria-label="Affichage de l'exercice">
+      <div className="mb-2 flex flex-wrap gap-1" role="group" aria-label={t("media.group")}>
         {modes.map((value) => (
           <button
             key={value}
@@ -96,7 +95,7 @@ export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
               active === value ? "border-blue-600 bg-blue-600 text-white" : "border-zinc-300 dark:border-zinc-600"
             }`}
           >
-            {MODE_LABELS[value]}
+            {t(`media.mode.${value}`)}
           </button>
         ))}
       </div>
@@ -107,7 +106,7 @@ export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
         ) : (
           <>
             <p className="flex aspect-square w-full items-center justify-center rounded-lg bg-[#EEF1F4] text-sm text-zinc-500">
-              Préparation des images…
+              {t("media.preparingImages")}
             </p>
             <StillsRenderer
               key={exercise.id}
