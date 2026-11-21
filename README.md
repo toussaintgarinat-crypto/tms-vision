@@ -193,6 +193,7 @@ L'analyse de l'image des salariés en entreprise est fortement encadrée par la 
 ## 8. Feuille de Route de Déploiement (Roadmap MVP)
 
 **Pour reprendre le projet plus tard**, les documents de référence sont :
+- **`docs/PROCHAINS-SPRINTS.md` — à lire en premier : les prochains sprints (comptes, validation des exercices par un ostéopathe, fiches), où on en est et quoi dire pour reprendre.**
 - Ce README (vue d'ensemble produit + usage du PoC, section 9 ; capture web, section 10).
 - `docs/superpowers/specs/2026-09-14-poc-pose-rula-design.md` — la spec technique détaillée du PoC (Phase 1).
 - `docs/superpowers/plans/2026-09-14-poc-pose-rula-plan.md` — le plan d'implémentation tâche par tâche du PoC (tenu à jour au fil des corrections).
