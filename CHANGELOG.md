@@ -10,6 +10,15 @@ une version précise.
 
 ## [Non publié]
 
+## [2.2.2] - 2026-11-22
+
+### Corrections
+- **Application de bureau (Mac) : le navigateur ne s'ouvrait pas tout seul au lancement.** L'ouverture passait par
+  la boucle de la petite fenêtre, depuis un autre fil, ce qui peut ne jamais être traité sur macOS : l'application
+  était prête (le site répondait à l'adresse `http://127.0.0.1:13000`) mais restait muette. Le navigateur s'ouvre
+  maintenant directement. Et si la petite fenêtre ne peut pas être créée, l'application continue sans elle et
+  ouvre quand même le site (au lieu de s'arrêter ou de rester sans rien afficher).
+
 ## [2.2.1] - 2026-11-22
 
 ### Corrections

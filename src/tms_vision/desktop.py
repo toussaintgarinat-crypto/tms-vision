@@ -316,16 +316,24 @@ def show_window(app: Application) -> None:
 
     def boot() -> None:
         ready = app.wait_until_ready()
+        if ready:
+            # Le navigateur s'ouvre ici, depuis ce fil, sans passer par la boucle de la fenêtre : sur
+            # macOS, une demande faite à Tk depuis un autre fil (`root.after`) peut ne jamais être
+            # traitée, et le site restait alors prêt mais jamais ouvert.
+            print(f"Prêt : {app.url}", flush=True)
+            webbrowser.open(app.url)
 
         def done() -> None:
             if ready:
                 status.set(f"Prêt : {app.url}")
                 open_button.state(["!disabled"])
-                webbrowser.open(app.url)
             else:
                 status.set(f"Le démarrage a échoué. Détails dans {app.directory / 'logs'}.")
 
-        root.after(0, done)
+        try:
+            root.after(0, done)
+        except RuntimeError:
+            pass  # la fenêtre est déjà fermée
 
     def look_for_update() -> None:
         result = updates.check(version.get_version())
@@ -419,9 +427,12 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if ready else 1
         try:
             show_window(app)
-        except ImportError:
-            # tkinter absent : même chose sans fenêtre.
-            app.wait_until_ready() and webbrowser.open(app.url)
+        except Exception as error:  # noqa: BLE001 - tkinter absent ou fenêtre impossible à créer
+            # Sans fenêtre, l'application tourne quand même : on ouvre le site et on attend.
+            print(f"Fenêtre indisponible ({error!r}) : l'application continue sans elle.", flush=True)
+            if app.wait_until_ready():
+                print(f"Prêt : {app.url}", flush=True)
+                webbrowser.open(app.url)
             while True:
                 time.sleep(1)
     except KeyboardInterrupt:
