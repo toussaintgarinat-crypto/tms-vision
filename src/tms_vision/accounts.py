@@ -324,12 +324,16 @@ def reset_with_recovery_code(email: str, code: str, new_password: str, address: 
     return new_recovery_code(user_id)
 
 
-def create_first_admin(email: str, name: str, password: str, *, language: str | None = None) -> dict:
-    """Crée le tout premier compte (administrateur et praticien). Refuse s'il existe déjà un compte :
-    réservé à l'écran de première utilisation de l'application de bureau."""
+def create_first_admin(
+    email: str, name: str, password: str, *, language: str | None = None, osteopath: bool = False
+) -> dict:
+    """Crée le tout premier compte (administrateur et praticien, et ostéopathe si la personne le
+    déclare, ce qui lui permet de valider des fiches sous son nom). Refuse s'il existe déjà un
+    compte : réservé à l'écran de première utilisation de l'application de bureau."""
     if has_users():
         raise AccountError("setup_done", "Un compte existe déjà : connectez-vous.")
-    user = create_user(email, name, password, ["praticien", "administrateur"], language=language)
+    roles = ["praticien", "administrateur"] + (["osteopathe"] if osteopath else [])
+    user = create_user(email, name, password, roles, language=language)
     # Deux créations simultanées : si une autre est passée entre-temps, on retire celle-ci.
     if sum(1 for account in list_users() if "administrateur" in account["roles"]) > 1:
         conn = _connect()
@@ -338,7 +342,10 @@ def create_first_admin(email: str, name: str, password: str, *, language: str | 
         finally:
             conn.close()
         raise AccountError("setup_done", "Un compte existe déjà : connectez-vous.")
-    audit("admin.create_setup", target=user["id"])
+    audit(
+        "admin.create_setup", target=user["id"],
+        detail="rôle ostéopathe déclaré par la personne" if osteopath else None,
+    )
     return user
 
 

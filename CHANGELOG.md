@@ -10,6 +10,15 @@ une version précise.
 
 ## [Non publié]
 
+### Ajouts
+- **Inviter une personne à installer l'application de bureau.** Dans « Administration », un formulaire envoie un
+  email (depuis l'adresse de l'administrateur) avec les liens directs vers les installateurs Windows et Mac de la
+  dernière version et le guide du premier lancement. Aucun mot de passe ni jeton n'y figure : le compte se crée
+  sur l'ordinateur de la personne, au premier lancement. L'envoi est inscrit au journal.
+- **« Je suis ostéopathe » au premier lancement de l'application de bureau.** Une case, décochée par défaut,
+  donne le rôle ostéopathe au premier compte (il peut ainsi valider des fiches sous son nom) ; la déclaration est
+  inscrite au journal.
+
 ## [2.1.0] - 2026-11-22
 
 ### Ajouts

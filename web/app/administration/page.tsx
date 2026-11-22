@@ -17,6 +17,8 @@ export default function AdministrationPage() {
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState<{ id: string; password: string } | null>(null);
   const [editing, setEditing] = useState<{ id: string; email: string } | null>(null);
+  const [invite, setInvite] = useState({ email: "", name: "", message: "", osteopath: false });
+  const [inviteState, setInviteState] = useState<"idle" | "busy" | "sent" | "not_configured" | "failed">("idle");
   const [form, setForm] = useState({ email: "", name: "", password: "", roles: ["praticien"] as string[] });
 
   const fetchAll = useCallback(async () => {
@@ -78,6 +80,25 @@ export default function AdministrationPage() {
 
   const toggleRole = (current: string[], role: string) =>
     current.includes(role) ? current.filter((value) => value !== role) : [...current, role];
+
+  async function sendInvitation(event: FormEvent) {
+    event.preventDefault();
+    setInviteState("busy");
+    try {
+      const response = await fetch(`${API_URL}/admin/invitations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...invite, name: invite.name || null, message: invite.message || null }),
+      });
+      if (!response.ok) return setInviteState("failed");
+      const body = (await response.json()) as { email_status: "sent" | "not_configured" | "failed" };
+      setInviteState(body.email_status);
+      if (body.email_status === "sent") setInvite({ email: "", name: "", message: "", osteopath: false });
+      void load();
+    } catch {
+      setInviteState("failed");
+    }
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-6">
@@ -168,6 +189,23 @@ export default function AdministrationPage() {
           </form>
         )}
       </section>
+      <form onSubmit={sendInvitation} className="grid gap-3 rounded border p-4 sm:grid-cols-2">
+        <h2 className="text-lg font-semibold sm:col-span-2">{t("admin.invite.title")}</h2>
+        <p className="text-sm text-zinc-600 sm:col-span-2">{t("admin.invite.help")}</p>
+        <label className="flex flex-col gap-1 text-sm">{t("auth.email")}<input type="email" required value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} className="rounded border p-2" /></label>
+        <label className="flex flex-col gap-1 text-sm">{t("admin.invite.name")}<input value={invite.name} onChange={(e) => setInvite({ ...invite, name: e.target.value })} className="rounded border p-2" /></label>
+        <label className="flex flex-col gap-1 text-sm sm:col-span-2">{t("admin.invite.message")}<textarea rows={2} value={invite.message} onChange={(e) => setInvite({ ...invite, message: e.target.value })} className="rounded border p-2" /></label>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <input type="checkbox" checked={invite.osteopath} onChange={(e) => setInvite({ ...invite, osteopath: e.target.checked })} />
+          {t("admin.invite.osteopath")}
+        </label>
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+          <button type="submit" disabled={inviteState === "busy"} className="rounded border border-black px-3 py-1 text-sm disabled:opacity-50">{t("admin.invite.send")}</button>
+          {inviteState === "sent" && <span role="status" className="text-sm text-emerald-800">{t("admin.invite.sent")}</span>}
+          {inviteState === "not_configured" && <span role="status" className="text-sm text-amber-800">{t("admin.invite.notConfigured")}</span>}
+          {inviteState === "failed" && <span role="alert" className="text-sm text-red-700">{t("admin.invite.failed")}</span>}
+        </div>
+      </form>
       <form onSubmit={create} className="grid gap-3 rounded border p-4 sm:grid-cols-2">
         <h2 className="text-lg font-semibold sm:col-span-2">{t("admin.create")}</h2>
         <label className="flex flex-col gap-1 text-sm">{t("auth.email")}<input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded border p-2" /></label>

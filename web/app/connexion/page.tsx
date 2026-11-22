@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [osteopath, setOsteopath] = useState(false);
   const setup = status?.local_setup === true;
   const [recovering, setRecovering] = useState(false);
   const [code, setCode] = useState("");
@@ -33,7 +34,7 @@ export default function LoginPage() {
       const response = await fetch(`${API_URL}/auth/${setup ? "setup" : reset ? "recover" : "login"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(setup ? { email, name, password } : reset ? { email, code, password } : { email, password }),
+        body: JSON.stringify(setup ? { email, name, password, osteopath } : reset ? { email, code, password } : { email, password }),
       });
       if (!response.ok) {
         const problem = readProblem(await response.json().catch(() => null));
@@ -100,6 +101,15 @@ export default function LoginPage() {
           <label className="flex flex-col gap-1 text-sm">
             {t("recovery.codeLabel")}
             <input required value={code} onChange={(event) => setCode(event.target.value)} placeholder="XXXX-XXXX-XXXX-XXXX" className="rounded border p-2 font-mono" />
+          </label>
+        )}
+        {setup && (
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" checked={osteopath} onChange={(event) => setOsteopath(event.target.checked)} className="mt-1" />
+            <span>
+              {t("auth.setup.osteopath")}
+              <span className="block text-xs text-zinc-500">{t("auth.setup.osteopathHelp")}</span>
+            </span>
           </label>
         )}
         {setup && (

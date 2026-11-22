@@ -870,5 +870,16 @@
   "sheets.bone.L_foot": "Foot left",
   "sheets.bone.R_foot": "Foot right",
   "sheets.bone.L_toes": "Toes left",
-  "sheets.bone.R_toes": "Toes right"
+  "sheets.bone.R_toes": "Toes right",
+  "auth.setup.osteopath": "I am an osteopath",
+  "auth.setup.osteopathHelp": "Tick only if you are: it lets you review and validate exercise sheets in your own name. This declaration is recorded in the log.",
+  "admin.invite.title": "Invite someone to install the application",
+  "admin.invite.help": "Sends an email with the desktop application download links and the first-launch guide. Their account is created on their own computer at first launch: no password is sent.",
+  "admin.invite.name": "First or last name (optional)",
+  "admin.invite.message": "Personal message (optional)",
+  "admin.invite.osteopath": "This is an osteopath: the guide tells them to tick “I am an osteopath”",
+  "admin.invite.send": "Send the invitation",
+  "admin.invite.sent": "Invitation sent.",
+  "admin.invite.notConfigured": "No sending service is configured: the invitation was not sent (see “My email”).",
+  "admin.invite.failed": "The invitation could not be sent."
 }

@@ -870,5 +870,16 @@
   "sheets.bone.L_foot": "Pied gauche",
   "sheets.bone.R_foot": "Pied droit",
   "sheets.bone.L_toes": "Orteils gauche",
-  "sheets.bone.R_toes": "Orteils droit"
+  "sheets.bone.R_toes": "Orteils droit",
+  "auth.setup.osteopath": "Je suis ostéopathe",
+  "auth.setup.osteopathHelp": "Cochez seulement si vous l'êtes : cela vous permet de relire et valider des fiches d'exercices sous votre nom. Cette déclaration est enregistrée dans le journal.",
+  "admin.invite.title": "Inviter une personne à installer l'application",
+  "admin.invite.help": "Envoie un email avec les liens de téléchargement de l'application de bureau et le guide du premier lancement. Son compte se crée sur son ordinateur, au premier lancement : aucun mot de passe n'est envoyé.",
+  "admin.invite.name": "Prénom ou nom (facultatif)",
+  "admin.invite.message": "Message personnel (facultatif)",
+  "admin.invite.osteopath": "C'est un ostéopathe : le guide lui indique de cocher « Je suis ostéopathe »",
+  "admin.invite.send": "Envoyer l'invitation",
+  "admin.invite.sent": "Invitation envoyée.",
+  "admin.invite.notConfigured": "Aucun service d'envoi n'est configuré : l'invitation n'est pas partie (voir « Mon email »).",
+  "admin.invite.failed": "L'invitation n'a pas pu être envoyée."
 }

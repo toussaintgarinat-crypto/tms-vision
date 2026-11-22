@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 DEFAULT_PUBLIC_WEB_URL = "http://localhost:3000"
+RELEASES_PAGE_URL = "https://github.com/toussaintgarinat-crypto/tms-vision/releases/latest"
 
 
 class MailerError(RuntimeError):
@@ -122,4 +123,72 @@ def build_share_message(
     ]
     return OutgoingMessage(
         to=to, subject="Vos exercices", text="\n".join(lines), html=_html_body(lines, share_url)
+    )
+
+
+def installer_links(assets: list[dict]) -> list[tuple[str, str]]:
+    """(libellé, adresse) des installateurs d'une version : Windows, Mac Apple Silicon, Mac Intel.
+    Seuls les fichiers hébergés par GitHub sont repris."""
+    labels = (
+        ("TMS-Vision-Setup.exe", "Windows"),
+        ("TMS-Vision-Mac-Apple-Silicon.dmg", "Mac avec puce Apple (M1, M2, M3…)"),
+        ("TMS-Vision-Mac-Intel.dmg", "Mac avec processeur Intel"),
+    )
+    by_name = {asset["name"]: asset["url"] for asset in assets}
+    return [
+        (label, by_name[name]) for name, label in labels
+        if by_name.get(name, "").startswith("https://github.com/")
+    ]
+
+
+def _linkify(lines: list[str]) -> str:
+    import re
+
+    parts = []
+    for line in lines:
+        if not line:
+            continue
+        safe = escape(line).replace("\n", "<br>")
+        safe = re.sub(r"(https://[^\s<]+)", r'<a href="\1">\1</a>', safe)
+        parts.append(f"<p>{safe}</p>")
+    return "<div style=\"font-family:sans-serif;max-width:560px\">" + "".join(parts) + "</div>"
+
+
+def build_invitation_message(
+    *, to: str, inviter_name: str, invitee_name: str | None, message: str | None,
+    osteopath: bool, release_url: str, downloads: list[tuple[str, str]],
+) -> OutgoingMessage:
+    """Invitation à installer l'application de bureau. Aucun mot de passe ni jeton n'y figure : le
+    compte se crée sur l'ordinateur de la personne, au premier lancement."""
+    lines = [f"Bonjour{' ' + invitee_name if invitee_name else ''},", ""]
+    lines.append(f"{inviter_name} vous invite à utiliser TMS Vision, l'application d'analyse des postures de travail.")
+    if message:
+        lines += ["", message]
+    lines += ["", "1. Téléchargez l'application pour votre ordinateur :"]
+    lines += [f"{label} : {url}" for label, url in downloads] or [f"Page de téléchargement : {release_url}"]
+    if downloads:
+        lines.append(f"Autres fichiers et versions : {release_url}")
+    lines += [
+        "",
+        "2. Installez-la (double-clic). Si votre ordinateur affiche un avertissement de sécurité, "
+        "choisissez « Exécuter quand même » (Windows) ou « Ouvrir » après un clic droit (Mac).",
+        "",
+        "3. Au premier lancement, l'application vous demande de créer votre compte : votre adresse email, "
+        "votre nom et un mot de passe d'au moins 12 caractères.",
+    ]
+    if osteopath:
+        lines += [
+            "",
+            "Vous êtes ostéopathe ? Cochez « Je suis ostéopathe » : cela vous permettra de relire et valider "
+            "des fiches d'exercices sous votre nom (menus « Relecture des fiches » et « Mes fiches »).",
+        ]
+    lines += [
+        "",
+        "4. Notez le code de récupération affiché : il sert à retrouver l'accès si vous oubliez votre mot de passe.",
+        "",
+        "Vos données restent sur votre ordinateur.",
+    ]
+    text = "\n".join(lines)
+    return OutgoingMessage(
+        to=to, subject="Invitation à installer TMS Vision", text=text, html=_linkify(lines)
     )
