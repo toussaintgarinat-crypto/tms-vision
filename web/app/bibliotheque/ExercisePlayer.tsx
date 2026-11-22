@@ -12,8 +12,11 @@ import { useI18n } from "../i18n/I18nProvider";
 export function ExercisePlayer({
   exercise,
   onPlayedInFull,
+  speed = 1,
 }: {
   exercise: Exercise;
+  // Multiplicateur de vitesse de lecture (écran de validation : relecture accélérée).
+  speed?: number;
   // Appelé une fois, quand l'animation a été jouée en entier (écran de validation).
   onPlayedInFull?: () => void;
 }) {
@@ -23,8 +26,13 @@ export function ExercisePlayer({
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [shownSecond, setShownSecond] = useState(0);
+  const speedRef = useRef(speed);
   const playedRef = useRef(0);
   const doneRef = useRef(false);
+
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
 
   const handleReady = useCallback((api: ExerciseAvatarApi) => {
     apiRef.current = api;
@@ -40,7 +48,7 @@ export function ExercisePlayer({
     let last = performance.now();
     const tick = (now: number) => {
       if (playing) {
-        const step = (now - last) / 1000;
+        const step = ((now - last) / 1000) * speedRef.current;
         timeRef.current = (timeRef.current + step) % exercise.duration_seconds;
         playedRef.current += step;
         if (!doneRef.current && playedRef.current >= exercise.duration_seconds) {

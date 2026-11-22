@@ -14,7 +14,7 @@ une version précise.
 - **Validation des exercices par un ostéopathe (phase 2).** Seul un compte avec le rôle ostéopathe, connecté,
   peut valider une fiche, au nom de son compte (vérifié côté serveur). L'écran de validation montre l'animation
   et le texte côte à côte ; la case « j'ai vérifié le texte et l'animation de cette fiche » n'est cochable
-  qu'après avoir joué l'animation en entier, et la formule est enregistrée. La validation porte sur une version
+  qu'après avoir joué l'animation en entier (accélération possible, jusqu'à 4x), et la formule est enregistrée. La validation porte sur une version
   précise (empreinte du contenu complet) : la moindre modification de la fiche l'annule, et elle ne se rejoue
   pas sur une version modifiée. Un ostéopathe peut retirer sa validation (nouvelle ligne : l'historique reste).
 - **Ostéopathe choisi sur le bilan.** Le programme n'y propose que les exercices validés par cet ostéopathe ;
@@ -24,7 +24,8 @@ une version précise.
   et dans l'email d'envoi.
 - **File de relecture** (menu « Relecture des fiches », réservé aux ostéopathes) : enchaîne les fiches dont la
   version actuelle n'est pas validée par l'ostéopathe connecté, avec « Passer » ; pas de raccourci sur la règle
-  (animation jouée en entier, case cochée, une validation par fiche).
+  (animation jouée en entier, case cochée, une validation par fiche). L'animation peut être jouée en accéléré
+  (jusqu'à 4x) pour relire beaucoup de fiches ; la vitesse utilisée est enregistrée avec la validation.
 - Les 173 fiches de Théo MARTIN ne sont pas validées d'office : il les valide depuis son compte.
 
 ### Pour les installations existantes

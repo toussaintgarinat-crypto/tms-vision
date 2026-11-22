@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ExercisePlayer } from "./bibliotheque/ExercisePlayer";
 import { Exercise } from "./exercisePose";
@@ -8,6 +8,8 @@ import { useI18n } from "./i18n/I18nProvider";
 import { ValidationBadge, ValidationLabel } from "./ValidationBadge";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const SPEEDS = [1, 2, 3, 4];
 
 type HistoryRow = {
   version: number;
@@ -18,6 +20,7 @@ type HistoryRow = {
 
 type ValidationState = ValidationLabel & {
   formulas: Record<string, string>;
+  max_playback_speed: number;
   can_validate: boolean;
   can_withdraw: boolean;
   history: HistoryRow[];
@@ -40,6 +43,9 @@ export function ValidationPanel({
   const [state, setState] = useState<ValidationState | null>(null);
   const [failed, setFailed] = useState(false);
   const [played, setPlayed] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  // Vitesse la plus haute utilisée pendant la lecture : c'est elle qui est enregistrée.
+  const topSpeedRef = useRef(1);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +70,10 @@ export function ValidationPanel({
   }, [load]);
 
   const handlePlayed = useCallback(() => setPlayed(true), []);
+  const chooseSpeed = (value: number) => {
+    setSpeed(value);
+    if (!played) topSpeedRef.current = Math.max(topSpeedRef.current, value);
+  };
 
   async function send(path: string, body?: unknown) {
     setBusy(true);
@@ -108,9 +118,27 @@ export function ValidationPanel({
       </p>
       <div className="mt-3 grid gap-4 md:grid-cols-2">
         <div>
-          <ExercisePlayer exercise={exercise} onPlayedInFull={handlePlayed} />
+          <ExercisePlayer exercise={exercise} onPlayedInFull={handlePlayed} speed={speed} />
+          <div className="mt-1 flex items-center gap-1 text-xs" role="group" aria-label={t("validation.speed")}>
+            <span className="mr-1">{t("validation.speed")}</span>
+            {SPEEDS.filter((value) => value <= state.max_playback_speed).map((value) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={speed === value}
+                onClick={() => chooseSpeed(value)}
+                className={`rounded border px-2 py-0.5 ${
+                  speed === value ? "border-emerald-700 bg-emerald-700 text-white" : "border-emerald-700 text-emerald-800"
+                }`}
+              >
+                {value}x
+              </button>
+            ))}
+          </div>
           <p className={`mt-1 text-xs ${played ? "text-emerald-800" : "text-gray-600"}`}>
-            {played ? t("validation.playedDone") : t("validation.playedTodo", { seconds: exercise.duration_seconds })}
+            {played
+              ? t("validation.playedDone")
+              : t("validation.playedTodo", { seconds: Math.ceil(exercise.duration_seconds / speed) })}
           </p>
         </div>
         <div className="text-sm">
@@ -143,7 +171,12 @@ export function ValidationPanel({
             type="button"
             disabled={!canConfirm}
             onClick={() =>
-              send("validate", { fingerprint: state.fingerprint, formula, animation_completed: played })
+              send("validate", {
+                fingerprint: state.fingerprint,
+                formula,
+                animation_completed: played,
+                playback_speed: topSpeedRef.current,
+              })
             }
             className="self-start rounded bg-emerald-700 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
           >

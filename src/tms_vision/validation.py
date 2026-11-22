@@ -6,8 +6,8 @@ Règles (section 5 du plan, vérifiées par tests/test_validation.py) :
 - seul un compte avec le rôle ostéopathe, connecté, valide en son nom (ni administrateur, ni
   praticien, ni assistant) ;
 - la validation exige l'empreinte vue à l'écran (une validation ne se rejoue pas sur une version
-  modifiée), la confirmation de l'animation lancée en entier et la formule cochée, enregistrée telle
-  quelle ;
+  modifiée), la confirmation de l'animation lancée en entier (accélération permise jusqu'à
+  MAX_PLAYBACK_SPEED, vitesse enregistrée) et la formule cochée, enregistrée telle quelle ;
 - `exercise_validations` n'est jamais modifiée ni supprimée : un retrait est une nouvelle ligne ;
 - les exercices de fichier (`exercises/`) ne passent en base que lorsqu'un ostéopathe en valide un :
   sa version 1 est alors créée depuis le fichier. Les champs `status`, `validated_by`, `validated_on`
@@ -30,6 +30,9 @@ FORMULAS = {
     "en": "I have checked the text and the animation of this sheet.",
 }
 DEFAULT_AUTHOR = "TMS Vision"
+# Animation jouée en entier, mais l'ostéopathe peut l'accélérer pour relire beaucoup de fiches : la
+# vitesse utilisée est enregistrée avec la validation. Au-delà, ce ne serait plus une relecture.
+MAX_PLAYBACK_SPEED = 4.0
 # Champs de fichier qui n'entrent pas dans l'empreinte : l'ancien statut global n'est plus utilisé.
 _FINGERPRINT_EXCLUDED = ("status", "validated_by", "validated_on")
 _FICHE_AUTHOR = re.compile(r"^Fiche de (.+?)\s*(?:,|—|$)")
@@ -92,6 +95,7 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_EXERCISES_TABLE)
     conn.execute(CREATE_VERSIONS_TABLE)
     conn.execute(CREATE_VALIDATIONS_TABLE)
+    conn.execute("ALTER TABLE exercise_validations ADD COLUMN IF NOT EXISTS playback_speed DOUBLE")
     return conn
 
 
@@ -230,7 +234,7 @@ def history(exercise_id: str) -> list[dict]:
     try:
         rows = conn.execute(
             "SELECT v.number, x.fingerprint, x.osteo_id, x.osteo_name, x.kind, x.formula, "
-            "x.recorded_at FROM exercise_validations x JOIN exercise_versions v "
+            "x.recorded_at, x.playback_speed FROM exercise_validations x JOIN exercise_versions v "
             "ON v.id = x.version_id WHERE x.exercise_id = ? ORDER BY x.recorded_at, x.rowid",
             [exercise_id],
         ).fetchall()
@@ -240,8 +244,9 @@ def history(exercise_id: str) -> list[dict]:
         {
             "version": number, "fingerprint": print_, "osteo_id": osteo, "osteo_name": name,
             "kind": kind, "formula": formula, "recorded_at": _iso(recorded_at),
+            "playback_speed": speed,
         }
-        for number, print_, osteo, name, kind, formula, recorded_at in rows
+        for number, print_, osteo, name, kind, formula, recorded_at, speed in rows
     ]
 
 
@@ -285,7 +290,7 @@ def _require_osteopath(user: dict | None) -> dict:
 
 def validate(
     user: dict | None, exercise_id: str, *, seen_fingerprint: str, formula: str,
-    animation_completed: bool,
+    animation_completed: bool, playback_speed: float = 1.0,
 ) -> dict:
     """Enregistre la validation de la version COURANTE de l'exercice par `user`. Refuse si le
     compte n'est pas ostéopathe, si l'empreinte vue à l'écran n'est plus celle de la fiche (elle a
@@ -296,6 +301,10 @@ def validate(
         raise ValidationError(404, "Exercice introuvable.")
     if not animation_completed:
         raise ValidationError(422, "L'animation doit être lancée en entier avant de valider.")
+    if not 0 < playback_speed <= MAX_PLAYBACK_SPEED:
+        raise ValidationError(
+            422, f"La vitesse de lecture doit être comprise entre 0 et {MAX_PLAYBACK_SPEED:g}x."
+        )
     if formula not in FORMULAS.values():
         raise ValidationError(422, "La confirmation « j'ai vérifié… » doit être cochée.")
     if seen_fingerprint != fingerprint(exercise):
@@ -305,10 +314,12 @@ def validate(
     try:
         version_id = _ensure_version(conn, exercise)
         conn.execute(
-            "INSERT INTO exercise_validations VALUES (?, ?, ?, ?, ?, ?, 'validate', ?, ?)",
+            "INSERT INTO exercise_validations (id, version_id, exercise_id, fingerprint, osteo_id, "
+            "osteo_name, kind, formula, recorded_at, playback_speed) "
+            "VALUES (?, ?, ?, ?, ?, ?, 'validate', ?, ?, ?)",
             [
                 str(uuid.uuid4()), version_id, exercise_id, fingerprint(exercise), user["id"],
-                user["name"], formula, _now(),
+                user["name"], formula, _now(), playback_speed,
             ],
         )
     finally:
@@ -331,7 +342,8 @@ def withdraw(user: dict | None, exercise_id: str) -> dict:
     try:
         version_id = _ensure_version(conn, exercise)
         conn.execute(
-            "INSERT INTO exercise_validations VALUES (?, ?, ?, ?, ?, ?, 'withdraw', NULL, ?)",
+            "INSERT INTO exercise_validations (id, version_id, exercise_id, fingerprint, osteo_id, "
+            "osteo_name, kind, formula, recorded_at) VALUES (?, ?, ?, ?, ?, ?, 'withdraw', NULL, ?)",
             [
                 str(uuid.uuid4()), version_id, exercise_id, fingerprint(exercise), user["id"],
                 user["name"], _now(),

@@ -116,6 +116,21 @@ def test_validation_requires_the_animation_played_in_full(accounts_ready):
     assert _validate(accounts_ready, _exercise_id(), animation_completed=False).status_code == 422
 
 
+def test_an_accelerated_animation_is_accepted_and_its_speed_recorded(accounts_ready):
+    _login(accounts_ready, "osteo@x.fr")
+    exercise_id = _exercise_id()
+    assert _validate(accounts_ready, exercise_id, playback_speed=4).status_code == 200
+    assert validation.history(exercise_id)[0]["playback_speed"] == 4
+
+
+@pytest.mark.parametrize("speed", [0, -1, 4.5, 50])
+def test_a_playback_speed_beyond_the_limit_is_refused(accounts_ready, speed):
+    _login(accounts_ready, "osteo@x.fr")
+    exercise_id = _exercise_id()
+    assert _validate(accounts_ready, exercise_id, playback_speed=speed).status_code == 422
+    assert validation.history(exercise_id) == []
+
+
 @pytest.mark.parametrize("formula", ["", "ok", "J'ai tout vérifié."])
 def test_validation_requires_the_exact_confirmation_formula(accounts_ready, formula):
     _login(accounts_ready, "osteo@x.fr")

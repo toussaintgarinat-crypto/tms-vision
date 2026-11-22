@@ -762,5 +762,6 @@
   "queue.done": "No sheet left to review.",
   "queue.skip": "Skip this sheet",
   "queue.loadFailed": "Cannot load the list of sheets.",
-  "queue.forbidden": "This page is reserved for osteopath accounts."
+  "queue.forbidden": "This page is reserved for osteopath accounts.",
+  "validation.speed": "Speed:"
 }

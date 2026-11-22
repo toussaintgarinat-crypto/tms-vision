@@ -1268,6 +1268,8 @@ class ValidateBody(BaseModel):
     fingerprint: str
     formula: str
     animation_completed: bool
+    # Vitesse de lecture utilisée pour voir l'animation en entier (1 = temps réel).
+    playback_speed: float = 1.0
 
 
 def _validation_response(exercise_id: str, label: dict | None = None) -> dict:
@@ -1303,6 +1305,7 @@ async def get_exercise_validation(exercise_id: str, request: Request) -> dict:
     return {
         **_public_label(label),
         "formulas": validation.FORMULAS,
+        "max_playback_speed": validation.MAX_PLAYBACK_SPEED,
         "can_validate": validation.is_osteopath(user) and user["id"] not in label["validator_ids"],
         "can_withdraw": validation.is_osteopath(user) and user["id"] in label["validator_ids"],
         "history": validation.history(exercise_id),
@@ -1316,6 +1319,7 @@ async def validate_exercise(exercise_id: str, body: ValidateBody, request: Reque
         return validation.validate(
             getattr(request.state, "user", None), exercise_id, seen_fingerprint=body.fingerprint,
             formula=body.formula, animation_completed=body.animation_completed,
+            playback_speed=body.playback_speed,
         )
     except validation.ValidationError as error:
         raise HTTPException(status_code=error.status, detail=str(error)) from error

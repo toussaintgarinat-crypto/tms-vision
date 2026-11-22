@@ -24,7 +24,8 @@ entière (texte + animation 3D) ; les ostéopathes peuvent créer, copier et mod
 
 Code : `src/tms_vision/validation.py`, routes `/exercises/{id}/validation|validate|withdraw-validation`,
 `/osteopaths`, `PUT /bilans/{id}/osteo` ; écran `web/app/ValidationPanel.tsx` ; tests `tests/test_validation.py`.
-Décisions retenues : validation valable jusqu'à la prochaine modification de la fiche ; retrait possible
+Règle assouplie (décision de Toussaint) : l'animation peut être jouée en accéléré, jusqu'à 4x ; la vitesse
+est enregistrée avec la validation. Décisions retenues : validation valable jusqu'à la prochaine modification de la fiche ; retrait possible
 (nouvelle ligne) ; zone sans exercice validé : proposition « non validé ». Pas de réglage d'arrêt : les
 bilans sans ostéopathe se comportent comme avant.
 
@@ -47,8 +48,8 @@ après relecture de l'animation, une fois la phase 2 livrée.
 
 ### Garde-fou (levé sur instruction de Toussaint)
 
-Toussaint a demandé de partir du principe que Théo MARTIN et le juriste sont d'accord. À confirmer par écrit
-avant de publier chez un cabinet ; texte d'origine :
+Toussaint a confirmé que l'accord de Théo MARTIN (qui sera un cabinet client) et celui du juriste sont
+acquis : la phase 2 peut être publiée. Texte d'origine :
 
 La phase 2 ne passe pas en production avant : (1) la réponse du juriste (sections 2, 3 et 6 de son document :
 portée de la validation, statut de dispositif médical, durée de conservation du journal) et (2) l'accord de

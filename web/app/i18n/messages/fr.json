@@ -762,5 +762,6 @@
   "queue.done": "Plus aucune fiche à relire.",
   "queue.skip": "Passer cette fiche",
   "queue.loadFailed": "Impossible de charger la liste des fiches.",
-  "queue.forbidden": "Cette page est réservée aux comptes ostéopathe."
+  "queue.forbidden": "Cette page est réservée aux comptes ostéopathe.",
+  "validation.speed": "Vitesse :"
 }
