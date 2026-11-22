@@ -119,11 +119,15 @@ def _zone_entries(load_by_zone: dict[str, float], reason_for, basis: str) -> lis
 
 
 def _build_program(
-    entries: list[tuple], position: str | None, size: int, tasks: list[dict] | None = None
+    entries: list[tuple], position: str | None, size: int, tasks: list[dict] | None = None,
+    candidate_filter=None,
 ) -> list[dict]:
     """`entries` : (zone, charge, motif, base) dans l'ordre de priorité. Un exercice par zone,
-    puis un deuxième par zone, etc., jusqu'à `size` exercices."""
+    puis un deuxième par zone, etc., jusqu'à `size` exercices. `candidate_filter(capsules)` :
+    restreint les candidats d'une zone (filtre sur l'ostéopathe du bilan)."""
     candidates = {entry[0]: candidate_capsules(entry[0], position) for entry in entries}
+    if candidate_filter is not None:
+        candidates = {zone: candidate_filter(capsules) for zone, capsules in candidates.items()}
     program = []
     depth = 0
     while len(program) < size and any(len(candidates[entry[0]]) > depth for entry in entries):
@@ -185,7 +189,7 @@ def _main_task_name(tasks: list[dict], zone: str) -> str:
 
 def build_bilan_program(
     report: dict, position: str | None = None, tasks: list[dict] | None = None,
-    size: int = DEFAULT_PROGRAM_SIZE,
+    size: int = DEFAULT_PROGRAM_SIZE, candidate_filter=None,
 ) -> list[dict]:
     """Programme d'un bilan de poste, de `size` exercices. Les zones mesurées sur vidéo passent en
     premier : charge = heures projetées en niveau élevé sur la journée. `report` : sortie de
@@ -221,7 +225,7 @@ def build_bilan_program(
             )
 
         entries += _zone_entries(declared, declared_reason, "declared")
-    return _build_program(entries, position, size, tasks)
+    return _build_program(entries, position, size, tasks, candidate_filter)
 
 
 def select_program(

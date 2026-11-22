@@ -1,3 +1,4 @@
+import type { ValidationLabel } from "../ValidationBadge";
 import type { Exercise } from "../exercisePose";
 import type { TFunction } from "../i18n/translate";
 
@@ -74,7 +75,7 @@ export type SharedExercises = {
   created_at: string;
   practitioner_name: string | null;
   message: string | null;
-  items: { exercise: Exercise; note: string | null }[];
+  items: { exercise: Exercise; note: string | null; validation?: ValidationLabel }[];
 };
 
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;

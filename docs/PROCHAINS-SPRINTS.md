@@ -15,14 +15,18 @@ entière (texte + animation 3D) ; les ostéopathes peuvent créer, copier et mod
 |---|---|---|
 | 0. Fondations | Interface en français et anglais, envoi d'emails SMTP | Livrée (2.0.0) |
 | 1. Comptes | Comptes, connexion, rôles, journal, « Mon email », fin du mot de passe commun, application de bureau (compte, mot de passe oublié) | Livrée (2.0.0, correctif 2.0.1) |
-| 2. Validation | Voir ci-dessous | **À faire : prochain sprint** |
+| 2. Validation | Voir ci-dessous | **Construite (non publiée)** : tests au vert, reste à relire, puis publier (VERSION, CHANGELOG) |
 | 3. Appropriation | Copier une fiche, la modifier, revalidation obligatoire, filiation affichée | À faire (dépend de la phase 2) |
 | 4. Création de fiche | Formulaire + éditeur d'animation 3D manuel (curseurs d'angles, poses clés, aperçu) | À faire (dépend de la phase 3) |
 | 5. Offre payante et assistant IA | Droits par offre, assistant, brouillon d'animation par IA | À définir avec Toussaint avant tout code |
 
-## Phase 2 : Validation (prochain sprint)
+## Phase 2 : Validation (construite)
 
-Pour la lancer, dire : **« Reprends la phase 2 »**.
+Code : `src/tms_vision/validation.py`, routes `/exercises/{id}/validation|validate|withdraw-validation`,
+`/osteopaths`, `PUT /bilans/{id}/osteo` ; écran `web/app/ValidationPanel.tsx` ; tests `tests/test_validation.py`.
+Décisions retenues : validation valable jusqu'à la prochaine modification de la fiche ; retrait possible
+(nouvelle ligne) ; zone sans exercice validé : proposition « non validé ». Pas de réglage d'arrêt : les
+bilans sans ostéopathe se comportent comme avant.
 
 À construire :
 - choix de l'ostéopathe sur le bilan (colonne `osteo_id`, vide = comportement actuel) ;
@@ -41,7 +45,10 @@ Pour la lancer, dire : **« Reprends la phase 2 »**.
 Les 173 fiches de Théo MARTIN ne sont pas validées automatiquement : il les valide lui-même depuis son compte,
 après relecture de l'animation, une fois la phase 2 livrée.
 
-### Garde-fou : construire, mais ne pas mettre en service
+### Garde-fou (levé sur instruction de Toussaint)
+
+Toussaint a demandé de partir du principe que Théo MARTIN et le juriste sont d'accord. À confirmer par écrit
+avant de publier chez un cabinet ; texte d'origine :
 
 La phase 2 ne passe pas en production avant : (1) la réponse du juriste (sections 2, 3 et 6 de son document :
 portée de la validation, statut de dispositif médical, durée de conservation du journal) et (2) l'accord de

@@ -9,13 +9,22 @@ import { useI18n } from "../i18n/I18nProvider";
 // Un seul canvas WebGL pour tout le carrousel : le mannequin rejoue l'exercice de la carte
 // affichée en boucle, au rythme réel (les navigateurs limitent le nombre de contextes WebGL, un
 // canvas par carte les épuiserait).
-export function ExercisePlayer({ exercise }: { exercise: Exercise }) {
+export function ExercisePlayer({
+  exercise,
+  onPlayedInFull,
+}: {
+  exercise: Exercise;
+  // Appelé une fois, quand l'animation a été jouée en entier (écran de validation).
+  onPlayedInFull?: () => void;
+}) {
   const { t } = useI18n();
   const apiRef = useRef<ExerciseAvatarApi | null>(null);
   const timeRef = useRef(0);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [shownSecond, setShownSecond] = useState(0);
+  const playedRef = useRef(0);
+  const doneRef = useRef(false);
 
   const handleReady = useCallback((api: ExerciseAvatarApi) => {
     apiRef.current = api;
@@ -25,11 +34,19 @@ export function ExercisePlayer({ exercise }: { exercise: Exercise }) {
   useEffect(() => {
     if (!ready) return;
     timeRef.current = 0;
+    playedRef.current = 0;
+    doneRef.current = false;
     let frame = 0;
     let last = performance.now();
     const tick = (now: number) => {
       if (playing) {
-        timeRef.current = (timeRef.current + (now - last) / 1000) % exercise.duration_seconds;
+        const step = (now - last) / 1000;
+        timeRef.current = (timeRef.current + step) % exercise.duration_seconds;
+        playedRef.current += step;
+        if (!doneRef.current && playedRef.current >= exercise.duration_seconds) {
+          doneRef.current = true;
+          onPlayedInFull?.();
+        }
       }
       last = now;
       apiRef.current?.renderAt(exercise, timeRef.current);
@@ -39,7 +56,7 @@ export function ExercisePlayer({ exercise }: { exercise: Exercise }) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [exercise, ready, playing]);
+  }, [exercise, ready, playing, onPlayedInFull]);
 
   const instruction = activeInstruction(exercise, shownSecond);
   const remaining = Math.max(0, Math.ceil(exercise.duration_seconds - shownSecond));

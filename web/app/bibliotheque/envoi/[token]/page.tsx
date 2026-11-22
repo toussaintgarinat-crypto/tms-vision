@@ -6,6 +6,7 @@ import { useI18n } from "../../../i18n/I18nProvider";
 import { LanguageSwitcher } from "../../../i18n/LanguageSwitcher";
 import { ExerciseCarousel } from "../../ExerciseCarousel";
 import { API_URL, SharedExercises } from "../../library";
+import { ValidationBadge } from "../../../ValidationBadge";
 
 // Page ouverte par le patient depuis le lien de l'email : l'adresse (jeton aléatoire) en est
 // l'unique protection, comme pour un lien de partage.
@@ -55,6 +56,7 @@ export default function SharedExercisesPage() {
   }
 
   const notes = new Map(share.items.map((item) => [item.exercise.id, item.note]));
+  const labels = new Map(share.items.map((item) => [item.exercise.id, item.validation]));
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 p-4 sm:p-6">
@@ -74,14 +76,21 @@ export default function SharedExercisesPage() {
         exercises={share.items.map((item) => item.exercise)}
         index={index}
         onIndexChange={setIndex}
-        footer={(exercise) =>
-          notes.get(exercise.id) ? (
-            <p className="text-sm">
-              <span className="font-semibold">{t("share.todo")} </span>
-              {notes.get(exercise.id)}
-            </p>
-          ) : null
-        }
+        footer={(exercise) => (
+          <>
+            {labels.get(exercise.id) && (
+              <p className="mb-2 text-xs">
+                <ValidationBadge label={labels.get(exercise.id)!} />
+              </p>
+            )}
+            {notes.get(exercise.id) && (
+              <p className="text-sm">
+                <span className="font-semibold">{t("share.todo")} </span>
+                {notes.get(exercise.id)}
+              </p>
+            )}
+          </>
+        )}
       />
       <p className="mt-4 text-xs text-zinc-500">
         {t("share.disclaimer")}

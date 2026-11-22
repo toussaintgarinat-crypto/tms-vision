@@ -245,6 +245,8 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     # (liste JSON d'identifiants d'exercices). NULL = réglage par défaut / programme automatique.
     conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS program_size INTEGER")
     conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS program_selection VARCHAR")
+    # Ostéopathe choisi sur le bilan (id de compte) : NULL = comportement d'avant, aucun filtre.
+    conn.execute("ALTER TABLE bilans ADD COLUMN IF NOT EXISTS osteo_id VARCHAR")
     # Dossiers dans des dossiers (entreprise > service > poste) : NULL = à la racine.
     conn.execute("ALTER TABLE bilan_folders ADD COLUMN IF NOT EXISTS parent_id VARCHAR")
     for column, column_type in _BILAN_TASKS_LATER_COLUMNS:
@@ -568,7 +570,9 @@ def get_frame_angles(analysis_id: str) -> list[dict] | None:
     return [dict(zip(columns, row)) for row in rows]
 
 
-_BILAN_COLUMNS = ["id", "created_at", "label", "workday_hours", "archived_at", "folder_id"]
+_BILAN_COLUMNS = [
+    "id", "created_at", "label", "workday_hours", "archived_at", "folder_id", "osteo_id",
+]
 
 
 def _bilan_record(row) -> dict:
@@ -754,6 +758,8 @@ def duplicate_bilan(
     # Une copie reste dans le dossier d'origine (même entreprise, autre personne).
     if source["folder_id"] is not None:
         set_bilan_folder(bilan_id=new_id, folder_id=source["folder_id"])
+    if source["osteo_id"] is not None:
+        set_bilan_osteo(bilan_id=new_id, osteo_id=source["osteo_id"])
     for index, (task_id, task) in enumerate(zip(task_ids, source["tasks"], strict=True)):
         copied = {field: task[field] for field in _TASK_FIELDS}
         copied["analysis_id"] = None
@@ -1072,6 +1078,17 @@ def set_program_settings(
             "UPDATE bilans SET program_size = ?, program_selection = ? WHERE id = ?",
             [size, json.dumps(exercise_ids) if exercise_ids is not None else None, bilan_id],
         )
+    finally:
+        conn.close()
+
+
+def set_bilan_osteo(*, bilan_id: str, osteo_id: str | None) -> None:
+    """Choisit (ou retire, avec None) l'ostéopathe du bilan. KeyError si le bilan est inconnu."""
+    conn = _connect()
+    try:
+        if conn.execute("SELECT 1 FROM bilans WHERE id = ?", [bilan_id]).fetchone() is None:
+            raise KeyError(f"bilan {bilan_id}")
+        conn.execute("UPDATE bilans SET osteo_id = ? WHERE id = ?", [osteo_id, bilan_id])
     finally:
         conn.close()
 

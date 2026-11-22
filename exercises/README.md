@@ -134,6 +134,8 @@ exercice (`web/scripts/snapshot-exercise.mjs`) avant de le diffuser.
 
 1. **Brouillon** (`"status": "draft"`, `"source": "human"`) : rédigé mais pas relu. Il apparaît dans
    l'application avec un badge « Brouillon ».
+**Depuis la phase 2, ces champs ne décident plus de ce qui est proposé** : la validation vit en base, par version et par ostéopathe (`src/tms_vision/validation.py`). Les champs de fichier restent lus pour les tests.
+
 2. **Validé** (`"status": "validated"`) : l'ostéopathe a relu la vidéo et les consignes. Renseigner
    `validated_by` (son nom) et `validated_on` (date `AAAA-MM-JJ`), sans quoi le fichier est refusé.
 3. **Proposition d'une IA** : un exercice proposé par un fournisseur d'IA est écrit dans

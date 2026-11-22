@@ -73,6 +73,8 @@ export default function BilanDetailPage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [programBusy, setProgramBusy] = useState(false);
   const [programError, setProgramError] = useState<string | null>(null);
+  const [osteopaths, setOsteopaths] = useState<{ id: string; name: string }[]>([]);
+  const [osteoError, setOsteoError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -293,6 +295,36 @@ export default function BilanDetailPage() {
       setProgramError(t("bilan.error.saveProgram"));
     } finally {
       setProgramBusy(false);
+    }
+  }
+
+  // Liste des ostéopathes (comptes actifs avec ce rôle), pour le choix sur le bilan.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/osteopaths`)
+      .then((response) => (response.ok ? (response.json() as Promise<{ id: string; name: string }[]>) : []))
+      .then((list) => {
+        if (!cancelled) setOsteopaths(list);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Choisit l'ostéopathe du bilan (chaîne vide : aucun, comportement d'avant).
+  async function handleOsteoChange(osteoId: string) {
+    setOsteoError(false);
+    try {
+      const response = await fetch(`${API_URL}/bilans/${encodeURIComponent(id)}/osteo`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ osteo_id: osteoId || null }),
+      });
+      if (!response.ok) throw new Error(String(response.status));
+      setReloadToken((token) => token + 1);
+    } catch {
+      setOsteoError(true);
     }
   }
 
@@ -576,6 +608,26 @@ export default function BilanDetailPage() {
 
           <RecurrenceReport report={loaded.report} />
 
+          {osteopaths.length > 0 && (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-semibold">{t("bilan.osteo.label")}</span>
+              <select
+                value={loaded.bilan.osteo_id ?? ""}
+                onChange={(event) => void handleOsteoChange(event.target.value)}
+                className="max-w-sm rounded border p-1"
+              >
+                <option value="">{t("bilan.osteo.none")}</option>
+                {osteopaths.map((osteopath) => (
+                  <option key={osteopath.id} value={osteopath.id}>
+                    {osteopath.name}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-gray-600">{t("bilan.osteo.help")}</span>
+              {osteoError && <span className="text-xs text-red-600">{t("bilan.osteo.error")}</span>}
+            </label>
+          )}
+
           {(loaded.program.program.length > 0 ||
             loaded.program.gesture_corrections.length > 0 ||
             loaded.program.selection !== null) && (
@@ -594,6 +646,7 @@ export default function BilanDetailPage() {
                   available: loaded.program.available,
                   onSizeChange: (size) => saveProgram(size, null),
                   onSelectionChange: (ids) => saveProgram(loaded.program.size, ids),
+                  onValidated: () => setReloadToken((token) => token + 1),
                 }}
               />
               {programError && <p className="text-sm text-red-600">{programError}</p>}

@@ -10,6 +10,24 @@ une version précise.
 
 ## [Non publié]
 
+### Ajouts
+- **Validation des exercices par un ostéopathe (phase 2).** Seul un compte avec le rôle ostéopathe, connecté,
+  peut valider une fiche, au nom de son compte (vérifié côté serveur). L'écran de validation montre l'animation
+  et le texte côte à côte ; la case « j'ai vérifié le texte et l'animation de cette fiche » n'est cochable
+  qu'après avoir joué l'animation en entier, et la formule est enregistrée. La validation porte sur une version
+  précise (empreinte du contenu complet) : la moindre modification de la fiche l'annule, et elle ne se rejoue
+  pas sur une version modifiée. Un ostéopathe peut retirer sa validation (nouvelle ligne : l'historique reste).
+- **Ostéopathe choisi sur le bilan.** Le programme n'y propose que les exercices validés par cet ostéopathe ;
+  sans exercice validé pour une zone, il propose ceux de la bibliothèque marqués « non validé », avec un bouton
+  « Valider » visible pour l'ostéopathe seulement. Sans ostéopathe choisi, rien ne change.
+- **Étiquette « créé par … / validé par … le … »** (ou « non validé ») sur la page patient, dans le programme
+  et dans l'email d'envoi.
+- Les 173 fiches de Théo MARTIN ne sont pas validées d'office : il les valide depuis son compte.
+
+### Pour les installations existantes
+- Mise à jour automatique de la base (nouvelles tables `exercises`, `exercise_versions`,
+  `exercise_validations`, colonne `osteo_id` des bilans) : rien n'est supprimé ni réécrit.
+
 ## [2.0.1] - 2026-11-21
 
 ### Corrections

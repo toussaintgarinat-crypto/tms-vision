@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useI18n } from "./i18n/I18nProvider";
 import { LiveExercise } from "./LiveExercise";
 import { InfoTip } from "./ProgramInfoTip";
+import { ValidationBadge, ValidationLabel } from "./ValidationBadge";
+import { ValidationPanel } from "./ValidationPanel";
 import { DRAFT_BADGE_KEY, NO_PROGRAM_KEY, capsuleVideoSrc } from "./programFormat";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -18,6 +20,8 @@ export type ProgramCapsule = {
   video_url: string;
   // Vrai quand la vidéo a été générée (python -m tms_vision.capsule_build).
   video_available?: boolean;
+  // « créé par … / validé par … » de la version courante (absent pour un programme d'analyse seule).
+  validation?: ValidationLabel & { can_validate: boolean };
 };
 
 export type ProgramItem = {
@@ -48,6 +52,8 @@ export type ProgramControls = {
   selection?: string[] | null;
   available?: AvailableExercise[];
   onSelectionChange?: (exerciseIds: string[] | null) => void;
+  // Une validation vient d'être enregistrée : le programme se recharge.
+  onValidated?: () => void;
 };
 
 // Zones du corps : libellé traduit par la clé `region.<zone>` ; une zone inconnue s'affiche telle quelle.
@@ -72,6 +78,7 @@ export function ProgramList({
   const regionLabel = (zone: string) => (REGIONS.includes(zone) ? t(`region.${zone}`) : zone);
   // Un seul mannequin 3D ouvert à la fois : les navigateurs limitent les contextes WebGL.
   const [openId, setOpenId] = useState<string | null>(null);
+  const [validatingId, setValidatingId] = useState<string | null>(null);
 
   const ids = program.map((item) => item.capsule.id);
   const customized = controls?.selection != null;
@@ -150,6 +157,27 @@ export function ProgramList({
                       <p className="mt-1 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
                         {t(DRAFT_BADGE_KEY)}
                       </p>
+                    )}
+                    {item.capsule.validation && (
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                        <ValidationBadge label={item.capsule.validation} />
+                        {item.capsule.validation.can_validate && (
+                          <button
+                            type="button"
+                            onClick={() => setValidatingId(item.capsule.id)}
+                            className="rounded border border-emerald-700 px-2 py-0.5 font-semibold text-emerald-800"
+                          >
+                            {t("validation.validateButton")}
+                          </button>
+                        )}
+                      </p>
+                    )}
+                    {validatingId === item.capsule.id && (
+                      <ValidationPanel
+                        exerciseId={item.capsule.id}
+                        onClose={() => setValidatingId(null)}
+                        onChanged={() => controls?.onValidated?.()}
+                      />
                     )}
                     <p className="text-sm text-gray-700">{item.capsule.description}</p>
                     <p className="text-xs text-gray-600">

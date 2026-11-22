@@ -360,7 +360,8 @@ def test_create_bilan_then_get_bilan_round_trips(tmp_path, monkeypatch):
 
     assert bilan == {
         "id": "b-1", "created_at": "2026-10-21T08:30:00+00:00", "label": "Quai 3",
-        "workday_hours": 9.0, "items": [], "tasks": [],
+        "workday_hours": 9.0, "archived_at": None, "folder_id": None, "osteo_id": None,
+        "items": [], "tasks": [],
     }
 
 
