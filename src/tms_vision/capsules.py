@@ -149,7 +149,9 @@ SEATED_CAPSULE_BY_ZONE = {
 }
 
 
-def recommend_capsule(zone: str | None, position: str | None = None) -> Capsule | None:
+def recommend_capsule(
+    zone: str | None, position: str | None = None
+) -> Capsule | None:
     """Exercice du programme pour une zone. `position="seated"` : son équivalent assis quand il existe."""
     if zone is None:
         return None
@@ -165,15 +167,18 @@ def recommend_capsule(zone: str | None, position: str | None = None) -> Capsule 
     return None
 
 
-def candidate_capsules(zone: str, position: str | None = None) -> list[Capsule]:
+def candidate_capsules(
+    zone: str, position: str | None = None, extra: list[Capsule] | None = None
+) -> list[Capsule]:
     """Exercices utilisables pour une zone, du plus adapté au moins adapté : d'abord l'exercice
     habituel du programme, puis les autres de la zone dans la position du poste (assis pour un
     poste assis, debout sinon), puis ceux de l'autre position. Les exercices allongés sont exclus :
-    ils ne se font pas sur un poste de travail."""
+    ils ne se font pas sur un poste de travail. `extra` : capsules des fiches d'ostéopathes en base
+    (fournies par l'API, ce module ne lit pas la base)."""
     first = recommend_capsule(zone, position)
     wanted = "seated" if position == "seated" else "standing"
     others = [
-        capsule for capsule in CAPSULES
+        capsule for capsule in [*CAPSULES, *(extra or [])]
         if capsule.zone == zone and capsule.position != "lying" and capsule is not first
     ]
     others.sort(key=lambda capsule: (capsule.position != wanted, capsule.id))

@@ -96,6 +96,11 @@ def _connect() -> "duckdb.DuckDBPyConnection":
     conn.execute(CREATE_VERSIONS_TABLE)
     conn.execute(CREATE_VALIDATIONS_TABLE)
     conn.execute("ALTER TABLE exercise_validations ADD COLUMN IF NOT EXISTS playback_speed DOUBLE")
+    # Phases 3 et 4 : propriétaire (l'ostéopathe qui a créé ou copié la fiche), titre de la source
+    # copiée (affichage de la filiation) et archivage (une fiche copiée ne se supprime jamais).
+    conn.execute("ALTER TABLE exercises ADD COLUMN IF NOT EXISTS owner_id VARCHAR")
+    conn.execute("ALTER TABLE exercises ADD COLUMN IF NOT EXISTS copied_from_title VARCHAR")
+    conn.execute("ALTER TABLE exercises ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP")
     return conn
 
 
@@ -119,7 +124,7 @@ def is_osteopath(user: dict | None) -> bool:
 # --- Catalogue : fichiers puis base (la base l'emporte) -------------------------------------------
 
 
-def load_effective_catalog() -> list[dict]:
+def load_effective_catalog(include_archived: bool = False) -> list[dict]:
     """Exercices de fichier, puis ceux créés en base (copies, créations des phases 3 et 4) : à id
     égal, la version courante de la base l'emporte. Ne casse pas `exercises.load_catalog`, qui reste
     le chemin « fichiers seuls »."""
@@ -130,6 +135,7 @@ def load_effective_catalog() -> list[dict]:
             "SELECT v.content FROM exercises e JOIN exercise_versions v ON v.exercise_id = e.id "
             "WHERE e.origin != 'file' AND v.number = "
             "(SELECT max(number) FROM exercise_versions WHERE exercise_id = e.id)"
+            + ("" if include_archived else " AND e.archived_at IS NULL")
         ).fetchall()
     finally:
         conn.close()
@@ -140,7 +146,8 @@ def load_effective_catalog() -> list[dict]:
 
 
 def get_exercise(exercise_id: str) -> dict | None:
-    for exercise in load_effective_catalog():
+    # Une fiche archivée reste lisible (envois déjà faits, copies, historique).
+    for exercise in load_effective_catalog(include_archived=True):
         if exercise["id"] == exercise_id:
             return exercise
     return None
@@ -163,10 +170,15 @@ def _active_validations(rows: list[tuple]) -> list[dict]:
     return sorted(active, key=lambda item: item["validated_on"], reverse=True)
 
 
-def _label(exercise: dict, active: list[dict], osteo_id: str | None) -> dict:
+def _label(exercise: dict, active: list[dict], osteo_id: str | None, meta: dict | None) -> dict:
     latest = active[0] if active else None
+    meta = meta or {}
     return {
-        "created_by": original_author(exercise),
+        # L'auteur d'origine d'une fiche en base est celui de la base : jamais déduit du contenu.
+        "created_by": meta.get("original_author") or original_author(exercise),
+        "copied_from": meta.get("copied_from"),
+        "owner_id": meta.get("owner_id"),
+        "archived": bool(meta.get("archived")),
         "validated_by": latest["osteo_name"] if latest else None,
         "validated_on": latest["validated_on"] if latest else None,
         "validator_ids": [item["osteo_id"] for item in active],
@@ -184,12 +196,25 @@ def labels_for(exercise_list: list[dict], osteo_id: str | None = None) -> dict[s
     prints = {exercise["id"]: fingerprint(exercise) for exercise in exercise_list}
     conn = _connect()
     try:
+        meta_rows = conn.execute(
+            "SELECT id, original_author, owner_id, copied_from_exercise, copied_from_title, "
+            "archived_at FROM exercises"
+        ).fetchall()
         rows = conn.execute(
             "SELECT exercise_id, fingerprint, osteo_id, osteo_name, kind, recorded_at "
             "FROM exercise_validations ORDER BY recorded_at, rowid"
         ).fetchall()
     finally:
         conn.close()
+    meta = {
+        row[0]: {
+            "original_author": row[1], "owner_id": row[2], "archived": row[5] is not None,
+            "copied_from": (
+                {"id": row[3], "title": row[4]} if row[3] else None
+            ),
+        }
+        for row in meta_rows
+    }
     grouped: dict[tuple[str, str], list[tuple]] = {}
     for exercise_id, print_, osteo, name, kind, recorded_at in rows:
         if prints.get(exercise_id) == print_:
@@ -199,6 +224,7 @@ def labels_for(exercise_list: list[dict], osteo_id: str | None = None) -> dict[s
             exercise,
             _active_validations(grouped.get((exercise["id"], prints[exercise["id"]]), [])),
             osteo_id,
+            meta.get(exercise["id"]),
         )
         for exercise in exercise_list
     }
@@ -265,7 +291,8 @@ def _ensure_version(conn, exercise: dict) -> str:
         return row[0]
     if conn.execute("SELECT 1 FROM exercises WHERE id = ?", [exercise["id"]]).fetchone() is None:
         conn.execute(
-            "INSERT INTO exercises VALUES (?, 'file', ?, NULL, NULL, ?)",
+            "INSERT INTO exercises (id, origin, original_author, created_at) "
+            "VALUES (?, 'file', ?, ?)",
             [exercise["id"], original_author(exercise), _now()],
         )
     number = conn.execute(

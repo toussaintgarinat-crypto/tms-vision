@@ -418,7 +418,8 @@ def test_database_exercises_win_over_files(client):
     conn = validation._connect()
     try:
         conn.execute(
-            "INSERT INTO exercises VALUES (?, 'osteopathe', 'Léa', NULL, NULL, now())", [base["id"]]
+            "INSERT INTO exercises (id, origin, original_author, created_at) "
+            "VALUES (?, 'osteopathe', 'Léa', now())", [base["id"]]
         )
         content = {**base, "title": "Titre de la base"}
         import json
