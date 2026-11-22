@@ -207,6 +207,119 @@ def list_mine(user: dict | None) -> list[dict]:
     return [{"exercise": sheet, "label": labels[sheet["id"]]} for sheet in sheets]
 
 
+# --- Échange entre installations : export et import d'un fichier de fiches -------------------------
+
+EXCHANGE_FORMAT = "tms-vision-fiches"
+EXCHANGE_VERSION = 1
+MAX_EXCHANGE_SHEETS = 1000
+UNKNOWN_AUTHOR = "Auteur inconnu"
+
+
+def _content_print(exercise: dict) -> str:
+    """Empreinte du contenu sans l'identifiant : reconnaît une fiche déjà présente."""
+    return validation.fingerprint({**exercise, "id": ""})
+
+
+def export_sheets(user: dict | None, exercise_ids: list[str]) -> dict:
+    """Fichier d'échange des fiches demandées. Contient le contenu éditable, l'auteur d'origine
+    (affiché, non vérifiable) et rien de lié à un compte : ni validation, ni identifiant de compte."""
+    _require_osteopath(user)
+    if not exercise_ids or len(exercise_ids) > MAX_EXCHANGE_SHEETS:
+        raise ValidationError(422, f"Choisissez entre 1 et {MAX_EXCHANGE_SHEETS} fiches.")
+    found = []
+    for exercise_id in dict.fromkeys(exercise_ids):
+        exercise = validation.get_exercise(exercise_id)
+        if exercise is None:
+            raise ValidationError(404, f"Exercice introuvable : {exercise_id}.")
+        found.append(exercise)
+    labels = validation.labels_for(found)
+    return {
+        "format": EXCHANGE_FORMAT,
+        "version": EXCHANGE_VERSION,
+        "exported_at": validation._iso(validation._now()),
+        "sheets": [
+            {
+                "original_author": labels[exercise["id"]]["created_by"],
+                "content": {key: exercise[key] for key in EDITABLE_KEYS if key in exercise},
+            }
+            for exercise in found
+        ],
+    }
+
+
+def scope_ids(user: dict | None, scope: str) -> list[str]:
+    """Identifiants à exporter pour « toutes mes fiches » (`mine`, archivées exclues) ou « toutes les
+    fiches du catalogue » (`all`, fiches d'origine comprises, archivées exclues)."""
+    user = _require_osteopath(user)
+    if scope == "mine":
+        return [
+            item["exercise"]["id"] for item in list_mine(user)
+            if not item["label"]["archived"]
+        ]
+    if scope == "all":
+        return [exercise["id"] for exercise in validation.load_effective_catalog()]
+    raise ValidationError(422, "Portée d'export inconnue.")
+
+
+def _declared_author(entry: dict) -> str:
+    author = entry.get("original_author")
+    if not isinstance(author, str):
+        return UNKNOWN_AUTHOR
+    cleaned = "".join(ch for ch in author if ch.isprintable()).strip()[:120]
+    return cleaned or UNKNOWN_AUTHOR
+
+
+def import_sheets(user: dict | None, bundle: dict) -> list[dict]:
+    """Importe un fichier d'échange : chaque fiche devient un NOUVEL exercice appartenant à
+    l'importateur, sans validation, avec l'auteur d'origine déclaré par le fichier. Le contenu est
+    revérifié comme à un enregistrement dans l'éditeur ; une fiche invalide ou déjà présente est
+    ignorée sans empêcher les autres. Retourne un compte rendu par fiche."""
+    user = _require_osteopath(user)
+    if not isinstance(bundle, dict) or bundle.get("format") != EXCHANGE_FORMAT:
+        raise ValidationError(422, "Ce fichier n'est pas un fichier de fiches TMS Vision.")
+    if bundle.get("version") != EXCHANGE_VERSION:
+        raise ValidationError(422, "Version du fichier non prise en charge : mettez l'application à jour.")
+    entries = bundle.get("sheets")
+    if not isinstance(entries, list) or not 1 <= len(entries) <= MAX_EXCHANGE_SHEETS:
+        raise ValidationError(422, f"Le fichier doit contenir entre 1 et {MAX_EXCHANGE_SHEETS} fiches.")
+
+    catalog = validation.load_effective_catalog(include_archived=True)
+    taken = {exercise["id"] for exercise in catalog}
+    known_prints = {_content_print(exercise): exercise["id"] for exercise in catalog}
+    report = []
+    for entry in entries:
+        content = entry.get("content") if isinstance(entry, dict) else None
+        title = content.get("title") if isinstance(content, dict) else None
+        label = title if isinstance(title, str) else ""
+        if not isinstance(content, dict):
+            report.append({"title": label, "status": "invalid", "error": "fiche illisible."})
+            continue
+        try:
+            data = _clean(content, _new_id(label, taken))
+        except ValidationError as error:
+            report.append({"title": label, "status": "invalid", "error": str(error)})
+            continue
+        existing = known_prints.get(_content_print(data))
+        if existing is not None:
+            report.append({"title": data["title"], "status": "duplicate", "id": existing})
+            continue
+        conn = validation._connect()
+        try:
+            conn.execute(
+                "INSERT INTO exercises (id, origin, original_author, copied_from_exercise, "
+                "copied_from_version, created_at, owner_id) VALUES (?, 'import', ?, NULL, NULL, ?, ?)",
+                [data["id"], _declared_author(entry), validation._now(), user["id"]],
+            )
+            _insert_version(conn, data, user, 1)
+        finally:
+            conn.close()
+        taken.add(data["id"])
+        known_prints[_content_print(data)] = data["id"]
+        validation._audit("exercise.import", user, data["id"])
+        report.append({"title": data["title"], "status": "imported", "id": data["id"]})
+    return report
+
+
 def copies_of(exercise_id: str) -> int:
     conn = validation._connect()
     try:

@@ -1372,6 +1372,43 @@ async def unarchive_sheet(exercise_id: str, request: Request) -> dict:
         raise _sheet_error(error) from error
 
 
+class ExchangeBundle(BaseModel):
+    """Fichier d'échange (voir sheets.export_sheets) : le serveur revérifie tout."""
+
+    model_config = {"extra": "allow"}
+
+
+@app.get("/sheets/export")
+async def export_my_sheets(
+    request: Request, ids: str = Query("", max_length=100000),
+    scope: str | None = Query(None, pattern="^(mine|all)$"),
+) -> Response:
+    """Fichier d'échange : les fiches `ids` (identifiants séparés par des virgules), ou, avec
+    `scope`, toutes les fiches de l'ostéopathe (`mine`) ou tout le catalogue (`all`)."""
+    user = getattr(request.state, "user", None)
+    try:
+        wanted = sheets.scope_ids(user, scope) if scope else [i for i in ids.split(",") if i.strip()]
+        bundle = sheets.export_sheets(user, wanted)
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+    day = datetime.now(timezone.utc).date().isoformat()
+    return Response(
+        json.dumps(bundle, ensure_ascii=False, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="fiches-tms-vision-{day}.json"'},
+    )
+
+
+@app.post("/sheets/import")
+async def import_sheets_file(body: ExchangeBundle, request: Request) -> dict:
+    """Importe un fichier d'échange : nouvelles fiches sans validation, appartenant à l'importateur."""
+    try:
+        report = sheets.import_sheets(getattr(request.state, "user", None), body.model_dump())
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+    return {"report": report, "imported": sum(1 for item in report if item["status"] == "imported")}
+
+
 @app.get("/sheets/mine")
 async def list_my_sheets(request: Request) -> list[dict]:
     """Fiches créées ou copiées par l'ostéopathe connecté (archivées comprises)."""

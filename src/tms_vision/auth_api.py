@@ -26,6 +26,7 @@ _PUBLIC_PATTERNS = (
     re.compile(r"^/library/shares/[^/]+$"),
     re.compile(r"^/capsules/[^/]+/video$"),
 )
+_EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _ALWAYS_PUBLIC = {"/auth/login", "/auth/status", "/auth/setup", "/auth/recover", "/docs", "/openapi.json"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
@@ -217,6 +218,8 @@ class SetupBody(BaseModel):
     email: str = Field(max_length=254)
     name: str = Field(max_length=120)
     password: str = Field(max_length=256)
+    # La personne déclare être ostéopathe : elle pourra valider des fiches sous son nom.
+    osteopath: bool = False
 
 
 @router.post("/auth/setup")
@@ -226,7 +229,9 @@ def setup_first_account(body: SetupBody, request: Request, response: Response):
     if not local_setup_open(request):
         raise HTTPException(status_code=403, detail={"message": "Création du premier compte indisponible ici.", "code": "setup_closed"})
     try:
-        user = accounts.create_first_admin(body.email, body.name, body.password)
+        user = accounts.create_first_admin(
+            body.email, body.name, body.password, osteopath=body.osteopath
+        )
     except accounts.AccountError as error:
         _raise(error, 409 if error.code == "setup_done" else 422)
     accounts.audit("login.success", user_id=user["id"], email=user["email"], address=_client_address(request))
@@ -372,6 +377,50 @@ def admin_reset_password(user_id: str, body: ResetPasswordBody, admin: dict = De
     except accounts.AccountError as error:
         _raise(error, 404 if error.code == "not_found" else 422)
     return {"ok": True}
+
+
+class InvitationBody(BaseModel):
+    email: str = Field(max_length=254)
+    name: str | None = Field(default=None, max_length=120)
+    message: str | None = Field(default=None, max_length=2000)
+    osteopath: bool = False
+
+
+@admin_router.post("/invitations")
+def admin_invite(body: InvitationBody, request: Request, admin: dict = Depends(_admin)):
+    """Envoie à `email` l'invitation à installer l'application de bureau : liens directs vers les
+    installateurs de la dernière version et guide du premier lancement (le compte se crée sur son
+    ordinateur, pas ici). Part de l'adresse de l'administrateur, comme les envois d'exercices."""
+    from tms_vision import mailer, updates, user_email
+
+    recipient = body.email.strip()
+    if not _EMAIL_PATTERN.match(recipient):
+        raise HTTPException(status_code=422, detail="Adresse email invalide.")
+    release = updates.fetch_latest_release()
+    outgoing = mailer.build_invitation_message(
+        to=recipient, inviter_name=admin["name"], invitee_name=(body.name or "").strip() or None,
+        message=(body.message or "").strip() or None, osteopath=body.osteopath,
+        release_url=release["url"] if release else mailer.RELEASES_PAGE_URL,
+        downloads=mailer.installer_links(release["assets"]) if release else [],
+    )
+    try:
+        service, reply_to = user_email.mailer_for(admin)
+        if reply_to:
+            import dataclasses
+
+            outgoing = dataclasses.replace(outgoing, reply_to=reply_to)
+        service.send(outgoing)
+        status = "sent"
+    except mailer.MailerError:
+        status = "failed"
+    else:
+        if isinstance(service, mailer.NullMailer):
+            status = "not_configured"
+    accounts.audit(
+        "invitation.send", user_id=admin["id"], email=admin["email"], target=recipient,
+        detail=f"{status}; ostéopathe: {'oui' if body.osteopath else 'non'}",
+    )
+    return {"email_status": status}
 
 
 @admin_router.get("/audit")

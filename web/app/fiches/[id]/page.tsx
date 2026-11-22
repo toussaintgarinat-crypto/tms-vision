@@ -10,6 +10,7 @@ import { Exercise, POSITIONS, REGIONS, Region } from "../../exercisePose";
 import { useI18n } from "../../i18n/I18nProvider";
 import { ValidationBadge, ValidationLabel } from "../../ValidationBadge";
 import { ValidationPanel } from "../../ValidationPanel";
+import { saveBlob } from "../exchange";
 import {
   ANGLE_KEYS, EDITABLE_BONES, MAX_ANGLE, Sheet, addKeyframe, addPose, bonesUsed, canRemovePose, emptySheet,
   poseNameError, previewExercise, removeKeyframe, removePose, setAngle, sheetFrom, sheetProblems,
@@ -341,6 +342,19 @@ export default function SheetEditorPage() {
           {!creating && access.can_edit && (
             <button type="button" onClick={async () => { if (await post(loaded?.validation.archived ? "unarchive" : "archive")) await load(); }} className="rounded border px-3 py-2 text-sm">
               {loaded?.validation.archived ? t("sheets.unarchive") : t("sheets.archive")}
+            </button>
+          )}
+          {!creating && (
+            <button
+              type="button"
+              onClick={async () => {
+                const response = await fetch(`${API_URL}/sheets/export?ids=${encodeURIComponent(id)}`);
+                if (response.ok) saveBlob(await response.blob(), `fiche-${id}.json`);
+                else setMessage({ kind: "error", text: t("sheets.exchange.exportFailed") });
+              }}
+              className="rounded border px-3 py-2 text-sm"
+            >
+              {t("sheets.exchange.exportOne")}
             </button>
           )}
           {!creating && !loaded?.validation.archived && (

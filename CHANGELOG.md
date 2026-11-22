@@ -10,6 +10,24 @@ une version précise.
 
 ## [Non publié]
 
+## [2.2.0] - 2026-11-22
+
+### Ajouts
+- **Échanger des fiches avec un autre cabinet (fichier).** Dans « Mes fiches » : exporter les fiches cochées, toutes
+  ses fiches ou tout le catalogue dans un seul fichier, à envoyer par email ou messagerie ; un confrère l'importe
+  dans son application. Chaque fiche importée est une nouvelle fiche à lui, sans validation (la validation ne
+  voyage jamais), avec l'auteur d'origine déclaré par le fichier (non vérifié, signalé comme tel). Le contenu est
+  revérifié à l'import ; une fiche invalide ou déjà présente est ignorée sans bloquer les autres. Le fichier ne
+  contient aucune donnée de compte. L'import accepte plusieurs fichiers à la fois, pour découper un gros lot (1000
+  fiches au plus par fichier).
+- **Inviter une personne à installer l'application de bureau.** Dans « Administration », un formulaire envoie un
+  email (depuis l'adresse de l'administrateur) avec les liens directs vers les installateurs Windows et Mac de la
+  dernière version et le guide du premier lancement. Aucun mot de passe ni jeton n'y figure : le compte se crée
+  sur l'ordinateur de la personne, au premier lancement. L'envoi est inscrit au journal.
+- **« Je suis ostéopathe » au premier lancement de l'application de bureau.** Une case, décochée par défaut,
+  donne le rôle ostéopathe au premier compte (il peut ainsi valider des fiches sous son nom) ; la déclaration est
+  inscrite au journal.
+
 ## [2.1.0] - 2026-11-22
 
 ### Ajouts

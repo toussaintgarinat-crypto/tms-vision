@@ -179,6 +179,8 @@ def _label(exercise: dict, active: list[dict], osteo_id: str | None, meta: dict 
         "copied_from": meta.get("copied_from"),
         "owner_id": meta.get("owner_id"),
         "archived": bool(meta.get("archived")),
+        # Fiche importée d'un fichier : son auteur d'origine est celui que déclare le fichier.
+        "imported": bool(meta.get("imported")),
         "validated_by": latest["osteo_name"] if latest else None,
         "validated_on": latest["validated_on"] if latest else None,
         "validator_ids": [item["osteo_id"] for item in active],
@@ -198,7 +200,7 @@ def labels_for(exercise_list: list[dict], osteo_id: str | None = None) -> dict[s
     try:
         meta_rows = conn.execute(
             "SELECT id, original_author, owner_id, copied_from_exercise, copied_from_title, "
-            "archived_at FROM exercises"
+            "archived_at, origin FROM exercises"
         ).fetchall()
         rows = conn.execute(
             "SELECT exercise_id, fingerprint, osteo_id, osteo_name, kind, recorded_at "
@@ -209,6 +211,7 @@ def labels_for(exercise_list: list[dict], osteo_id: str | None = None) -> dict[s
     meta = {
         row[0]: {
             "original_author": row[1], "owner_id": row[2], "archived": row[5] is not None,
+            "imported": row[6] == "import",
             "copied_from": (
                 {"id": row[3], "title": row[4]} if row[3] else None
             ),
