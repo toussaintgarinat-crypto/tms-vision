@@ -26,6 +26,15 @@ def run(command: list[str], **kwargs) -> None:
     subprocess.run(command, check=True, **kwargs)
 
 
+def check_sources() -> None:
+    """Compile tout le paquet avec l'interpréteur de la construction (Python 3.11). Une erreur de
+    syntaxe propre à une version plus récente de Python (ex. un antislash dans une expression d'f-string,
+    accepté dès 3.12) ferait sinon ignorer le module en silence : l'application construite planterait au
+    démarrage (module introuvable). Mieux vaut arrêter ici."""
+    print(f"Contrôle de la syntaxe avec Python {sys.version_info.major}.{sys.version_info.minor}", flush=True)
+    run([sys.executable, "-m", "compileall", "-q", str(ROOT / "src" / "tms_vision")])
+
+
 def build_site() -> None:
     npm = shutil.which("npm")
     if npm is None:
@@ -68,6 +77,7 @@ def package() -> None:
 
 
 if __name__ == "__main__":
+    check_sources()
     build_site()
     assemble()
     package()

@@ -79,6 +79,24 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
     return () => clearInterval(timer);
   }, [status]);
 
+  // L'application est fermée pour s'installer : on attend qu'elle réponde de nouveau, puis on recharge
+  // la page (sinon elle reste sur « Installation en cours » même une fois l'application relancée).
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!restarting) return;
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      fetch(`${API_URL}/version`)
+        .then((response) => {
+          if (response.ok) window.location.reload();
+        })
+        .catch(() => {
+          if (Date.now() - startedAt > 3 * 60 * 1000) setSlow(true);
+        });
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [restarting]);
+
   const install = () => {
     setStatus({ step: "backup", message: t("update.preparing"), progress: null });
     fetch(`${API_URL}/update/install`, { method: "POST" })
@@ -94,7 +112,7 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
   if (restarting) {
     return (
       <span className={className} role="status">
-        {t("update.restarting")}
+        {t(slow ? "update.slow" : "update.restarting")}
       </span>
     );
   }

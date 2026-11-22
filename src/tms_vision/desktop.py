@@ -69,6 +69,80 @@ def port_in_use(port: int) -> bool:
         return probe.connect_ex((HOST, port)) == 0
 
 
+def listening_pids(port: int) -> list[int]:
+    """Processus qui écoutent sur `port` (macOS et Linux ; liste vide ailleurs ou si `lsof` manque)."""
+    if sys.platform == "win32":
+        return []
+    try:
+        result = subprocess.run(
+            ["lsof", "-nP", "-ti", f"TCP:{port}", "-sTCP:LISTEN"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return [int(line) for line in result.stdout.split() if line.isdigit()]
+
+
+def is_our_process(pid: int) -> bool:
+    """Le processus est-il une copie de TMS Vision (jamais un autre programme qui aurait ce port) ?"""
+    try:
+        result = subprocess.run(
+            ["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True, timeout=5, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    command = result.stdout.lower()
+    return "tms vision" in command or "tms-vision" in command
+
+
+def release_stale_ports() -> bool:
+    """Ferme ce qui reste d'une copie précédente de TMS Vision et occupe encore nos ports : après un
+    plantage pendant une mise à jour, le site (Node.js) peut rester seul et faire croire que l'application
+    tourne. Ne touche qu'aux processus de TMS Vision. Retourne True si les deux ports sont libres."""
+    import signal
+
+    for port in (WEB_PORT, API_PORT):
+        for pid in listening_pids(port):
+            if pid == os.getpid() or not is_our_process(pid):
+                continue
+            for sig, wait in ((signal.SIGTERM, 3.0), (signal.SIGKILL, 2.0)):
+                try:
+                    os.kill(pid, sig)
+                except OSError:
+                    break
+                deadline = time.monotonic() + wait
+                while time.monotonic() < deadline and pid in listening_pids(port):
+                    time.sleep(0.2)
+                if pid not in listening_pids(port):
+                    break
+    return not (port_in_use(WEB_PORT) or port_in_use(API_PORT))
+
+
+def self_test() -> int:
+    """Vérifie que l'application construite démarre : importe l'API et ses modules, sans rien lancer.
+    Utilisé par la construction (.github/workflows/desktop.yml) : un module manquant dans l'installateur
+    fait échouer la publication au lieu d'arriver chez un client."""
+    log = os.environ.get("TMS_SELFTEST_LOG")
+    try:
+        # Ce que l'application charge au démarrage (desktop.start) : un module absent de l'installateur
+        # lève ici ModuleNotFoundError, comme chez le client.
+        import importlib
+
+        importlib.import_module("tms_vision.api")
+    except Exception:  # noqa: BLE001 - tout échec doit se voir
+        import traceback
+
+        detail = traceback.format_exc()
+        if log:
+            Path(log).write_text(detail, encoding="utf-8")
+        elif sys.stderr:
+            print(detail, file=sys.stderr)
+        return 1
+    if log:
+        Path(log).write_text("ok\n", encoding="utf-8")
+    return 0
+
+
 def is_ready(url: str) -> bool:
     try:
         with urllib.request.urlopen(url, timeout=2) as response:
@@ -292,7 +366,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-browser", action="store_true", help="n'ouvre pas le navigateur")
     parser.add_argument("--web-dir", help="dossier du site compilé (contient server.js)")
     parser.add_argument("--data-dir", help="dossier des données (par défaut : celui de l'utilisateur)")
+    parser.add_argument("--self-test", action="store_true", help="vérifie que l'application démarre, puis quitte")
     args = parser.parse_args(argv)
+    if args.self_test:
+        return self_test()
 
     root = resource_root()
     directory = Path(args.data_dir) if args.data_dir else data_dir()
@@ -303,13 +380,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     # Déjà lancée : on rouvre simplement le navigateur au lieu de lancer une seconde copie.
-    if port_in_use(WEB_PORT) and is_ready(f"http://{HOST}:{WEB_PORT}"):
+    # « Tourne déjà » = le site ET l'API répondent. Le site seul, resté après un plantage, ne compte pas.
+    if is_ready(f"http://{HOST}:{WEB_PORT}") and is_ready(f"http://{HOST}:{API_PORT}/version"):
         if not args.no_browser:
             webbrowser.open(f"http://{HOST}:{WEB_PORT}")
         return 0
     if port_in_use(API_PORT) or port_in_use(WEB_PORT):
-        print(f"Les ports {API_PORT} et {WEB_PORT} doivent être libres.", file=sys.stderr)
-        return 3
+        if not release_stale_ports():
+            print(f"Les ports {API_PORT} et {WEB_PORT} doivent être libres.", file=sys.stderr)
+            return 3
 
     directory.mkdir(parents=True, exist_ok=True)
     if getattr(sys, "frozen", False):

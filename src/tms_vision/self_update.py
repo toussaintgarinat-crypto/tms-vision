@@ -103,7 +103,9 @@ def download(asset: dict, destination: Path, on_progress: Callable[[float | None
 
 MAC_SCRIPT = r"""
 pid="$1"; dmg="$2"; app="$3"
+echo "$(date '+%F %T') mise à jour : attente de la fermeture de l'application (processus $pid)"
 while kill -0 "$pid" 2>/dev/null; do sleep 0.5; done
+echo "$(date '+%F %T') application fermée, remplacement de $app"
 mnt="$(mktemp -d)"
 if hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg" >/dev/null; then
   new="$(find "$mnt" -maxdepth 1 -name '*.app' | head -n 1)"
@@ -112,11 +114,15 @@ if hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg" >/dev/null; then
     rm -rf "$app.old"
   else
     [ -d "$app.old" ] && { rm -rf "$app"; mv "$app.old" "$app"; }
+    echo "$(date '+%F %T') remplacement impossible, ancienne version remise"
     hdiutil detach "$mnt" -quiet; open "$dmg"; exit 1
   fi
   hdiutil detach "$mnt" -quiet
 fi
 rm -f "$dmg"
+# L'application n'est pas signée : sans ceci, macOS peut la bloquer après le remplacement.
+xattr -dr com.apple.quarantine "$app" 2>/dev/null
+echo "$(date '+%F %T') relance de $app"
 open "$app"
 """
 
@@ -140,10 +146,18 @@ def launch_installer(installer: Path) -> None:
     bundle = mac_bundle()
     if bundle is None:
         raise OSError("dossier de l'application introuvable")
+    # Le script écrit son déroulement dans logs/update.log : sans lui, un échec ne laisse aucune trace.
+    log = subprocess.DEVNULL
+    if data_directory is not None:
+        try:
+            (data_directory / "logs").mkdir(exist_ok=True)
+            log = open(data_directory / "logs" / "update.log", "ab")  # noqa: SIM115 - fermé avec le processus
+        except OSError:
+            pass
     subprocess.Popen(
         ["/bin/sh", "-c", MAC_SCRIPT, "tms-update", str(os.getpid()), str(installer), str(bundle)],
         start_new_session=True, close_fds=True,
-        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL, stdout=log, stderr=log,
     )
 
 

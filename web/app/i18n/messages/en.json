@@ -11,7 +11,7 @@
   "nav.versionTitle": "Application version",
   "update.preparing": "Preparing…",
   "update.failedToStart": "The update could not start.",
-  "update.restarting": "Installing: the application will reopen by itself. Reload this page in a minute.",
+  "update.restarting": "Installing: the application will reopen by itself. This page reloads as soon as it is ready.",
   "update.install": "New version {version} available: update now (your data is kept)",
   "update.download": "New version {version} available: download",
   "share.notFound": "These exercises could not be found. Check the link you received by email.",
@@ -899,5 +899,6 @@
   "sheets.exchange.read.tooBig": "This file is too large.",
   "sheets.exchange.read.notJson": "This file cannot be read.",
   "sheets.exchange.read.notBundle": "This is not a TMS Vision sheets file.",
-  "sheets.exchange.read.empty": "This file contains no sheet."
+  "sheets.exchange.read.empty": "This file contains no sheet.",
+  "update.slow": "The installation is taking longer than expected. Reopen the application from the Applications folder (Mac) or the Start menu (Windows); if it does not open, check the “logs” folder in your data folder."
 }
