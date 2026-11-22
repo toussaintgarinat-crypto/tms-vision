@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [2.1.0] - 2026-11-22
+
 ### Ajouts
 - **Validation des exercices par un ostéopathe (phase 2).** Seul un compte avec le rôle ostéopathe, connecté,
   peut valider une fiche, au nom de son compte (vérifié côté serveur). L'écran de validation montre l'animation
