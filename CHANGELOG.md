@@ -10,6 +10,8 @@ une version précise.
 
 ## [Non publié]
 
+## [2.2.0] - 2026-11-22
+
 ### Ajouts
 - **Échanger des fiches avec un autre cabinet (fichier).** Dans « Mes fiches » : exporter les fiches cochées, toutes
   ses fiches ou tout le catalogue dans un seul fichier, à envoyer par email ou messagerie ; un confrère l'importe
