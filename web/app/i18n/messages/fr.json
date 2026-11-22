@@ -752,5 +752,15 @@
   "bilan.osteo.label": "Ostéopathe du bilan",
   "bilan.osteo.none": "Aucun (tous les exercices du catalogue)",
   "bilan.osteo.help": "Le programme ne propose que les exercices validés par cet ostéopathe ; à défaut, des exercices « non validés ».",
-  "bilan.osteo.error": "Impossible d'enregistrer le choix de l'ostéopathe."
+  "bilan.osteo.error": "Impossible d'enregistrer le choix de l'ostéopathe.",
+  "nav.review": "Relecture des fiches",
+  "queue.title": "Relecture des fiches",
+  "queue.intro": "Les fiches dont la version actuelle n'est pas validée par vous, l'une après l'autre. Chaque fiche se valide comme d'habitude : animation jouée en entier, puis confirmation.",
+  "queue.fichesOnly": "Seulement les fiches de mon cabinet (fiches d'ostéopathe)",
+  "queue.remaining": "{count} fiche(s) à relire.",
+  "queue.skippedCount": "({count} passée(s) pour l'instant)",
+  "queue.done": "Plus aucune fiche à relire.",
+  "queue.skip": "Passer cette fiche",
+  "queue.loadFailed": "Impossible de charger la liste des fiches.",
+  "queue.forbidden": "Cette page est réservée aux comptes ostéopathe."
 }

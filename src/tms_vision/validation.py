@@ -204,6 +204,25 @@ def label_for(exercise: dict, osteo_id: str | None = None) -> dict:
     return labels_for([exercise], osteo_id)[exercise["id"]]
 
 
+def review_queue(user: dict, *, zone: str | None = None, fiches_only: bool = False) -> list[dict]:
+    """Fiches à relire pour `user` : celles dont la version COURANTE n'est pas validée par lui (donc
+    aussi celles validées par un confrère), triées par zone puis id. Ne contourne aucune règle : la
+    validation passe par `validate`, qui exige toujours l'animation vue en entier."""
+    catalog = load_effective_catalog()
+    labels = labels_for(catalog, user["id"])
+    return [
+        {
+            "id": exercise["id"], "title": exercise["title"], "zone": exercise["zone"],
+            "created_by": labels[exercise["id"]]["created_by"],
+            "validated_by": labels[exercise["id"]]["validated_by"],
+        }
+        for exercise in sorted(catalog, key=lambda e: (e["zone"], e["id"]))
+        if not labels[exercise["id"]]["validated_by_selected"]
+        and (zone is None or exercise["zone"] == zone)
+        and (not fiches_only or exercise.get("fiche"))
+    ]
+
+
 def history(exercise_id: str) -> list[dict]:
     """Toutes les lignes d'enregistrement de l'exercice (validations et retraits), de la plus
     ancienne à la plus récente, toutes versions confondues. Rien n'est jamais effacé."""

@@ -22,6 +22,9 @@ une version précise.
   « Valider » visible pour l'ostéopathe seulement. Sans ostéopathe choisi, rien ne change.
 - **Étiquette « créé par … / validé par … le … »** (ou « non validé ») sur la page patient, dans le programme
   et dans l'email d'envoi.
+- **File de relecture** (menu « Relecture des fiches », réservé aux ostéopathes) : enchaîne les fiches dont la
+  version actuelle n'est pas validée par l'ostéopathe connecté, avec « Passer » ; pas de raccourci sur la règle
+  (animation jouée en entier, case cochée, une validation par fiche).
 - Les 173 fiches de Théo MARTIN ne sont pas validées d'office : il les valide depuis son compte.
 
 ### Pour les installations existantes

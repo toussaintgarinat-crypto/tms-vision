@@ -220,6 +220,7 @@ export function NavMenu() {
               <div className="mt-auto flex flex-col gap-1 border-t border-zinc-200 pt-3 dark:border-zinc-700">
                 {[
                   { href: "/compte", label: t("nav.account"), show: true },
+                  { href: "/validation", label: t("nav.review"), show: user.roles.includes("osteopathe") },
                   { href: "/administration", label: t("nav.admin"), show: user.roles.includes("administrateur") },
                 ]
                   .filter((entry) => entry.show)

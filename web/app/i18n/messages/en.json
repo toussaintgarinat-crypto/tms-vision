@@ -752,5 +752,15 @@
   "bilan.osteo.label": "Assessment osteopath",
   "bilan.osteo.none": "None (all catalogue exercises)",
   "bilan.osteo.help": "The programme only offers exercises validated by this osteopath; otherwise, “not validated” exercises.",
-  "bilan.osteo.error": "Cannot save the osteopath choice."
+  "bilan.osteo.error": "Cannot save the osteopath choice.",
+  "nav.review": "Sheet review",
+  "queue.title": "Sheet review",
+  "queue.intro": "Sheets whose current version you have not validated, one after the other. Each sheet is validated as usual: animation played in full, then confirmation.",
+  "queue.fichesOnly": "Only my practice's sheets (osteopath sheets)",
+  "queue.remaining": "{count} sheet(s) to review.",
+  "queue.skippedCount": "({count} skipped for now)",
+  "queue.done": "No sheet left to review.",
+  "queue.skip": "Skip this sheet",
+  "queue.loadFailed": "Cannot load the list of sheets.",
+  "queue.forbidden": "This page is reserved for osteopath accounts."
 }

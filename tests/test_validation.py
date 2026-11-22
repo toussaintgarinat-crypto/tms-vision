@@ -416,3 +416,46 @@ def test_database_exercises_win_over_files(client):
         conn.close()
     assert validation.get_exercise(base["id"])["title"] == "Titre de la base"
     assert exercises.load_catalog()[0]["title"] == base["title"]
+
+
+# --- File de relecture ----------------------------------------------------------------------------
+
+
+def test_review_queue_is_for_osteopaths_only(accounts_ready):
+    assert accounts_ready.get("/validation/queue").status_code == 401
+    for email in ("praticien@x.fr", "admin@x.fr"):
+        _login(accounts_ready, email)
+        assert accounts_ready.get("/validation/queue").status_code == 403
+        _logout(accounts_ready)
+
+
+def test_review_queue_lists_unvalidated_sheets_and_drops_the_one_just_validated(accounts_ready):
+    _login(accounts_ready, "osteo@x.fr")
+    queue = accounts_ready.get("/validation/queue").json()
+    assert queue["total"] == len(exercises.load_catalog())
+    first = queue["items"][0]["id"]
+    assert _validate(accounts_ready, first).status_code == 200
+    after = accounts_ready.get("/validation/queue").json()
+    assert after["total"] == queue["total"] - 1
+    assert first not in [item["id"] for item in after["items"]]
+    # un confrère voit toujours la fiche : sa propre validation n'existe pas
+    _logout(accounts_ready)
+    _login(accounts_ready, "autre@x.fr")
+    assert first in [i["id"] for i in accounts_ready.get("/validation/queue").json()["items"]]
+
+
+def test_review_queue_filters_by_zone_and_fiches(accounts_ready):
+    _login(accounts_ready, "osteo@x.fr")
+    zone = accounts_ready.get("/validation/queue").json()["items"][0]["zone"]
+    items = accounts_ready.get(f"/validation/queue?zone={zone}").json()["items"]
+    assert items and all(item["zone"] == zone for item in items)
+    fiches = accounts_ready.get("/validation/queue?fiches_only=true").json()
+    wanted = {e["id"] for e in exercises.load_catalog() if e.get("fiche")}
+    assert {item["id"] for item in fiches["items"]} == wanted
+    assert accounts_ready.get("/validation/queue?zone=nimporte").status_code == 422
+
+
+def test_the_queue_does_not_bypass_the_animation_rule(accounts_ready):
+    _login(accounts_ready, "osteo@x.fr")
+    first = accounts_ready.get("/validation/queue").json()["items"][0]["id"]
+    assert _validate(accounts_ready, first, animation_completed=False).status_code == 422

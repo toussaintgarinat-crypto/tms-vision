@@ -1277,6 +1277,23 @@ def _validation_response(exercise_id: str, label: dict | None = None) -> dict:
     return label or validation.label_for(exercise)
 
 
+@app.get("/validation/queue")
+async def get_validation_queue(
+    request: Request, zone: str | None = None, fiches_only: bool = False
+) -> dict:
+    """File de relecture de l'ostéopathe connecté : fiches dont la version courante n'est pas
+    validée par lui. Réservé au rôle ostéopathe."""
+    user = getattr(request.state, "user", None)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Connexion requise.")
+    if not validation.is_osteopath(user):
+        raise HTTPException(status_code=403, detail="Réservé aux comptes ostéopathe.")
+    if zone is not None and zone not in exercises.REGIONS:
+        raise HTTPException(status_code=422, detail="Zone inconnue.")
+    queue = validation.review_queue(user, zone=zone, fiches_only=fiches_only)
+    return {"total": len(queue), "items": queue}
+
+
 @app.get("/exercises/{exercise_id}/validation")
 async def get_exercise_validation(exercise_id: str, request: Request) -> dict:
     """Étiquette de la version courante, formules acceptées et historique complet (validations et
