@@ -102,13 +102,17 @@ def _html_body(lines: list[str], share_url: str) -> str:
 
 def build_share_message(
     *, to: str, share_url: str, practitioner_name: str | None, message: str | None,
-    exercise_titles: list[str],
+    exercise_titles: list[str], exercise_labels: list[str] | None = None,
 ) -> OutgoingMessage:
     sender = practitioner_name or "Votre praticien"
     lines = [f"{sender} vous a préparé une série d'exercices.", ""]
     if message:
         lines += [message, ""]
-    lines += [f"- {title}" for title in exercise_titles]
+    labels = exercise_labels or [None] * len(exercise_titles)
+    lines += [
+        f"- {title} ({label})" if label else f"- {title}"
+        for title, label in zip(exercise_titles, labels, strict=True)
+    ]
     lines += [
         "",
         f"Retrouvez chaque exercice animé et les consignes ici : {share_url}",

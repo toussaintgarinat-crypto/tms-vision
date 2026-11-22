@@ -29,11 +29,13 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from tms_vision import (
-    assistant, auth_api, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, self_update, storage,
-    updates, user_email, version,
+    accounts, assistant, auth_api, bilan, capsule_build, exercises, library, mailer, metiers, recurrence, self_update, storage,
+    sheets, updates, user_email, validation, version,
 )
 from tms_vision.load import bounds, parse_load
-from tms_vision.capsules import CAPSULES, DEFAULT_PROGRAM_SIZE, MAX_PROGRAM_SIZE
+from tms_vision.capsules import (
+    CAPSULES, DEFAULT_PROGRAM_SIZE, MAX_PROGRAM_SIZE, capsule_from_exercise,
+)
 from tms_vision.program import (
     build_analysis_program, build_bilan_program, select_program,
 )
@@ -557,10 +559,32 @@ async def get_analysis_frames_csv(analysis_id: str) -> Response:
     )
 
 
-def _annotate_program_videos(program: list[dict]) -> list[dict]:
-    """Ajoute `video_available` à la capsule de chaque élément : la vidéo générée existe-t-elle ?"""
+def _annotate_program_videos(
+    program: list[dict], osteo_id: str | None = None, user: dict | None = None
+) -> list[dict]:
+    """Ajoute à la capsule de chaque élément `video_available` (la vidéo générée existe-t-elle ?) et
+    `validation` : étiquette « créé par / validé par » de la version courante. `can_validate` : le
+    bouton « Valider » n'est visible que pour l'ostéopathe choisi sur le bilan (ou, sans choix, pour
+    tout ostéopathe), tant qu'il n'a pas déjà validé la fiche ; l'API refuse de toute façon les
+    autres comptes."""
+    by_id = {
+        exercise["id"]: exercise
+        for exercise in validation.load_effective_catalog(include_archived=True)
+    }
+    labels = validation.labels_for(
+        [by_id[item["capsule"]["id"]] for item in program if item["capsule"]["id"] in by_id],
+        osteo_id,
+    )
+    may_validate = validation.is_osteopath(user) and (osteo_id is None or user["id"] == osteo_id)
     for item in program:
-        item["capsule"]["video_available"] = capsule_build.video_path(item["capsule"]["id"]).is_file()
+        capsule = item["capsule"]
+        capsule["video_available"] = capsule_build.video_path(capsule["id"]).is_file()
+        label = labels.get(capsule["id"])
+        if label is not None:
+            already = user is not None and user["id"] in label["validator_ids"]
+            capsule["validation"] = {
+                **_public_label(label), "can_validate": may_validate and not already,
+            }
     return program
 
 
@@ -1057,17 +1081,52 @@ async def get_bilan_recurrence(bilan_id: str) -> dict:
     return _build_bilan_report(_get_bilan_or_404(bilan_id))
 
 
+def _db_capsules(*, validated_only: bool) -> list:
+    """Capsules des fiches d'ostéopathes en base (copies et créations, hors archivées). Dans les
+    programmes automatiques, seules celles validées par quelqu'un entrent ; pour l'ajout à la main,
+    toutes."""
+    from_db = [
+        exercise for exercise in validation.load_effective_catalog()
+        if exercise["id"] not in _file_ids()
+    ]
+    if validated_only and from_db:
+        labels = validation.labels_for(from_db)
+        from_db = [e for e in from_db if labels[e["id"]]["validated_by"]]
+    return [capsule_from_exercise(exercise) for exercise in from_db]
+
+
+def _file_ids() -> set[str]:
+    return {capsule.id for capsule in CAPSULES}
+
+
 def _program_catalog() -> list[dict]:
     """Exercices que le praticien peut ajouter à la main (hors exercices allongés)."""
     return [
         {"id": c.id, "zone": c.zone, "title": c.title, "position": c.position}
-        for c in CAPSULES if c.position != "lying"
+        for c in [*CAPSULES, *_db_capsules(validated_only=False)] if c.position != "lying"
     ]
+
+
+def _osteo_candidate_filter(osteo_id: str):
+    """Filtre du programme pour l'ostéopathe X : seuls les exercices dont la version courante est
+    validée par X sont proposés. Une zone qui n'en a aucun garde ses exercices « non validé »
+    (signalés, avec un bouton « Valider » pour X) plutôt que de rester sans proposition."""
+    by_id = {exercise["id"]: exercise for exercise in validation.load_effective_catalog()}
+    labels = validation.labels_for(list(by_id.values()), osteo_id)
+
+    def keep(capsules: list) -> list:
+        validated = [
+            capsule for capsule in capsules
+            if labels.get(capsule.id, {}).get("validated_by_selected")
+        ]
+        return validated or capsules
+
+    return keep
 
 
 @app.get("/bilans/{bilan_id}/program")
 async def get_bilan_program(
-    bilan_id: str, size: int | None = Query(None, ge=1, le=MAX_PROGRAM_SIZE)
+    bilan_id: str, request: Request, size: int | None = Query(None, ge=1, le=MAX_PROGRAM_SIZE)
 ) -> dict:
     """Programme d'étirements du bilan. Nombre d'exercices : `?size=`, sinon le réglage enregistré,
     sinon 5. Si le praticien a choisi ses exercices, c'est sa sélection qui est renvoyée."""
@@ -1077,11 +1136,21 @@ async def get_bilan_program(
     report = _build_bilan_report(record)
     position = bilan.preferred_position(record["tasks"])
     selection = settings["exercise_ids"]
+    osteo_id = record.get("osteo_id")
+    candidate_filter = _osteo_candidate_filter(osteo_id) if osteo_id else None
     if selection is None:
-        program = build_bilan_program(report, position, record["tasks"], size)
+        program = build_bilan_program(
+            report, position, record["tasks"], size, candidate_filter=candidate_filter,
+            extra_capsules=_db_capsules(validated_only=True),
+        )
     else:
-        full = build_bilan_program(report, position, record["tasks"], 200)
-        program = select_program(selection, full, record["tasks"])
+        full = build_bilan_program(
+            report, position, record["tasks"], 200,
+            extra_capsules=_db_capsules(validated_only=True),
+        )
+        program = select_program(
+            selection, full, record["tasks"], extra_capsules=_db_capsules(validated_only=False)
+        )
     warnings = list(report["warnings"])
     if any(item["basis"] == "declared" for item in program):
         warnings.append(
@@ -1089,7 +1158,10 @@ async def get_bilan_program(
             "mesurée. Il se précise avec une analyse vidéo du poste."
         )
     return {
-        "program": _annotate_program_videos(program),
+        "program": _annotate_program_videos(
+            program, osteo_id, getattr(request.state, "user", None)
+        ),
+        "osteo_id": osteo_id,
         "size": size,
         "selection": selection,
         "available": _program_catalog(),
@@ -1164,24 +1236,207 @@ _EXERCISE_SUMMARY_KEYS = (
 
 @app.get("/exercises")
 async def list_exercises() -> list[dict]:
+    catalog = validation.load_effective_catalog()
+    labels = validation.labels_for(catalog)
     return [
         {
             **{key: exercise[key] for key in _EXERCISE_SUMMARY_KEYS},
             "position": exercise.get("position", exercises.DEFAULT_POSITION),
             "fiche": exercise.get("fiche"),
+            "validation": _public_label(labels[exercise["id"]]),
         }
-        for exercise in exercises.load_catalog()
+        for exercise in catalog
     ]
+
+
+def _public_label(label: dict) -> dict:
+    """Étiquette sans identifiants de comptes (rien d'interne vers le patient)."""
+    hidden = ("validator_ids", "validated_by_selected", "owner_id")
+    return {key: value for key, value in label.items() if key not in hidden}
 
 
 @app.get("/exercises/{exercise_id}")
 async def get_exercise(exercise_id: str) -> dict:
     # L'id n'est jamais utilisé pour construire un chemin : on le cherche dans le
     # catalogue déjà chargé (pas de traversée de répertoire possible).
-    for exercise in exercises.load_catalog():
-        if exercise["id"] == exercise_id:
-            return exercise
+    exercise = validation.get_exercise(exercise_id)  # une fiche archivée reste lisible
+    if exercise is not None:
+        return {**exercise, "validation": _public_label(validation.label_for(exercise))}
     raise HTTPException(status_code=404, detail="Exercice introuvable.")
+
+
+@app.get("/osteopaths")
+async def list_osteopaths() -> list[dict]:
+    """Comptes actifs avec le rôle ostéopathe, pour le choix sur le bilan."""
+    return [
+        {"id": user["id"], "name": user["name"]}
+        for user in accounts.list_users()
+        if user["active"] and validation.OSTEOPATH_ROLE in user["roles"]
+    ]
+
+
+class BilanOsteo(BaseModel):
+    osteo_id: str | None = None
+
+
+@app.put("/bilans/{bilan_id}/osteo")
+async def put_bilan_osteo(bilan_id: str, body: BilanOsteo) -> dict:
+    """Choisit l'ostéopathe du bilan (None : plus de choix, comportement d'avant)."""
+    _get_bilan_or_404(bilan_id)
+    if body.osteo_id is not None:
+        chosen = accounts.get_user(body.osteo_id)
+        if (
+            chosen is None or not chosen["active"]
+            or validation.OSTEOPATH_ROLE not in chosen["roles"]
+        ):
+            raise HTTPException(status_code=422, detail="Ostéopathe inconnu.")
+    storage.set_bilan_osteo(bilan_id=bilan_id, osteo_id=body.osteo_id)
+    return _get_bilan_or_404(bilan_id)
+
+
+class ValidateBody(BaseModel):
+    fingerprint: str
+    formula: str
+    animation_completed: bool
+    # Vitesse de lecture utilisée pour voir l'animation en entier (1 = temps réel).
+    playback_speed: float = 1.0
+
+
+def _validation_response(exercise_id: str, label: dict | None = None) -> dict:
+    exercise = validation.get_exercise(exercise_id)
+    if exercise is None:
+        raise HTTPException(status_code=404, detail="Exercice introuvable.")
+    return label or validation.label_for(exercise)
+
+
+class SheetBody(BaseModel):
+    """Contenu d'une fiche (voir exercises/README.md) ; champs posés par le serveur exclus."""
+
+    model_config = {"extra": "allow"}
+
+
+def _sheet_error(error: validation.ValidationError) -> HTTPException:
+    return HTTPException(status_code=error.status, detail=str(error))
+
+
+def _sheet_response(exercise: dict) -> dict:
+    return {**exercise, "validation": _public_label(validation.label_for(exercise))}
+
+
+@app.post("/exercises")
+async def create_sheet(body: SheetBody, request: Request) -> dict:
+    """Crée une fiche (ostéopathe). Elle naît sans validation."""
+    try:
+        return _sheet_response(sheets.create(getattr(request.state, "user", None), body.model_dump()))
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+
+
+@app.post("/exercises/{exercise_id}/copy")
+async def copy_sheet(exercise_id: str, request: Request) -> dict:
+    """Copie une fiche : nouvel exercice sans validation, auteur d'origine conservé."""
+    try:
+        return _sheet_response(sheets.copy(getattr(request.state, "user", None), exercise_id))
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+
+
+@app.put("/exercises/{exercise_id}")
+async def update_sheet(exercise_id: str, body: SheetBody, request: Request) -> dict:
+    """Modifie une fiche dont on est propriétaire : nouvelle version, sans validation."""
+    try:
+        return _sheet_response(
+            sheets.update(getattr(request.state, "user", None), exercise_id, body.model_dump())
+        )
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+
+
+@app.post("/exercises/{exercise_id}/archive")
+async def archive_sheet(exercise_id: str, request: Request) -> dict:
+    try:
+        return _sheet_response(
+            sheets.set_archived(getattr(request.state, "user", None), exercise_id, True)
+        )
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+
+
+@app.post("/exercises/{exercise_id}/unarchive")
+async def unarchive_sheet(exercise_id: str, request: Request) -> dict:
+    try:
+        return _sheet_response(
+            sheets.set_archived(getattr(request.state, "user", None), exercise_id, False)
+        )
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+
+
+@app.get("/sheets/mine")
+async def list_my_sheets(request: Request) -> list[dict]:
+    """Fiches créées ou copiées par l'ostéopathe connecté (archivées comprises)."""
+    try:
+        mine = sheets.list_mine(getattr(request.state, "user", None))
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+    return [{**item["exercise"], "validation": _public_label(item["label"])} for item in mine]
+
+
+@app.get("/validation/queue")
+async def get_validation_queue(
+    request: Request, zone: str | None = None, fiches_only: bool = False
+) -> dict:
+    """File de relecture de l'ostéopathe connecté : fiches dont la version courante n'est pas
+    validée par lui. Réservé au rôle ostéopathe."""
+    user = getattr(request.state, "user", None)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Connexion requise.")
+    if not validation.is_osteopath(user):
+        raise HTTPException(status_code=403, detail="Réservé aux comptes ostéopathe.")
+    if zone is not None and zone not in exercises.REGIONS:
+        raise HTTPException(status_code=422, detail="Zone inconnue.")
+    queue = validation.review_queue(user, zone=zone, fiches_only=fiches_only)
+    return {"total": len(queue), "items": queue}
+
+
+@app.get("/exercises/{exercise_id}/validation")
+async def get_exercise_validation(exercise_id: str, request: Request) -> dict:
+    """Étiquette de la version courante, formules acceptées et historique complet (validations et
+    retraits). `can_validate` : le compte connecté est ostéopathe."""
+    label = _validation_response(exercise_id)
+    user = getattr(request.state, "user", None)
+    return {
+        **_public_label(label),
+        "formulas": validation.FORMULAS,
+        "max_playback_speed": validation.MAX_PLAYBACK_SPEED,
+        "can_validate": validation.is_osteopath(user) and user["id"] not in label["validator_ids"],
+        "can_withdraw": validation.is_osteopath(user) and user["id"] in label["validator_ids"],
+        # Modifier / archiver : propriétaire de la fiche seulement ; copier : tout ostéopathe.
+        "can_edit": validation.is_osteopath(user) and label["owner_id"] == user["id"],
+        "can_copy": validation.is_osteopath(user),
+        "history": validation.history(exercise_id),
+    }
+
+
+@app.post("/exercises/{exercise_id}/validate")
+async def validate_exercise(exercise_id: str, body: ValidateBody, request: Request) -> dict:
+    """Valide la version courante au nom du compte connecté : rôle ostéopathe exigé ici, côté API."""
+    try:
+        return validation.validate(
+            getattr(request.state, "user", None), exercise_id, seen_fingerprint=body.fingerprint,
+            formula=body.formula, animation_completed=body.animation_completed,
+            playback_speed=body.playback_speed,
+        )
+    except validation.ValidationError as error:
+        raise HTTPException(status_code=error.status, detail=str(error)) from error
+
+
+@app.post("/exercises/{exercise_id}/withdraw-validation")
+async def withdraw_exercise_validation(exercise_id: str, request: Request) -> dict:
+    try:
+        return validation.withdraw(getattr(request.state, "user", None), exercise_id)
+    except validation.ValidationError as error:
+        raise HTTPException(status_code=error.status, detail=str(error)) from error
 
 
 @app.get("/version")
@@ -1228,9 +1483,42 @@ async def get_update_status() -> dict:
 @app.get("/library")
 async def get_library() -> dict:
     try:
-        return library.load_library()
+        data = library.load_library()
     except ValueError as error:
         raise HTTPException(status_code=500, detail=f"Bibliothèque invalide : {error}") from error
+    return _with_cabinet_sheets(data)
+
+
+# Zone de la carte du corps où ranger une fiche d'ostéopathe selon sa région d'exercice.
+_BODY_MAP_ZONE = {
+    "neck": "neck", "head": "neck", "trunk": "upper_back", "shoulder": "shoulder",
+    "upper_arm": "shoulder", "lower_arm": "elbow", "hand": "wrist_hand", "hip": "hip",
+    "thigh": "thigh", "lower_leg": "lower_leg", "foot": "ankle_foot",
+}
+CABINET_PATHOLOGY_ID = "fiches-cabinet"
+
+
+def _with_cabinet_sheets(data: dict) -> dict:
+    """Ajoute à chaque zone de la carte du corps une entrée « Fiches des ostéopathes » avec les
+    fiches en base (copies, créations) validées par quelqu'un : un praticien ne voit pas les
+    brouillons d'un ostéopathe."""
+    sheets_by_zone: dict[str, list[str]] = {}
+    for capsule in _db_capsules(validated_only=True):
+        zone = _BODY_MAP_ZONE.get(capsule.zone)
+        if zone:
+            sheets_by_zone.setdefault(zone, []).append(capsule.id)
+    if not sheets_by_zone:
+        return data
+    zones = []
+    for zone in data["zones"]:
+        ids = sheets_by_zone.get(zone["id"])
+        if ids:
+            zone = {**zone, "pathologies": [
+                *zone["pathologies"],
+                {"id": f"{CABINET_PATHOLOGY_ID}-{zone['id']}", "label": "Fiches des ostéopathes", "exercises": sorted(ids)},
+            ]}
+        zones.append(zone)
+    return {**data, "zones": zones}
 
 
 _EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -1259,7 +1547,11 @@ async def create_library_share(body: LibraryShareCreate, request: Request) -> di
     if not _EMAIL_PATTERN.match(recipient):
         raise HTTPException(status_code=422, detail="Adresse email invalide.")
 
-    catalog = {exercise["id"]: exercise for exercise in exercises.load_catalog()}
+    catalog = {
+        exercise["id"]: exercise
+        for exercise in validation.load_effective_catalog(include_archived=True)
+    }
+    labels = validation.labels_for(list(catalog.values()))
     unknown = [item.exercise_id for item in body.items if item.exercise_id not in catalog]
     if unknown:
         raise HTTPException(status_code=422, detail=f"Exercice introuvable : {unknown[0]}.")
@@ -1281,6 +1573,9 @@ async def create_library_share(body: LibraryShareCreate, request: Request) -> di
         practitioner_name=practitioner_name,
         message=message,
         exercise_titles=[catalog[item["exercise_id"]]["title"] for item in items],
+        exercise_labels=[
+            validation.describe_label(labels[item["exercise_id"]]) for item in items
+        ],
     )
 
     # Réglages personnels du compte s'il en a, sinon l'adresse du cabinet avec le compte en Reply-To.
@@ -1314,13 +1609,20 @@ async def get_library_share(token: str) -> dict:
     share = storage.get_library_share(token)
     if share is None:
         raise HTTPException(status_code=404, detail="Envoi introuvable.")
-    catalog = {exercise["id"]: exercise for exercise in exercises.load_catalog()}
+    catalog = {
+        exercise["id"]: exercise
+        for exercise in validation.load_effective_catalog(include_archived=True)
+    }
+    labels = validation.labels_for(list(catalog.values()))
     return {
         "created_at": share["created_at"],
         "practitioner_name": share["practitioner_name"],
         "message": share["message"],
         "items": [
-            {"exercise": catalog[item["exercise_id"]], "note": item["note"]}
+            {
+                "exercise": catalog[item["exercise_id"]], "note": item["note"],
+                "validation": _public_label(labels[item["exercise_id"]]),
+            }
             for item in share["items"]
             if item["exercise_id"] in catalog
         ],
@@ -1334,10 +1636,12 @@ class ProgramSettingsBody(BaseModel):
 
 
 @app.put("/bilans/{bilan_id}/program")
-async def put_bilan_program_settings(bilan_id: str, body: ProgramSettingsBody) -> dict:
+async def put_bilan_program_settings(
+    bilan_id: str, body: ProgramSettingsBody, request: Request
+) -> dict:
     """Enregistre le nombre d'exercices et, éventuellement, la sélection du praticien."""
     _get_bilan_or_404(bilan_id)
-    known = {capsule.id for capsule in CAPSULES}
+    known = {capsule.id for capsule in [*CAPSULES, *_db_capsules(validated_only=False)]}
     unknown = [i for i in body.exercise_ids or [] if i not in known]
     if unknown:
         raise HTTPException(status_code=422, detail=f"Exercices inconnus : {', '.join(unknown)}")
@@ -1345,4 +1649,4 @@ async def put_bilan_program_settings(bilan_id: str, body: ProgramSettingsBody) -
         bilan_id=bilan_id, size=body.size,
         exercise_ids=list(dict.fromkeys(body.exercise_ids)) if body.exercise_ids is not None else None,
     )
-    return await get_bilan_program(bilan_id, size=None)
+    return await get_bilan_program(bilan_id, request, size=None)

@@ -10,6 +10,44 @@ une version précise.
 
 ## [Non publié]
 
+## [2.1.0] - 2026-11-22
+
+### Ajouts
+- **Validation des exercices par un ostéopathe (phase 2).** Seul un compte avec le rôle ostéopathe, connecté,
+  peut valider une fiche, au nom de son compte (vérifié côté serveur). L'écran de validation montre l'animation
+  et le texte côte à côte ; la case « j'ai vérifié le texte et l'animation de cette fiche » n'est cochable
+  qu'après avoir joué l'animation en entier (accélération possible, jusqu'à 4x), et la formule est enregistrée. La validation porte sur une version
+  précise (empreinte du contenu complet) : la moindre modification de la fiche l'annule, et elle ne se rejoue
+  pas sur une version modifiée. Un ostéopathe peut retirer sa validation (nouvelle ligne : l'historique reste).
+- **Ostéopathe choisi sur le bilan.** Le programme n'y propose que les exercices validés par cet ostéopathe ;
+  sans exercice validé pour une zone, il propose ceux de la bibliothèque marqués « non validé », avec un bouton
+  « Valider » visible pour l'ostéopathe seulement. Sans ostéopathe choisi, rien ne change.
+- **Étiquette « créé par … / validé par … le … »** (ou « non validé ») sur la page patient, dans le programme
+  et dans l'email d'envoi.
+- **File de relecture** (menu « Relecture des fiches », réservé aux ostéopathes) : enchaîne les fiches dont la
+  version actuelle n'est pas validée par l'ostéopathe connecté, avec « Passer » ; pas de raccourci sur la règle
+  (animation jouée en entier, case cochée, une validation par fiche). L'animation peut être jouée en accéléré
+  (jusqu'à 4x) pour relire beaucoup de fiches ; la vitesse utilisée est enregistrée avec la validation.
+- Les 173 fiches de Théo MARTIN ne sont pas validées d'office : il les valide depuis son compte.
+- **Copier une fiche (phase 3).** Un ostéopathe copie une fiche d'origine, d'un confrère ou la sienne : c'est un
+  nouvel exercice, sans validation, dont l'auteur d'origine est repris à l'identique (copier une copie garde le
+  tout premier auteur). La filiation « copie de … » est affichée. Les fiches d'origine ne se modifient pas.
+- **Modifier une fiche.** Seul l'ostéopathe qui l'a créée ou copiée la modifie ; chaque enregistrement crée une
+  nouvelle version sans validation, à valider de nouveau. L'ancienne version et sa validation restent dans
+  l'historique. Le serveur refuse tout changement d'auteur, de statut ou de validation par ce chemin.
+- **Archiver, pas supprimer.** Une fiche ne se supprime jamais : elle est archivée (les copies, les envois déjà
+  faits et l'historique des validations continuent de s'y référer).
+- **Créer une fiche et éditeur d'animation (phase 4).** Menu « Mes fiches » (ostéopathes) : formulaire, poses
+  réglées par curseurs d'angles sur les 23 os du squelette, poses clés datées, consignes datées, aperçu en direct
+  (animation entière ou pose choisie), contrôles avant enregistrement et limites du squelette signalées (doigts et
+  orteils regroupés, amplitudes extrêmes, aucune limite d'articulation dans le rendu).
+- Les fiches en base validées par un ostéopathe apparaissent dans la bibliothèque (« Fiches des ostéopathes ») et
+  dans les programmes de bilan ; un brouillon ne s'ajoute qu'à la main.
+
+### Pour les installations existantes
+- Mise à jour automatique de la base (nouvelles tables `exercises`, `exercise_versions`,
+  `exercise_validations`, colonnes `osteo_id` des bilans, `owner_id`, `copied_from_title` et `archived_at`) : rien n'est supprimé ni réécrit.
+
 ## [2.0.1] - 2026-11-21
 
 ### Corrections

@@ -97,6 +97,8 @@ export type StoredBilan = {
   archived_at?: string | null;
   // Dossier (par exemple une entreprise) où le bilan est rangé ; null : sans dossier.
   folder_id?: string | null;
+  // Ostéopathe choisi (id de compte) ; null : aucun, tous les exercices du catalogue.
+  osteo_id?: string | null;
   items?: BilanItem[];
   tasks?: BilanTask[];
 };

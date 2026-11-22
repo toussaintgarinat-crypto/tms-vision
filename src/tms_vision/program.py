@@ -119,11 +119,17 @@ def _zone_entries(load_by_zone: dict[str, float], reason_for, basis: str) -> lis
 
 
 def _build_program(
-    entries: list[tuple], position: str | None, size: int, tasks: list[dict] | None = None
+    entries: list[tuple], position: str | None, size: int, tasks: list[dict] | None = None,
+    candidate_filter=None, extra_capsules=None,
 ) -> list[dict]:
     """`entries` : (zone, charge, motif, base) dans l'ordre de priorité. Un exercice par zone,
-    puis un deuxième par zone, etc., jusqu'à `size` exercices."""
-    candidates = {entry[0]: candidate_capsules(entry[0], position) for entry in entries}
+    puis un deuxième par zone, etc., jusqu'à `size` exercices. `candidate_filter(capsules)` :
+    restreint les candidats d'une zone (filtre sur l'ostéopathe du bilan)."""
+    candidates = {
+        entry[0]: candidate_capsules(entry[0], position, extra_capsules) for entry in entries
+    }
+    if candidate_filter is not None:
+        candidates = {zone: candidate_filter(capsules) for zone, capsules in candidates.items()}
     program = []
     depth = 0
     while len(program) < size and any(len(candidates[entry[0]]) > depth for entry in entries):
@@ -185,7 +191,7 @@ def _main_task_name(tasks: list[dict], zone: str) -> str:
 
 def build_bilan_program(
     report: dict, position: str | None = None, tasks: list[dict] | None = None,
-    size: int = DEFAULT_PROGRAM_SIZE,
+    size: int = DEFAULT_PROGRAM_SIZE, candidate_filter=None, extra_capsules=None,
 ) -> list[dict]:
     """Programme d'un bilan de poste, de `size` exercices. Les zones mesurées sur vidéo passent en
     premier : charge = heures projetées en niveau élevé sur la journée. `report` : sortie de
@@ -221,18 +227,19 @@ def build_bilan_program(
             )
 
         entries += _zone_entries(declared, declared_reason, "declared")
-    return _build_program(entries, position, size, tasks)
+    return _build_program(entries, position, size, tasks, candidate_filter, extra_capsules)
 
 
 def select_program(
-    exercise_ids: list[str], full_program: list[dict], tasks: list[dict] | None = None
+    exercise_ids: list[str], full_program: list[dict], tasks: list[dict] | None = None,
+    extra_capsules=None,
 ) -> list[dict]:
     """Programme choisi par le praticien : ses exercices, dans son ordre. `full_program` : le
     programme automatique le plus large (build_bilan_program avec un grand `size`) ; un exercice
     qui n'y figure pas est ajouté à la main (`basis: "manual"`, sans score). Les identifiants
     inconnus sont ignorés."""
     by_id = {item["capsule"]["id"]: item for item in full_program}
-    catalog = {capsule.id: capsule for capsule in CAPSULES}
+    catalog = {capsule.id: capsule for capsule in [*CAPSULES, *(extra_capsules or [])]}
     program = []
     for exercise_id in dict.fromkeys(exercise_ids):
         if exercise_id in by_id:
