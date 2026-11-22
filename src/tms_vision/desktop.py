@@ -291,6 +291,13 @@ def show_window(app: Application) -> None:
     ttk.Label(frame, text=f"TMS Vision {version.get_version()}", font=("TkDefaultFont", 14, "bold")).grid(
         sticky="w"
     )
+    if sys.platform == "darwin":
+        # Un clic sur l'icône du Dock (ou dans Applications) pendant que l'application tourne déjà ne la
+        # relance pas : macOS prévient seulement l'application. On rouvre alors le site.
+        try:
+            root.createcommand("::tk::mac::ReopenApplication", lambda: webbrowser.open(app.url))
+        except tk.TclError:
+            pass
     status = tk.StringVar(value="Démarrage… (quelques secondes)")
     ttk.Label(frame, textvariable=status, wraplength=320).grid(sticky="w", pady=(8, 12))
     buttons = ttk.Frame(frame)
