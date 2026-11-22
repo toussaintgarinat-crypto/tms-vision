@@ -16,8 +16,8 @@ entière (texte + animation 3D) ; les ostéopathes peuvent créer, copier et mod
 | 0. Fondations | Interface en français et anglais, envoi d'emails SMTP | Livrée (2.0.0) |
 | 1. Comptes | Comptes, connexion, rôles, journal, « Mon email », fin du mot de passe commun, application de bureau (compte, mot de passe oublié) | Livrée (2.0.0, correctif 2.0.1) |
 | 2. Validation | Voir ci-dessous | **Construite (non publiée)** : tests au vert, reste à relire, puis publier (VERSION, CHANGELOG) |
-| 3. Appropriation | Copier une fiche, la modifier, revalidation obligatoire, filiation affichée | À faire (dépend de la phase 2) |
-| 4. Création de fiche | Formulaire + éditeur d'animation 3D manuel (curseurs d'angles, poses clés, aperçu) | À faire (dépend de la phase 3) |
+| 3. Appropriation | Copier une fiche, la modifier, revalidation obligatoire, filiation affichée | **Construite (non publiée)** : `src/tms_vision/sheets.py`, `tests/test_sheets.py` |
+| 4. Création de fiche | Formulaire + éditeur d'animation 3D manuel (curseurs d'angles, poses clés, aperçu) | **Construite (non publiée)** : `web/app/fiches/` |
 | 5. Offre payante et assistant IA | Droits par offre, assistant, brouillon d'animation par IA | À définir avec Toussaint avant tout code |
 
 ## Phase 2 : Validation (construite)
