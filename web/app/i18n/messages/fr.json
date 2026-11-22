@@ -889,7 +889,7 @@
   "sheets.exchange.exportAll": "Exporter toutes les fiches du catalogue",
   "sheets.exchange.exportOne": "Exporter cette fiche",
   "sheets.exchange.select": "Sélectionner « {title} »",
-  "sheets.exchange.import": "Importer un fichier de fiches :",
+  "sheets.exchange.import": "Importer un ou plusieurs fichiers de fiches :",
   "sheets.exchange.importHelp": "Les fiches importées sont à vous, sans validation : relisez-les et validez-les vous-même. L'auteur d'origine est celui que déclare le fichier ; il n'est pas vérifié.",
   "sheets.exchange.summary": "{imported} fiche(s) importée(s), {duplicate} déjà présente(s), {invalid} refusée(s).",
   "sheets.exchange.duplicate": "déjà présente, non importée.",

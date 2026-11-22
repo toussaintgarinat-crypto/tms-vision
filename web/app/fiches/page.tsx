@@ -79,31 +79,41 @@ export default function MySheetsPage() {
     }
   }
 
-  // Importe un fichier d'échange : le serveur revérifie chaque fiche et dit ce qu'il en a fait.
-  async function importFile(file: File | undefined) {
-    if (!file) return;
+  // Importe un ou plusieurs fichiers d'échange, l'un après l'autre : le serveur revérifie chaque
+  // fiche et dit ce qu'il en a fait. Un fichier illisible n'empêche pas les suivants.
+  async function importFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
     setError(null);
     setImportReport(null);
-    const read = readBundle(await file.text(), file.size);
-    if (!read.ok) return setError(t(`sheets.exchange.read.${read.reason}`));
     setBusy(true);
-    try {
-      const response = await fetch(`${API_URL}/sheets/import`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(read.bundle),
-      });
-      const body = (await response.json().catch(() => null)) as { report?: ImportItem[]; detail?: string } | null;
-      if (!response.ok || !body?.report) {
-        return setError(typeof body?.detail === "string" ? body.detail : t("sheets.exchange.importFailed"));
+    const total: ImportItem[] = [];
+    const problems: string[] = [];
+    for (const file of Array.from(files)) {
+      const read = readBundle(await file.text(), file.size);
+      if (!read.ok) {
+        problems.push(`${file.name} : ${t(`sheets.exchange.read.${read.reason}`)}`);
+        continue;
       }
-      setImportReport(body.report);
-      await load();
-    } catch {
-      setError(t("sheets.exchange.importFailed"));
-    } finally {
-      setBusy(false);
+      try {
+        const response = await fetch(`${API_URL}/sheets/import`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(read.bundle),
+        });
+        const body = (await response.json().catch(() => null)) as { report?: ImportItem[]; detail?: string } | null;
+        if (!response.ok || !body?.report) {
+          problems.push(`${file.name} : ${typeof body?.detail === "string" ? body.detail : t("sheets.exchange.importFailed")}`);
+        } else {
+          total.push(...body.report);
+        }
+      } catch {
+        problems.push(`${file.name} : ${t("sheets.exchange.importFailed")}`);
+      }
     }
+    if (total.length > 0) setImportReport(total);
+    if (problems.length > 0) setError(problems.join(" — "));
+    setBusy(false);
+    await load();
   }
 
   if (!user) return null;
@@ -154,7 +164,7 @@ export default function MySheetsPage() {
         </div>
         <label className="flex flex-wrap items-center gap-2">
           {t("sheets.exchange.import")}
-          <input type="file" accept="application/json,.json" disabled={busy} onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = ""; }} />
+          <input type="file" multiple accept="application/json,.json" disabled={busy} onChange={(event) => { const files = event.target.files; void importFiles(files).finally(() => { event.target.value = ""; }); }} />
         </label>
         <p className="text-xs text-gray-600">{t("sheets.exchange.importHelp")}</p>
         {importReport && (

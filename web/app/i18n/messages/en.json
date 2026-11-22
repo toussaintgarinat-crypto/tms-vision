@@ -889,7 +889,7 @@
   "sheets.exchange.exportAll": "Export all catalogue sheets",
   "sheets.exchange.exportOne": "Export this sheet",
   "sheets.exchange.select": "Select “{title}”",
-  "sheets.exchange.import": "Import a sheets file:",
+  "sheets.exchange.import": "Import one or more sheets files:",
   "sheets.exchange.importHelp": "Imported sheets are yours, without validation: review and validate them yourself. The original author is the one declared by the file; it is not verified.",
   "sheets.exchange.summary": "{imported} sheet(s) imported, {duplicate} already present, {invalid} refused.",
   "sheets.exchange.duplicate": "already present, not imported.",
