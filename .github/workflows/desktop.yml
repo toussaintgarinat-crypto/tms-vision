@@ -37,6 +37,14 @@ jobs:
           node-version: "20"
       - run: pip install -r requirements.txt -r deploy/desktop/requirements.txt
       - run: python deploy/desktop/build.py
+      - name: Auto-test de l'application construite
+        shell: pwsh
+        env:
+          TMS_SELFTEST_LOG: ${{ github.workspace }}\selftest.log
+        run: |
+          $p = Start-Process -FilePath "dist\TMS Vision\TMS Vision.exe" -ArgumentList "--self-test" -Wait -PassThru
+          if (Test-Path $env:TMS_SELFTEST_LOG) { Get-Content $env:TMS_SELFTEST_LOG }
+          if ($p.ExitCode -ne 0) { throw "L'application construite ne démarre pas (code $($p.ExitCode))." }
       - name: Installateur
         shell: pwsh
         run: |
@@ -68,6 +76,13 @@ jobs:
           node-version: "20"
       - run: pip install -r requirements.txt -r deploy/desktop/requirements.txt
       - run: python deploy/desktop/build.py
+      - name: Auto-test de l'application construite
+        env:
+          TMS_SELFTEST_LOG: ${{ github.workspace }}/selftest.log
+        run: |
+          "dist/TMS Vision.app/Contents/MacOS/TMS Vision" --self-test || code=$?
+          cat "$TMS_SELFTEST_LOG" || true
+          exit ${code:-0}
       - name: Image disque
         run: |
           hdiutil create -volname "TMS Vision" -srcfolder "dist/TMS Vision.app" -ov -format UDZO "dist/TMS-Vision-Mac-${{ matrix.label }}.dmg"

@@ -96,7 +96,10 @@ def _html_body(lines: list[str], share_url: str) -> str:
             continue
         safe = escape(line).replace("\n", "<br>")
         link = escape(share_url)
-        parts.append(f"<p>{safe.replace(link, f'<a href=\"{link}\">{link}</a>')}</p>")
+        # Hors de l'f-string : un antislash dans une expression d'f-string n'existe qu'à partir de
+        # Python 3.12, et l'application de bureau est construite en 3.11.
+        anchor = f'<a href="{link}">{link}</a>'
+        parts.append(f"<p>{safe.replace(link, anchor)}</p>")
     flush()
     return "<div style=\"font-family:sans-serif;max-width:560px\">" + "".join(parts) + "</div>"
 

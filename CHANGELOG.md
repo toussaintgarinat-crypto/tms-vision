@@ -10,6 +10,27 @@ une version précise.
 
 ## [Non publié]
 
+## [2.2.1] - 2026-11-22
+
+### Corrections
+- **L'application de bureau ne démarrait plus (versions 2.0.0 à 2.2.0, Windows et Mac).** Une ligne du module
+  d'envoi d'emails utilisait une syntaxe qui n'existe qu'à partir de Python 3.12, alors que les installateurs
+  sont construits en Python 3.11 : le module était écarté en silence et l'application plantait au lancement
+  (« No module named tms_vision.mailer »). Corrigé. **Si vous avez installé une de ces versions et qu'elle ne
+  s'ouvre pas, installez la 2.2.1 par-dessus : vos données sont conservées.** L'installation serveur (Docker)
+  n'était pas concernée.
+- **Mise à jour de l'application de bureau.** Si l'application plantait pendant une mise à jour, le site restait
+  actif seul et la nouvelle version « ne faisait rien » : elle rouvrait l'ancien site sans démarrer son API. Elle ne
+  le confond plus avec une application en marche et ferme ce qui reste d'une copie précédente (seulement les
+  processus de TMS Vision). Sur Mac, la mise à jour retire elle-même le blocage de téléchargement et écrit son
+  déroulement dans `logs/update.log`. La page de mise à jour se recharge toute seule une fois l'application
+  relancée, et explique quoi faire si l'installation traîne.
+
+### Pour les développeurs
+- La construction contrôle la syntaxe avec Python 3.11 puis lance un auto-test de l'application construite
+  (`--self-test`) sur Windows et Mac : un module manquant fait échouer la publication au lieu d'arriver chez un
+  client. Un test (`tests/test_python_compat.py`) compile aussi tout le paquet en 3.11.
+
 ## [2.2.0] - 2026-11-22
 
 ### Ajouts
