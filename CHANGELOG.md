@@ -10,6 +10,19 @@ une version précise.
 
 ## [Non publié]
 
+## [2.2.3] - 2026-11-23
+
+### Corrections
+- **Application de bureau : le navigateur ne s'ouvrait jamais tout seul au lancement.** Au démarrage, l'application
+  attend que son serveur réponde en interrogeant `/version`. Depuis les comptes (2.0.0), cette adresse exige une
+  connexion et répond « 401 » : l'application le prenait pour « le serveur ne répond pas », ne se déclarait
+  jamais prête au bout de 90 secondes et n'ouvrait rien. Toute réponse du serveur, même une demande de
+  connexion, vaut maintenant « il répond ».
+- **Application de bureau : impossible de la relancer après l'avoir fermée.** Un site (Node.js) resté actif seul
+  n'était pas reconnu comme appartenant à TMS Vision (son nom de processus, `node`, ne le dit pas) : l'application
+  refusait de le fermer et ne redémarrait pas. Il est maintenant reconnu à son dossier, à l'intérieur de
+  l'application, et fermé au lancement (jamais un autre programme).
+
 ## [2.2.2] - 2026-11-22
 
 ### Corrections

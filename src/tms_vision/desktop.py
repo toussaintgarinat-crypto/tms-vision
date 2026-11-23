@@ -20,6 +20,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 import webbrowser
 from pathlib import Path
@@ -92,7 +93,18 @@ def is_our_process(pid: int) -> bool:
     except (OSError, subprocess.SubprocessError):
         return False
     command = result.stdout.lower()
-    return "tms vision" in command or "tms-vision" in command
+    if "tms vision" in command or "tms-vision" in command:
+        return True
+    # Le site (Node.js) se lance par `node server.js` : son nom ne dit rien. Son dossier courant est celui
+    # du site, à l'intérieur de l'application.
+    try:
+        folder = subprocess.run(
+            ["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
+            capture_output=True, text=True, timeout=5, check=False,
+        ).stdout.lower()
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return "tms vision" in folder or "tms-vision" in folder
 
 
 def release_stale_ports() -> bool:
@@ -144,9 +156,15 @@ def self_test() -> int:
 
 
 def is_ready(url: str) -> bool:
+    """Le serveur répond-il ? Toute réponse HTTP sous 500 compte, une demande de connexion (401) ou un
+    refus (403) comprises : depuis les comptes, l'API exige une connexion même pour `/version`, et le
+    prendre pour « ne répond pas » empêchait le démarrage d'être jamais déclaré prêt (navigateur jamais
+    ouvert)."""
     try:
         with urllib.request.urlopen(url, timeout=2) as response:
             return response.status < 500
+    except urllib.error.HTTPError as error:
+        return error.code < 500
     except OSError:
         return False
 

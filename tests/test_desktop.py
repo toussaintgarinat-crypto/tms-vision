@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 from tms_vision import desktop, paths
 
 
@@ -157,3 +159,74 @@ def test_the_mac_update_script_clears_the_quarantine_and_leaves_a_trace():
 
     assert "xattr -dr com.apple.quarantine" in self_update.MAC_SCRIPT
     assert self_update.MAC_SCRIPT.count("echo ") >= 3
+
+
+# --- 401 : « le serveur répond » même sans être connecté -----------------------------------------
+
+
+def _serve(status):
+    import http.server
+    import threading
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            self.send_response(status)
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
+@pytest.mark.parametrize("status, expected", [(200, True), (401, True), (403, True), (404, True), (500, False), (503, False)])
+def test_a_server_that_answers_counts_as_ready_even_when_it_asks_for_a_login(status, expected):
+    from tms_vision import desktop
+
+    server = _serve(status)
+    try:
+        assert desktop.is_ready(f"http://127.0.0.1:{server.server_address[1]}/version") is expected
+    finally:
+        server.shutdown()
+
+
+def test_a_closed_port_is_not_ready():
+    from tms_vision import desktop
+
+    assert desktop.is_ready("http://127.0.0.1:1/version") is False
+
+
+def test_the_real_api_answers_401_on_version_when_accounts_are_required_and_still_counts_as_ready(tmp_path, monkeypatch):
+    """Le cas du Mac : TMS_REQUIRE_AUTH=1 (application de bureau), `/version` répond 401."""
+    from fastapi.testclient import TestClient
+
+    from tms_vision import auth_api, storage
+    from tms_vision.api import app
+
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "t.duckdb")
+    monkeypatch.setenv("TMS_REQUIRE_AUTH", "1")
+    auth_api.reset_cache()
+    try:
+        assert TestClient(app).get("/version").status_code == 401
+    finally:
+        auth_api.reset_cache()
+
+
+def test_a_leftover_node_site_is_recognised_by_its_folder_not_only_by_its_name(monkeypatch):
+    from tms_vision import desktop
+
+    def fake_run(command, **kwargs):
+        text = "node server.js\\n" if command[0] == "ps" else "p42\\nn/Applications/TMS Vision.app/Contents/Frameworks/web\\n"
+        return type("R", (), {"stdout": text})()
+
+    monkeypatch.setattr(desktop.subprocess, "run", fake_run)
+    assert desktop.is_our_process(42) is True
+
+    def other(command, **kwargs):
+        text = "node server.js\\n" if command[0] == "ps" else "p42\\nn/Users/moi/projet\\n"
+        return type("R", (), {"stdout": text})()
+
+    monkeypatch.setattr(desktop.subprocess, "run", other)
+    assert desktop.is_our_process(42) is False
