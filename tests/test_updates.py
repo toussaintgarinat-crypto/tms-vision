@@ -28,7 +28,7 @@ def _release(version="1.2.0"):
     return {"version": version, "url": f"https://github.com/x/y/releases/tag/v{version}"}
 
 
-def test_check_reports_a_newer_release_and_keeps_it_for_six_hours(monkeypatch):
+def test_check_reports_a_newer_release_and_keeps_it_for_an_hour(monkeypatch):
     calls = []
     monkeypatch.setattr(updates, "fetch_latest_release", lambda: calls.append(1) or _release())
 
@@ -38,6 +38,16 @@ def test_check_reports_a_newer_release_and_keeps_it_for_six_hours(monkeypatch):
 
     assert first == {"available": True, **_release()} == second == later
     assert len(calls) == 2
+
+
+def test_check_now_skips_the_cache_and_tells_when_github_is_unreachable(monkeypatch):
+    answers = iter([_release("1.0.0"), _release("1.2.0"), None])
+    monkeypatch.setattr(updates, "fetch_latest_release", lambda: next(answers))
+
+    assert updates.check("1.0.0", now=1.0)["available"] is False  # mis en cache
+    found = updates.check_now("1.0.0")  # ignore le cache
+    assert found["available"] and found["reachable"]
+    assert updates.check_now("1.0.0")["reachable"] is False
 
 
 def test_check_is_quiet_when_up_to_date_or_offline_and_retries_after_a_failure(monkeypatch):

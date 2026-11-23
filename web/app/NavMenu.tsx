@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "./auth/AuthProvider";
 import { LanguageSwitcher } from "./i18n/LanguageSwitcher";
 import { useI18n } from "./i18n/I18nProvider";
@@ -31,35 +31,77 @@ function useAppVersion(): string | null {
 type UpdateInfo = { version: string; url: string; installable: boolean };
 type UpdateStatus = { step: string; message: string; progress: number | null };
 
+type CheckResult = "upToDate" | "unreachable";
+
+const AUTO_CHECK_MS = 60 * 60 * 1000; // revérification automatique toutes les heures
+const FOCUS_CHECK_MS = 10 * 60 * 1000; // et au retour sur la fenêtre, au plus toutes les 10 minutes
+
 // Une version plus récente est publiée (application de bureau seulement : l'API répond
-// « available: false » ailleurs). Si elle peut s'installer seule (`installable`), un clic sauvegarde
-// les données, télécharge, installe et relance l'application ; sinon le lien ouvre la page de téléchargement.
-function useUpdate(): UpdateInfo | null {
+// « available: false, supported: false » ailleurs). Si elle peut s'installer seule (`installable`), un clic
+// sauvegarde les données, télécharge, installe et relance l'application ; sinon le lien ouvre la page de
+// téléchargement. La recherche se refait seule (toutes les heures, au retour sur la fenêtre) ; `checkNow`
+// (bouton des administrateurs) ignore le cache du serveur et dit si GitHub a répondu.
+function useUpdate() {
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_URL}/update`)
-      .then((response) =>
-        response.ok
-          ? (response.json() as Promise<{
-              available: boolean;
-              version: string | null;
-              url: string | null;
-              installable?: boolean;
-            }>)
-          : null,
-      )
-      .then((data) => {
-        if (!cancelled && data?.available && data.version && data.url) {
-          setUpdate({ version: data.version, url: data.url, installable: data.installable === true });
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+  const [supported, setSupported] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<CheckResult | null>(null);
+  const lastCheck = useRef(0);
+
+  const run = useCallback(async (force: boolean): Promise<CheckResult | null> => {
+    lastCheck.current = Date.now();
+    try {
+      const response = await fetch(`${API_URL}/update${force ? "?force=true" : ""}`);
+      if (!response.ok) return force ? "unreachable" : null;
+      const data = (await response.json()) as {
+        available: boolean;
+        version: string | null;
+        url: string | null;
+        installable?: boolean;
+        reachable?: boolean;
+        supported?: boolean;
+      };
+      setSupported(data.supported === true);
+      if (data.available && data.version && data.url) {
+        setUpdate({ version: data.version, url: data.url, installable: data.installable === true });
+        return null;
+      }
+      return data.reachable === false ? "unreachable" : "upToDate";
+    } catch {
+      return force ? "unreachable" : null;
+    }
   }, []);
-  return update;
+
+  useEffect(() => {
+    void run(false);
+    const timer = setInterval(() => void run(false), AUTO_CHECK_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastCheck.current > FOCUS_CHECK_MS) {
+        void run(false);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [run]);
+
+  useEffect(() => {
+    if (!result) return;
+    const timer = setTimeout(() => setResult(null), 6000);
+    return () => clearTimeout(timer);
+  }, [result]);
+
+  const checkNow = useCallback(async () => {
+    setChecking(true);
+    setResult(null);
+    const outcome = await run(true);
+    setChecking(false);
+    setResult(outcome);
+  }, [run]);
+
+  return { update, supported, checking, result, checkNow };
 }
 
 function UpdateBanner({ update }: { update: UpdateInfo }) {
@@ -145,12 +187,15 @@ function UpdateBanner({ update }: { update: UpdateInfo }) {
 // Barre du haut avec un menu rétractable : accès à toutes les pages sans taper l'adresse.
 export function NavMenu() {
   const { t } = useI18n();
-  const { user, logout } = useAuth();
+  const { user, status, logout } = useAuth();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const appVersion = useAppVersion();
-  const update = useUpdate();
+  const { update, supported, checking, result, checkNow } = useUpdate();
+  // Le bouton est réservé aux administrateurs (ou ouvert à tous si l'application n'a pas de comptes).
+  const canCheck =
+    supported && status !== null && (!status.auth_required || (user?.roles.includes("administrateur") ?? false));
 
   useEffect(() => {
     if (!open) return;
@@ -181,6 +226,24 @@ export function NavMenu() {
         </button>
         <span className="text-sm font-semibold">TMS Vision</span>
         {appVersion && <span className="text-xs text-zinc-500" title={t("nav.versionTitle")}>v{appVersion}</span>}
+        {canCheck && (
+          <button
+            type="button"
+            onClick={() => void checkNow()}
+            disabled={checking}
+            className="text-xs text-zinc-500 underline hover:text-zinc-800 disabled:no-underline dark:hover:text-zinc-200"
+          >
+            {t(checking ? "update.checking" : "update.check")}
+          </button>
+        )}
+        {result && (
+          <span
+            role="status"
+            className={`text-xs ${result === "unreachable" ? "text-red-700" : "text-green-700"}`}
+          >
+            {t(result === "upToDate" ? "update.upToDate" : "update.unreachable")}
+          </span>
+        )}
         {update && <UpdateBanner update={update} />}
         <LanguageSwitcher className="ml-auto" />
         {user && (

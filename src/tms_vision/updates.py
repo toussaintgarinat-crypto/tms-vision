@@ -7,7 +7,7 @@ import time
 import urllib.request
 
 RELEASES_URL = "https://api.github.com/repos/toussaintgarinat-crypto/tms-vision/releases/latest"
-CACHE_SECONDS = 6 * 3600
+CACHE_SECONDS = 3600
 TIMEOUT_SECONDS = 5
 
 _cache: dict = {"at": None, "result": None}
@@ -49,7 +49,7 @@ def fetch_latest_release(url: str = RELEASES_URL) -> dict | None:
 
 def check(current: str, *, now: float | None = None) -> dict:
     """{"available": bool, "version": str | None, "url": str | None} (+ "assets", les fichiers de la
-    version, quand elle est disponible : voir self_update.py). Le résultat est gardé 6 h
+    version, quand elle est disponible : voir self_update.py). Le résultat est gardé 1 h
     pour ne pas interroger GitHub à chaque page ; un échec n'est pas gardé (nouvel essai au
     prochain appel)."""
     moment = time.monotonic() if now is None else now
@@ -62,3 +62,12 @@ def check(current: str, *, now: float | None = None) -> dict:
     if latest is not None and is_newer(latest["version"], current):
         return {"available": True, **latest}
     return {"available": False, "version": None, "url": None}
+
+
+def check_now(current: str) -> dict:
+    """Recherche demandée par un administrateur : on ignore le cache et on interroge GitHub tout
+    de suite. Même réponse que `check`, plus `reachable` (False si GitHub n'a pas répondu, pour ne pas
+    confondre « à jour » et « impossible de vérifier »)."""
+    _cache["at"] = None
+    result = check(current)
+    return {**result, "reachable": _cache["at"] is not None}
