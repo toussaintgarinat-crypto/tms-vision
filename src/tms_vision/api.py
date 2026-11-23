@@ -37,7 +37,7 @@ from tms_vision.capsules import (
     CAPSULES, DEFAULT_PROGRAM_SIZE, MAX_PROGRAM_SIZE, capsule_from_exercise,
 )
 from tms_vision.program import (
-    build_analysis_program, build_bilan_program, select_program,
+    ZONE_LABELS, build_analysis_program, build_bilan_program, select_program,
 )
 from tms_vision.rescore import rescore_frames, summarize_for_load
 from tms_vision.pipeline import analyze_video, generate_run_id
@@ -678,6 +678,59 @@ class MetierModelCreate(BaseModel):
     description: str | None = Field(default=None, max_length=500)
 
 
+class MetierModelBody(BaseModel):
+    """Modèle de métier saisi au formulaire : les fiches types sont revalidées par le serveur."""
+
+    title: str = Field(min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=500)
+    workday_hours: float = Field(gt=0, le=metiers.MAX_WORKDAY_HOURS)
+    tasks: list[dict] = Field(min_length=1, max_length=50)
+
+
+def _clean_metier_body(body: MetierModelBody) -> tuple[str, str | None, float, list[dict]]:
+    title = body.title.strip()
+    if not title:
+        raise HTTPException(status_code=422, detail="Le titre est obligatoire.")
+    try:
+        tasks = [metiers.validate_task(task, f"fiche {i + 1}") for i, task in enumerate(body.tasks)]
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    total = sum(task["activity_hours"] for task in tasks)
+    if total > body.workday_hours + 1e-9:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{total} h de tâches dépassent la journée de {body.workday_hours} h.",
+        )
+    return title, _clean_text(body.description), body.workday_hours, tasks
+
+
+@app.post("/metiers")
+async def create_metier(body: MetierModelBody) -> dict:
+    """Crée un modèle de métier directement, sans passer par un bilan."""
+    title, description, workday_hours, tasks = _clean_metier_body(body)
+    model_id = f"perso-{generate_run_id()}"
+    storage.create_metier_model(
+        model_id=model_id, created_at=datetime.now(timezone.utc), title=title,
+        description=description, workday_hours=workday_hours, tasks=tasks,
+    )
+    return _get_metier_or_404(model_id)
+
+
+@app.put("/metiers/{metier_id}")
+async def update_metier(metier_id: str, body: MetierModelBody) -> dict:
+    """Modifie un modèle du praticien. Ceux de la bibliothèque ne se modifient pas."""
+    if any(model["id"] == metier_id for model in _library_entries()):
+        raise HTTPException(
+            status_code=403, detail="Les métiers de la bibliothèque ne se modifient pas."
+        )
+    title, description, workday_hours, tasks = _clean_metier_body(body)
+    if not storage.update_metier_model(
+        metier_id, title=title, description=description, workday_hours=workday_hours, tasks=tasks,
+    ):
+        raise HTTPException(status_code=404, detail="Métier introuvable.")
+    return _get_metier_or_404(metier_id)
+
+
 def _library_entries() -> list[dict]:
     return [{**model, "origin": "library"} for model in metiers.load_library()]
 
@@ -1108,10 +1161,11 @@ def _program_catalog() -> list[dict]:
     ]
 
 
-def _osteo_candidate_filter(osteo_id: str):
+def _osteo_candidate_filter(osteo_id: str, uncovered_zones: set[str]):
     """Filtre du programme pour l'ostéopathe X : seuls les exercices dont la version courante est
-    validée par X sont proposés. Une zone qui n'en a aucun garde ses exercices « non validé »
-    (signalés, avec un bouton « Valider » pour X) plutôt que de rester sans proposition."""
+    validée par X sont proposés. Un exercice validé par un confrère ne passe pas sous le nom de X :
+    X doit le revalider (page Relecture) pour engager sa responsabilité. Les zones qui n'ont aucun
+    exercice validé par X sont ajoutées à `uncovered_zones`, pour être signalées au praticien."""
     by_id = {exercise["id"]: exercise for exercise in validation.load_effective_catalog()}
     labels = validation.labels_for(list(by_id.values()), osteo_id)
 
@@ -1120,7 +1174,9 @@ def _osteo_candidate_filter(osteo_id: str):
             capsule for capsule in capsules
             if labels.get(capsule.id, {}).get("validated_by_selected")
         ]
-        return validated or capsules
+        if capsules and not validated:
+            uncovered_zones.add(capsules[0].zone)
+        return validated
 
     return keep
 
@@ -1138,7 +1194,8 @@ async def get_bilan_program(
     position = bilan.preferred_position(record["tasks"])
     selection = settings["exercise_ids"]
     osteo_id = record.get("osteo_id")
-    candidate_filter = _osteo_candidate_filter(osteo_id) if osteo_id else None
+    uncovered_zones: set[str] = set()
+    candidate_filter = _osteo_candidate_filter(osteo_id, uncovered_zones) if osteo_id else None
     if selection is None:
         program = build_bilan_program(
             report, position, record["tasks"], size, candidate_filter=candidate_filter,
@@ -1153,6 +1210,15 @@ async def get_bilan_program(
             selection, full, record["tasks"], extra_capsules=_db_capsules(validated_only=False)
         )
     warnings = list(report["warnings"])
+    if uncovered_zones:
+        osteo = accounts.get_user(osteo_id)
+        osteo_name = osteo["name"] if osteo else "l'ostéopathe choisi"
+        zones = ", ".join(ZONE_LABELS.get(zone, zone) for zone in sorted(uncovered_zones))
+        warnings.append(
+            f"Aucun exercice validé par {osteo_name} pour : "
+            f"{zones}. Il doit valider (ou revalider) des fiches dans « Relecture des fiches » "
+            "avant qu'elles soient proposées dans ce programme."
+        )
     if any(item["basis"] == "declared" for item in program):
         warnings.append(
             "Une partie du programme vient des tâches saisies : sans vidéo, aucune posture n'est "
@@ -1420,6 +1486,19 @@ async def list_my_sheets(request: Request) -> list[dict]:
     return [{**item["exercise"], "validation": _public_label(item["label"])} for item in mine]
 
 
+@app.get("/sheets/all")
+async def list_all_sheets(request: Request) -> list[dict]:
+    """Toutes les fiches, de tous les auteurs, en lecture seule (administrateur)."""
+    try:
+        every = sheets.list_all(getattr(request.state, "user", None))
+    except validation.ValidationError as error:
+        raise _sheet_error(error) from error
+    return [
+        {**item["exercise"], "validation": _public_label(item["label"]), "owner_id": item["label"]["owner_id"]}
+        for item in every
+    ]
+
+
 @app.get("/validation/queue")
 async def get_validation_queue(
     request: Request, zone: str | None = None, fiches_only: bool = False
@@ -1450,8 +1529,8 @@ async def get_exercise_validation(exercise_id: str, request: Request) -> dict:
         "can_validate": validation.is_osteopath(user) and user["id"] not in label["validator_ids"],
         "can_withdraw": validation.is_osteopath(user) and user["id"] in label["validator_ids"],
         # Modifier / archiver : propriétaire de la fiche seulement ; copier : tout ostéopathe.
-        "can_edit": validation.is_osteopath(user) and label["owner_id"] == user["id"],
-        "can_copy": validation.is_osteopath(user),
+        "can_edit": validation.can_author(user) and label["owner_id"] == user["id"],
+        "can_copy": validation.can_author(user),
         "history": validation.history(exercise_id),
     }
 

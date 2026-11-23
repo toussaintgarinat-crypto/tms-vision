@@ -37,7 +37,7 @@ export default function SheetEditorPage() {
   const router = useRouter();
   const { t } = useI18n();
   const { user } = useAuth();
-  const isOsteopath = user?.roles.includes("osteopathe") ?? false;
+  const isOsteopath = user?.roles.some((role) => ["osteopathe", "praticien", "administrateur"].includes(role)) ?? false; // peut créer des fiches (valider reste ostéopathe)
 
   const [sheet, setSheet] = useState<Sheet | null>(creating ? emptySheet() : null);
   const [loaded, setLoaded] = useState<Loaded | null>(null);

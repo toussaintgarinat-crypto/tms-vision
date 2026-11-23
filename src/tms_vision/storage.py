@@ -800,6 +800,26 @@ def create_metier_model(
         conn.close()
 
 
+def update_metier_model(
+    model_id: str, *, title: str, description: str | None, workday_hours: float, tasks: list[dict],
+) -> bool:
+    """Remplace le contenu d'un modèle du praticien ; False s'il n'existe pas."""
+    conn = _connect()
+    try:
+        existed = conn.execute(
+            "SELECT 1 FROM metier_models WHERE id = ?", [model_id]
+        ).fetchone() is not None
+        if existed:
+            conn.execute(
+                "UPDATE metier_models SET title = ?, description = ?, workday_hours = ?, "
+                "tasks_json = ? WHERE id = ?",
+                [title, description, workday_hours, json.dumps(tasks), model_id],
+            )
+    finally:
+        conn.close()
+    return existed
+
+
 def list_metier_models() -> list[dict]:
     conn = _connect()
     try:

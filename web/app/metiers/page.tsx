@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -153,6 +154,11 @@ export default function MetiersPage() {
           >
             {busyId === model.id ? t("metiers.creating") : t("metiers.create")}
           </button>
+          {model.origin === "custom" && (
+            <Link href={`/metiers/${encodeURIComponent(model.id)}/modifier`} className="rounded border px-3 py-2 text-sm">
+              {t("metiers.edit")}
+            </Link>
+          )}
           {model.origin === "custom" &&
             (confirmDeleteId === model.id ? (
               <span className="flex items-center gap-2 text-sm">
@@ -190,6 +196,9 @@ export default function MetiersPage() {
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           {t("metiers.intro")}
         </p>
+        <Link href="/metiers/nouveau" className="mt-2 self-start rounded border border-black px-3 py-2 text-sm">
+          {t("metiers.new")}
+        </Link>
       </div>
 
       {loadError && (

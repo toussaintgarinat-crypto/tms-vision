@@ -40,8 +40,8 @@ def _new_id(title: str, taken: set[str]) -> str:
             return candidate
 
 
-def _require_osteopath(user: dict | None) -> dict:
-    return validation._require_osteopath(user)
+def _require_author(user: dict | None) -> dict:
+    return validation._require_author(user)
 
 
 def _clean(content: dict, exercise_id: str) -> dict:
@@ -82,7 +82,7 @@ def _insert_version(conn, data: dict, user: dict, number: int) -> str:
 
 def create(user: dict | None, content: dict) -> dict:
     """Crée une fiche : l'ostéopathe en est l'auteur d'origine et le propriétaire."""
-    user = _require_osteopath(user)
+    user = _require_author(user)
     title = content.get("title")
     taken = {e["id"] for e in validation.load_effective_catalog(include_archived=True)}
     data = _clean(content, _new_id(title if isinstance(title, str) else "", taken))
@@ -103,7 +103,7 @@ def create(user: dict | None, content: dict) -> dict:
 def copy(user: dict | None, source_id: str) -> dict:
     """Copie la fiche `source_id` (de fichier, d'un confrère ou la sienne) : nouvel exercice sans
     validation. L'auteur d'origine est celui de l'original, repris tel quel."""
-    user = _require_osteopath(user)
+    user = _require_author(user)
     source = validation.get_exercise(source_id)
     if source is None:
         raise ValidationError(404, "Exercice introuvable.")
@@ -147,7 +147,7 @@ def _owned_row(conn, user: dict, exercise_id: str):
 def update(user: dict | None, exercise_id: str, changes: dict) -> dict:
     """Modifie une fiche dont `user` est propriétaire. Une modification crée une nouvelle version,
     donc sans validation ; rien ne change si le contenu est identique."""
-    user = _require_osteopath(user)
+    user = _require_author(user)
     if validation.get_exercise(exercise_id) is None:
         raise ValidationError(404, "Exercice introuvable.")
     conn = validation._connect()
@@ -173,7 +173,7 @@ def update(user: dict | None, exercise_id: str, changes: dict) -> dict:
 def set_archived(user: dict | None, exercise_id: str, archived: bool) -> dict:
     """Archive (ou désarchive) une fiche dont `user` est propriétaire. Pas de suppression : les
     copies, les envois et les validations s'y réfèrent."""
-    user = _require_osteopath(user)
+    user = _require_author(user)
     if validation.get_exercise(exercise_id) is None:
         raise ValidationError(404, "Exercice introuvable.")
     conn = validation._connect()
@@ -191,7 +191,7 @@ def set_archived(user: dict | None, exercise_id: str, archived: bool) -> dict:
 
 def list_mine(user: dict | None) -> list[dict]:
     """Fiches dont `user` est propriétaire (archivées comprises), avec leur étiquette."""
-    user = _require_osteopath(user)
+    user = _require_author(user)
     conn = validation._connect()
     try:
         ids = [
@@ -205,6 +205,18 @@ def list_mine(user: dict | None) -> list[dict]:
     sheets = [by_id[i] for i in ids if i in by_id]
     labels = validation.labels_for(sheets, user["id"])
     return [{"exercise": sheet, "label": labels[sheet["id"]]} for sheet in sheets]
+
+
+def list_all(user: dict | None) -> list[dict]:
+    """Toutes les fiches de la base (archivées comprises) avec propriétaire et étiquette : lecture
+    seule, réservée à l'administrateur."""
+    if user is None:
+        raise ValidationError(401, "Connexion requise.")
+    if not validation.is_admin(user):
+        raise ValidationError(403, "Réservé aux comptes administrateur.")
+    catalog = validation.load_effective_catalog(include_archived=True)
+    labels = validation.labels_for(catalog, user["id"])
+    return [{"exercise": sheet, "label": labels[sheet["id"]]} for sheet in catalog]
 
 
 # --- Échange entre installations : export et import d'un fichier de fiches -------------------------
@@ -223,7 +235,7 @@ def _content_print(exercise: dict) -> str:
 def export_sheets(user: dict | None, exercise_ids: list[str]) -> dict:
     """Fichier d'échange des fiches demandées. Contient le contenu éditable, l'auteur d'origine
     (affiché, non vérifiable) et rien de lié à un compte : ni validation, ni identifiant de compte."""
-    _require_osteopath(user)
+    _require_author(user)
     if not exercise_ids or len(exercise_ids) > MAX_EXCHANGE_SHEETS:
         raise ValidationError(422, f"Choisissez entre 1 et {MAX_EXCHANGE_SHEETS} fiches.")
     found = []
@@ -250,7 +262,7 @@ def export_sheets(user: dict | None, exercise_ids: list[str]) -> dict:
 def scope_ids(user: dict | None, scope: str) -> list[str]:
     """Identifiants à exporter pour « toutes mes fiches » (`mine`, archivées exclues) ou « toutes les
     fiches du catalogue » (`all`, fiches d'origine comprises, archivées exclues)."""
-    user = _require_osteopath(user)
+    user = _require_author(user)
     if scope == "mine":
         return [
             item["exercise"]["id"] for item in list_mine(user)
@@ -274,7 +286,7 @@ def import_sheets(user: dict | None, bundle: dict) -> list[dict]:
     l'importateur, sans validation, avec l'auteur d'origine déclaré par le fichier. Le contenu est
     revérifié comme à un enregistrement dans l'éditeur ; une fiche invalide ou déjà présente est
     ignorée sans empêcher les autres. Retourne un compte rendu par fiche."""
-    user = _require_osteopath(user)
+    user = _require_author(user)
     if not isinstance(bundle, dict) or bundle.get("format") != EXCHANGE_FORMAT:
         raise ValidationError(422, "Ce fichier n'est pas un fichier de fiches TMS Vision.")
     if bundle.get("version") != EXCHANGE_VERSION:

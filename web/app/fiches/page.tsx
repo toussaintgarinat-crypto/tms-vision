@@ -18,6 +18,7 @@ type MySheet = {
   validation: ValidationLabel & { archived: boolean; imported?: boolean; copied_from: { id: string; title: string } | null };
 };
 type CatalogEntry = { id: string; title: string; zone: string };
+type AdminSheet = MySheet & { owner_id: string | null };
 
 // « Mes fiches » : les fiches créées ou copiées par l'ostéopathe connecté, la copie d'une fiche
 // existante (de fichier ou d'un confrère) et la création d'une nouvelle fiche.
@@ -33,7 +34,9 @@ export default function MySheetsPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [importReport, setImportReport] = useState<ImportItem[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const isOsteopath = user?.roles.includes("osteopathe") ?? false;
+  const [everySheet, setEverySheet] = useState<AdminSheet[] | null>(null);
+  const isAdmin = user?.roles.includes("administrateur") ?? false;
+  const isOsteopath = user?.roles.some((role) => ["osteopathe", "praticien", "administrateur"].includes(role)) ?? false; // peut créer des fiches (valider reste ostéopathe)
 
   const load = useCallback(async () => {
     try {
@@ -45,6 +48,15 @@ export default function MySheetsPage() {
       setError(t("sheets.loadFailed"));
     }
   }, [t]);
+
+  // Administrateur : toutes les fiches de tous les auteurs, en lecture seule.
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetch(`${API_URL}/sheets/all`)
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("load"))))
+      .then((data: AdminSheet[]) => setEverySheet(data))
+      .catch(() => setError(t("sheets.loadFailed")));
+  }, [isAdmin, t]);
 
   useEffect(() => {
     if (!isOsteopath) return;
@@ -224,6 +236,28 @@ export default function MySheetsPage() {
           </li>
         ))}
       </ul>
+      {isAdmin && (
+        <section className="flex flex-col gap-2 rounded border p-3 text-sm" aria-label={t("sheets.all.title")}>
+          <h2 className="font-semibold">{t("sheets.all.title")}</h2>
+          <p className="text-xs text-gray-600">{t("sheets.all.help")}</p>
+          {everySheet !== null && everySheet.length === 0 && <p className="text-gray-600">{t("sheets.none")}</p>}
+          <ul className="flex flex-col gap-1">
+            {(everySheet ?? []).map((sheet) => (
+              <li key={sheet.id} className="flex flex-wrap items-center justify-between gap-2 border-t pt-1">
+                <Link href={`/fiches/${encodeURIComponent(sheet.id)}`} className="text-blue-800 underline">
+                  {sheet.title}
+                </Link>
+                <span className="text-xs text-gray-600">
+                  {sheet.validation.created_by ? t("sheets.all.by", { name: sheet.validation.created_by }) : t("sheets.all.fromFile")}
+                </span>
+                <span className="text-xs">
+                  <ValidationBadge label={sheet.validation} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

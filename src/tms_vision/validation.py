@@ -25,6 +25,7 @@ import duckdb
 from tms_vision import exercises, storage
 
 OSTEOPATH_ROLE = "osteopathe"
+AUTHOR_ROLES = ("praticien", "osteopathe", "administrateur")
 FORMULAS = {
     "fr": "J'ai vérifié le texte et l'animation de cette fiche.",
     "en": "I have checked the text and the animation of this sheet.",
@@ -119,6 +120,16 @@ def original_author(exercise: dict) -> str:
 
 def is_osteopath(user: dict | None) -> bool:
     return bool(user) and OSTEOPATH_ROLE in user.get("roles", [])
+
+
+def can_author(user: dict | None) -> bool:
+    """Créer, copier, modifier ses fiches : tout compte de praticien, d'ostéopathe ou d'administrateur.
+    Valider reste réservé à l'ostéopathe (`is_osteopath`) : lui seul engage sa responsabilité."""
+    return bool(user) and any(role in user.get("roles", []) for role in AUTHOR_ROLES)
+
+
+def is_admin(user: dict | None) -> bool:
+    return bool(user) and "administrateur" in user.get("roles", [])
 
 
 # --- Catalogue : fichiers puis base (la base l'emporte) -------------------------------------------
@@ -315,6 +326,14 @@ def _require_osteopath(user: dict | None) -> dict:
         raise ValidationError(401, "Connexion requise.")
     if not is_osteopath(user):
         raise ValidationError(403, "Seul un compte ostéopathe peut valider une fiche.")
+    return user
+
+
+def _require_author(user: dict | None) -> dict:
+    if user is None:
+        raise ValidationError(401, "Connexion requise.")
+    if not can_author(user):
+        raise ValidationError(403, "Compte sans droit de créer des fiches.")
     return user
 
 
