@@ -117,7 +117,8 @@ app.add_middleware(
     # lister ici -- ça vaut pour les routes GET /analyses/... (vidéo/CSV/
     # pose3D) comme ça valait pour l'ancienne route GET /outputs/{filename}.
     # DELETE : suppression d'une fiche d'activité et d'un modèle de métier depuis le site.
-    allow_methods=["POST", "PUT", "DELETE"],
+    # PATCH : modification d'un compte (rôles, activation) depuis la page Administration.
+    allow_methods=["POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["*"],
 )
 

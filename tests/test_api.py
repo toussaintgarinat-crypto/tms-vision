@@ -1641,6 +1641,20 @@ def test_cors_preflight_allows_delete_from_the_web_origin(tmp_path, monkeypatch)
     assert "DELETE" in response.headers["access-control-allow-methods"]
 
 
+def test_cors_preflight_allows_patch_from_the_web_origin(tmp_path, monkeypatch):
+    # Page Administration : PATCH /admin/users/{id} (rôles) était bloqué par le navigateur.
+    _patch_db(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    response = client.options(
+        "/admin/users/x",
+        headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "PATCH"},
+    )
+
+    assert response.status_code == 200
+    assert "PATCH" in response.headers["access-control-allow-methods"]
+
+
 def test_bilan_program_without_video_is_proposed_from_the_tasks(tmp_path, monkeypatch):
     _patch_db(tmp_path, monkeypatch)
     client = TestClient(app)
