@@ -10,6 +10,22 @@ une version précise.
 
 ## [Non publié]
 
+## [2.3.0] - 2026-11-23
+
+### Nouveautés
+- **Fiches d'exercice : les praticiens et les administrateurs peuvent en créer.** Ils créent, copient, modifient et
+  importent leurs fiches comme un ostéopathe. Leurs fiches restent « non validées » tant qu'un ostéopathe ne les a
+  pas relues : valider reste réservé à l'ostéopathe, qui engage sa responsabilité.
+- **Administrateur : « Toutes les fiches ».** La page « Mes fiches » liste en plus, en lecture seule, les fiches de
+  tous les auteurs avec leur état de validation. « Mes fiches » est visible pour tous les rôles.
+- **Formulaire de création et de modification d'un métier.** Bouton « Nouveau métier » dans la bibliothèque de
+  métiers et « Modifier ce modèle » sur les modèles personnels : nom, journée de travail et fiches d'activité.
+
+### Modifié
+- **Programme d'un bilan : seules les fiches validées par l'ostéopathe choisi sont proposées.** La validation d'un
+  confrère ne vaut plus pour lui : il doit la refaire (page « Relecture des fiches ») pour y mettre son nom. Une
+  zone sans fiche validée par lui reste vide et un avertissement l'indique. Sans ostéopathe choisi, rien ne change.
+
 ## [2.2.3] - 2026-11-23
 
 ### Corrections

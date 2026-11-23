@@ -109,9 +109,12 @@ def test_copying_does_not_carry_the_validation_over(client):
 
 
 @pytest.mark.parametrize("email", ["prat@x.fr", "admin@x.fr"])
-def test_only_osteopaths_can_copy(client, email):
+def test_practitioners_and_admins_can_copy_but_not_validate(client, email):
     _login(client, email)
-    assert client.post(f"/exercises/{_plain()['id']}/copy", headers=ORIGIN).status_code == 403
+    response = client.post(f"/exercises/{_plain()['id']}/copy", headers=ORIGIN)
+    assert response.status_code == 200
+    assert response.json()["validation"]["validated_by"] is None
+    assert _validate(client, response.json()["id"]).status_code == 403
 
 
 def test_anonymous_cannot_copy_and_unknown_source_is_404(client):
@@ -196,9 +199,16 @@ def test_an_osteopath_creates_a_sheet_and_is_its_author(client):
 
 
 @pytest.mark.parametrize("email", ["prat@x.fr", "admin@x.fr"])
-def test_only_osteopaths_can_create(client, email):
+def test_practitioners_create_sheets_that_wait_for_an_osteopath(client, email):
     _login(client, email)
-    assert client.post("/exercises", json=_new_content(), headers=ORIGIN).status_code == 403
+    created = client.post("/exercises", json=_new_content(), headers=ORIGIN)
+    assert created.status_code == 200
+    sheet = created.json()
+    assert sheet["validation"]["validated_by"] is None
+    assert _validate(client, sheet["id"]).status_code == 403
+    _login(client, "lea@x.fr")
+    assert sheet["id"] in [i["id"] for i in client.get("/validation/queue").json()["items"]]
+    assert _validate(client, sheet["id"]).status_code == 200
 
 
 def test_a_creation_cannot_claim_validation_or_an_id(client):
@@ -253,7 +263,18 @@ def test_my_sheets_lists_only_mine(client):
     _login(client, "lea@x.fr")
     assert [s["id"] for s in client.get("/sheets/mine").json()] == [mine["id"]]
     _login(client, "prat@x.fr")
-    assert client.get("/sheets/mine").status_code == 403
+    assert client.get("/sheets/mine").json() == []
+    client.cookies.clear()
+    assert client.get("/sheets/mine").status_code == 401
+
+
+def test_only_admins_see_every_sheet(client):
+    _login(client, "lea@x.fr")
+    mine = _copy(client, _plain()["id"])
+    _login(client, "prat@x.fr")
+    assert client.get("/sheets/all").status_code == 403
+    _login(client, "admin@x.fr")
+    assert mine["id"] in [s["id"] for s in client.get("/sheets/all").json()]
 
 
 def test_the_validation_state_tells_who_can_edit(client):
@@ -266,7 +287,8 @@ def test_the_validation_state_tells_who_can_edit(client):
     assert state["can_edit"] is False and state["can_copy"] is True
     assert "owner_id" not in state
     _login(client, "prat@x.fr")
-    assert client.get(f"/exercises/{sheet['id']}/validation").json()["can_copy"] is False
+    state = client.get(f"/exercises/{sheet['id']}/validation").json()
+    assert state["can_copy"] is True and state["can_edit"] is False and state["can_validate"] is False
 
 
 # --- Programmes et bibliothèque ----------------------------------------------------------------------
@@ -341,3 +363,40 @@ def test_old_share_links_keep_working_after_archiving(client, monkeypatch):
     page = client.get(f"/library/shares/{token}").json()
     assert [i["exercise"]["id"] for i in page["items"]] == [sheet["id"]]
     assert page["items"][0]["validation"]["copied_from"]["id"] == _plain()["id"]
+
+
+# --- Formulaire de métier : création et modification d'un modèle du praticien ------------------------
+
+
+def _metier_body(**overrides):
+    return {
+        "title": "Boulanger", "description": "Fournil", "workday_hours": 8,
+        "tasks": [{"name": "Pétrissage", "zones": ["upper_arm", "hand"], "activity_hours": 3}],
+        **overrides,
+    }
+
+
+def test_a_metier_model_is_created_edited_and_validated_from_a_form(client):
+    _login(client, "prat@x.fr")
+    created = client.post("/metiers", json=_metier_body(), headers=ORIGIN)
+    assert created.status_code == 200, created.text
+    model = created.json()
+    assert model["origin"] == "custom" and model["tasks"][0]["name"] == "Pétrissage"
+    edited = client.put(
+        f"/metiers/{model['id']}", headers=ORIGIN,
+        json=_metier_body(title="Boulanger-pâtissier", tasks=[
+            {"name": "Façonnage", "zones": ["hand"], "activity_hours": 2.5, "notes": "debout"},
+        ]),
+    )
+    assert edited.status_code == 200
+    assert edited.json()["title"] == "Boulanger-pâtissier"
+    assert edited.json()["tasks"][0]["notes"] == "debout"
+    # Contrôles du serveur : zone inconnue, journée dépassée, titre vide.
+    bad_zone = _metier_body(tasks=[{"name": "X", "zones": ["tete"], "activity_hours": 1}])
+    assert client.post("/metiers", json=bad_zone, headers=ORIGIN).status_code == 422
+    too_long = _metier_body(tasks=[{"name": "X", "zones": ["neck"], "activity_hours": 9}])
+    assert client.post("/metiers", json=too_long, headers=ORIGIN).status_code == 422
+    assert client.post("/metiers", json=_metier_body(title="  "), headers=ORIGIN).status_code == 422
+    assert client.put("/metiers/inconnu", json=_metier_body(), headers=ORIGIN).status_code == 404
+    library_id = next(m["id"] for m in client.get("/metiers").json() if m["origin"] == "library")
+    assert client.put(f"/metiers/{library_id}", json=_metier_body(), headers=ORIGIN).status_code == 403

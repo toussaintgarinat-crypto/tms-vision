@@ -168,12 +168,11 @@ def test_the_declared_author_is_cleaned_and_defaults_when_missing(client):
 
 
 @pytest.mark.parametrize("email", ["prat@x.fr"])
-def test_only_osteopaths_export_and_import(client, email):
+def test_practitioners_import_unvalidated_and_anonymous_is_refused(client, email):
     _login(client, "lea@x.fr")
     bundle = _export(client, [_mine(client)])
     _login(client, email)
-    assert client.get("/sheets/export", params={"ids": "x"}).status_code == 403
-    assert _import(client, bundle).status_code == 403
+    assert _import(client, bundle).status_code == 200
     client.cookies.clear()
     assert _import(client, bundle).status_code == 401
 

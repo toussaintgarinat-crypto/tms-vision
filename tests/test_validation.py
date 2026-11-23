@@ -369,30 +369,31 @@ def test_the_program_keeps_only_exercises_validated_by_the_chosen_osteopath(acco
     assert neck_items[0]["capsule"]["validation"]["validated_by"] == "Léa Osteo"
 
 
-def test_a_zone_without_validated_exercise_falls_back_to_unvalidated_ones(accounts_ready):
+def test_a_zone_without_exercise_validated_by_the_osteopath_is_empty_and_flagged(accounts_ready):
     users = {u["email"]: u["id"] for u in accounts.list_users()}
     _login(accounts_ready, "praticien@x.fr")
     bilan_id = _bilan_with_task(accounts_ready, "neck")
     accounts_ready.put(f"/bilans/{bilan_id}/osteo", json={"osteo_id": users["osteo@x.fr"]}, headers=ORIGIN)
     program = _program(accounts_ready, bilan_id)
-    assert program["program"]
-    for item in program["program"]:
-        label = item["capsule"]["validation"]
-        assert label["validated_by"] is None
-        assert label["can_validate"] is False  # le praticien n'a pas le bouton
+    assert not [i for i in program["program"] if i["zone"] == "neck"]
+    assert any("Léa Osteo" in w and "revalider" in w for w in program["warnings"])
 
 
-def test_the_validate_button_is_for_the_chosen_osteopath_only(accounts_ready):
+def test_a_colleagues_validation_does_not_stand_in_for_the_chosen_osteopath(accounts_ready):
     users = {u["email"]: u["id"] for u in accounts.list_users()}
     _login(accounts_ready, "praticien@x.fr")
     bilan_id = _bilan_with_task(accounts_ready, "neck")
-    accounts_ready.put(f"/bilans/{bilan_id}/osteo", json={"osteo_id": users["osteo@x.fr"]}, headers=ORIGIN)
+    neck = [
+        e for e in exercises.load_catalog()
+        if e["zone"] == "neck" and e.get("position", "standing") != "lying"
+    ]
     _logout(accounts_ready)
     _login(accounts_ready, "autre@x.fr")
-    assert not any(i["capsule"]["validation"]["can_validate"] for i in _program(accounts_ready, bilan_id)["program"])
+    _validate(accounts_ready, neck[0]["id"])
     _logout(accounts_ready)
-    _login(accounts_ready, "osteo@x.fr")
-    assert all(i["capsule"]["validation"]["can_validate"] for i in _program(accounts_ready, bilan_id)["program"])
+    _login(accounts_ready, "praticien@x.fr")
+    accounts_ready.put(f"/bilans/{bilan_id}/osteo", json={"osteo_id": users["osteo@x.fr"]}, headers=ORIGIN)
+    assert not [i for i in _program(accounts_ready, bilan_id)["program"] if i["zone"] == "neck"]
 
 
 def test_duplicating_a_bilan_keeps_its_osteopath(accounts_ready):
