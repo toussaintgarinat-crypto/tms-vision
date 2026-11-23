@@ -10,6 +10,17 @@ une version précise.
 
 ## [Non publié]
 
+## [2.3.1] - 2026-11-23
+
+### Nouveautés
+- **Bouton « Rechercher une mise à jour » (application de bureau).** Placé à côté du numéro de version, visible
+  des administrateurs : il interroge GitHub tout de suite et indique « Vous êtes à jour », « Impossible de joindre
+  GitHub » ou propose d'installer la nouvelle version.
+
+### Corrigé
+- **Une mise à jour publiée n'était pas toujours détectée.** La recherche se refait maintenant toute seule toutes
+  les heures et au retour sur la fenêtre (le cache du serveur passe de 6 h à 1 h).
+
 ## [2.3.0] - 2026-11-23
 
 ### Nouveautés

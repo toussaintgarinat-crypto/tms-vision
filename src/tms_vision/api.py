@@ -1562,16 +1562,25 @@ async def get_version() -> dict:
 
 
 @app.get("/update")
-async def get_update() -> dict:
+async def get_update(request: Request, force: bool = False) -> dict:
     """Une version plus récente est-elle publiée ? Seulement dans l'application de bureau
     (TMS_CHECK_UPDATES=1) : un serveur installé par Docker se met à jour avec install.sh.
-    `installable` : le bouton peut installer la mise à jour en un clic (application construite)."""
+    `installable` : le bouton peut installer la mise à jour en un clic (application construite).
+    `force=true` (administrateurs) : ignore le cache d'une heure ; `reachable` dit si GitHub a répondu."""
     if os.environ.get("TMS_CHECK_UPDATES") != "1":
-        return {"available": False, "version": None, "url": None, "installable": False}
-    result = await run_in_threadpool(updates.check, version.get_version())
+        return {"available": False, "version": None, "url": None, "installable": False, "reachable": True,
+                "supported": False}
+    if force:
+        user = getattr(request.state, "user", None)
+        if auth_api.auth_required() and (user is None or "administrateur" not in user["roles"]):
+            raise HTTPException(status_code=403, detail="Réservé aux administrateurs.")
+        result = await run_in_threadpool(updates.check_now, version.get_version())
+    else:
+        result = {**await run_in_threadpool(updates.check, version.get_version()), "reachable": True}
     return {
         "available": result["available"], "version": result["version"], "url": result["url"],
         "installable": result["available"] and self_update.is_installable(),
+        "reachable": result["reachable"], "supported": True,
     }
 
 
